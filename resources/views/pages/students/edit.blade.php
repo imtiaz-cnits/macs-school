@@ -434,7 +434,8 @@
 
         } catch (e) { 
             console.error(e);
-            alert("Failed to load student data!");
+            await showAlert("Failed to load student data!", "Error");
+            window.location.href = '/students';
         }
     });
 
@@ -454,7 +455,7 @@
         if (!file) return;
 
         if (file.size > 2 * 1024 * 1024) {
-            alert("File size is too large! Maximum allowed size is 2MB.");
+            showAlert("File size is too large! Maximum allowed size is 2MB.", "Attention");
             e.target.value = '';
             return;
         }
@@ -542,11 +543,11 @@
             });
 
             if (res.status === 200) {
-                alert('Updated successfully!');
+                await showAlert('Updated successfully!', 'Success');
                 window.location.href = '/students'; // শুধু /students হবে
             }
         } catch (err) {
-            alert(err.response?.data?.message || 'Update failed! Check all required fields.');
+            showAlert(err.response?.data?.message || 'Update failed! Check all required fields.', 'Error');
         } finally {
             let btn = document.querySelector('button[type="submit"]');
             btn.innerText = 'Save Changes';

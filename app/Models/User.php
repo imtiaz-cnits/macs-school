@@ -9,12 +9,11 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use HasinHayder\Tyro\Concerns\HasTyroRoles;
 use HasinHayder\TyroLogin\Traits\HasTwoFactorAuth;
-
-
+use HasinHayder\TyroDashboard\Traits\HasProfilePhoto;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasTyroRoles, HasTwoFactorAuth;
+    use HasApiTokens, HasTyroRoles, HasTwoFactorAuth, HasProfilePhoto;
 
 
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -58,5 +57,25 @@ class User extends Authenticatable
     public function teacherProfile()
     {
         return $this->hasOne(Teacher::class, 'user_id');
+    }
+
+    /**
+     * Get the URL to the user's profile photo.
+     *
+     * @return string
+     */
+    public function getProfilePhotoUrlAttribute()
+    {
+        if (isset($this->use_gravatar) && $this->use_gravatar && $this->email) {
+            return $this->gravatar_url;
+        }
+
+        if ($this->profile_photo_path) {
+            return str_starts_with($this->profile_photo_path, 'http')
+                ? $this->profile_photo_path
+                : '/storage/' . $this->profile_photo_path;
+        }
+
+        return $this->defaultProfilePhotoUrl();
     }
 }

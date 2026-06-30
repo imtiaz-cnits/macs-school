@@ -195,11 +195,11 @@ class AttendanceController extends Controller
                         SmsLog::insert($logData);
                     }
 
-                    $smsMessage = " এবং {$sentCount} জন অনুপস্থিত স্টুডেন্টকে SMS পাঠানো হয়েছে!";
+                    $smsMessage = " and SMS sent to {$sentCount} absent student(s)!";
 
                 } catch (\Exception $smsEx) {
                     // SMS পাঠাতে সমস্যা হলেও এটেন্ডেন্স সেভ দেখাবে
-                    $smsMessage = " (তবে SMS পাঠাতে সার্ভার সমস্যা হয়েছে)";
+                    $smsMessage = " (however, SMS delivery encountered a server issue)";
                 }
             }
             // ==========================================

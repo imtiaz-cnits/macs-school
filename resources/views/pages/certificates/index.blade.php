@@ -79,7 +79,7 @@
                 <div>
                     <label class="smart-label">Document Type</label>
                     <select name="type" id="docType" class="smart-select" required>
-                        <option value="testimonial">Testimonial (প্রশংসাপত্র)</option>
+                        <option value="testimonial">Testimonial</option>
                         <option value="tc">Transfer Certificate (TC)</option>
                         <option value="general">General Certificate</option>
                     </select>

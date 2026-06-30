@@ -22,12 +22,16 @@
     function updateThemeIcons(theme) {
         const sunIcons = document.querySelectorAll('.sun-icon');
         const moonIcons = document.querySelectorAll('.moon-icon');
+        const labels = document.querySelectorAll('.theme-mode-label');
         
         sunIcons.forEach(icon => {
             icon.style.display = theme === 'dark' ? 'block' : 'none';
         });
         moonIcons.forEach(icon => {
             icon.style.display = theme === 'dark' ? 'none' : 'block';
+        });
+        labels.forEach(label => {
+            label.textContent = theme === 'dark' ? 'Dark' : 'Light';
         });
     }
 

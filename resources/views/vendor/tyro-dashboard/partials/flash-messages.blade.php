@@ -1,59 +1,43 @@
 @if (session('success'))
-<div class="alert alert-success">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-    <div class="alert-content">
-        <p class="alert-message">{{ session('success') }}</p>
-    </div>
-</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        showSuccess({!! json_encode(session('success')) !!}, "Success");
+    });
+</script>
 @endif
 
 @if (session('error'))
-<div class="alert alert-error">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-    <div class="alert-content">
-        <p class="alert-message">{{ session('error') }}</p>
-    </div>
-</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        showModal("Error", {!! json_encode(session('error')) !!}, "alert", { variant: 'danger', confirmText: 'OK' });
+    });
+</script>
 @endif
 
 @if (session('warning'))
-<div class="alert alert-warning">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-    </svg>
-    <div class="alert-content">
-        <p class="alert-message">{{ session('warning') }}</p>
-    </div>
-</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        showModal("Warning", {!! json_encode(session('warning')) !!}, "alert", { variant: 'info', confirmText: 'OK' });
+    });
+</script>
 @endif
 
 @if (session('info'))
-<div class="alert alert-info">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-    <div class="alert-content">
-        <p class="alert-message">{{ session('info') }}</p>
-    </div>
-</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        showInfo({!! json_encode(session('info')) !!});
+    });
+</script>
 @endif
 
 @if ($errors->any() && config('tyro-dashboard.resource_ui.show_global_errors', true))
-<div class="alert alert-error">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-    <div class="alert-content">
-        <p class="alert-title">Please correct the following errors:</p>
-        <ul class="mt-2 ml-4 list-disc">
-            @foreach ($errors->all() as $error)
-                <li class="text-sm">{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const errorList = [];
+        @foreach ($errors->all() as $error)
+            errorList.push({!! json_encode($error) !!});
+        @endforeach
+        showModal("Validation Error", errorList.join('\n'), "alert", { variant: 'danger', confirmText: 'OK' });
+    });
+</script>
 @endif

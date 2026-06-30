@@ -44,8 +44,13 @@ Route::get('/', function () {
 
 // ২. ড্যাশবোর্ড রাউট (যা কন্ট্রোলার থেকে ডাটা নিয়ে আসবে)
 Route::get('dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'tyro-dashboard.admin'])
+    ->middleware(['auth', 'roles:editor,admin,super-admin'])
     ->name('dashboard.dashboard');
+
+// ৩. প্যাকেজের /admin ইউআরএল ওভাররাইড করে ডাইরেক্ট স্কুল ড্যাশবোর্ড দেখাবে
+Route::get('admin', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'roles:editor,admin,super-admin'])
+    ->name('tyro-dashboard.index');
 
 // Tyro Dashboard এর মিডলওয়্যার
 Route::middleware(['auth', 'roles:editor, admin, super-admin'])->group(function () {
@@ -333,6 +338,7 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
         Route::get('/get', [ClassRoutineController::class, 'getRoutine'])->name('get');
         Route::post('/store', [ClassRoutineController::class, 'store'])->name('store');
         Route::delete('/destroy/{id}', [ClassRoutineController::class, 'destroy'])->name('destroy');
+        Route::put('/update/{id}', [ClassRoutineController::class, 'update'])->name('update');
     });
 
     // Exam Routine Routes

@@ -36,4 +36,9 @@ class ClassRoutine extends Model
     {
         return $this->belongsTo(Teacher::class, 'teacher_id');
     }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }
 }

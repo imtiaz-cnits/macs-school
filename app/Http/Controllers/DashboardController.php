@@ -17,6 +17,6 @@ class DashboardController extends Controller
         'recentStudents' => \App\Models\Student::with('schoolClass')->latest()->take(5)->get(),
     ];
 
-    return view('dashboard.dashboard', $data);
+    return view('vendor.tyro-dashboard.dashboard.index', $data);
 }
 }

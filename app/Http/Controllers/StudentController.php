@@ -57,7 +57,7 @@ class StudentController extends Controller
             }
 
             // পেজিনেশন
-            $students = $query->paginate(50);
+            $students = $query->paginate(15);
             
             return response()->json(['status' => 'success', 'studentData' => $students], 200);
             

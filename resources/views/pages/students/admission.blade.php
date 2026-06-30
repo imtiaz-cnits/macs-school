@@ -8,384 +8,775 @@
 
 @push('styles')
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script>
     tailwind.config = { 
         darkMode: 'class', 
         theme: { 
             extend: { 
-                colors: {
-                    themeGreen: '#1e4630', 
-                    themeRed: '#cc0000',   
-                    themePink: '#d97782',
-                    themeIndigo: '#4f46e5'
-                },
+                colors: { themeGreen: '#009A49', themeBlue: '#008ED6', themeDark: '#070E14', themeNavy: '#0F1E2C' },
                 fontFamily: { sans: ['Figtree', 'sans-serif'], secondary: ['Onest', 'sans-serif'] } 
             } 
         } 
     }
 </script>
 <style>
-    /* ডার্ক মোডে টেক্সট ক্লিয়ার রাখার জন্য কাস্টম স্টাইল */
-    .form-label { @apply block text-xs font-black text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wider; }
-    .form-input { @apply w-full border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2.5 focus:ring-2 focus:ring-themeGreen focus:border-transparent outline-none transition shadow-sm placeholder-gray-400 dark:placeholder-gray-500 disabled:bg-gray-100 disabled:dark:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-70; }
-    .required-star { @apply text-red-600 ml-0.5; }
-    .id-display-card { @apply bg-indigo-50/50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 p-3 rounded-xl shadow-sm; }
+    [x-cloak] { display: none !important; }
+    .form-label {
+        display: block;
+        font-size: 10px !important;
+        font-weight: 900 !important;
+        letter-spacing: 0.15em !important;
+        text-transform: uppercase !important;
+        color: #6b7280; /* text-gray-500 */
+        margin-bottom: 0.5rem !important;
+    }
+    .dark .form-label {
+        color: #9ca3af; /* text-gray-400 */
+    }
+    .form-input {
+        width: 100%;
+        height: 44px !important;
+        padding: 0 1rem !important;
+        border-radius: 12px !important; /* rounded-xl */
+        border: 2px solid #e2e8f0 !important; /* border-gray-200 */
+        background-color: rgba(248, 250, 252, 0.5) !important; /* bg-gray-50/50 */
+        color: #0f172a !important; /* text-gray-900 */
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease !important;
+        outline: none !important;
+        box-sizing: border-box;
+    }
+    .dark .form-input {
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        background-color: #070e14 !important; /* bg-themeDark */
+        color: #f8fafc !important;
+    }
+    .form-input:focus {
+        border-color: #008ED6 !important;
+        box-shadow: 0 0 0 4px rgba(0, 142, 214, 0.1) !important;
+        background-color: #ffffff !important;
+    }
+    .dark .form-input:focus {
+        background-color: #0f1e2c !important;
+    }
+    .required-star {
+        color: #ef4444; /* text-red-500 */
+        margin-left: 0.125rem;
+    }
+    .id-display-card {
+        background-color: rgba(0, 142, 214, 0.05);
+        border: 1px solid rgba(0, 142, 214, 0.15);
+    }
+    .dark .id-display-card {
+        background-color: rgba(0, 142, 214, 0.08);
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+    /* Dropdown Trigger and Options Font Size Override */
+    .relative button[type="button"] {
+        font-size: 0.875rem !important; /* text-sm */
+    }
+    .relative div button {
+        font-size: 0.875rem !important; /* text-sm */
+    }
 </style>
+<script>
+    function getAuthHeaders() {
+        return { 
+            headers: { 
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            } 
+        };
+    }
+
+    window.dropdownState = function(id, defaultLabel, ajaxUrl, dataKey, nameField, idField) {
+        return {
+            open: false,
+            selectedLabel: defaultLabel,
+            selectedValue: '',
+            options: [],
+            disabled: false,
+            async init() {
+                let input = document.getElementById(id);
+                if (input) {
+                    this.selectedValue = input.value;
+                    this.disabled = input.disabled;
+                    input.addEventListener('change', () => {
+                        this.selectedValue = input.value;
+                        this.disabled = input.disabled;
+                        let found = this.options.find(o => o.id == input.value);
+                        this.selectedLabel = found ? found.name : defaultLabel;
+                    });
+                }
+
+                if (ajaxUrl) {
+                    try {
+                        let res = await axios.get(ajaxUrl, getAuthHeaders());
+                        let list = res.data[dataKey] || [];
+                        this.options = list.map(item => ({
+                            id: item[idField],
+                            name: item[nameField]
+                        }));
+                        // trigger initial sync if there's predefined value
+                        if(this.selectedValue) {
+                            let found = this.options.find(o => o.id == this.selectedValue);
+                            if(found) this.selectedLabel = found.name;
+                        }
+                    } catch (e) {
+                        console.error('Failed to load ' + id, e);
+                    }
+                }
+            },
+            select(option) {
+                if (this.disabled) return;
+                this.selectedLabel = option ? option.name : defaultLabel;
+                this.selectedValue = option ? option.id : '';
+                this.open = false;
+                
+                let input = document.getElementById(id);
+                if (input) {
+                    input.value = this.selectedValue;
+                    input.dispatchEvent(new Event('change'));
+                }
+            }
+        };
+    };
+
+    window.staticDropdownState = function(id, defaultLabel, rawOptions, initialValue = '', syncCallback = null) {
+        let initialLabel = defaultLabel;
+        if(initialValue) {
+            let found = rawOptions.find(o => o.id === initialValue);
+            if(found) initialLabel = found.name;
+        }
+        return {
+            open: false,
+            selectedLabel: initialLabel,
+            selectedValue: initialValue,
+            options: rawOptions,
+            disabled: false,
+            init() {
+                let input = document.getElementById(id);
+                if (input) {
+                    input.value = this.selectedValue;
+                    this.disabled = input.disabled;
+                    input.addEventListener('change', () => {
+                        this.selectedValue = input.value;
+                        this.disabled = input.disabled;
+                        let found = this.options.find(o => o.id == input.value);
+                        this.selectedLabel = found ? found.name : defaultLabel;
+                    });
+                }
+            },
+            select(option) {
+                if (this.disabled) return;
+                this.selectedLabel = option ? option.name : defaultLabel;
+                this.selectedValue = option ? option.id : '';
+                this.open = false;
+                
+                let input = document.getElementById(id);
+                if (input) {
+                    input.value = this.selectedValue;
+                    input.dispatchEvent(new Event('change'));
+                }
+                if (syncCallback) {
+                    syncCallback();
+                }
+            }
+        };
+    };
+
+    window.divisionOptions = [
+        { id: 'Barishal', name: 'Barishal' },
+        { id: 'Chattogram', name: 'Chattogram' },
+        { id: 'Dhaka', name: 'Dhaka' },
+        { id: 'Khulna', name: 'Khulna' },
+        { id: 'Mymensingh', name: 'Mymensingh' },
+        { id: 'Rajshahi', name: 'Rajshahi' },
+        { id: 'Rangpur', name: 'Rangpur' },
+        { id: 'Sylhet', name: 'Sylhet' }
+    ];
+
+    window.districtOptions = [
+        { id: 'Bagerhat', name: 'Bagerhat' },
+        { id: 'Bandarban', name: 'Bandarban' },
+        { id: 'Barguna', name: 'Barguna' },
+        { id: 'Barishal', name: 'Barishal' },
+        { id: 'Bhola', name: 'Bhola' },
+        { id: 'Bogura', name: 'Bogura' },
+        { id: 'Brahmanbaria', name: 'Brahmanbaria' },
+        { id: 'Chandpur', name: 'Chandpur' },
+        { id: 'Chapainawabganj', name: 'Chapainawabganj' },
+        { id: 'Chattogram', name: 'Chattogram' },
+        { id: 'Chuadanga', name: 'Chuadanga' },
+        { id: 'Cox\'s Bazar', name: 'Cox\'s Bazar' },
+        { id: 'Cumilla', name: 'Cumilla' },
+        { id: 'Dhaka', name: 'Dhaka' },
+        { id: 'Dinajpur', name: 'Dinajpur' },
+        { id: 'Faridpur', name: 'Faridpur' },
+        { id: 'Feni', name: 'Feni' },
+        { id: 'Gaibandha', name: 'Gaibandha' },
+        { id: 'Gazipur', name: 'Gazipur' },
+        { id: 'Gopalganj', name: 'Gopalganj' },
+        { id: 'Habiganj', name: 'Habiganj' },
+        { id: 'Jamalpur', name: 'Jamalpur' },
+        { id: 'Jashore', name: 'Jashore' },
+        { id: 'Jhalokati', name: 'Jhalokati' },
+        { id: 'Jhenaidah', name: 'Jhenaidah' },
+        { id: 'Joypurhat', name: 'Joypurhat' },
+        { id: 'Khagrachhari', name: 'Khagrachhari' },
+        { id: 'Khulna', name: 'Khulna' },
+        { id: 'Kishoreganj', name: 'Kishoreganj' },
+        { id: 'Kurigram', name: 'Kurigram' },
+        { id: 'Kushtia', name: 'Kushtia' },
+        { id: 'Lakshmipur', name: 'Lakshmipur' },
+        { id: 'Lalmonirhat', name: 'Lalmonirhat' },
+        { id: 'Madaripur', name: 'Madaripur' },
+        { id: 'Magura', name: 'Magura' },
+        { id: 'Manikganj', name: 'Manikganj' },
+        { id: 'Meherpur', name: 'Meherpur' },
+        { id: 'Moulvibazar', name: 'Moulvibazar' },
+        { id: 'Munshiganj', name: 'Munshiganj' },
+        { id: 'Mymensingh', name: 'Mymensingh' },
+        { id: 'Naogaon', name: 'Naogaon' },
+        { id: 'Narail', name: 'Narail' },
+        { id: 'Narayanganj', name: 'Narayanganj' },
+        { id: 'Narsingdi', name: 'Narsingdi' },
+        { id: 'Natore', name: 'Natore' },
+        { id: 'Netrokona', name: 'Netrokona' },
+        { id: 'Nilphamari', name: 'Nilphamari' },
+        { id: 'Noakhali', name: 'Noakhali' },
+        { id: 'Pabna', name: 'Pabna' },
+        { id: 'Panchagarh', name: 'Panchagarh' },
+        { id: 'Patuakhali', name: 'Patuakhali' },
+        { id: 'Pirojpur', name: 'Pirojpur' },
+        { id: 'Rajbari', name: 'Rajbari' },
+        { id: 'Rajshahi', name: 'Rajshahi' },
+        { id: 'Rangamati', name: 'Rangamati' },
+        { id: 'Rangpur', name: 'Rangpur' },
+        { id: 'Satkhira', name: 'Satkhira' },
+        { id: 'Shariatpur', name: 'Shariatpur' },
+        { id: 'Sherpur', name: 'Sherpur' },
+        { id: 'Sirajganj', name: 'Sirajganj' },
+        { id: 'Sunamganj', name: 'Sunamganj' },
+        { id: 'Sylhet', name: 'Sylhet' },
+        { id: 'Tangail', name: 'Tangail' },
+        { id: 'Thakurgaon', name: 'Thakurgaon' }
+    ];
+</script>
 @endpush
 
 @section('breadcrumb')
-<a href="{{ route('dashboard.dashboard') }}" class="text-themeGreen font-bold hover:underline">Dashboard</a>
-<span class="text-gray-400 mx-2">/</span>
-<a href="{{ route('students.index') }}" class="text-themeGreen font-bold hover:underline">Student Management</a>
-<span class="text-gray-400 mx-2">/</span>
-<span class="text-gray-600 dark:text-gray-300 font-medium">New Admission</span>
+<span>Student Management</span>
 @endsection
 
 @section('content')
-<div class="p-4 md:p-8 max-w-[1400px] mx-auto">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 border-b border-gray-150 dark:border-white/[0.08] pb-6">
+    <div>
+        <h1 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
+            <svg class="w-8 h-8 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+            New Student Admission
+        </h1>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">Pabna International School - Smart Education Management System</p>
+    </div>
     
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-10 border-2 border-themeGreen/30 dark:border-themeGreen/40">
-        
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6 border-b border-gray-100 dark:border-gray-700 pb-8">
-            <div>
-                <h2 class="text-3xl md:text-4xl font-black text-themeGreen dark:text-green-500 uppercase tracking-tighter">
-                    New Student Admission
-                </h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">Pabna International School - Smart Education Management System</p>
-            </div>
-            
-            <div class="id-display-card w-full md:w-auto min-w-[250px]">
-                <label class="text-[10px] font-black text-themeIndigo uppercase tracking-widest block mb-1">Student Identity (Auto)</label>
-                <div class="relative">
-                    <input type="text" value="{{ date('Y') }}-XX-XXXX" class="w-full bg-white dark:bg-gray-900 border-none text-indigo-700 dark:text-indigo-400 font-mono font-bold px-3 py-1.5 rounded outline-none" readonly>
-                    <svg class="w-4 h-4 text-indigo-300 absolute right-2 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                </div>
-            </div>
-        </div>
-
-        <form id="admissionForm" onsubmit="event.preventDefault(); window.SaveStudent();">
-            
-            <h3 class="text-xl font-black text-gray-800 dark:text-white mb-6 border-l-4 border-yellow-500 pl-3 uppercase">Academic Details</h3>
-           <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12 p-6 bg-themeGreen/5 dark:bg-green-900/10 rounded-2xl border border-themeGreen/20">
-                <div>
-                    <label class="form-label text-green-700 dark:text-green-400">Branch <span class="required-star">*</span></label>
-                    <select id="branch_id" class="form-input border-green-200 dark:border-green-900/50" required>
-                        <option value="">Select Branch</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label text-green-700 dark:text-green-400">Class <span class="required-star">*</span></label>
-                    <select id="class_id" class="form-input border-green-200 dark:border-green-900/50" required>
-                        <option value="">Select Class</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label text-green-700 dark:text-green-400">Section <span class="required-star">*</span></label>
-                    <select id="section_id" class="form-input border-green-200 dark:border-green-900/50" required>
-                        <option value="">Select Section</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label text-green-700 dark:text-green-400">Shift</label>
-                    <select id="shift_id" class="form-input border-green-200 dark:border-green-900/50">
-                        <option value="">Select Shift</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label text-green-700 dark:text-green-400">Session <span class="required-star">*</span></label>
-                    <select id="session_year_id" class="form-input border-green-200 dark:border-green-900/50" required>
-                        <option value="">Select Session</option>
-                    </select>
-                </div>
-            </div>
-
-            <h3 class="text-xl font-black text-gray-800 dark:text-white mb-6 border-l-4 border-blue-500 pl-3 uppercase">Basic Information</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                <div>
-                    <label class="form-label">Student Name <span class="required-star">*</span></label>
-                    <input type="text" id="student_name" class="form-input" placeholder="Full Name" required>
-                </div>
-                <div>
-                    <label class="form-label">Name in Bangla</label>
-                    <input type="text" id="name_in_bangla" class="form-input" placeholder="বাংলা নাম">
-                </div>
-                <div>
-                    <label class="form-label">Class Roll <span class="required-star">*</span></label>
-                    <input type="text" id="roll_number" class="form-input" placeholder="Roll No" required>
-                </div>
-                <div>
-                    <label class="form-label">Date of Birth <span class="required-star">*</span></label>
-                    <input type="date" id="dob" class="form-input" required>
-                </div>
-                
-                <div>
-                    <label class="form-label">Birth Certificate No</label>
-                    <input type="text" id="birth_certificate" class="form-input" placeholder="Reg Number">
-                </div>
-                <div>
-                    <label class="form-label">Gender <span class="required-star">*</span></label>
-                    <select id="gender" class="form-input" required>
-                        <option value="" disabled selected>Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label">Religion</label>
-                    <select id="religion" class="form-input">
-                        <option value="Islam">Islam</option>
-                        <option value="Hindu">Hindu</option>
-                        <option value="Christian">Christian</option>
-                        <option value="Buddhist">Buddhist</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label">Blood Group</label>
-                    <select id="blood_group" class="form-input">
-                        <option value="">None</option>
-                        <option value="A+">A+</option><option value="A-">A-</option>
-                        <option value="B+">B+</option><option value="B-">B-</option>
-                        <option value="O+">O+</option><option value="O-">O-</option>
-                        <option value="AB+">AB+</option><option value="AB-">AB-</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="form-label">Student Email</label>
-                    <input type="email" id="email" class="form-input" placeholder="Email Address">
-                </div>
-                <div>
-                    <label class="form-label">SMS Status</label>
-                    <select id="sms_status" class="form-input">
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="form-label">Student Photo</label>
-                    <div class="flex items-center gap-3 bg-white dark:bg-gray-800 p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 shadow-inner h-[60px]">
-                        
-                        <div class="w-12 h-12 shrink-0 bg-gray-50 dark:bg-gray-700 flex items-center justify-center rounded border border-dashed border-gray-300 dark:border-gray-500 overflow-hidden relative">
-                            <img id="photoPreview" src="" alt="Preview" class="w-full h-full object-cover hidden absolute inset-0 z-10">
-                            <svg id="photoIcon" class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        </div>
-                        
-                        <div class="flex-1 relative h-full">
-                            <input type="file" id="photo" onchange="window.previewImage(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/png, image/jpeg, image/jpg">
-                            
-                            <div class="h-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-[11px] font-black uppercase tracking-wider rounded transition">
-                                Choose Photo
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="form-label">Document (Birth Cert/NID)</label>
-                    <div class="relative flex items-center justify-between gap-3 bg-white dark:bg-gray-800 p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 shadow-inner h-[60px] cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition" onclick="document.getElementById('document_file').click()">
-                        
-                        <input type="file" id="document_file" class="hidden" accept=".pdf, image/jpeg, image/png, image/jpg" onchange="window.previewDocument(event)">
-                        
-                        <div id="docPlaceholder" class="flex items-center text-gray-500 pl-2 w-full">
-                            <svg class="w-5 h-5 mr-2 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                            <span class="text-[11px] font-bold">Upload PDF/Image</span>
-                        </div>
-
-                        <div id="docPreviewInfo" class="hidden flex items-center justify-between w-full pl-2 pr-1">
-                            <div class="flex items-center overflow-hidden">
-                                <svg class="w-5 h-5 text-green-500 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                <div class="truncate max-w-[120px]">
-                                    <p id="docFileName" class="text-[11px] font-bold text-gray-700 dark:text-gray-300 truncate"></p>
-                                    <p id="docFileSize" class="text-[9px] text-gray-500"></p>
-                                </div>
-                            </div>
-                            <button type="button" onclick="window.removeDocument(event)" class="text-red-500 hover:text-red-700 p-1.5 shrink-0 bg-red-50 dark:bg-red-900/30 rounded shadow-sm transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <h3 class="text-xl font-black text-gray-800 dark:text-white mb-6 border-l-4 border-themeGreen pl-3 uppercase">Family Details</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                <div class="bg-gray-50 dark:bg-gray-900/40 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
-                    <h4 class="text-[11px] font-black text-green-600 dark:text-green-500 uppercase mb-4 tracking-widest border-b border-green-100 dark:border-green-900/30 pb-2">Father's Details</h4>
-                    <div class="space-y-4">
-                        <input type="text" id="father_name" class="form-input" placeholder="Father's Name *" required>
-                        <input type="text" id="father_occupation" class="form-input" placeholder="Occupation">
-                        <input type="text" id="father_mobile" class="form-input" placeholder="Father's Mobile *" required>
-                        <input type="text" id="father_nid" class="form-input" placeholder="Father's NID">
-                    </div>
-                </div>
-
-                <div class="bg-gray-50 dark:bg-gray-900/40 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
-                    <h4 class="text-[11px] font-black text-themeIndigo dark:text-indigo-400 uppercase mb-4 tracking-widest border-b border-indigo-100 dark:border-indigo-900/30 pb-2">Mother's Details</h4>
-                    <div class="space-y-4">
-                        <input type="text" id="mother_name" class="form-input" placeholder="Mother's Name *" required>
-                        <input type="text" id="mother_occupation" class="form-input" placeholder="Occupation">
-                        <input type="text" id="mother_mobile" class="form-input" placeholder="Mother's Mobile *" required>
-                        <input type="text" id="mother_nid" class="form-input" placeholder="Mother's NID">
-                    </div>
-                </div>
-
-                <div class="bg-gray-50 dark:bg-gray-900/40 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
-                    <h4 class="text-[11px] font-black text-themeRed dark:text-red-400 uppercase mb-4 tracking-widest border-b border-red-100 dark:border-red-900/30 pb-2">Emergency Contact</h4>
-                    <div class="space-y-4">
-                        <input type="text" id="guardian_name" class="form-input" placeholder="Guardian Name">
-                        <input type="text" id="guardian_occupation" class="form-input" placeholder="Occupation">
-                        <input type="text" id="guardian_mobile" class="form-input" placeholder="Guardian Mobile *" required>
-                    </div>
-                </div>
-            </div>
-
-            <h3 class="text-xl font-black text-gray-800 dark:text-white mb-6 border-l-4 border-themePink pl-3 uppercase">Address Information</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                <div class="bg-gray-50 dark:bg-gray-900/40 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
-                    <h4 class="text-[11px] font-black text-themePink uppercase mb-4 tracking-widest border-b border-pink-100 dark:border-pink-900/30 pb-2">Present Address</h4>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="col-span-2">
-                            <label class="form-label">Village / Road <span class="required-star">*</span></label>
-                            <input type="text" id="present_village" oninput="window.syncAddress()" class="form-input" placeholder="Enter Village / Road" required>
-                        </div>
-                        <div>
-                            <label class="form-label">Post Office <span class="required-star">*</span></label>
-                            <input type="text" id="present_post_office" oninput="window.syncAddress()" class="form-input" placeholder="Enter Post Office" required>
-                        </div>
-                        <div>
-                            <label class="form-label">Post Code</label>
-                            <input type="text" id="present_post_code" oninput="window.syncAddress()" class="form-input" placeholder="e.g. 6600">
-                        </div>
-                        
-                        <div>
-                            <label class="form-label">District <span class="required-star">*</span></label>
-                            <select id="present_district" onchange="window.syncAddress()" class="form-input" required>
-                                <option value="">Select District</option>
-                                <option value="Bagerhat">Bagerhat</option><option value="Bandarban">Bandarban</option><option value="Barguna">Barguna</option><option value="Barishal">Barishal</option><option value="Bhola">Bhola</option><option value="Bogura">Bogura</option><option value="Brahmanbaria">Brahmanbaria</option><option value="Chandpur">Chandpur</option><option value="Chapainawabganj">Chapainawabganj</option><option value="Chattogram">Chattogram</option><option value="Chuadanga">Chuadanga</option><option value="Cox's Bazar">Cox's Bazar</option><option value="Cumilla">Cumilla</option><option value="Dhaka">Dhaka</option><option value="Dinajpur">Dinajpur</option><option value="Faridpur">Faridpur</option><option value="Feni">Feni</option><option value="Gaibandha">Gaibandha</option><option value="Gazipur">Gazipur</option><option value="Gopalganj">Gopalganj</option><option value="Habiganj">Habiganj</option><option value="Jamalpur">Jamalpur</option><option value="Jashore">Jashore</option><option value="Jhalokati">Jhalokati</option><option value="Jhenaidah">Jhenaidah</option><option value="Joypurhat">Joypurhat</option>< value="Khagrachhari">Khagrachhari</	option><Option value="Khulna">Khulna</Option><Option value="Kishoreganj">Kishoreganj</Option><Option value="Kurigram">Kurigram</Option><Option value="Kushtia">Kushtia</Option><Option value="Lakshmipur">Lakshmipur</Option><Option value="Lalmonirhat">Lalmonirhat</Option><Option value="Madaripur">Madaripur</Option><Option value="Magura">Magura</Option><Option value="Manikganj">Manikganj</Option><Option value="Meherpur">Meherpur</Option><Option value="Moulvibazar">Moulvibazar</Option><Option value="Munshiganj">Munshiganj</Option><Option value="Mymensingh">Mymensingh</Option><Option value="Naogaon">Naogaon</Option><Option value="Narail">Narail</Option><Option value="Narayanganj">Narayanganj</Option><Option value="Narsingdi">Narsingdi</Option><Option value="Natore">Natore</Option><Option value="Netrokona">Netrokona</Option><Option value="Nilphamari">Nilphamari</Option><Option	value]="Noakhali">Noakhali"</-option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="form-label">Division <span class="required-star">*</span></label>
-                            <select id="present_division" onchange="window.syncAddress()" class="form-input" required>
-                                <option value="">Select Division</option>
-                                <option value="Barishal">Barishal</option>
-                                <option value="Chattogram">Chattogram</option>
-                                <option value="Dhaka">Dhaka</option>
-                                <option value="Khulna">Khulna</option>
-                                <option value="Mymensingh">Mymensingh</option>
-                                <option value="Rajshahi">Rajshahi</option>
-                                <option value="Rangpur">Rangpur</option>
-                                <option value="Sylhet">Sylhet</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-gray-50 dark:bg-gray-900/40 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 relative">
-                    <div class="flex justify-between items-center mb-4 border-b border-pink-100 dark:border-pink-900/30 pb-2">
-                        <h4 class="text-[11px] font-black text-themePink uppercase tracking-widest">Permanent Address</h4>
-                        
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" id="same_as_present" onchange="window.togglePermanentAddress()" class="w-4 h-4 text-themeGreen border-gray-300 rounded focus:ring-themeGreen cursor-pointer">
-                            <label for="same_as_present" class="text-xs font-bold text-gray-600 dark:text-gray-400 cursor-pointer select-none">Same as Present</label>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="col-span-2">
-                            <label class="form-label">Village / Road <span class="required-star">*</span></label>
-                            <input type="text" id="permanent_village" class="form-input" placeholder="Enter Village / Road" required>
-                        </div>
-                        <div>
-                            <label class="form-label">Post Office <span class="required-star">*</span></label>
-                            <input type="text" id="permanent_post_office" class="form-input" placeholder="Enter Post Office" required>
-                        </div>
-                        <div>
-                            <label class="form-label">Post Code</label>
-                            <input type="text" id="permanent_post_code" class="form-input" placeholder="e.g. 6600">
-                        </div>
-                        
-                        <div>
-                            <label class="form-label">District <span class="required-star">*</span></label>
-                            <select id="permanent_district" class="form-input" required>
-                                <option value="">Select District</option>
-                                <option value="Bagerhat">Bagerhat</option><option value="Bandarban">Bandarban</option><option value="Barguna">Barguna</option><option value="Barishal">Barishal</option><option value="Bhola">Bhola</option><option value="Bogura">Bogura</option><option value="Brahmanbaria">Brahmanbaria</option><option value="Chandpur">Chandpur</option><option value="Chapainawabganj">Chapainawabganj</option><option value="Chattogram">Chattogram</option><option value="Chuadanga">Chuadanga</option><option value="Cox's Bazar">Cox's Bazar</option><option value="Cumilla">Cumilla</option><option value="Dhaka">Dhaka</option><option value="Dinajpur">Dinajpur</option><option value="Faridpur">Faridpur</option><option value="Feni">Feni</option><option value="Gaibandha">Gaibandha</option><option value="Gazipur">Gazipur</option><option value="Gopalganj">Gopalganj</option><option value="Habiganj">Habiganj</option><option value="Jamalpur">Jamalpur</option><option value="Jashore">Jashore</option><option value="Jhalokati">Jhalokati</option><option value="Jhenaidah">Jhenaidah</option><option value="Joypurhat">Joypurhat</option><option value="Khagrachhari">Khagrachhari</option><option value="Khulna">Khulna</option><option value="Kishoreganj">Kishoreganj</option><option value="Kurigram">Kurigram</option><option value="Kushtia">Kushtia</option><option value="Lakshmipur">Lakshmipur</option><option value="Lalmonirhat">Lalmonirhat</option><option value="Madaripur">Madaripur</option><option value="Magura">Magura</option><option value="Manikganj">Manikganj</option><option value="Meherpur">Meherpur</option><option value="Moulvibazar">Moulvibazar</option><option value="Munshiganj">Munshiganj</option><option value="Mymensingh">Mymensingh</option><option value="Naogaon">Naogaon</option><option value="Narail">Narail</option><option value="Narayanganj">Narayanganj</option><option value="Narsingdi">Narsingdi</option><option value="Natore">Natore</option><option value="Netrokona">Netrokona</option><option value="Nilphamari">Nilphamari</option><option value="Noakhali">Noakhali</option><option value="Pabna">Pabna</option><option value="Panchagarh">Panchagarh</option><option value="Patuakhali">Patuakhali</option><option value="Pirojpur">Pirojpur</option><option value="Rajbari">Rajbari</option><option value="Rajshahi">Rajshahi</option><option value="Rangamati">Rangamati</option><option value="Rangpur">Rangpur</option><option value="Satkhira">Satkhira</option><option value="Shariatpur">Shariatpur</option><option value="Sherpur">Sherpur</option><option value="Sirajganj">Sirajganj</option><option value="Sunamganj">Sunamganj</option><option value="Sylhet">Sylhet</option><option value="Tangail">Tangail</option><option value="Thakurgaon">Thakurgaon</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="form-label">Division <span class="required-star">*</span></label>
-                            <select id="permanent_division" class="form-input" required>
-                                <option value="">Select Division</option>
-                                <option value="Barishal">Barishal</option>
-                                <option value="Chattogram">Chattogram</option>
-                                <option value="Dhaka">Dhaka</option>
-                                <option value="Khulna">Khulna</option>
-                                <option value="Mymensingh">Mymensingh</option>
-                                <option value="Rajshahi">Rajshahi</option>
-                                <option value="Rangpur">Rangpur</option>
-                                <option value="Sylhet">Sylhet</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex flex-col md:flex-row gap-4 items-center justify-between pt-10 border-t border-gray-100 dark:border-gray-700 mt-6">
-                <div class="flex gap-3 w-full md:w-auto">
-                    <a href="{{ route('students.index') }}" class="flex-1 md:flex-none bg-themeRed hover:bg-red-800 text-white font-black py-4 px-10 rounded-2xl shadow-lg transition-all text-center uppercase text-xs tracking-widest">Close</a>
-                    <button type="reset" class="flex-1 md:flex-none bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-black py-4 px-10 rounded-2xl hover:bg-gray-200 transition-all uppercase text-xs tracking-widest border border-gray-200 dark:border-gray-600">Reset</button>
-                </div>
-                
-                <button type="submit" class="w-full md:w-auto bg-themeGreen hover:bg-green-900 text-white font-black py-5 px-24 rounded-2xl shadow-2xl transition-all hover:scale-[1.02] active:scale-95 uppercase tracking-[0.2em] text-sm">
-                    Confirm Admission
-                </button>
-            </div>
-        </form>
-
-        <div class="mt-12 text-center border-t border-gray-50 dark:border-gray-900 pt-6">
-            <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em]">
-                Powered by <a href="https://www.codenextit.com" target="_blank" class="text-themeGreen dark:text-green-600 hover:underline decoration-2">Code Next IT</a>
-            </p>
+    <!-- Student Identity Auto Card -->
+    <div class="id-display-card w-full md:w-auto min-w-[260px] p-3.5 rounded-2xl shadow-sm">
+        <label class="text-[10px] font-black text-themeBlue uppercase tracking-widest block mb-1">Student Identity (Auto)</label>
+        <div class="relative flex items-center justify-between">
+            <span class="text-sm font-mono font-black text-themeBlue dark:text-themeBlue/90">{{ date('Y') }}-XX-XXXX</span>
+            <svg class="w-4 h-4 text-themeBlue/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
         </div>
     </div>
+</div>
+
+<form id="admissionForm" onsubmit="event.preventDefault(); window.SaveStudent();">
+    
+    <!-- Section 1: Academic Details -->
+    <div class="flex items-center gap-2 mb-6">
+        <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-themeBlue to-themeGreen"></span>
+        <h3 class="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider font-secondary">Academic Details</h3>
+    </div>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 mb-10 p-6 bg-gray-50/50 dark:bg-themeDark/30 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
+        <!-- Branch -->
+        <div x-data="dropdownState('branch_id', 'Select Branch', '/ajax/branches', 'branchData', 'branch_name', 'id')" class="relative">
+            <label class="form-label text-themeBlue">Branch <span class="required-star">*</span></label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span x-text="selectedLabel">Select Branch</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="branch_id" value="">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <template x-for="opt in options" :key="opt.id">
+                    <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                        <span x-text="opt.name"></span>
+                        <template x-if="selectedValue == opt.id">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <!-- Class -->
+        <div x-data="dropdownState('class_id', 'Select Class', '/ajax/classes', 'classData', 'class_name', 'id')" class="relative">
+            <label class="form-label text-themeBlue">Class <span class="required-star">*</span></label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span x-text="selectedLabel">Select Class</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="class_id" value="">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <template x-for="opt in options" :key="opt.id">
+                    <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                        <span x-text="opt.name"></span>
+                        <template x-if="selectedValue == opt.id">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <!-- Section -->
+        <div x-data="dropdownState('section_id', 'Select Section', '/ajax/sections', 'sectionData', 'section_name', 'id')" class="relative">
+            <label class="form-label text-themeBlue">Section <span class="required-star">*</span></label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span x-text="selectedLabel">Select Section</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="section_id" value="">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <template x-for="opt in options" :key="opt.id">
+                    <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                        <span x-text="opt.name"></span>
+                        <template x-if="selectedValue == opt.id">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <!-- Shift -->
+        <div x-data="dropdownState('shift_id', 'Select Shift', '/ajax/shifts', 'shiftData', 'shift_name', 'id')" class="relative">
+            <label class="form-label text-themeBlue">Shift</label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span x-text="selectedLabel">Select Shift</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="shift_id" value="">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <button type="button" @click="select(null)" :class="selectedValue === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                    <span>Select Shift</span>
+                </button>
+                <template x-for="opt in options" :key="opt.id">
+                    <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                        <span x-text="opt.name"></span>
+                        <template x-if="selectedValue == opt.id">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <!-- Session -->
+        <div x-data="dropdownState('session_year_id', 'Select Session', '/ajax/sessions', 'sessionData', 'session_name', 'id')" class="relative">
+            <label class="form-label text-themeBlue">Session <span class="required-star">*</span></label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span x-text="selectedLabel">Select Session</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="session_year_id" value="">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <template x-for="opt in options" :key="opt.id">
+                    <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                        <span x-text="opt.name"></span>
+                        <template x-if="selectedValue == opt.id">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Basic Information -->
+    <div class="flex items-center gap-2 mb-6">
+        <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-themeBlue to-themeGreen"></span>
+        <h3 class="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider font-secondary">Basic Information</h3>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+        <div>
+            <label class="form-label">Student Name <span class="required-star">*</span></label>
+            <input type="text" id="student_name" class="form-input" placeholder="Full Name" required>
+        </div>
+        <div>
+            <label class="form-label">Name in Bangla</label>
+            <input type="text" id="name_in_bangla" class="form-input" placeholder="Name in Bangla">
+        </div>
+        <div>
+            <label class="form-label">Class Roll <span class="required-star">*</span></label>
+            <input type="text" id="roll_number" class="form-input" placeholder="Roll No" required>
+        </div>
+        <div>
+            <label class="form-label">Date of Birth <span class="required-star">*</span></label>
+            <input type="date" id="dob" class="form-input" required>
+        </div>
+        
+        <div>
+            <label class="form-label">Birth Certificate No</label>
+            <input type="text" id="birth_certificate" class="form-input" placeholder="Reg Number">
+        </div>
+
+        <!-- Gender -->
+        <div x-data="staticDropdownState('gender', 'Select Gender', [{id: 'Male', name: 'Male'}, {id: 'Female', name: 'Female'}])" class="relative">
+            <label class="form-label">Gender <span class="required-star">*</span></label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span x-text="selectedLabel">Select Gender</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="gender" value="">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <template x-for="opt in options" :key="opt.id">
+                    <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                        <span x-text="opt.name"></span>
+                        <template x-if="selectedValue == opt.id">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <!-- Religion -->
+        <div x-data="staticDropdownState('religion', 'Islam', [{id: 'Islam', name: 'Islam'}, {id: 'Hindu', name: 'Hindu'}, {id: 'Christian', name: 'Christian'}, {id: 'Buddhist', name: 'Buddhist'}], 'Islam')" class="relative">
+            <label class="form-label">Religion</label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span x-text="selectedLabel">Islam</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="religion" value="Islam">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <template x-for="opt in options" :key="opt.id">
+                    <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                        <span x-text="opt.name"></span>
+                        <template x-if="selectedValue == opt.id">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <!-- Blood Group -->
+        <div x-data="staticDropdownState('blood_group', 'None', [{id: '', name: 'None'}, {id: 'A+', name: 'A+'}, {id: 'A-', name: 'A-'}, {id: 'B+', name: 'B+'}, {id: 'B-', name: 'B-'}, {id: 'O+', name: 'O+'}, {id: 'O-', name: 'O-'}, {id: 'AB+', name: 'AB+'}, {id: 'AB-', name: 'AB-'}], '')" class="relative">
+            <label class="form-label">Blood Group</label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span x-text="selectedLabel">None</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="blood_group" value="">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <template x-for="opt in options" :key="opt.id">
+                    <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                        <span x-text="opt.name"></span>
+                        <template x-if="selectedValue == opt.id">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <div>
+            <label class="form-label">Student Email</label>
+            <input type="email" id="email" class="form-input" placeholder="Email Address">
+        </div>
+
+        <!-- SMS Status -->
+        <div x-data="staticDropdownState('sms_status', 'Active', [{id: 'Active', name: 'Active'}, {id: 'Inactive', name: 'Inactive'}], 'Active')" class="relative">
+            <label class="form-label">SMS Status</label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span x-text="selectedLabel">Active</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="sms_status" value="Active">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <template x-for="opt in options" :key="opt.id">
+                    <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                        <span x-text="opt.name"></span>
+                        <template x-if="selectedValue == opt.id">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <!-- Student Photo -->
+        <div>
+            <label class="form-label">Student Photo</label>
+            <div class="flex items-center gap-3 bg-gray-50/50 dark:bg-themeDark/40 p-1.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 h-11">
+                <div class="w-8 h-8 shrink-0 bg-gray-100 dark:bg-themeNavy/50 flex items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-700 overflow-hidden relative">
+                    <img id="photoPreview" src="" alt="Preview" class="w-full h-full object-cover hidden absolute inset-0 z-10">
+                    <svg id="photoIcon" class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <div class="flex-1 relative h-full">
+                    <input type="file" id="photo" onchange="window.previewImage(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/png, image/jpeg, image/jpg">
+                    <div class="h-full flex items-center justify-center bg-gray-105 hover:bg-gray-205 dark:bg-gray-800 dark:hover:bg-themeNavy/50 text-gray-750 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg transition border border-gray-200 dark:border-gray-855/80">
+                        Choose Photo
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Upload -->
+        <div>
+            <label class="form-label">Document (Birth Cert/NID)</label>
+            <div class="relative flex items-center justify-between gap-3 bg-gray-50/50 dark:bg-themeDark/40 p-1.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 h-11 cursor-pointer hover:bg-gray-100/50 dark:hover:bg-themeDark/60 transition" onclick="document.getElementById('document_file').click()">
+                <input type="file" id="document_file" class="hidden" accept=".pdf, image/jpeg, image/png, image/jpg" onchange="window.previewDocument(event)">
+                
+                <div id="docPlaceholder" class="flex items-center text-gray-400 pl-1.5 w-full">
+                    <svg class="w-4 h-4 mr-2 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    <span class="text-xs font-semibold">Upload PDF/Image</span>
+                </div>
+
+                <div id="docPreviewInfo" class="hidden flex items-center justify-between w-full pl-1.5 pr-1">
+                    <div class="flex items-center overflow-hidden">
+                        <svg class="w-4 h-4 text-emerald-550 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <div class="truncate max-w-[120px]">
+                            <p id="docFileName" class="text-[10px] font-bold text-gray-700 dark:text-gray-300 truncate"></p>
+                            <p id="docFileSize" class="text-[8px] text-gray-500"></p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="window.removeDocument(event)" class="text-red-500 hover:text-red-700 p-1 shrink-0 bg-red-50 dark:bg-red-950/20 rounded-md shadow-sm transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Family Details -->
+    <div class="flex items-center gap-2 mb-6">
+        <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-themeBlue to-themeGreen"></span>
+        <h3 class="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider font-secondary">Family Details</h3>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <!-- Father's Details -->
+        <div class="bg-gray-50/50 dark:bg-themeDark/30 p-6 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
+            <h4 class="text-[10px] font-black text-themeBlue uppercase mb-4 tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-2">Father's Details</h4>
+            <div class="space-y-4">
+                <input type="text" id="father_name" class="form-input" placeholder="Father's Name *" required>
+                <input type="text" id="father_occupation" class="form-input" placeholder="Occupation">
+                <input type="text" id="father_mobile" class="form-input" placeholder="Father's Mobile *" required>
+                <input type="text" id="father_nid" class="form-input" placeholder="Father's NID">
+            </div>
+        </div>
+
+        <!-- Mother's Details -->
+        <div class="bg-gray-50/50 dark:bg-themeDark/30 p-6 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
+            <h4 class="text-[10px] font-black text-themeBlue uppercase mb-4 tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-2">Mother's Details</h4>
+            <div class="space-y-4">
+                <input type="text" id="mother_name" class="form-input" placeholder="Mother's Name *" required>
+                <input type="text" id="mother_occupation" class="form-input" placeholder="Occupation">
+                <input type="text" id="mother_mobile" class="form-input" placeholder="Mother's Mobile *" required>
+                <input type="text" id="mother_nid" class="form-input" placeholder="Mother's NID">
+            </div>
+        </div>
+
+        <!-- Emergency Contact -->
+        <div class="bg-gray-50/50 dark:bg-themeDark/30 p-6 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
+            <h4 class="text-[10px] font-black text-themeGreen uppercase mb-4 tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-2">Emergency Contact</h4>
+            <div class="space-y-4">
+                <input type="text" id="guardian_name" class="form-input" placeholder="Guardian Name">
+                <input type="text" id="guardian_occupation" class="form-input" placeholder="Occupation">
+                <input type="text" id="guardian_mobile" class="form-input" placeholder="Guardian Mobile *" required>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Address Information -->
+    <div class="flex items-center gap-2 mb-6">
+        <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-themeBlue to-themeGreen"></span>
+        <h3 class="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider font-secondary">Address Information</h3>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <!-- Present Address -->
+        <div class="bg-gray-50/50 dark:bg-themeDark/30 p-6 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
+            <h4 class="text-[10px] font-black text-themeBlue uppercase mb-4 tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-2">Present Address</h4>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                    <label class="form-label">Village / Road <span class="required-star">*</span></label>
+                    <input type="text" id="present_village" oninput="window.syncAddress()" class="form-input" placeholder="Enter Village / Road" required>
+                </div>
+                <div>
+                    <label class="form-label">Post Office <span class="required-star">*</span></label>
+                    <input type="text" id="present_post_office" oninput="window.syncAddress()" class="form-input" placeholder="Enter Post Office" required>
+                </div>
+                <div>
+                    <label class="form-label">Post Code</label>
+                    <input type="text" id="present_post_code" oninput="window.syncAddress()" class="form-input" placeholder="e.g. 6600">
+                </div>
+
+                <!-- Present District -->
+                <div x-data="staticDropdownState('present_district', 'Select District', window.districtOptions, '', window.syncAddress)" class="relative">
+                    <label class="form-label">District <span class="required-star">*</span></label>
+                    <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span x-text="selectedLabel">Select District</span>
+                        <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <input type="hidden" id="present_district" value="">
+                    
+                    <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                        <template x-for="opt in options" :key="opt.id">
+                            <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                                <span x-text="opt.name"></span>
+                                <template x-if="selectedValue == opt.id">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Present Division -->
+                <div x-data="staticDropdownState('present_division', 'Select Division', window.divisionOptions, '', window.syncAddress)" class="relative">
+                    <label class="form-label">Division <span class="required-star">*</span></label>
+                    <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span x-text="selectedLabel">Select Division</span>
+                        <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <input type="hidden" id="present_division" value="">
+                    
+                    <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                        <template x-for="opt in options" :key="opt.id">
+                            <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                                <span x-text="opt.name"></span>
+                                <template x-if="selectedValue == opt.id">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permanent Address -->
+        <div class="bg-gray-50/50 dark:bg-themeDark/30 p-6 rounded-3xl border border-gray-150 dark:border-white/[0.06] relative">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-white/[0.06] pb-2">
+                <h4 class="text-[10px] font-black text-themeBlue uppercase tracking-widest">Permanent Address</h4>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="same_as_present" onchange="window.togglePermanentAddress()" class="w-4 h-4 text-themeBlue border-gray-300 rounded focus:ring-themeBlue/15 cursor-pointer">
+                    <label for="same_as_present" class="text-xs font-black text-gray-500 cursor-pointer select-none">Same as Present</label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                    <label class="form-label">Village / Road <span class="required-star">*</span></label>
+                    <input type="text" id="permanent_village" class="form-input" placeholder="Enter Village / Road" required>
+                </div>
+                <div>
+                    <label class="form-label">Post Office <span class="required-star">*</span></label>
+                    <input type="text" id="permanent_post_office" class="form-input" placeholder="Enter Post Office" required>
+                </div>
+                <div>
+                    <label class="form-label">Post Code</label>
+                    <input type="text" id="permanent_post_code" class="form-input" placeholder="e.g. 6600">
+                </div>
+
+                <!-- Permanent District -->
+                <div x-data="staticDropdownState('permanent_district', 'Select District', window.districtOptions, '')" class="relative">
+                    <label class="form-label">District <span class="required-star">*</span></label>
+                    <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left" :disabled="disabled" :class="disabled ? 'opacity-60 cursor-not-allowed bg-gray-100 dark:bg-themeDark/30 border-gray-200 dark:border-gray-850/50' : ''">
+                        <span x-text="selectedLabel">Select District</span>
+                        <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <input type="hidden" id="permanent_district" value="">
+                    
+                    <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                        <template x-for="opt in options" :key="opt.id">
+                            <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                                <span x-text="opt.name"></span>
+                                <template x-if="selectedValue == opt.id">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Permanent Division -->
+                <div x-data="staticDropdownState('permanent_division', 'Select Division', window.divisionOptions, '')" class="relative">
+                    <label class="form-label">Division <span class="required-star">*</span></label>
+                    <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left" :disabled="disabled" :class="disabled ? 'opacity-60 cursor-not-allowed bg-gray-100 dark:bg-themeDark/30 border-gray-200 dark:border-gray-855/50' : ''">
+                        <span x-text="selectedLabel">Select Division</span>
+                        <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <input type="hidden" id="permanent_division" value="">
+                    
+                    <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                        <template x-for="opt in options" :key="opt.id">
+                            <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                                <span x-text="opt.name"></span>
+                                <template x-if="selectedValue == opt.id">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons Footer -->
+    <div class="flex flex-col sm:flex-row gap-4 items-center justify-between pt-8 border-t border-gray-100 dark:border-white/[0.06] mt-8">
+        <div class="flex gap-3 w-full sm:w-auto">
+            <a href="{{ route('students.index') }}" class="btn-sm bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450 border border-rose-100 dark:border-rose-900/30 rounded-xl hover:-translate-y-0.5 hover:shadow-md transition-all font-black uppercase tracking-wider text-center flex items-center justify-center !h-10 !px-8">Close</a>
+            <button type="reset" class="btn-sm bg-gray-150 dark:bg-themeNavy/50 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-xl hover:-translate-y-0.5 hover:shadow-md transition-all font-black uppercase tracking-wider !h-10 !px-8">Reset</button>
+        </div>
+        
+        <button type="submit" class="btn bg-gradient-to-r from-themeBlue to-themeGreen text-white border-none rounded-xl hover:-translate-y-0.5 hover:shadow-lg transition-all font-black uppercase tracking-widest !h-11 !px-16 w-full sm:w-auto">
+            Confirm Admission
+        </button>
+    </div>
+</form>
+
+<!-- Footer Branding -->
+<div class="mt-12 text-center border-t border-gray-50 dark:border-white/[0.04] pt-6">
+    <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em]">
+        Powered by <a href="https://www.codenextit.com" target="_blank" class="text-themeBlue dark:text-themeBlue/80 hover:underline decoration-2">Code Next IT</a>
+    </p>
 </div>
 @endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
-    const getAuthHeaders = () => ({ 
-        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content } 
-    });
-
-    document.addEventListener('DOMContentLoaded', async function() {
-        try {
-            const [branches, classes, sections, sessions, shifts] = await Promise.all([
-                axios.get('/ajax/branches', getAuthHeaders()),
-                axios.get('/ajax/classes', getAuthHeaders()),
-                axios.get('/ajax/sections', getAuthHeaders()),
-                axios.get('/ajax/sessions', getAuthHeaders()),
-                axios.get('/ajax/shifts', getAuthHeaders())
-            ]);
-
-            const fill = (id, data, key) => {
-                let s = document.getElementById(id);
-                if(data && s) data.forEach(i => s.add(new Option(i[key], i.id)));
-            };
-
-            fill('branch_id', branches.data.branchData, 'branch_name');
-            fill('class_id', classes.data.classData, 'class_name');
-            fill('section_id', sections.data.sectionData, 'section_name');
-            fill('session_year_id', sessions.data.sessionData, 'session_name');
-            fill('shift_id', shifts.data.shiftData, 'shift_name');
-
-        } catch (e) { console.error("Dropdown error:", e); }
-    });
-
-    // ফটো প্রিভিউ ফাংশন (SVG আইকন হাইড/শো করার লজিক সহ)
+    // PHOTO PREVIEW (with SVG hide/show)
     window.previewImage = e => {
         const file = e.target.files[0];
         const preview = document.getElementById('photoPreview');
@@ -402,13 +793,13 @@
         }
     };
 
-    // ডকুমেন্ট প্রিভিউ ফাংশন
+    // DOCUMENT PREVIEW
     window.previewDocument = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         if (file.size > 2 * 1024 * 1024) {
-            alert("File size is too large! Maximum allowed size is 2MB.");
+            showAlert("File size is too large! Maximum allowed size is 2MB.", "Attention");
             e.target.value = '';
             return;
         }
@@ -441,16 +832,20 @@
                 permanent.value = '';
                 permanent.disabled = false;
             }
+            // Dispatch change event to let Alpine components update UI
+            permanent.dispatchEvent(new Event('change'));
         });
     };
 
     window.syncAddress = function() {
         if(document.getElementById('same_as_present').checked) {
-            document.getElementById('permanent_village').value = document.getElementById('present_village').value;
-            document.getElementById('permanent_post_office').value = document.getElementById('present_post_office').value;
-            document.getElementById('permanent_post_code').value = document.getElementById('present_post_code').value;
-            document.getElementById('permanent_district').value = document.getElementById('present_district').value;
-            document.getElementById('permanent_division').value = document.getElementById('present_division').value;
+            ['village', 'post_office', 'post_code', 'district', 'division'].forEach(f => {
+                const present = document.getElementById('present_' + f);
+                const permanent = document.getElementById('permanent_' + f);
+                permanent.value = present.value;
+                // Dispatch change event to let Alpine components update UI
+                permanent.dispatchEvent(new Event('change'));
+            });
         }
     };
 
@@ -467,6 +862,17 @@
             'guardian_name', 'guardian_occupation', 'guardian_mobile', 'sms_status', 'branch_id', 'class_id', 'section_id', 
             'shift_id', 'session_year_id', 'birth_certificate'
         ];
+
+        // Frontend validation for required fields
+        const requiredFields = ['branch_id', 'class_id', 'section_id', 'session_year_id', 'student_name', 'roll_number', 'dob', 'gender', 'father_name', 'father_mobile', 'mother_name', 'mother_mobile', 'guardian_mobile', 'present_village', 'present_post_office', 'present_district', 'present_division', 'permanent_village', 'permanent_post_office', 'permanent_district', 'permanent_division'];
+        for(let f of requiredFields) {
+            const el = document.getElementById(f);
+            if(!el || !el.value.trim()) {
+                let prettyName = f.replace('_id', '').replace('_', ' ').toUpperCase();
+                showAlert(`Please select or fill in the required field: ${prettyName}`, "Attention");
+                return;
+            }
+        }
 
         fields.forEach(f => {
             const el = document.getElementById(f);
@@ -489,11 +895,11 @@
             });
 
             if (res.status === 201) {
-                alert(`SUCCESS!\nIdentity: ${res.data.identity}`);
+                await showAlert(`SUCCESS!\nIdentity: ${res.data.identity}`, "Success");
                 window.location.href = '/students';
             }
         } catch (err) {
-            alert(err.response?.data?.message || 'Check required fields or file sizes!');
+            showAlert(err.response?.data?.message || 'Check required fields or file sizes!', "Error");
         } finally {
             document.querySelector('button[type="submit"]').innerText = 'Confirm Admission';
             document.querySelector('button[type="submit"]').disabled = false;

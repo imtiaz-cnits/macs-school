@@ -74,7 +74,7 @@
 
         <div class="text-center md:text-left flex-1 z-10">
             <h2 id="view_student_name" class="text-3xl md:text-5xl font-black text-gray-900 dark:text-white mb-2 uppercase tracking-tighter">Student Name</h2>
-            <p id="view_name_in_bangla" class="text-xl text-themeGreen dark:text-green-500 mb-8 font-bold">বাংলা নাম</p>
+            <p id="view_name_in_bangla" class="text-xl text-themeGreen dark:text-green-500 mb-8 font-bold">Name in Bangla</p>
             
             <div class="flex flex-wrap justify-center md:justify-start gap-4">
                 <div class="identity-badge" id="badge_identity">PIS-0000-00-0000</div>
@@ -280,7 +280,7 @@
 
         } catch (err) {
             console.error(err);
-            alert("Critical Error: Failed to fetch student data.");
+            await showAlert("Critical Error: Failed to fetch student data.", "Error");
             window.location.href = '/students';
         }
     });
