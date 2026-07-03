@@ -45,15 +45,15 @@
             
             <input type="hidden" name="session_year_id" :value="form.session_year_id">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
                 <!-- Exam Name -->
-                <div>
+                <div class="md:col-span-5">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Exam Name *</label>
                     <input type="text" name="name" placeholder="Ex: 1st Term Exam 2026" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all" required>
                 </div>
                 
                 <!-- Academic Session -->
-                <div class="relative" @click.away="dropdownOpen = false">
+                <div class="relative md:col-span-5" @click.away="dropdownOpen = false">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Academic Session *</label>
                     <button type="button" @click="dropdownOpen = !dropdownOpen" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="sessionText"></span>
@@ -73,12 +73,13 @@
                         @endforeach
                     </div>
                 </div>
-            </div>
 
-            <div class="flex justify-end">
-                <button type="submit" class="bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black py-4 px-12 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all uppercase tracking-widest text-xs active:scale-95">
-                    Save Exam
-                </button>
+                <!-- Submit Button -->
+                <div class="md:col-span-2 flex justify-end">
+                    <button type="submit" class="w-full h-11 bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all uppercase tracking-widest text-xs active:scale-95 flex items-center justify-center">
+                        Save Exam
+                    </button>
+                </div>
             </div>
         </form>
     </div>

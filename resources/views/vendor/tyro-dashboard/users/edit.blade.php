@@ -197,7 +197,7 @@
                     @elseif($editUser->id !== $user->id)
                         <button type="button" class="w-full bg-amber-600 hover:bg-amber-750 text-white font-black py-3.5 px-6 rounded-xl transition-all uppercase tracking-widest text-[10px] flex items-center justify-center gap-2" onclick="openSuspendModal()">
                             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0V10.5m-2.25 10.5h13.5c.621 0 1.125-.504 1.125-1.125V11.25c0-.621-.504-1.125-1.125-1.125H5.25c-.621 0-1.125.504-1.125 1.125v7.875c0 .621.504 1.125 1.125 1.125z" />
                             </svg>
                             Suspend User
                         </button>

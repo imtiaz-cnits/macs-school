@@ -1,131 +1,241 @@
-
+@php
+    $sidebarUser = auth()->user();
+    $hasPhoto = $sidebarUser && ((method_exists($sidebarUser, 'hasProfilePhotoColumn') && $sidebarUser->hasProfilePhotoColumn() && $sidebarUser->profile_photo_path) || (method_exists($sidebarUser, 'hasGravatarColumn') && $sidebarUser->hasGravatarColumn() && $sidebarUser->use_gravatar && $sidebarUser->email));
+    
+    // Determine the initial drill-down view based on the current active route
+    $initialView = 'main';
+    if (request()->routeIs('students.*', 'student.*', 'id-cards.*')) {
+        $initialView = 'students';
+    } elseif (request()->routeIs('teachers.*', 'teacher.*', 'staff-attendance.*')) {
+        $initialView = 'teachers';
+    } elseif (request()->is('*resources*')) {
+        $initialView = 'resources';
+    }
+@endphp
 
 <aside class="sidebar group/sidebar !overflow-y-hidden bg-[var(--sidebar)] border-r border-[var(--sidebar-border)]" id="sidebar">
+    <!-- Sidebar Header (Vercel Style) -->
     <div class="sidebar-header h-16 flex items-center !px-5 border-b border-[var(--sidebar-border)]">
        <a href="{{ route('tyro-dashboard.index') }}" class="sidebar-logo flex items-center gap-2.5 !no-underline !border-none">
-            <div class="!w-10 !h-10 !min-w-[40px] !min-h-[40px] overflow-hidden !bg-white !rounded-xl !flex !items-center !justify-center border border-white/20 !shrink-0 shadow-md">
+            <div class="!w-9 !h-9 !min-w-[36px] !min-h-[36px] overflow-hidden !bg-white !rounded-lg !flex !items-center !justify-center border border-gray-200 dark:border-white/10 !shrink-0 shadow-sm">
                 <img src="{{ asset('img/macs_logo.jpeg') }}" 
                      style="width: 100% !important; height: 100% !important; object-fit: contain !important; display: block !important; padding: 1px !important;" 
                      alt="{{ config('app.name', 'MACS School & College') }} Logo">
             </div>
             
-            <span class="sidebar-logo-text sidebar-text !font-black !whitespace-nowrap !overflow-hidden !text-ellipsis bg-gradient-to-r from-themeBlue to-themeGreen bg-clip-text !text-transparent !text-[0.95rem] tracking-tight uppercase">
-                {{ config('app.name', 'MACS School & College') }}
+            <span class="sidebar-logo-text sidebar-text !font-black !whitespace-nowrap !overflow-hidden !text-ellipsis bg-gradient-to-r from-themeBlue to-themeGreen bg-clip-text !text-transparent !text-[0.9rem] tracking-tight uppercase">
+                MACS School
             </span>
         </a>
     </div>
    
-    <nav class="sidebar-nav !overflow-y-auto !flex-1 !pt-4 scrollbar-thin scrollbar-thumb-[var(--border)] scrollbar-track-transparent">
+    <!-- Sidebar Nav with Alpine Drilldown System -->
+    <nav class="sidebar-nav !overflow-y-auto !overflow-x-hidden !flex-1 !pt-4 scrollbar-thin scrollbar-track-transparent" x-data="{ currentView: '{{ $initialView }}' }">
         
-        <div class="sidebar-section mb-2 !px-1 group relative">
-            <a href="{{ route('dashboard.dashboard') }}" class="group/link sidebar-link !mx-2 !mb-1 py-2.5 !px-4 !rounded-xl !text-[14px] !font-semibold !normal-case !tracking-normal !text-[var(--sidebar-foreground)] border-l-4 border-transparent transition-all duration-150 ease-in-out whitespace-nowrap overflow-hidden !no-underline !shadow-none hover:!bg-[var(--sidebar-accent)] hover:!text-[var(--sidebar-accent-foreground)] [&.active]:!bg-[var(--sidebar-accent)] [&.active]:!text-[var(--sidebar-accent-foreground)] [&.active]:!border-themeBlue [&.active]:!pl-3 !flex !items-center !gap-3 group-[.collapsed]/sidebar:!justify-center group-[.collapsed]/sidebar:!py-2.5 group-[.collapsed]/sidebar:!px-0 group-[.collapsed]/sidebar:!mx-2.5 group-[.collapsed]/sidebar:!rounded-lg {{ request()->routeIs('dashboard.dashboard') ? 'active' : '' }}">
-                <svg class="w-5 h-5 opacity-70 shrink-0 group-hover/link:opacity-100 group-[.active]/link:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="10" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-                <span class="sidebar-text group-[.collapsed]/sidebar:hidden">Dashboard</span>
+        <!-- ==============================================
+             MAIN VIEW (Root Level Navigation)
+             ============================================== -->
+        <div x-show="currentView === 'main'" style="display: {{ $initialView === 'main' ? 'block' : 'none' }};" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-x-2" x-transition:enter-end="opacity-100 translate-x-0">
+            <!-- Dashboard Link (Direct link) -->
+            <a href="{{ route('dashboard.dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard.dashboard') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="10" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+                <span class="sidebar-text">Dashboard</span>
             </a>
-        </div>
 
-        <div class="sidebar-section mb-2 !px-1 group relative">
-            <a href="{{ route('tyro-dashboard.profile') }}" class="group/link sidebar-link !mx-2 !mb-1 py-2.5 !px-4 !rounded-xl !text-[14px] !font-semibold !normal-case !tracking-normal !text-[var(--sidebar-foreground)] border-l-4 border-transparent transition-all duration-150 ease-in-out whitespace-nowrap overflow-hidden !no-underline !shadow-none hover:!bg-[var(--sidebar-accent)] hover:!text-[var(--sidebar-accent-foreground)] [&.active]:!bg-[var(--sidebar-accent)] [&.active]:!text-[var(--sidebar-accent-foreground)] [&.active]:!border-themeBlue [&.active]:!pl-3 !flex !items-center !gap-3 group-[.collapsed]/sidebar:!justify-center group-[.collapsed]/sidebar:!py-2.5 group-[.collapsed]/sidebar:!px-0 group-[.collapsed]/sidebar:!mx-2.5 group-[.collapsed]/sidebar:!rounded-lg {{ request()->routeIs('tyro-dashboard.profile*') ? 'active' : '' }}">
-                <svg class="w-5 h-5 opacity-70 shrink-0 group-hover/link:opacity-100 group-[.active]/link:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <span class="sidebar-text group-[.collapsed]/sidebar:hidden">My Profile</span>
+            <!-- My Profile Link (Direct link) -->
+            <a href="{{ route('tyro-dashboard.profile') }}" class="sidebar-link {{ request()->routeIs('tyro-dashboard.profile*') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="sidebar-text">My Profile</span>
             </a>
-        </div>
 
-        @if(auth()->check() && (auth()->user()->hasRole('editor') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
-        
-        @php $isStudentOpen = request()->routeIs('students.*', 'student.*', 'id-cards.*'); @endphp
-        <div class="sidebar-section mb-2 !px-1 group relative {{ $isStudentOpen ? 'open' : '' }}">
-            <div class="sidebar-section-title cursor-pointer flex items-center justify-between select-none py-2.5 !px-4 !mx-2 !mb-1 !rounded-xl !text-[14px] !font-semibold !normal-case !tracking-normal !text-[var(--sidebar-foreground)] border-l-4 border-transparent transition-all duration-150 ease-in-out whitespace-nowrap overflow-hidden !no-underline !shadow-none hover:!bg-[var(--sidebar-accent)] hover:!text-[var(--sidebar-accent-foreground)] group-[.open]:!bg-[var(--sidebar-accent)] group-[.open]:!text-[var(--sidebar-accent-foreground)] group-[.open]:!border-themeBlue group-[.open]:!pl-3 group-[.collapsed]/sidebar:!justify-center group-[.collapsed]/sidebar:!py-2.5 group-[.collapsed]/sidebar:!px-0 group-[.collapsed]/sidebar:!mx-2.5 group-[.collapsed]/sidebar:!rounded-lg !gap-3" onclick="toggleMenuSection(this)">
-                <svg class="w-5 h-5 opacity-70 shrink-0 group-hover/section:opacity-100 group-[.open]:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M22 10v6M2 10l10-5 10 5-10 5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg><span class="sidebar-text group-[.collapsed]/sidebar:hidden group-[.collapsed]/sidebar:group-hover/section:!inline-block group-[.collapsed]/sidebar:group-hover/section:!text-[13px] group-[.collapsed]/sidebar:group-hover/section:!font-semibold group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:!normal-case group-[.collapsed]/sidebar:group-hover/section:!tracking-normal group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]">Student Management</span>
-                <svg class="chevron-icon w-4 h-4 transition-transform duration-300 ease-in-out opacity-90 shrink-0 group-[.open]:rotate-90 group-[.open]:opacity-100 group-[.collapsed]/sidebar:!hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
+            <!-- Student Management (Drilldown Trigger) -->
+            @if(auth()->check() && (auth()->user()->hasRole('editor') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+            <div class="relative group/trigger">
+                <button type="button" @click="currentView = 'students'" class="flex items-center justify-between sidebar-link border-none bg-transparent group !w-[calc(100%-16px)] !mx-2">
+                    <span class="flex items-center gap-2.5">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M22 10v6M2 10l10-5 10 5-10 5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>
+                        <span class="sidebar-text">Student Management</span>
+                    </span>
+                    <span class="w-5 h-5 rounded-[5px] flex items-center justify-center bg-gray-100/70 dark:bg-white/[0.04] border border-gray-200/50 dark:border-white/[0.05] transition-all group-hover:bg-gray-200/80 dark:group-hover:bg-white/[0.15] group-hover:border-gray-300 dark:group-hover:border-white/[0.18] shrink-0">
+                        <svg class="w-2.5 h-2.5 text-gray-400 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </span>
+                </button>
+                <div class="sidebar-popup-menu absolute left-[62px] top-0 ml-2 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-2 min-w-[200px] z-[9999] pointer-events-auto text-left hidden">
+                    <div class="px-4 py-1.5 border-b border-gray-100 dark:border-white/[0.05] text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
+                        Student Management
+                    </div>
+                    <a href="{{ route('students.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Students Lists</span>
+                    </a>
+                    <a href="{{ route('student.admission') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Add New Students</span>
+                    </a>
+                    @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+                    <a href="{{ route('id-cards.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>ID Card Generation</span>
+                    </a>
+                    <a href="{{ route('student.promotion') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Student Promotion</span>
+                    </a>
+                    @endif
+                </div>
             </div>
-            <div class="sidebar-submenu max-h-0 overflow-hidden transition-[max-height,padding] duration-300 ease-in-out !bg-transparent !rounded-none border-l border-[var(--sidebar-border)] !ml-[27px] !mr-2 !pl-1.5 !pt-0 !pb-0 group-[.open]:max-h-[1500px] group-[.open]:!py-1.5 group-[.collapsed]/sidebar:hidden group-[.collapsed]/sidebar:group-hover/section:!flex group-[.collapsed]/sidebar:group-hover/section:flex-col group-[.collapsed]/sidebar:group-hover/section:absolute group-[.collapsed]/sidebar:group-hover/section:left-[69px] group-[.collapsed]/sidebar:group-hover/section:top-0 group-[.collapsed]/sidebar:group-hover/section:!bg-[var(--sidebar)] group-[.collapsed]/sidebar:group-hover/section:border group-[.collapsed]/sidebar:group-hover/section:!border-[var(--sidebar-border)] group-[.collapsed]/sidebar:group-hover/section:rounded-lg group-[.collapsed]/sidebar:group-hover/section:shadow-xl group-[.collapsed]/sidebar:group-hover/section:min-w-[220px] group-[.collapsed]/sidebar:group-hover/section:z-[1000] group-[.collapsed]/sidebar:group-hover/section:!p-2 group-[.collapsed]/sidebar:group-hover/section:!max-h-none group-[.collapsed]/sidebar:group-hover/section:!overflow-visible group-[.collapsed]/sidebar:group-hover/section:!margin-0 group-[.collapsed]/sidebar:group-hover/section:before:content-[''] group-[.collapsed]/sidebar:group-hover/section:before:absolute group-[.collapsed]/sidebar:group-hover/section:before:top-0 group-[.collapsed]/sidebar:group-hover/section:before:-left-5 group-[.collapsed]/sidebar:group-hover/section:before:w-5 group-[.collapsed]/sidebar:group-hover/section:before:h-full group-[.collapsed]/sidebar:group-hover/section:before:bg-transparent group-[.collapsed]/sidebar:group-hover/section:before:z-[-1]">
-                <a href="{{ route('students.index') }}" class="group/link sidebar-link !mx-1.5 !mb-[2px] py-1.5 !px-2.5 !pl-4 !rounded-lg !text-[13px] !font-medium !text-[var(--sidebar-foreground)] !normal-case !tracking-normal opacity-85 hover:opacity-100 hover:!bg-[var(--sidebar-accent)] hover:!text-[var(--sidebar-accent-foreground)] [&.active]:opacity-100 [&.active]:!bg-[var(--sidebar-accent)] [&.active]:!text-[var(--sidebar-accent-foreground)] [&.active]:!font-semibold [&.active]:!pl-3 !shadow-none !flex !items-center !gap-2 group-[.collapsed]/sidebar:group-hover/section:!justify-start group-[.collapsed]/sidebar:group-hover/section:!p-2 group-[.collapsed]/sidebar:group-hover/section:!my-0.5 group-[.collapsed]/sidebar:group-hover/section:!mx-0 group-[.collapsed]/sidebar:group-hover/section:!flex group-[.collapsed]/sidebar:group-hover/section:!items-center group-[.collapsed]/sidebar:group-hover/section:!gap-2.5 group-[.collapsed]/sidebar:group-hover/section:!rounded-md group-[.collapsed]/sidebar:group-hover/section:!w-auto group-[.collapsed]/sidebar:group-hover/section:!text-left group-[.collapsed]/sidebar:group-hover/section:!bg-transparent group-[.collapsed]/sidebar:group-hover/section:!shadow-none group-[.collapsed]/sidebar:group-hover/section:hover:!bg-[var(--sidebar-accent)] group-[.collapsed]/sidebar:group-hover/section:hover:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:[&.active]:!bg-[var(--sidebar-primary)] group-[.collapsed]/sidebar:group-hover/section:[&.active]:!text-[var(--sidebar-primary-foreground)] {{ request()->routeIs('students.*') ? 'active' : '' }}">
-                    <svg class="!w-3 !h-3 opacity-70 shrink-0 group-hover/link:opacity-100 group-[.active]/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:!w-4 group-[.collapsed]/sidebar:group-hover/section:!h-4 group-[.collapsed]/sidebar:group-hover/section:!opacity-70 group-[.collapsed]/sidebar:group-hover/section:!block group-[.collapsed]/sidebar:group-hover/section:!m-0 group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-hover/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                    <span class="sidebar-text group-[.collapsed]/sidebar:hidden group-[.collapsed]/sidebar:group-hover/section:!inline-block group-[.collapsed]/sidebar:group-hover/section:!text-[13px] group-[.collapsed]/sidebar:group-hover/section:!font-semibold group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:!normal-case group-[.collapsed]/sidebar:group-hover/section:!tracking-normal group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]">Students Lists</span>
-                </a>
-                <a href="{{ route('student.admission') }}" class="group/link sidebar-link !mx-1.5 !mb-[2px] py-1.5 !px-2.5 !pl-4 !rounded-lg !text-[13px] !font-medium !text-[var(--sidebar-foreground)] !normal-case !tracking-normal opacity-85 hover:opacity-100 hover:!bg-[var(--sidebar-accent)] hover:!text-[var(--sidebar-accent-foreground)] [&.active]:opacity-100 [&.active]:!bg-[var(--sidebar-accent)] [&.active]:!text-[var(--sidebar-accent-foreground)] [&.active]:!font-semibold [&.active]:!pl-3 !shadow-none !flex !items-center !gap-2 group-[.collapsed]/sidebar:group-hover/section:!justify-start group-[.collapsed]/sidebar:group-hover/section:!p-2 group-[.collapsed]/sidebar:group-hover/section:!my-0.5 group-[.collapsed]/sidebar:group-hover/section:!mx-0 group-[.collapsed]/sidebar:group-hover/section:!flex group-[.collapsed]/sidebar:group-hover/section:!items-center group-[.collapsed]/sidebar:group-hover/section:!gap-2.5 group-[.collapsed]/sidebar:group-hover/section:!rounded-md group-[.collapsed]/sidebar:group-hover/section:!w-auto group-[.collapsed]/sidebar:group-hover/section:!text-left group-[.collapsed]/sidebar:group-hover/section:!bg-transparent group-[.collapsed]/sidebar:group-hover/section:!shadow-none group-[.collapsed]/sidebar:group-hover/section:hover:!bg-[var(--sidebar-accent)] group-[.collapsed]/sidebar:group-hover/section:hover:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:[&.active]:!bg-[var(--sidebar-primary)] group-[.collapsed]/sidebar:group-hover/section:[&.active]:!text-[var(--sidebar-primary-foreground)] {{ request()->routeIs('student.admission') ? 'active' : '' }}">
-                    <svg class="!w-3 !h-3 opacity-70 shrink-0 group-hover/link:opacity-100 group-[.active]/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:!w-4 group-[.collapsed]/sidebar:group-hover/section:!h-4 group-[.collapsed]/sidebar:group-hover/section:!opacity-70 group-[.collapsed]/sidebar:group-hover/section:!block group-[.collapsed]/sidebar:group-hover/section:!m-0 group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-hover/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
-                    <span class="sidebar-text group-[.collapsed]/sidebar:hidden group-[.collapsed]/sidebar:group-hover/section:!inline-block group-[.collapsed]/sidebar:group-hover/section:!text-[13px] group-[.collapsed]/sidebar:group-hover/section:!font-semibold group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:!normal-case group-[.collapsed]/sidebar:group-hover/section:!tracking-normal group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]">Add New Students</span>
-                </a>
-                @if(auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin'))
-                <a href="{{ route('id-cards.index') }}" class="group/link sidebar-link !mx-1.5 !mb-[2px] py-1.5 !px-2.5 !pl-4 !rounded-lg !text-[13px] !font-medium !text-[var(--sidebar-foreground)] !normal-case !tracking-normal opacity-85 hover:opacity-100 hover:!bg-[var(--sidebar-accent)] hover:!text-[var(--sidebar-accent-foreground)] [&.active]:opacity-100 [&.active]:!bg-[var(--sidebar-accent)] [&.active]:!text-[var(--sidebar-accent-foreground)] [&.active]:!font-semibold [&.active]:!pl-3 !shadow-none !flex !items-center !gap-2 group-[.collapsed]/sidebar:group-hover/section:!justify-start group-[.collapsed]/sidebar:group-hover/section:!p-2 group-[.collapsed]/sidebar:group-hover/section:!my-0.5 group-[.collapsed]/sidebar:group-hover/section:!mx-0 group-[.collapsed]/sidebar:group-hover/section:!flex group-[.collapsed]/sidebar:group-hover/section:!items-center group-[.collapsed]/sidebar:group-hover/section:!gap-2.5 group-[.collapsed]/sidebar:group-hover/section:!rounded-md group-[.collapsed]/sidebar:group-hover/section:!w-auto group-[.collapsed]/sidebar:group-hover/section:!text-left group-[.collapsed]/sidebar:group-hover/section:!bg-transparent group-[.collapsed]/sidebar:group-hover/section:!shadow-none group-[.collapsed]/sidebar:group-hover/section:hover:!bg-[var(--sidebar-accent)] group-[.collapsed]/sidebar:group-hover/section:hover:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:[&.active]:!bg-[var(--sidebar-primary)] group-[.collapsed]/sidebar:group-hover/section:[&.active]:!text-[var(--sidebar-primary-foreground)] {{ request()->routeIs('id-cards.index') ? 'active' : '' }}">
-                    <svg class="!w-3 !h-3 opacity-70 shrink-0 group-hover/link:opacity-100 group-[.active]/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:!w-4 group-[.collapsed]/sidebar:group-hover/section:!h-4 group-[.collapsed]/sidebar:group-hover/section:!opacity-70 group-[.collapsed]/sidebar:group-hover/section:!block group-[.collapsed]/sidebar:group-hover/section:!m-0 group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-hover/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 16h8"/></svg>
-                    <span class="sidebar-text group-[.collapsed]/sidebar:hidden group-[.collapsed]/sidebar:group-hover/section:!inline-block group-[.collapsed]/sidebar:group-hover/section:!text-[13px] group-[.collapsed]/sidebar:group-hover/section:!font-semibold group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:!normal-case group-[.collapsed]/sidebar:group-hover/section:!tracking-normal group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]">ID Card Generation</span>
-                </a>
-                @endif
-            </div>
-        </div> 
+            @endif
 
-        @php $isTeacherOpen = request()->routeIs('teachers.*', 'teacher.*'); @endphp
-        <div class="sidebar-section mb-2 !px-1 group relative {{ $isTeacherOpen ? 'open' : '' }}">
-            <div class="sidebar-section-title cursor-pointer flex items-center justify-between select-none py-2.5 !px-4 !mx-2 !mb-1 !rounded-xl !text-[14px] !font-semibold !normal-case !tracking-normal !text-[var(--sidebar-foreground)] border-l-4 border-transparent transition-all duration-150 ease-in-out whitespace-nowrap overflow-hidden !no-underline !shadow-none hover:!bg-[var(--sidebar-accent)] hover:!text-[var(--sidebar-accent-foreground)] group-[.open]:!bg-[var(--sidebar-accent)] group-[.open]:!text-[var(--sidebar-accent-foreground)] group-[.open]:!border-themeBlue group-[.open]:!pl-3 group-[.collapsed]/sidebar:!justify-center group-[.collapsed]/sidebar:!py-2.5 group-[.collapsed]/sidebar:!px-0 group-[.collapsed]/sidebar:!mx-2.5 group-[.collapsed]/sidebar:!rounded-lg !gap-3" onclick="toggleMenuSection(this)">
-                <svg class="w-5 h-5 opacity-70 shrink-0 group-hover/section:opacity-100 group-[.open]:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="sidebar-text group-[.collapsed]/sidebar:hidden group-[.collapsed]/sidebar:group-hover/section:!inline-block group-[.collapsed]/sidebar:group-hover/section:!text-[13px] group-[.collapsed]/sidebar:group-hover/section:!font-semibold group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:!normal-case group-[.collapsed]/sidebar:group-hover/section:!tracking-normal group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]">Teacher Management</span>
-                <svg class="chevron-icon w-4 h-4 transition-transform duration-300 ease-in-out opacity-90 shrink-0 group-[.open]:rotate-90 group-[.open]:opacity-100 group-[.collapsed]/sidebar:!hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
+            <!-- Teacher Management (Drilldown Trigger) -->
+            @if(auth()->check() && (auth()->user()->hasRole('editor') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+            <div class="relative group/trigger">
+                <button type="button" @click="currentView = 'teachers'" class="flex items-center justify-between sidebar-link border-none bg-transparent group !w-[calc(100%-16px)] !mx-2">
+                    <span class="flex items-center gap-2.5">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <span class="sidebar-text">Staff Management</span>
+                    </span>
+                    <span class="w-5 h-5 rounded-[5px] flex items-center justify-center bg-gray-100/70 dark:bg-white/[0.04] border border-gray-200/50 dark:border-white/[0.05] transition-all group-hover:bg-gray-200/80 dark:group-hover:bg-white/[0.15] group-hover:border-gray-300 dark:group-hover:border-white/[0.18] shrink-0">
+                        <svg class="w-2.5 h-2.5 text-gray-400 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </span>
+                </button>
+                <div class="sidebar-popup-menu absolute left-[62px] top-0 ml-2 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-2 min-w-[200px] z-[9999] pointer-events-auto text-left hidden">
+                    <div class="px-4 py-1.5 border-b border-gray-100 dark:border-white/[0.05] text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
+                        Staff Management
+                    </div>
+                    <a href="{{ route('teachers.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Teachers List</span>
+                    </a>
+                    <a href="{{ route('teacher.add') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Add Teacher</span>
+                    </a>
+                    <a href="{{ route('staff-attendance.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Staff Attendance</span>
+                    </a>
+                </div>
             </div>
-            <div class="sidebar-submenu max-h-0 overflow-hidden transition-[max-height,padding] duration-300 ease-in-out !bg-transparent !rounded-none border-l border-[var(--sidebar-border)] !ml-[27px] !mr-2 !pl-1.5 !pt-0 !pb-0 group-[.open]:max-h-[1500px] group-[.open]:!py-1.5 group-[.collapsed]/sidebar:hidden group-[.collapsed]/sidebar:group-hover/section:!flex group-[.collapsed]/sidebar:group-hover/section:flex-col group-[.collapsed]/sidebar:group-hover/section:absolute group-[.collapsed]/sidebar:group-hover/section:left-[69px] group-[.collapsed]/sidebar:group-hover/section:top-0 group-[.collapsed]/sidebar:group-hover/section:!bg-[var(--sidebar)] group-[.collapsed]/sidebar:group-hover/section:border group-[.collapsed]/sidebar:group-hover/section:!border-[var(--sidebar-border)] group-[.collapsed]/sidebar:group-hover/section:rounded-lg group-[.collapsed]/sidebar:group-hover/section:shadow-xl group-[.collapsed]/sidebar:group-hover/section:min-w-[220px] group-[.collapsed]/sidebar:group-hover/section:z-[1000] group-[.collapsed]/sidebar:group-hover/section:!p-2 group-[.collapsed]/sidebar:group-hover/section:!max-h-none group-[.collapsed]/sidebar:group-hover/section:!overflow-visible group-[.collapsed]/sidebar:group-hover/section:!margin-0 group-[.collapsed]/sidebar:group-hover/section:before:content-[''] group-[.collapsed]/sidebar:group-hover/section:before:absolute group-[.collapsed]/sidebar:group-hover/section:before:top-0 group-[.collapsed]/sidebar:group-hover/section:before:-left-5 group-[.collapsed]/sidebar:group-hover/section:before:w-5 group-[.collapsed]/sidebar:group-hover/section:before:h-full group-[.collapsed]/sidebar:group-hover/section:before:bg-transparent group-[.collapsed]/sidebar:group-hover/section:before:z-[-1]">
-                 <a href="{{ route('teachers.index') }}" class="group/link sidebar-link !mx-1.5 !mb-[2px] py-1.5 !px-2.5 !pl-4 !rounded-lg !text-[13px] !font-medium !text-[var(--sidebar-foreground)] !normal-case !tracking-normal opacity-85 hover:opacity-100 hover:!bg-[var(--sidebar-accent)] hover:!text-[var(--sidebar-accent-foreground)] [&.active]:opacity-100 [&.active]:!bg-[var(--sidebar-accent)] [&.active]:!text-[var(--sidebar-accent-foreground)] [&.active]:!font-semibold [&.active]:!pl-3 !shadow-none !flex !items-center !gap-2 group-[.collapsed]/sidebar:group-hover/section:!justify-start group-[.collapsed]/sidebar:group-hover/section:!p-2 group-[.collapsed]/sidebar:group-hover/section:!my-0.5 group-[.collapsed]/sidebar:group-hover/section:!mx-0 group-[.collapsed]/sidebar:group-hover/section:!flex group-[.collapsed]/sidebar:group-hover/section:!items-center group-[.collapsed]/sidebar:group-hover/section:!gap-2.5 group-[.collapsed]/sidebar:group-hover/section:!rounded-md group-[.collapsed]/sidebar:group-hover/section:!w-auto group-[.collapsed]/sidebar:group-hover/section:!text-left group-[.collapsed]/sidebar:group-hover/section:!bg-transparent group-[.collapsed]/sidebar:group-hover/section:!shadow-none group-[.collapsed]/sidebar:group-hover/section:hover:!bg-[var(--sidebar-accent)] group-[.collapsed]/sidebar:group-hover/section:hover:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:[&.active]:!bg-[var(--sidebar-primary)] group-[.collapsed]/sidebar:group-hover/section:[&.active]:!text-[var(--sidebar-primary-foreground)] {{ request()->routeIs('teachers.index') ? 'active' : '' }}">
-                    <svg class="!w-3 !h-3 opacity-70 shrink-0 group-hover/link:opacity-100 group-[.active]/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:!w-4 group-[.collapsed]/sidebar:group-hover/section:!h-4 group-[.collapsed]/sidebar:group-hover/section:!opacity-70 group-[.collapsed]/sidebar:group-hover/section:!block group-[.collapsed]/sidebar:group-hover/section:!m-0 group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-hover/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    <span class="sidebar-text group-[.collapsed]/sidebar:hidden group-[.collapsed]/sidebar:group-hover/section:!inline-block group-[.collapsed]/sidebar:group-hover/section:!text-[13px] group-[.collapsed]/sidebar:group-hover/section:!font-semibold group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:!normal-case group-[.collapsed]/sidebar:group-hover/section:!tracking-normal group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]">Teachers List</span>
-                </a>
-                <a href="{{ route('teacher.add') }}" class="group/link sidebar-link !mx-1.5 !mb-[2px] py-1.5 !px-2.5 !pl-4 !rounded-lg !text-[13px] !font-medium !text-[var(--sidebar-foreground)] !normal-case !tracking-normal opacity-85 hover:opacity-100 hover:!bg-[var(--sidebar-accent)] hover:!text-[var(--sidebar-accent-foreground)] [&.active]:opacity-100 [&.active]:!bg-[var(--sidebar-accent)] [&.active]:!text-[var(--sidebar-accent-foreground)] [&.active]:!font-semibold [&.active]:!pl-3 !shadow-none !flex !items-center !gap-2 group-[.collapsed]/sidebar:group-hover/section:!justify-start group-[.collapsed]/sidebar:group-hover/section:!p-2 group-[.collapsed]/sidebar:group-hover/section:!my-0.5 group-[.collapsed]/sidebar:group-hover/section:!mx-0 group-[.collapsed]/sidebar:group-hover/section:!flex group-[.collapsed]/sidebar:group-hover/section:!items-center group-[.collapsed]/sidebar:group-hover/section:!gap-2.5 group-[.collapsed]/sidebar:group-hover/section:!rounded-md group-[.collapsed]/sidebar:group-hover/section:!w-auto group-[.collapsed]/sidebar:group-hover/section:!text-left group-[.collapsed]/sidebar:group-hover/section:!bg-transparent group-[.collapsed]/sidebar:group-hover/section:!shadow-none group-[.collapsed]/sidebar:group-hover/section:hover:!bg-[var(--sidebar-accent)] group-[.collapsed]/sidebar:group-hover/section:hover:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:[&.active]:!bg-[var(--sidebar-primary)] group-[.collapsed]/sidebar:group-hover/section:[&.active]:!text-[var(--sidebar-primary-foreground)] {{ request()->routeIs('teacher.add') ? 'active' : '' }}">
-                    <svg class="!w-3 !h-3 opacity-70 shrink-0 group-hover/link:opacity-100 group-[.active]/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:!w-4 group-[.collapsed]/sidebar:group-hover/section:!h-4 group-[.collapsed]/sidebar:group-hover/section:!opacity-70 group-[.collapsed]/sidebar:group-hover/section:!block group-[.collapsed]/sidebar:group-hover/section:!m-0 group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-hover/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
-                    <span class="sidebar-text group-[.collapsed]/sidebar:hidden group-[.collapsed]/sidebar:group-hover/section:!inline-block group-[.collapsed]/sidebar:group-hover/section:!text-[13px] group-[.collapsed]/sidebar:group-hover/section:!font-semibold group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:!normal-case group-[.collapsed]/sidebar:group-hover/section:!tracking-normal group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]">Add Teacher</span>
-                </a>    
-            </div>
-        </div> 
+            @endif
 
-        @php
-            $accessibleResources = [];
-            foreach ($allResources ?? config('tyro-dashboard.resources', []) as $key => $resource) {
-                $canAccess = true;
-                if (isset($resource['roles']) && !empty($resource['roles'])) {
-                    $canAccess = false;
-                    $user = auth()->user();
-                    if ($user && method_exists($user, 'tyroRoleSlugs')) {
-                        $userRoles = $user->tyroRoleSlugs();
-                        foreach ($resource['roles'] as $role) {
-                            if (in_array($role, $userRoles)) { $canAccess = true; break; }
+            <!-- Dynamic Resources (Drilldown Trigger) -->
+            @php
+                $accessibleResources = [];
+                foreach ($allResources ?? config('tyro-dashboard.resources', []) as $key => $resource) {
+                    $canAccess = true;
+                    if (isset($resource['roles']) && !empty($resource['roles'])) {
+                        $canAccess = false;
+                        $user = auth()->user();
+                        if ($user && method_exists($user, 'tyroRoleSlugs')) {
+                            $userRoles = $user->tyroRoleSlugs();
+                            foreach ($resource['roles'] as $role) {
+                                if (in_array($role, $userRoles)) { $canAccess = true; break; }
+                            }
                         }
                     }
+                    if ($canAccess) { $accessibleResources[$key] = $resource; }
                 }
-                if ($canAccess) { $accessibleResources[$key] = $resource; }
-            }
-        @endphp
+            @endphp
+            @if(!empty($accessibleResources))
+            <div class="relative group/trigger">
+                <button type="button" @click="currentView = 'resources'" class="flex items-center justify-between sidebar-link border-none bg-transparent group !w-[calc(100%-16px)] !mx-2">
+                    <span class="flex items-center gap-2.5">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polygon points="2 17 12 22 22 17"/><polygon points="2 12 12 17 22 12"/></svg>
+                        <span class="sidebar-text">Resources</span>
+                    </span>
+                    <span class="w-5 h-5 rounded-[5px] flex items-center justify-center bg-gray-100/70 dark:bg-white/[0.04] border border-gray-200/50 dark:border-white/[0.05] transition-all group-hover:bg-gray-200/80 dark:group-hover:bg-white/[0.15] group-hover:border-gray-300 dark:group-hover:border-white/[0.18] shrink-0">
+                        <svg class="w-2.5 h-2.5 text-gray-400 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </span>
+                </button>
+                <div class="sidebar-popup-menu absolute left-[62px] top-0 ml-2 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-2 min-w-[200px] z-[9999] pointer-events-auto text-left hidden">
+                    <div class="px-4 py-1.5 border-b border-gray-100 dark:border-white/[0.05] text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
+                        Resources
+                    </div>
+                    @foreach($accessibleResources as $rKey => $resource)
+                        <a href="{{ route('tyro-dashboard.resources.index', $rKey) }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                            <span>{{ $resource['label'] ?? ucwords(str_replace('_', ' ', $rKey)) }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+        </div>
 
+        <!-- ==============================================
+             STUDENTS VIEW
+             ============================================== -->
+        <div x-show="currentView === 'students'" style="display: {{ $initialView === 'students' ? 'block' : 'none' }};" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-2" x-transition:enter-end="opacity-100 translate-x-0" class="px-2">
+            <!-- Back Button -->
+            <button type="button" @click="currentView = 'main'" class="sidebar-back-btn border-none bg-transparent">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                <span>Student Management</span>
+            </button>
+
+            <!-- Menu links -->
+            <a href="{{ route('students.index') }}" class="sidebar-link {{ request()->routeIs('students.index') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <span class="sidebar-text">Students Lists</span>
+            </a>
+            <a href="{{ route('student.admission') }}" class="sidebar-link {{ request()->routeIs('student.admission') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+                <span class="sidebar-text">Add New Students</span>
+            </a>
+            @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+            <a href="{{ route('id-cards.index') }}" class="sidebar-link {{ request()->routeIs('id-cards.index') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 16h8"/></svg>
+                <span class="sidebar-text">ID Card Generation</span>
+            </a>
+            @endif
+        </div>
+
+        <!-- ==============================================
+             TEACHERS VIEW
+             ============================================== -->
+        <div x-show="currentView === 'teachers'" style="display: {{ $initialView === 'teachers' ? 'block' : 'none' }};" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-2" x-transition:enter-end="opacity-100 translate-x-0" class="px-2">
+            <!-- Back Button -->
+            <button type="button" @click="currentView = 'main'" class="sidebar-back-btn border-none bg-transparent">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                <span>Staff Management</span>
+            </button>
+
+            <!-- Menu links -->
+            <a href="{{ route('teachers.index') }}" class="sidebar-link {{ request()->routeIs('teachers.index') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span class="sidebar-text">Teachers List</span>
+            </a>
+            <a href="{{ route('teacher.add') }}" class="sidebar-link {{ request()->routeIs('teacher.add') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+                <span class="sidebar-text">Add Teacher</span>
+            </a>
+            <a href="{{ route('staff-attendance.index') }}" class="sidebar-link {{ request()->routeIs('staff-attendance.index') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <span class="sidebar-text">Staff Attendance</span>
+            </a>
+        </div>
+
+        <!-- ==============================================
+             DYNAMIC RESOURCES VIEW
+             ============================================== -->
         @if(!empty($accessibleResources))
-        @php $isResourcesOpen = request()->is('*resources*'); @endphp
-        <div class="sidebar-section mb-2 !px-1 group relative {{ $isResourcesOpen ? 'open' : '' }}">
-            <div class="sidebar-section-title cursor-pointer flex items-center justify-between select-none py-2.5 !px-4 !mx-2 !mb-1 !rounded-xl !text-[14px] !font-semibold !normal-case !tracking-normal !text-[var(--sidebar-foreground)] border-l-4 border-transparent transition-all duration-150 ease-in-out whitespace-nowrap overflow-hidden !no-underline !shadow-none hover:!bg-[var(--sidebar-accent)] hover:!text-[var(--sidebar-accent-foreground)] group-[.open]:!bg-[var(--sidebar-accent)] group-[.open]:!text-[var(--sidebar-accent-foreground)] group-[.open]:!border-themeBlue group-[.open]:!pl-3 group-[.collapsed]/sidebar:!justify-center group-[.collapsed]/sidebar:!py-2.5 group-[.collapsed]/sidebar:!px-0 group-[.collapsed]/sidebar:!mx-2.5 group-[.collapsed]/sidebar:!rounded-lg !gap-3" onclick="toggleMenuSection(this)">
-                <svg class="w-5 h-5 opacity-70 shrink-0 group-hover/section:opacity-100 group-[.open]:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polygon points="2 17 12 22 22 17"/><polygon points="2 12 12 17 22 12"/></svg><span class="sidebar-text group-[.collapsed]/sidebar:hidden group-[.collapsed]/sidebar:group-hover/section:!inline-block group-[.collapsed]/sidebar:group-hover/section:!text-[13px] group-[.collapsed]/sidebar:group-hover/section:!font-semibold group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:!normal-case group-[.collapsed]/sidebar:group-hover/section:!tracking-normal group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]">Resources</span>
-                <svg class="chevron-icon w-4 h-4 transition-transform duration-300 ease-in-out opacity-90 shrink-0 group-[.open]:rotate-90 group-[.open]:opacity-100 group-[.collapsed]/sidebar:!hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
-            </div>
-            <div class="sidebar-submenu max-h-0 overflow-hidden transition-[max-height,padding] duration-300 ease-in-out !bg-transparent !rounded-none border-l border-[var(--sidebar-border)] !ml-[27px] !mr-2 !pl-1.5 !pt-0 !pb-0 group-[.open]:max-h-[1500px] group-[.open]:!py-1.5 group-[.collapsed]/sidebar:hidden group-[.collapsed]/sidebar:group-hover/section:!flex group-[.collapsed]/sidebar:group-hover/section:flex-col group-[.collapsed]/sidebar:group-hover/section:absolute group-[.collapsed]/sidebar:group-hover/section:left-[69px] group-[.collapsed]/sidebar:group-hover/section:top-0 group-[.collapsed]/sidebar:group-hover/section:!bg-[var(--sidebar)] group-[.collapsed]/sidebar:group-hover/section:border group-[.collapsed]/sidebar:group-hover/section:!border-[var(--sidebar-border)] group-[.collapsed]/sidebar:group-hover/section:rounded-lg group-[.collapsed]/sidebar:group-hover/section:shadow-xl group-[.collapsed]/sidebar:group-hover/section:min-w-[220px] group-[.collapsed]/sidebar:group-hover/section:z-[1000] group-[.collapsed]/sidebar:group-hover/section:!p-2 group-[.collapsed]/sidebar:group-hover/section:!max-h-none group-[.collapsed]/sidebar:group-hover/section:!overflow-visible group-[.collapsed]/sidebar:group-hover/section:!margin-0 group-[.collapsed]/sidebar:group-hover/section:before:content-[''] group-[.collapsed]/sidebar:group-hover/section:before:absolute group-[.collapsed]/sidebar:group-hover/section:before:top-0 group-[.collapsed]/sidebar:group-hover/section:before:-left-5 group-[.collapsed]/sidebar:group-hover/section:before:w-5 group-[.collapsed]/sidebar:group-hover/section:before:h-full group-[.collapsed]/sidebar:group-hover/section:before:bg-transparent group-[.collapsed]/sidebar:group-hover/section:before:z-[-1]">
-                @foreach($accessibleResources as $key => $resource)
-                    <a href="{{ route('tyro-dashboard.resources.index', $key) }}" class="group/link sidebar-link !mx-1.5 !mb-[2px] py-1.5 !px-2.5 !pl-4 !rounded-lg !text-[13px] !font-medium !text-[var(--sidebar-foreground)] !normal-case !tracking-normal opacity-85 hover:opacity-100 hover:!bg-[var(--sidebar-accent)] hover:!text-[var(--sidebar-accent-foreground)] [&.active]:opacity-100 [&.active]:!bg-[var(--sidebar-accent)] [&.active]:!text-[var(--sidebar-accent-foreground)] [&.active]:!font-semibold [&.active]:!pl-3 !shadow-none !flex !items-center !gap-2 group-[.collapsed]/sidebar:group-hover/section:!justify-start group-[.collapsed]/sidebar:group-hover/section:!p-2 group-[.collapsed]/sidebar:group-hover/section:!my-0.5 group-[.collapsed]/sidebar:group-hover/section:!mx-0 group-[.collapsed]/sidebar:group-hover/section:!flex group-[.collapsed]/sidebar:group-hover/section:!items-center group-[.collapsed]/sidebar:group-hover/section:!gap-2.5 group-[.collapsed]/sidebar:group-hover/section:!rounded-md group-[.collapsed]/sidebar:group-hover/section:!w-auto group-[.collapsed]/sidebar:group-hover/section:!text-left group-[.collapsed]/sidebar:group-hover/section:!bg-transparent group-[.collapsed]/sidebar:group-hover/section:!shadow-none group-[.collapsed]/sidebar:group-hover/section:hover:!bg-[var(--sidebar-accent)] group-[.collapsed]/sidebar:group-hover/section:hover:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:[&.active]:!bg-[var(--sidebar-primary)] group-[.collapsed]/sidebar:group-hover/section:[&.active]:!text-[var(--sidebar-primary-foreground)] {{ request()->is('*resources/'.$key.'*') ? 'active' : '' }}">
-                        @if(isset($resource['icon']))
-                            {!! $resource['icon'] !!}
-                        @else
-                            <svg class="!w-3 !h-3 opacity-70 shrink-0 group-hover/link:opacity-100 group-[.active]/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:!w-4 group-[.collapsed]/sidebar:group-hover/section:!h-4 group-[.collapsed]/sidebar:group-hover/section:!opacity-70 group-[.collapsed]/sidebar:group-hover/section:!block group-[.collapsed]/sidebar:group-hover/section:!m-0 group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-hover/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:opacity-100 group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
-                        @endif
-                        <span class="sidebar-text group-[.collapsed]/sidebar:hidden group-[.collapsed]/sidebar:group-hover/section:!inline-block group-[.collapsed]/sidebar:group-hover/section:!text-[13px] group-[.collapsed]/sidebar:group-hover/section:!font-semibold group-[.collapsed]/sidebar:group-hover/section:!text-[var(--sidebar-foreground)] group-[.collapsed]/sidebar:group-hover/section:!normal-case group-[.collapsed]/sidebar:group-hover/section:!tracking-normal group-[.collapsed]/sidebar:group-hover/section:group-hover/link:!text-[var(--sidebar-accent-foreground)] group-[.collapsed]/sidebar:group-hover/section:group-[.active]/link:!text-[var(--sidebar-primary-foreground)]">{{ $resource['title'] }}</span>
-                    </a>
-                @endforeach
-            </div>
+        <div x-show="currentView === 'resources'" style="display: {{ $initialView === 'resources' ? 'block' : 'none' }};" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-2" x-transition:enter-end="opacity-100 translate-x-0" class="px-2">
+            <!-- Back Button -->
+            <button type="button" @click="currentView = 'main'" class="sidebar-back-btn border-none bg-transparent">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                <span>Resources</span>
+            </button>
+
+            <!-- Dynamic Resources Loop -->
+            @foreach($accessibleResources as $key => $resource)
+                <a href="{{ route('tyro-dashboard.resources.index', $key) }}" class="sidebar-link {{ request()->is('*resources/'.$key.'*') ? 'active' : '' }}">
+                    @if(isset($resource['icon']))
+                        {!! $resource['icon'] !!}
+                    @else
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+                    @endif
+                    <span class="sidebar-text">{{ $resource['title'] }}</span>
+                </a>
+            @endforeach
         </div>
         @endif
 
-        @endif </nav>
+    </nav>
 
-    @php
-        $sidebarUser = auth()->user();
-        $hasPhoto = $sidebarUser && ((method_exists($sidebarUser, 'hasProfilePhotoColumn') && $sidebarUser->hasProfilePhotoColumn() && $sidebarUser->profile_photo_path) || (method_exists($sidebarUser, 'hasGravatarColumn') && $sidebarUser->hasGravatarColumn() && $sidebarUser->use_gravatar && $sidebarUser->email));
-    @endphp
-
+    <!-- Sidebar Footer (Vercel Style) -->
     @if($sidebarUser)
-    <div class="sidebar-footer border-t border-[var(--sidebar-border)] p-2 relative" id="sidebarUserFooter">
+    <div class="sidebar-footer border-t border-[var(--sidebar-border)] p-3 relative flex items-center justify-between group-[.collapsed]/sidebar:justify-center" id="sidebarUserFooter">
         <!-- Dropdown Menu -->
         <div id="sidebarUserDropdownMenu" class="absolute bottom-full left-4 right-4 mb-2 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-lg opacity-0 invisible translate-y-2 transition-all duration-200 z-[1100] p-1 group-[.collapsed]/sidebar:left-[75px] group-[.collapsed]/sidebar:right-auto group-[.collapsed]/sidebar:w-[200px] group-[.collapsed]/sidebar:bottom-4">
             <div class="px-3 py-2 border-b border-[var(--border)]">
@@ -158,76 +268,32 @@
             </div>
         </div>
 
-        <!-- Toggle Button -->
-        <button type="button" class="w-full flex items-center justify-between p-2 rounded-lg hover:bg-[var(--sidebar-accent)] hover:text-[var(--sidebar-accent-foreground)] transition-all duration-150 border-none bg-transparent cursor-pointer group/footerbtn group-[.collapsed]/sidebar:justify-center" onclick="toggleSidebarUserDropdown(event)">
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="w-9 h-9 min-w-[36px] min-h-[36px] overflow-hidden rounded-full flex items-center justify-center bg-[var(--sidebar-foreground)] text-[var(--sidebar)] font-bold text-[14px] {{ $hasPhoto ? '!bg-none !p-0' : '' }}">
-                    @if($hasPhoto)
-                        <img src="{{ $sidebarUser->profile_photo_url }}" alt="{{ $sidebarUser->name }}" class="w-full h-full object-cover">
-                    @else
-                        {{ strtoupper(substr($sidebarUser->name ?? 'U', 0, 1)) }}
-                    @endif
-                </div>
-                <div class="text-left min-w-0 group-[.collapsed]/sidebar:hidden">
-                    <p class="text-[13px] font-semibold text-[var(--sidebar-foreground)] truncate leading-tight">{{ $sidebarUser->name }}</p>
-                    <p class="text-[11px] text-[var(--sidebar-foreground)] opacity-70 truncate leading-tight mt-0.5">
-                        @if(method_exists($sidebarUser, 'roles') && $sidebarUser->roles->count())
-                            {{ $sidebarUser->roles->first()->name }}
-                        @else
-                            User
-                        @endif
-                    </p>
-                </div>
+        <!-- Left Part: Avatar & Name -->
+        <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-7 h-7 min-w-[28px] min-h-[28px] overflow-hidden rounded-full flex items-center justify-center bg-gray-900 dark:bg-gray-100 text-white dark:text-black font-bold text-[11px] {{ $hasPhoto ? '!bg-none !p-0' : '' }}">
+                @if($hasPhoto)
+                    <img src="{{ $sidebarUser->profile_photo_url }}" alt="{{ $sidebarUser->name }}" class="w-full h-full object-cover">
+                @else
+                    {{ strtoupper(substr($sidebarUser->name ?? 'U', 0, 1)) }}
+                @endif
             </div>
-            <svg class="w-4 h-4 text-[var(--sidebar-foreground)] opacity-50 transition-transform duration-200 group-[.collapsed]/sidebar:hidden group-[.open-dropdown]/footerbtn:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="18 15 12 9 6 15"></polyline>
-            </svg>
-        </button>
+            <span class="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate group-[.collapsed]/sidebar:hidden">{{ $sidebarUser->name }}</span>
+        </div>
+
+        <!-- Right Part: Actions (Ellipsis & Bell) -->
+        <div class="flex items-center gap-1 group-[.collapsed]/sidebar:hidden shrink-0">
+            <button type="button" onclick="toggleSidebarUserDropdown(event)" class="w-6 h-6 rounded-md hover:bg-gray-100 dark:hover:bg-white/[0.08] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent" title="More options">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><circle cx="12" cy="12" r="1"/><circle cx="5" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+            </button>
+            <a href="#" class="w-6 h-6 rounded-md hover:bg-gray-100 dark:hover:bg-white/[0.08] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors" title="Notifications">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </a>
+        </div>
     </div>
     @endif
 </aside>
 
 <script>
-    function toggleMenuSection(element) {
-        const currentSection = element.parentElement;
-        const isOpen = currentSection.classList.contains('open');
-        const submenu = currentSection.querySelector('.sidebar-submenu');
-        
-        // Close all other sections
-        document.querySelectorAll('.sidebar-section').forEach(section => {
-            if (section !== currentSection) {
-                section.classList.remove('open');
-                const sub = section.querySelector('.sidebar-submenu');
-                if (sub) {
-                    sub.style.maxHeight = null;
-                }
-            }
-        });
-        
-        // Toggle the clicked one
-        if (isOpen) {
-            currentSection.classList.remove('open');
-            if (submenu) {
-                submenu.style.maxHeight = null;
-            }
-        } else {
-            currentSection.classList.add('open');
-            if (submenu) {
-                submenu.style.maxHeight = submenu.scrollHeight + 'px';
-            }
-        }
-    }
-
-    // Initialize open submenus on page load
-    document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('.sidebar-section.open').forEach(section => {
-            const submenu = section.querySelector('.sidebar-submenu');
-            if (submenu) {
-                submenu.style.maxHeight = submenu.scrollHeight + 'px';
-            }
-        });
-    });
-
     function toggleSidebarUserDropdown(event) {
         event.stopPropagation();
         const menu = document.getElementById('sidebarUserDropdownMenu');

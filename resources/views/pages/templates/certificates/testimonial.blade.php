@@ -3,92 +3,105 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <style>
-        /* ১. পেজের মার্জিন জিরো, তাই ডোমপিডিএফ নিজে থেকে কোনো জায়গা খাবে না */
-        @page { 
-            size: a4 landscape; 
-            margin: 0; 
-        }
+        /* 🚨 Import Google Font Roboto 🚨 */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap');
+
+        /* A4 Landscape Zero Margin */
+        @page { size: a4 landscape; margin: 0; }
+        * { box-sizing: border-box; }
 
         body { 
-            font-family: 'Helvetica', sans-serif; 
-            margin: 0; 
-            padding: 50px 60px; /* কনটেন্টকে চারপাশ থেকে ভেতরে রাখার জন্য প্যাডিং */
-            color: #000;
+            font-family: 'Roboto', sans-serif; 
+            margin: 0; padding: 45px 60px; 
+            color: #1e293b; background: #fff;
         }
 
-        /* ২. দ্য ম্যাজিক: বর্ডারগুলোকে Fixed করা হয়েছে। এরা পেজের কোনো হাইট দখল করবে না! */
+        /* MACS Brand Borders */
         .border-outer {
-            position: fixed;
-            top: 15px;
-            bottom: 15px;
-            left: 15px;
-            right: 15px;
-            border: 12px solid #1e4630;
+            position: fixed; top: 15px; bottom: 15px; left: 15px; right: 15px;
+            border: 12px solid #009A49; /* MACS Green */
             z-index: -2;
         }
-
         .border-inner {
-            position: fixed;
-            top: 32px;
-            bottom: 32px;
-            left: 32px;
-            right: 32px;
-            border: 2px solid #1e4630;
+            position: fixed; top: 32px; bottom: 32px; left: 32px; right: 32px;
+            border: 2px solid #008ED6; /* MACS Sky Blue */
             z-index: -1;
         }
 
-        /* ৩. ওয়াটারমার্ক ফিক্সড */
+        /* Watermark */
         .watermark {
-            position: fixed;
-            top: 18%; /* ল্যান্ডস্কেপের মাঝ বরাবর */
-            left: 35%;
-            width: 350px;
-            opacity: 0.05;
-            z-index: -3;
+            position: fixed; top: 22%; left: 35%;
+            width: 320px; opacity: 0.04; z-index: -3;
         }
 
-        /* ৪. নরমাল কনটেন্ট ফ্লো (এরা কোনোদিন ২য় পেজে যাওয়ার মতো বড় নয়) */
-        .header { text-align: center; margin-bottom: 30px; margin-top: 10px; }
-        .school-name { font-size: 38px; font-weight: 900; color: #1e4630; margin: 0; text-transform: uppercase; }
-        .address { font-size: 14px; color: #444; margin-bottom: 15px; }
+        /* Header */
+        .header { text-align: center; margin-bottom: 25px; margin-top: 5px; }
+        .school-name { font-size: 34px; font-weight: 900; color: #008ED6; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .address { font-size: 13px; font-weight: 700; color: #475569; margin: 0 0 12px 0; }
         .title-badge { 
-            background: #1e4630; color: #fff; padding: 10px 50px; 
-            border-radius: 50px; font-size: 20px; display: inline-block; font-weight: bold; text-transform: uppercase;
+            background: #009A49; color: #fff; padding: 8px 50px; 
+            border-radius: 50px; font-size: 17px; display: inline-block; font-weight: bold; text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
+        /* Content */
         .content { 
-            font-size: 19px; line-height: 1.8; 
-            text-align: justify; padding: 0 20px; 
+            font-size: 18px; 
+            line-height: 1.8; 
+            text-align: justify; 
+            padding: 0 20px; 
             margin-top: 20px;
+            color: #1e293b;
         }
-        .highlight { font-weight: bold; border-bottom: 1px solid #777; padding: 0 5px; }
+        
+        .highlight { font-weight: 700; color: #0f172a; border-bottom: 1.5px dashed #008ED6; padding: 0 4px; }
 
-        /* ৫. সিগনেচার টেবিল (মার্জিন দিয়ে নিচে নামানো হয়েছে, হারাবে না) */
-        .footer-table {
-            width: 100%;
-            margin-top: 80px; /* কনটেন্ট থেকে অনেকটা নিচে */
-            padding: 0 20px;
-        }
+        /* Signature Area */
+        .footer-table { width: 100%; margin-top: 60px; padding: 0 20px; }
+        
         .sig-box {
-            border-top: 2px solid #000;
-            width: 250px;
+            border-top: 2px solid #1e293b; 
+            width: 230px; 
             text-align: center;
-            font-weight: bold;
-            font-size: 18px;
-            padding-top: 5px;
+            font-weight: 900; 
+            font-size: 16px; 
+            padding-top: 6px; 
             margin-left: auto;
+            margin-right: 25px;
+            color: #0f172a;
+            letter-spacing: 0.5px;
         }
     </style>
 </head>
 <body>
+    @php
+        $logoPath = public_path('img/macs_logo.jpeg');
+        $logoSrc = '';
+        if(file_exists($logoPath)){
+            $logoData = base64_encode(file_get_contents($logoPath));
+            $logoSrc = 'data:image/jpeg;base64,' . $logoData;
+        } else {
+            $fallbackPath = public_path('img/logo.svg');
+            if(file_exists($fallbackPath)){
+                $logoData = base64_encode(file_get_contents($fallbackPath));
+                $logoSrc = 'data:image/svg+xml;base64,' . $logoData;
+            }
+        }
+    @endphp
+
     <div class="border-outer"></div>
     <div class="border-inner"></div>
-    <img src="{{ public_path('img/logo.svg') }}" class="watermark">
+    
+    @if($logoSrc)
+        <img src="{{ $logoSrc }}" class="watermark">
+    @endif
 
     <div class="header">
-        <img src="{{ public_path('img/logo.svg') }}" width="80">
-        <h1 class="school-name">Pabna International School</h1>
-        <p class="address">{{ $student->branch->branch_name ?? 'Pabna International School' }}</p>
+        @if($logoSrc)
+            <img src="{{ $logoSrc }}" width="75" style="margin-bottom: 8px;">
+        @endif
+        <h1 class="school-name">{{ config('app.name', 'Pabna International School') }}</h1>
+        <p class="address">{{ $student->branch->branch_name ?? 'Main Branch' }}</p>
         <div class="title-badge">Academic Testimonial</div>
     </div>
 
@@ -107,7 +120,7 @@
 
     <table class="footer-table">
         <tr>
-            <td style="text-align: left; vertical-align: bottom; font-weight: bold; font-size: 16px; color: #1e4630;">
+            <td style="text-align: left; vertical-align: bottom; font-weight: 700; font-size: 15px; color: #008ED6;">
                 Date: {{ date('d M, Y', strtotime($date)) }}
             </td>
             <td style="text-align: right; vertical-align: bottom;">

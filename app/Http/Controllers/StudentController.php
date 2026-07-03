@@ -201,7 +201,32 @@ class StudentController extends Controller
     {
         try {
             $student = Student::with(['branch', 'schoolClass', 'section', 'shift', 'sessionYear'])->findOrFail($id);
-            return response()->json(['status' => 'success', 'data' => $student], 200);
+            
+            // Attendance Summary Statistics
+            $attendanceCount = \App\Models\Attendance::where('student_id', $id)->count();
+            $presentCount = \App\Models\Attendance::where('student_id', $id)->where('status', 'Present')->count();
+            $absentCount = \App\Models\Attendance::where('student_id', $id)->where('status', 'Absent')->count();
+            $lateCount = \App\Models\Attendance::where('student_id', $id)->where('status', 'Late')->count();
+            $attendancePercentage = $attendanceCount > 0 ? round(($presentCount / $attendanceCount) * 100, 1) : 100;
+            
+            // Exam Marks History
+            $marks = \App\Models\Mark::with(['exam', 'subject'])
+                ->where('student_id', $id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json([
+                'status' => 'success', 
+                'data' => $student,
+                'attendance' => [
+                    'total' => $attendanceCount,
+                    'present' => $presentCount,
+                    'absent' => $absentCount,
+                    'late' => $lateCount,
+                    'percentage' => $attendancePercentage
+                ],
+                'marks' => $marks
+            ], 200);
         } catch (Exception $e) {
             Log::error("Profile View Error: " . $e->getMessage());
             return response()->json(['status' => 'error', 'message' => 'Student not found'], 404);

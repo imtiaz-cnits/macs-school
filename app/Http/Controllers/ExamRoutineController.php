@@ -61,18 +61,18 @@ class ExamRoutineController extends Controller
             })->first();
 
         if ($conflict) {
-            return response()->json(['status' => 'error', 'message' => 'এই সময়ে এই ক্লাসের অন্য একটি পরীক্ষা আগে থেকেই সেট করা আছে!']);
+            return response()->json(['status' => 'error', 'message' => 'Another exam is already scheduled for this class at the same time!']);
         }
 
         ExamRoutine::create($request->all());
 
-        return response()->json(['status' => 'success', 'message' => 'পরীক্ষার রুটিন সফলভাবে সেভ হয়েছে!']);
+        return response()->json(['status' => 'success', 'message' => 'Exam routine saved successfully!']);
     }
 
     // ডিলিট করা
     public function destroy($id): JsonResponse
     {
         ExamRoutine::findOrFail($id)->delete();
-        return response()->json(['status' => 'success', 'message' => 'রুটিন ডিলিট করা হয়েছে!']);
+        return response()->json(['status' => 'success', 'message' => 'Routine deleted successfully!']);
     }
 }

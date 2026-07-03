@@ -10,6 +10,7 @@ class Subject extends Model
     use HasFactory;
 
     protected $fillable = [
+        'class_id',
         'subject_name',
         'subject_code',
         'subject_type',
@@ -17,4 +18,8 @@ class Subject extends Model
         'user_id'
     ];
 
+    public function class(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Classes::class, 'class_id');
+    }
 }

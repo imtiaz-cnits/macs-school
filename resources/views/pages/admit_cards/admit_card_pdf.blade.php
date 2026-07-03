@@ -4,60 +4,67 @@
     <meta charset="utf-8" />
     <title>Admit Cards - {{ $schoolClass->class_name }}</title>
     <style>
-        /* A4 Page Setup */
-        @page { size: A4 portrait; margin: 20px; }
-        body { font-family: 'Helvetica', sans-serif; margin: 0; padding: 0; color: #000; font-size: 11px; }
+        /* Load Google Font Figtree */
+        @import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;900&display=swap');
+
+        /* A4 Page Setup - Tight Margins to fit 3 cards per page */
+        @page { size: A4 portrait; margin: 15px 20px; }
+        body { font-family: 'Figtree', 'Helvetica', sans-serif; margin: 0; padding: 0; color: #000; font-size: 10px; }
         
-        /* 🚨 3 Cards per page - Fixed Pixel Height for perfect fit */
+        /* 🚨 3 Cards per page - Height optimized to 255px to fit perfectly on A4 without spilling */
         .admit-card-box { 
-            border: 2px dashed #2a5a3b; 
-            padding: 10px;
-            border-radius: 8px; 
-            margin-bottom: 15px; 
-            height: 320px; /* 🚨 পার্সেন্টেজের বদলে ফিক্সড পিক্সেল দেওয়া হলো */
+            border: 2px dashed #009A49; 
+            padding: 8px 10px;
+            border-radius: 10px; 
+            margin-bottom: 8px; 
+            height: 255px; /* 🚨 Optimized height for 3 cards per page */
             box-sizing: border-box;
-            position: relative; /* Absolute সিগনেচারের জন্য */
-            overflow: hidden; /* কনটেন্ট বড় হলেও বক্স বড় হবে না */
+            position: relative;
+            overflow: hidden;
         }
         
         .page-break { page-break-after: always; }
         
         /* Header */
-        .header-table { width: 100%; border: none; margin-bottom: 5px; }
+        .header-table { width: 100%; border: none; margin-bottom: 3px; }
         .header-table td { border: none; vertical-align: top; }
-        .school-name { font-size: 14px; font-weight: bold; color: #000; text-transform: uppercase; }
-        .school-address { font-size: 9px; margin-bottom: 3px;}
-        .admit-title { background: #2a5a3b; color: #fff; font-size: 11px; font-weight: bold; padding: 3px 15px; border-radius: 20px; display: inline-block; margin-top: 2px; }
+        .school-name { font-size: 13px; font-weight: 900; color: #002C53; text-transform: uppercase; letter-spacing: 0.5px; }
+        .school-address { font-size: 8px; font-weight: bold; color: #555; margin-bottom: 2px; }
+        .admit-title { background: #002C53; color: #fff; font-size: 9px; font-weight: 900; padding: 3px 12px; border-radius: 20px; display: inline-block; margin-top: 1px; text-transform: uppercase; letter-spacing: 0.8px; }
         
         /* Student Info Table */
-        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
-        .info-table td { padding: 2px; font-size: 11px; border: none; border-bottom: 1px dashed #ccc; }
-        .info-table .label { font-weight: bold; width: 18%; color: #2a5a3b; }
-        .info-table .val { width: 32%; font-weight: bold; text-transform: uppercase; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 3px; }
+        .info-table td { padding: 2px 2px; font-size: 10px; border: none; border-bottom: 1px dashed #e2e8f0; }
+        .info-table .label { font-weight: bold; width: 18%; color: #009A49; }
+        .info-table .val { width: 32%; font-weight: bold; text-transform: uppercase; color: #1a1a1a; }
         
         /* Routine Table */
-        .routine-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 9px; } /* ফন্ট কিছুটা কমানো হলো */
-        .routine-table th { background: #f2f2f2; border: 1px solid #777; padding: 2px; color: #2a5a3b; }
-        .routine-table td { border: 1px solid #777; padding: 2px; text-align: center; font-weight: bold;}
+        .routine-table { width: 100%; border-collapse: collapse; margin-bottom: 3px; font-size: 8px; }
+        .routine-table th { background: #f8fafc; border: 1px solid #cbd5e1; padding: 3px 2px; color: #009A49; font-weight: 900; text-transform: uppercase; }
+        .routine-table td { border: 1px solid #cbd5e1; padding: 3px 2px; text-align: center; font-weight: bold; color: #334155; }
         
         /* Signatures - Positioned absolutely at the bottom */
-        .signature-wrapper { position: absolute; bottom: 10px; left: 0; width: 100%; padding: 0 12px; box-sizing: border-box; }
+        .signature-wrapper { position: absolute; bottom: 8px; left: 0; width: 100%; padding: 0 10px; box-sizing: border-box; }
         .signatures { width: 100%; border: none; }
-        .signatures td { border: none; text-align: center; width: 33%; font-weight: bold; font-size: 10px; }
-        .sign-line { border-top: 1px solid #000; display: inline-block; width: 100px; padding-top: 3px; }
+        .signatures td { border: none; text-align: center; width: 33%; font-weight: bold; font-size: 9px; color: #475569; }
+        .sign-line { border-top: 1px solid #94a3b8; display: inline-block; width: 110px; padding-top: 3px; }
         
         /* Photo Box */
-        .photo-box { width: 55px; height: 65px; border: 1px solid #000; text-align: center; line-height: 65px; font-size: 10px; color: #777; background: #f9f9f9; float: right; object-fit: cover;}
+        .photo-box { width: 50px; height: 60px; border: 1px solid #cbd5e1; text-align: center; line-height: 60px; font-size: 9px; color: #64748b; background: #f8fafc; float: right; object-fit: cover; border-radius: 5px; }
     </style>
 </head>
 <body>
 
     @php
-        // School Logo Fetching
-        $logoPath = public_path('img/logo.svg');
+        // School Logo Robust Fetching (Checking MACS logo first, falling back to SVG)
+        $logoPathJpg = public_path('img/macs_logo.jpeg');
+        $logoPathSvg = public_path('img/logo.svg');
         $logoSrc = '';
-        if(file_exists($logoPath)){
-            $logoData = base64_encode(file_get_contents($logoPath));
+        if(file_exists($logoPathJpg)){
+            $logoData = base64_encode(file_get_contents($logoPathJpg));
+            $logoSrc = 'data:image/jpeg;base64,' . $logoData;
+        } elseif(file_exists($logoPathSvg)){
+            $logoData = base64_encode(file_get_contents($logoPathSvg));
             $logoSrc = 'data:image/svg+xml;base64,' . $logoData;
         }
     @endphp
@@ -91,16 +98,16 @@
         <div class="admit-card-box">
             <table class="header-table">
                 <tr>
-                    <td style="width: 15%; text-align: center;">
+                    <td style="width: 15%; text-align: center; vertical-align: middle;">
                         @if($logoSrc)
-                            <img src="{{ $logoSrc }}" style="width: 50px; height: 50px; border-radius: 50%;" alt="Logo" />
+                            <img src="{{ $logoSrc }}" style="width: 45px; height: 45px; border-radius: 50%; object-fit: contain;" alt="Logo" />
                         @else
-                            <div style="width: 50px; height: 50px; border: 1px solid #000; border-radius: 50%; line-height: 50px;">LOGO</div>
+                            <div style="width: 45px; height: 45px; border: 1px solid #cbd5e1; border-radius: 50%; line-height: 45px; text-align: center; font-size: 8px; color: #64748b; font-weight: bold;">LOGO</div>
                         @endif
                     </td>
-                    <td style="width: 65%; text-align: center;">
-                        <div class="school-name">Pabna International School</div>
-                        <div class="school-address">{{ $branch->branch_name ?? 'Zilla Para, Pabna Sadar, Pabna' }}</div>
+                    <td style="width: 65%; text-align: center; vertical-align: top; padding-top: 1px;">
+                        <div class="school-name">MACS School & College</div>
+                        <div class="school-address">{{ $branch->branch_name ?? 'Main Branch' }}</div>
                         <div class="admit-title">ADMIT CARD - {{ strtoupper($exam->name) }}</div>
                     </td>
                     <td style="width: 20%; text-align: right; vertical-align: top;">
@@ -116,7 +123,7 @@
             <table class="info-table">
                 <tr>
                     <td class="label">Student Name:</td>
-                    <td class="val" colspan="3" style="font-size: 12px;">{{ $student->student_name ?? $student->first_name.' '.$student->last_name }}</td>
+                    <td class="val" colspan="3" style="font-size: 11px; color: #000;">{{ $student->student_name ?? $student->first_name.' '.$student->last_name }}</td>
                 </tr>
                 <tr>
                     <td class="label">Roll / ID:</td>
@@ -154,7 +161,7 @@
                     </tbody>
                 </table>
             @else
-                <div style="text-align: center; color: #777; font-size: 10px; margin-bottom: 5px;">(Exam Routine Not Published Yet)</div>
+                <div style="text-align: center; color: #94a3b8; font-size: 9px; margin: 8px 0;">(Exam Routine Not Published Yet)</div>
             @endif
 
             <div class="signature-wrapper">

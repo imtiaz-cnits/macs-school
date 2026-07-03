@@ -255,6 +255,11 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
     // রিপোর্ট ডাটা ফিল্টার করার AJAX রাউট
     Route::get('/ajax/attendance/report-data', [AttendanceController::class, 'getReportData']);
 
+    // Staff Biometric Attendance Management Routes
+    Route::get('/staff-attendance', [\App\Http\Controllers\StaffAttendanceController::class, 'index'])->name('staff-attendance.index');
+    Route::post('/ajax/staff-attendance/sync', [\App\Http\Controllers\StaffAttendanceController::class, 'sync'])->name('staff-attendance.sync');
+    Route::post('/ajax/staff-attendance/simulate', [\App\Http\Controllers\StaffAttendanceController::class, 'simulate'])->name('staff-attendance.simulate');
+
 
  /*
     |--------------------------------------------------------------------------

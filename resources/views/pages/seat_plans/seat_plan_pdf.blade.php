@@ -4,15 +4,18 @@
     <meta charset="utf-8" />
     <title>Seat Plan Cards</title>
     <style>
+        /* 🚨 Import Google Font Roboto 🚨 */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap');
+        
         /* 🚨 A4 Page Setup: একদম ব্যালেন্সড মার্জিন 🚨 */
         @page { size: A4 portrait; margin: 25px; } 
-        body { font-family: 'Helvetica', 'Arial', sans-serif; margin: 0; padding: 0; color: #111827; }
+        body { font-family: 'Roboto', sans-serif; margin: 0; padding: 0; color: #0f172a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         
         /* 🚨 Main Grid Layout: Fixed Table Layout 🚨 */
         .main-grid { 
             width: 100%; 
             border-collapse: collapse; 
-            table-layout: fixed; /* এই প্রপার্টি টেবিলকে বাইরে বের হতে দেবে না */
+            table-layout: fixed;
         }
         .main-grid > tbody > tr { page-break-inside: avoid; }
         
@@ -22,14 +25,14 @@
         
         /* Individual Card Design */
         .seat-card { 
-            border: 2px solid #1e4630; 
-            border-radius: 10px; 
-            padding: 10px; 
+            border: 2px solid #009A49; /* MACS Green accent border */
+            border-radius: 12px; 
+            padding: 12px; 
             background: #ffffff; 
             width: 100%; 
             height: 205px; 
             box-sizing: border-box;
-            overflow: hidden; /* ভেতরের কিছু বড় হলেও কার্ড ভাঙবে না */
+            overflow: hidden;
         }
         
         /* Inner Table - Fixed Layout */
@@ -41,38 +44,124 @@
         .card-inner-table td { border: none; padding: 0; vertical-align: top; }
         
         /* Photo & Logo */
-        .student-photo { width: 56px; height: 68px; border: 2px solid #cc0000; object-fit: cover; border-radius: 6px; text-align: center; line-height: 68px; font-size: 10px; color: #777; background: #f9f9f9; }
-        .school-logo { width: 46px; height: 46px; border-radius: 50%; border: 1px solid #e5e7eb; padding: 2px; background: #fff; margin: 0 auto;}
+        .student-photo { 
+            width: 56px; 
+            height: 68px; 
+            border: 1.5px solid #008ED6; /* MACS Sky Blue border */
+            object-fit: cover; 
+            border-radius: 6px; 
+            text-align: center; 
+            line-height: 68px; 
+            font-size: 10px; 
+            color: #64748b; 
+            background: #f8fafc; 
+        }
+        .school-logo { 
+            width: 46px; 
+            height: 46px; 
+            border-radius: 50%; 
+            border: 1px solid #e2e8f0; 
+            padding: 2px; 
+            background: #fff; 
+            margin: 0 auto;
+        }
         
         /* Center Info */
         .center-content { text-align: center; padding: 0 6px; }
-        .school-name { color: #1e4630; font-weight: 900; font-size: 13px; line-height: 1.1; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;}
+        .school-name { 
+            color: #008ED6; /* MACS Sky Blue */
+            font-weight: 800; 
+            font-size: 13.5px; 
+            line-height: 1.1; 
+            text-transform: uppercase; 
+            margin-bottom: 5px; 
+            letter-spacing: 0.5px;
+        }
         .badge-wrapper { text-align: center; margin-bottom: 6px; }
-        .badge { border: 1px solid #1e4630; border-radius: 10px; display: inline-block; font-size: 9px; font-weight: bold; padding: 2px 10px; color: #1e4630; background-color: #f0fdf4; text-transform: uppercase; letter-spacing: 0.5px;}
+        .badge { 
+            border: 1px solid #009A49; /* MACS Green accent */
+            border-radius: 12px; 
+            display: inline-block; 
+            font-size: 9px; 
+            font-weight: bold; 
+            padding: 2px 10px; 
+            color: #009A49; 
+            background-color: #edfdf1; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+        }
         
         /* Details Table inside Card */
         .details-table { width: 100%; border-collapse: collapse; margin-top: 4px; table-layout: fixed;}
-        .details-table td { padding: 4px 0px; text-align: left; border-bottom: 1px dashed #e5e7eb; vertical-align: top; line-height: 1.25;}
+        .details-table td { padding: 4.5px 0px; text-align: left; border-bottom: 1px dashed #e2e8f0; vertical-align: top; line-height: 1.25;}
         .details-table tr:last-child td { border-bottom: none; padding-bottom: 0; }
         
-        .details-table .label { font-weight: bold; color: #6b7280; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.2px;}
-        .details-table .val { font-weight: 900; color: #111827; text-transform: uppercase; font-size: 10px; word-wrap: break-word;}
+        .details-table .label { 
+            font-weight: 500; 
+            color: #64748b; 
+            font-size: 8.5px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.2px;
+        }
+        .details-table .val { 
+            font-weight: 700; 
+            color: #0f172a; 
+            text-transform: uppercase; 
+            font-size: 10px; 
+            word-wrap: break-word;
+        }
+        .details-table .val-name {
+            color: #008ED6 !important; /* Highlight Name in MACS Sky Blue */
+            font-weight: 800 !important;
+        }
         
         /* Premium Roll Box */
         .roll-box-wrapper { text-align: right; padding-left: 2px; }
-        .roll-box { border: 2px solid #1e4630; text-align: center; margin-top: 8px; border-radius: 6px; overflow: hidden; display: inline-block; width: 55px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-left: auto; margin-right: 0;}
-        .roll-title { background: #1e4630; color: #fff; font-size: 9px; font-weight: bold; padding: 3px 0; text-transform: uppercase; letter-spacing: 1px;}
-        .roll-number { font-size: 18px; font-weight: 900; padding: 5px 0; color: #cc0000; }
+        .roll-box { 
+            border: 2px solid #008ED6; /* MACS Sky Blue border */
+            text-align: center; 
+            margin-top: 8px; 
+            border-radius: 6px; 
+            overflow: hidden; 
+            display: inline-block; 
+            width: 55px; 
+            background: #fff; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+            margin-left: auto; 
+            margin-right: 0;
+        }
+        .roll-title { 
+            background: #008ED6; /* MACS Sky Blue header banner */
+            color: #fff; 
+            font-size: 9px; 
+            font-weight: bold; 
+            padding: 3px 0; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+        }
+        .roll-number { 
+            font-size: 18px; 
+            font-weight: 900; 
+            padding: 5px 0; 
+            color: #009A49; /* MACS Green accent for roll value */
+        }
     </style>
 </head>
 <body>
 
     @php
-        $logoPath = public_path('img/logo.svg');
+        $logoPath = public_path('img/macs_logo.jpeg');
         $logoSrc = '';
         if(file_exists($logoPath)){
             $logoData = base64_encode(file_get_contents($logoPath));
-            $logoSrc = 'data:image/svg+xml;base64,' . $logoData;
+            $logoSrc = 'data:image/jpeg;base64,' . $logoData;
+        } else {
+            // Fallback to logo.svg if jpeg is not found
+            $fallbackPath = public_path('img/logo.svg');
+            if(file_exists($fallbackPath)){
+                $logoData = base64_encode(file_get_contents($fallbackPath));
+                $logoSrc = 'data:image/svg+xml;base64,' . $logoData;
+            }
         }
     @endphp
 
@@ -127,7 +216,7 @@
                                         
                                         <table class="details-table">
                                             <tr>
-                                                <td style="width: 58%;"><span class="label">Name:</span> <span class="val" style="color: #cc0000;">{{ $student->student_name ?? $student->first_name }}</span></td>
+                                                <td style="width: 58%;"><span class="label">Name:</span> <span class="val val-name">{{ $student->student_name ?? $student->first_name }}</span></td>
                                                 <td style="width: 42%;"><span class="label">ID:</span> <span class="val">{{ $student->student_identity }}</span></td>
                                             </tr>
                                             <tr>
@@ -150,7 +239,7 @@
                                             @if($logoSrc)
                                                 <img src="{{ $logoSrc }}" class="school-logo" alt="Logo" style="display: block; margin-left: auto; margin-right: 0;"/>
                                             @else
-                                                <div class="school-logo" style="border: 1px solid #777; line-height: 46px; font-size: 9px; text-align: center; display: block; margin-left: auto; margin-right: 0;">LOGO</div>
+                                                <div class="school-logo" style="border: 1px solid #e2e8f0; line-height: 46px; font-size: 9px; text-align: center; display: block; margin-left: auto; margin-right: 0; color: #64748b;">LOGO</div>
                                             @endif
                                         </div>
                                         

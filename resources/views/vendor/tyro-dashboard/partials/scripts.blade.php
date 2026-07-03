@@ -308,4 +308,128 @@
             }
         }
     });
+
+    // Page Transition Skeleton Loader for menu items
+    document.addEventListener('DOMContentLoaded', function() {
+        const mainContent = document.querySelector('.main-content');
+        if (!mainContent) return;
+
+        // Add handler for link clicks
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (!link) return;
+
+            const href = link.getAttribute('href');
+            if (!href) return;
+
+            // Ignore non-navigation links
+            if (
+                href.startsWith('#') ||
+                href.startsWith('javascript:') ||
+                href.startsWith('mailto:') ||
+                href.startsWith('tel:') ||
+                link.getAttribute('target') === '_blank' ||
+                link.classList.contains('no-loader') ||
+                link.hasAttribute('download')
+            ) {
+                return;
+            }
+
+            // Verify same domain
+            try {
+                const linkUrl = new URL(link.href, window.location.href);
+                if (linkUrl.origin !== window.location.origin) {
+                    return;
+                }
+            } catch(err) {
+                return;
+            }
+
+            // Trigger premium dashboard skeleton screen
+            showPageSkeletonLoader();
+            showSidebarSkeletonLoader();
+        });
+
+        function showSidebarSkeletonLoader() {
+            const sidebarNav = document.querySelector('.sidebar-nav');
+            if (!sidebarNav) return;
+
+            const isCollapsed = document.getElementById('sidebar')?.classList.contains('collapsed');
+            const scrollPos = sidebarNav.scrollTop;
+
+            let html = '<div class="animate-pulse space-y-4 px-2 py-2">';
+            const rowCount = isCollapsed ? 12 : 9;
+            
+            for (let i = 0; i < rowCount; i++) {
+                if (isCollapsed) {
+                    html += `
+                        <div class="flex items-center justify-center py-3">
+                            <div class="w-5 h-5 bg-gray-200 dark:bg-gray-800 rounded-md"></div>
+                        </div>
+                    `;
+                } else {
+                    const textWidth = i % 3 === 0 ? 'w-24' : (i % 3 === 1 ? 'w-32' : 'w-28');
+                    html += `
+                        <div class="flex items-center justify-between px-3 py-3">
+                            <div class="flex items-center gap-3 w-full">
+                                <div class="w-4 h-4 bg-gray-200 dark:bg-gray-800 rounded-md shrink-0"></div>
+                                <div class="h-4 bg-gray-200 dark:bg-gray-800 ${textWidth} rounded-md"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            html += '</div>';
+
+            sidebarNav.style.position = 'relative';
+            sidebarNav.innerHTML = html;
+            sidebarNav.scrollTop = scrollPos;
+        }
+
+        function showPageSkeletonLoader() {
+            if (document.getElementById('page-skeleton-loader')) return;
+
+            mainContent.style.position = 'relative';
+
+            const loader = document.createElement('div');
+            loader.id = 'page-skeleton-loader';
+            loader.className = 'absolute inset-0 bg-[#f8fafc] dark:bg-themeDark z-[9999] p-8 overflow-hidden min-h-screen transition-opacity duration-200 opacity-0';
+            
+            loader.innerHTML = `
+                <div class="animate-pulse space-y-8">
+                    <!-- Title & Subtitle Placeholder -->
+                    <div>
+                        <div class="h-7 bg-gray-200 dark:bg-gray-800 rounded-xl w-64 mb-3"></div>
+                        <div class="h-3.5 bg-gray-100 dark:bg-gray-800/50 rounded-lg w-96"></div>
+                    </div>
+
+                    <!-- Metric Cards Placeholder -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+                        <div class="h-28 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.05] rounded-[24px] shadow-sm"></div>
+                        <div class="h-28 bg-white dark:bg-themeNavy border border-gray-200 dark:border-white/[0.05] rounded-[24px] shadow-sm"></div>
+                        <div class="h-28 bg-white dark:bg-themeNavy border border-gray-200 dark:border-white/[0.05] rounded-[24px] shadow-sm"></div>
+                    </div>
+
+                    <!-- Inner Form or Table Area Placeholder -->
+                    <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.05] rounded-[32px] p-6 space-y-6 mt-8 shadow-sm">
+                        <div class="h-6 bg-gray-200 dark:bg-gray-800 rounded-lg w-40 mb-4"></div>
+                        <div class="space-y-4">
+                            <div class="h-4 bg-gray-100 dark:bg-gray-800/40 rounded-md w-full"></div>
+                            <div class="h-4 bg-gray-100 dark:bg-gray-800/40 rounded-md w-11/12"></div>
+                            <div class="h-4 bg-gray-100 dark:bg-gray-800/40 rounded-md w-10/12"></div>
+                            <div class="h-4 bg-gray-100 dark:bg-gray-800/40 rounded-md w-full"></div>
+                            <div class="h-4 bg-gray-100 dark:bg-gray-800/40 rounded-md w-4/5"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            mainContent.appendChild(loader);
+            
+            // Fade in transition
+            setTimeout(() => {
+                loader.style.opacity = '1';
+            }, 10);
+        }
+    });
 </script>
