@@ -62,6 +62,7 @@ class TeacherController extends Controller
             'email'        => 'required|email|unique:users,email',
             'password'     => 'required|string|min:6',
             'employee_id'  => 'required|string|unique:teachers,employee_id',
+            'biometric_id' => 'nullable|string|unique:teachers,biometric_id',
             'designation'  => 'required|string',
             'phone'        => 'required|string|max:20',
             'address'      => 'required|string',
@@ -91,6 +92,7 @@ class TeacherController extends Controller
             Teacher::create([
                 'user_id'      => $user->id, // রিলেশন
                 'employee_id'  => $request->employee_id,
+                'biometric_id' => $request->biometric_id,
                 'designation'  => $request->designation,
                 'department'   => $request->department,
                 'phone'        => $request->phone,
@@ -144,6 +146,7 @@ class TeacherController extends Controller
                 'email'        => 'required|email|unique:users,email,' . $user_id,
                 'password'     => 'nullable|string|min:6', // পাসওয়ার্ড না দিলেও চলবে
                 'employee_id'  => 'required|string|unique:teachers,employee_id,' . $id,
+                'biometric_id' => 'nullable|string|unique:teachers,biometric_id,' . $id,
                 'designation'  => 'required|string',
                 'phone'        => 'required|string|max:20',
                 'address'      => 'required|string',
@@ -176,6 +179,7 @@ class TeacherController extends Controller
             // ৩. Teacher প্রোফাইল আপডেট
             $teacher->update([
                 'employee_id'  => $request->employee_id,
+                'biometric_id' => $request->biometric_id,
                 'designation'  => $request->designation,
                 'department'   => $request->department,
                 'phone'        => $request->phone,

@@ -4,17 +4,15 @@
     
     // Determine the initial drill-down view based on the current active route
     $initialView = 'main';
-    if (request()->routeIs('students.*', 'student.*', 'id-cards.*')) {
+    if (request()->routeIs('students.*', 'student.*', 'id-cards.*', 'attendance.*')) {
         $initialView = 'students';
-    } elseif (request()->routeIs('classes.*', 'routine.*', 'attendance.*')) {
-        $initialView = 'classes';
     } elseif (request()->routeIs('exams.*', 'exam-routine.*', 'exam-schedules.*', 'admit-cards.*', 'seat-plans.*', 'marks.*', 'results.*', 'certificates.*')) {
         $initialView = 'exams';
     } elseif (request()->routeIs('teachers.*', 'teacher.*', 'staff-attendance.*')) {
         $initialView = 'teachers';
     } elseif (request()->routeIs('sms.*')) {
         $initialView = 'sms';
-    } elseif (request()->routeIs('sections.*', 'shifts.*', 'sessions.*', 'branches.*', 'subjects.*', 'grades.*')) {
+    } elseif (request()->routeIs('sections.*', 'shifts.*', 'sessions.*', 'branches.*', 'subjects.*', 'grades.*', 'classes.*', 'routine.*')) {
         $initialView = 'academic';
     } elseif (request()->routeIs('fees.*')) {
         $initialView = 'fees';
@@ -76,6 +74,12 @@
                     <a href="{{ route('student.admission') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
                         <span>Add New Students</span>
                     </a>
+                    <a href="{{ route('attendance.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Attendance</span>
+                    </a>
+                    <a href="{{ route('attendance.report') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Attendance Report</span>
+                    </a>
                     @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
                     <a href="{{ route('id-cards.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
                         <span>ID Card Generation</span>
@@ -84,38 +88,6 @@
                         <span>Student Promotion</span>
                     </a>
                     @endif
-                </div>
-            </div>
-            @endif
-
-            <!-- Class Management (Drilldown Trigger) -->
-            @if(auth()->check() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
-            <div class="relative group/trigger">
-                <button type="button" @click="currentView = 'classes'" class="flex items-center justify-between sidebar-link border-none bg-transparent group !w-[calc(100%-16px)] !mx-2">
-                    <span class="flex items-center gap-2.5">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                        <span class="sidebar-text">Class Management</span>
-                    </span>
-                    <span class="w-5 h-5 rounded-[5px] flex items-center justify-center bg-gray-100/70 dark:bg-white/[0.04] border border-gray-200/50 dark:border-white/[0.05] transition-all group-hover:bg-gray-200/80 dark:group-hover:bg-white/[0.15] group-hover:border-gray-300 dark:group-hover:border-white/[0.18] shrink-0">
-                        <svg class="w-2.5 h-2.5 text-gray-400 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
-                    </span>
-                </button>
-                <div class="sidebar-popup-menu absolute left-[62px] top-0 ml-2 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-2 min-w-[200px] z-[9999] pointer-events-auto text-left hidden">
-                    <div class="px-4 py-1.5 border-b border-gray-100 dark:border-white/[0.05] text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
-                        Class Management
-                    </div>
-                    <a href="{{ route('classes.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
-                        <span>Class List</span>
-                    </a>
-                    <a href="{{ route('routine.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
-                        <span>Class Routine</span>
-                    </a>
-                    <a href="{{ route('attendance.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
-                        <span>Attendance</span>
-                    </a>
-                    <a href="{{ route('attendance.report') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
-                        <span>Attendance Report</span>
-                    </a>
                 </div>
             </div>
             @endif
@@ -241,6 +213,12 @@
                     <div class="px-4 py-1.5 border-b border-gray-100 dark:border-white/[0.05] text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
                         Academic Setup
                     </div>
+                    <a href="{{ route('classes.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Class List</span>
+                    </a>
+                    <a href="{{ route('routine.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Class Routine</span>
+                    </a>
                     <a href="{{ route('sections.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
                         <span>Sections</span>
                     </a>
@@ -395,6 +373,14 @@
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
                 <span class="sidebar-text">Add New Students</span>
             </a>
+            <a href="{{ route('attendance.index') }}" class="sidebar-link {{ request()->routeIs('attendance.index') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span class="sidebar-text">Attendance</span>
+            </a>
+            <a href="{{ route('attendance.report') }}" class="sidebar-link {{ request()->routeIs('attendance.report') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <span class="sidebar-text">Attendance Report</span>
+            </a>
             @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
             <a href="{{ route('id-cards.index') }}" class="sidebar-link {{ request()->routeIs('id-cards.index') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 16h8"/></svg>
@@ -407,34 +393,7 @@
             @endif
         </div>
 
-        <!-- ==============================================
-             CLASSES VIEW
-             ============================================== -->
-        <div x-show="currentView === 'classes'" style="display: {{ $initialView === 'classes' ? 'block' : 'none' }};" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-2" x-transition:enter-end="opacity-100 translate-x-0" class="px-2">
-            <!-- Back Button -->
-            <button type="button" @click="currentView = 'main'" class="sidebar-back-btn border-none bg-transparent">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                <span>Class Management</span>
-            </button>
 
-            <!-- Menu links -->
-            <a href="{{ route('classes.index') }}" class="sidebar-link {{ request()->routeIs('classes.index') ? 'active' : '' }}">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
-                <span class="sidebar-text">Class List</span>
-            </a>
-            <a href="{{ route('routine.index') }}" class="sidebar-link {{ request()->routeIs('routine.index') ? 'active' : '' }}">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                <span class="sidebar-text">Class Routine</span>
-            </a>
-            <a href="{{ route('attendance.index') }}" class="sidebar-link {{ request()->routeIs('attendance.index') ? 'active' : '' }}">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span class="sidebar-text">Attendance</span>
-            </a>
-            <a href="{{ route('attendance.report') }}" class="sidebar-link {{ request()->routeIs('attendance.report') ? 'active' : '' }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                <span class="sidebar-text">Attendance Report</span>
-            </a>
-        </div>
 
         <!-- ==============================================
              EXAMS VIEW
@@ -546,6 +505,14 @@
             </button>
 
             <!-- Menu links -->
+            <a href="{{ route('classes.index') }}" class="sidebar-link {{ request()->routeIs('classes.index') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+                <span class="sidebar-text">Class List</span>
+            </a>
+            <a href="{{ route('routine.index') }}" class="sidebar-link {{ request()->routeIs('routine.index') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span class="sidebar-text">Class Routine</span>
+            </a>
             <a href="{{ route('sections.index') }}" class="sidebar-link {{ request()->routeIs('sections.index') ? 'active' : '' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
                 <span class="sidebar-text">Sections</span>

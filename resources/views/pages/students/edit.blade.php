@@ -13,12 +13,17 @@
         darkMode: 'class', 
         theme: { 
             extend: { 
-                colors: {
-                    themeGreen: '#1e4630', 
-                    themeRed: '#cc0000',   
-                    themePink: '#d97782',
-                    themeIndigo: '#4f46e5',
-                    deepBlue: '#1e3a8a'
+                colors: { 
+                    themeGreen: '#009A49', 
+                    themeBlue: '#008ED6', 
+                    themeDark: '#070E14', 
+                    themeNavy: '#0F1E2C',
+                    gray: {
+                        55: '#f8fafc',
+                        450: '#94a3b8',
+                        555: '#64748b',
+                        850: '#1e293b'
+                    }
                 },
                 fontFamily: { sans: ['Figtree', 'sans-serif'], secondary: ['Onest', 'sans-serif'] } 
             } 
@@ -26,74 +31,141 @@
     }
 </script>
 <style>
-    .form-label { @apply block text-xs font-black text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wider; }
-    .form-input { @apply w-full border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2.5 focus:ring-2 focus:ring-themeGreen focus:border-transparent outline-none transition shadow-sm placeholder-gray-400 dark:placeholder-gray-500; }
-    .required-star { @apply text-red-600 ml-0.5; }
-    .id-display-badge { @apply bg-indigo-50/50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400 font-mono font-black px-4 py-2 rounded-lg inline-block shadow-sm; }
+    [x-cloak] { display: none !important; }
+    .form-label {
+        display: block;
+        font-size: 10px !important;
+        font-weight: 900 !important;
+        letter-spacing: 0.15em !important;
+        text-transform: uppercase !important;
+        color: #6b7280; /* text-gray-500 */
+        margin-bottom: 0.5rem !important;
+    }
+    .dark .form-label {
+        color: #9ca3af; /* text-gray-400 */
+    }
+    .form-input {
+        width: 100%;
+        height: 44px !important;
+        padding: 0 1rem !important;
+        border-radius: 12px !important; /* rounded-xl */
+        border: 2px solid #e2e8f0 !important; /* border-gray-200 */
+        background-color: rgba(248, 250, 252, 0.5) !important; /* bg-gray-50/50 */
+        color: #0f172a !important; /* text-gray-900 */
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease !important;
+        outline: none !important;
+        box-sizing: border-box;
+    }
+    .dark .form-input {
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        background-color: #070e14 !important; /* bg-themeDark */
+        color: #f8fafc !important;
+    }
+    .form-input:focus {
+        border-color: #008ED6 !important;
+        box-shadow: 0 0 0 4px rgba(0, 142, 214, 0.1) !important;
+        background-color: #ffffff !important;
+    }
+    .dark .form-input:focus {
+        background-color: #0f1e2c !important;
+    }
+    .required-star {
+        color: #ef4444; /* text-red-500 */
+        margin-left: 0.125rem;
+    }
+    .id-display-card {
+        background-color: rgba(0, 142, 214, 0.05);
+        border: 1px solid rgba(0, 142, 214, 0.15);
+    }
+    .dark .id-display-card {
+        background-color: rgba(0, 142, 214, 0.08);
+        border-color: rgba(255, 255, 255, 0.08);
+    }
 </style>
 @endpush
 
 @section('breadcrumb')
-<a href="{{ route('dashboard.dashboard') }}" class="text-themeGreen font-bold hover:underline">Dashboard</a>
+<a href="{{ route('dashboard.dashboard') }}" class="text-themeBlue hover:text-themeGreen font-bold transition-colors">Dashboard</a>
 <span class="text-gray-400 mx-2">/</span>
-<a href="{{ route('students.index') }}" class="text-themeGreen font-bold hover:underline">Student Management</a>
+<a href="{{ route('students.index') }}" class="text-themeBlue hover:text-themeGreen font-bold transition-colors">Student Management</a>
 <span class="text-gray-400 mx-2">/</span>
-<span class="text-gray-600 dark:text-gray-300 font-medium">Edit Student</span>
+<span class="text-gray-500 dark:text-gray-400 font-medium">Edit Student</span>
 @endsection
 
 @section('content')
-<div class="p-4 md:p-8 max-w-[1400px] mx-auto">
+<div class="w-full min-h-screen text-gray-900 dark:text-gray-100">
     
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-10 border-2 border-themeGreen/30 dark:border-themeGreen/40 relative overflow-hidden">
+    <div class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] shadow-sm p-6 md:p-10 relative overflow-hidden">
         
-        <div id="loadingOverlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 z-50 flex items-center justify-center backdrop-blur-sm">
-            <div class="text-center">
-                <div class="inline-block w-12 h-12 border-4 border-gray-200 dark:border-gray-700 border-t-themeGreen rounded-full animate-spin mb-3"></div>
-                <p class="text-lg font-black text-themeGreen dark:text-green-500">Fetching Student Data...</p>
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="absolute inset-0 bg-white/70 dark:bg-themeDark/70 z-50 flex items-center justify-center backdrop-blur-md transition-all duration-300">
+            <div class="text-center p-8 bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] shadow-xl">
+                <div class="inline-block w-10 h-10 border-4 border-gray-200 border-t-themeBlue rounded-full animate-spin mb-4"></div>
+                <p class="text-xs font-black text-themeBlue dark:text-indigo-400 uppercase tracking-widest">Fetching Student Data...</p>
             </div>
         </div>
 
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 border-b border-gray-100 dark:border-gray-700 pb-8 gap-6">
+        <!-- Redesigned Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 border-b border-gray-150 dark:border-white/[0.08] pb-6">
             <div>
-                <h2 class="text-3xl md:text-4xl font-black text-themeGreen dark:text-green-500 uppercase tracking-tighter">
+                <h1 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
+                    <svg class="w-8 h-8 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                    </svg>
                     Edit Student Info
-                </h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">Update student records and documents</p>
+                </h1>
+                <p class="text-sm font-medium text-gray-555 dark:text-gray-400 mt-1">Pabna International School - Smart Education Management System</p>
             </div>
-            <div class="text-left md:text-right">
-                <span class="text-[10px] font-black text-themeIndigo uppercase tracking-widest block mb-1">Student Identity</span>
-                <div id="display_identity" class="id-display-badge">PIS-XXXX-XX-XXXX</div>
+            
+            <div class="id-display-card w-full md:w-auto min-w-[260px] p-3.5 rounded-2xl shadow-sm">
+                <label class="text-[10px] font-black text-themeBlue uppercase tracking-widest block mb-1">Student Identity</label>
+                <div class="relative flex items-center justify-between">
+                    <span id="display_identity" class="text-sm font-mono font-black text-themeBlue dark:text-themeBlue/90">PIS-XXXX-XX-XXXX</span>
+                    <svg class="w-4 h-4 text-themeBlue/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </div>
             </div>
         </div>
 
         <form id="editForm" onsubmit="event.preventDefault(); window.UpdateStudent();">
             
-            <h3 class="text-xl font-black text-gray-800 dark:text-white mb-6 border-l-4 border-yellow-500 pl-3 uppercase">Academic Details</h3>
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-12 p-6 bg-themeGreen/5 dark:bg-green-900/10 rounded-3xl border border-themeGreen/20">
+            <!-- Section 1: Academic Details -->
+            <div class="flex items-center gap-2 mb-6">
+                <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-themeBlue to-themeGreen"></span>
+                <h3 class="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider font-secondary">Academic Details</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 mb-10 p-6 bg-gray-50/50 dark:bg-themeDark/30 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
                 <div>
-                    <label class="form-label text-themeGreen dark:text-green-400">Branch <span class="required-star">*</span></label>
-                    <select id="branch_id" class="form-input border-green-200 dark:border-green-900/50" required></select>
+                    <label class="form-label text-themeBlue">Branch <span class="required-star">*</span></label>
+                    <select id="branch_id" class="form-input" required></select>
                 </div>
                 <div>
-                    <label class="form-label text-themeGreen dark:text-green-400">Class <span class="required-star">*</span></label>
-                    <select id="class_id" class="form-input border-green-200 dark:border-green-900/50" required></select>
+                    <label class="form-label text-themeBlue">Class <span class="required-star">*</span></label>
+                    <select id="class_id" class="form-input" required></select>
                 </div>
                 <div>
-                    <label class="form-label text-themeGreen dark:text-green-400">Section <span class="required-star">*</span></label>
-                    <select id="section_id" class="form-input border-green-200 dark:border-green-900/50" required></select>
+                    <label class="form-label text-themeBlue">Section <span class="required-star">*</span></label>
+                    <select id="section_id" class="form-input" required></select>
                 </div>
                 <div>
-                    <label class="form-label text-themeGreen dark:text-green-400">Shift</label>
-                    <select id="shift_id" class="form-input border-green-200 dark:border-green-900/50"></select>
+                    <label class="form-label text-themeBlue">Shift</label>
+                    <select id="shift_id" class="form-input"></select>
                 </div>
                 <div>
-                    <label class="form-label text-themeGreen dark:text-green-400">Session <span class="required-star">*</span></label>
-                    <select id="session_year_id" class="form-input border-green-200 dark:border-green-900/50" required></select>
+                    <label class="form-label text-themeBlue">Session <span class="required-star">*</span></label>
+                    <select id="session_year_id" class="form-input" required></select>
                 </div>
             </div>
 
-            <h3 class="text-xl font-black text-gray-800 dark:text-white mb-6 border-l-4 border-blue-500 pl-3 uppercase">Basic Information</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 items-end">
+            <!-- Section 2: Basic Information -->
+            <div class="flex items-center gap-2 mb-6">
+                <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-themeBlue to-themeGreen"></span>
+                <h3 class="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider font-secondary">Basic Information</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10 p-6 bg-gray-50/50 dark:bg-themeDark/30 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
                 <div>
                     <label class="form-label">Student Name <span class="required-star">*</span></label>
                     <input type="text" id="student_name" class="form-input" required>
@@ -148,6 +220,16 @@
                     <input type="email" id="email" class="form-input">
                 </div>
                 <div>
+                    <label class="form-label">RFID Card Number</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="card_number" class="form-input flex-1" placeholder="e.g. 0010754689">
+                        <button type="button" onclick="window.scanRfidCard(event)" class="h-11 px-4 bg-gray-50/50 dark:bg-themeNavy hover:bg-themeBlue/5 border-2 border-gray-100 dark:border-gray-800 text-themeBlue font-black text-xs uppercase tracking-wider rounded-xl transition-all whitespace-nowrap active:scale-95 shrink-0 flex items-center justify-center gap-1.5" title="Swipe card on ZKTeco device, then click to auto-bind">
+                            <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-8.22-.07m8.22-.07a6 6 0 00-8.22-.07M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H10a1 1 0 01-1-1v-4z"/></svg>
+                            Scan Card
+                        </button>
+                    </div>
+                </div>
+                <div>
                     <label class="form-label">SMS Status</label>
                     <select id="sms_status" class="form-input">
                         <option value="Active">Active</option>
@@ -155,65 +237,66 @@
                     </select>
                 </div>
 
+                <!-- Student Photo -->
                 <div>
                     <label class="form-label">Student Photo</label>
-                    <div class="flex items-center gap-3 bg-white dark:bg-gray-800 p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 shadow-inner h-[60px]">
-                        
-                        <div class="w-12 h-12 shrink-0 bg-gray-50 dark:bg-gray-700 flex items-center justify-center rounded border border-dashed border-gray-300 dark:border-gray-500 overflow-hidden relative">
+                    <div class="flex items-center gap-3 bg-gray-50/50 dark:bg-themeDark/40 p-1.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 h-11">
+                        <div class="w-8 h-8 shrink-0 bg-gray-100 dark:bg-themeNavy/50 flex items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-700 overflow-hidden relative animate-none">
                             <img id="photoPreview" src="" alt="Preview" class="w-full h-full object-cover hidden absolute inset-0 z-10">
-                            <svg id="photoIcon" class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <svg id="photoIcon" class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         </div>
-                        
                         <div class="flex-1 relative h-full">
                             <input type="file" id="photo" onchange="window.previewImage(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/png, image/jpeg, image/jpg">
-                            
-                            <div class="h-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-[11px] font-black uppercase tracking-wider rounded transition">
+                            <div class="h-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-themeNavy/50 text-gray-700 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg transition border border-gray-200 dark:border-gray-800">
                                 Choose Photo
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div>
+                <!-- Document Upload -->
+                <div class="relative">
                     <label class="form-label">Document (Birth Cert/NID)</label>
-                    <div class="relative">
-                        <div class="relative flex items-center justify-between gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 shadow-inner h-[60px] cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition" onclick="document.getElementById('document_file').click()">
-                            
-                            <input type="file" id="document_file" class="hidden" accept=".pdf, image/jpeg, image/png, image/jpg" onchange="window.previewDocument(event)">
-                            
-                            <div id="docPlaceholder" class="flex-1 h-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded transition text-gray-700 dark:text-gray-300">
-                                <svg class="w-4 h-4 mr-1.5 shrink-0 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                                <span class="text-[11px] font-black uppercase tracking-wider truncate">Upload Doc</span>
-                            </div>
-
-                            <div id="docPreviewInfo" class="hidden flex items-center justify-between w-full h-full pl-2 pr-1 bg-green-50 dark:bg-green-900/30 rounded border border-green-100 dark:border-green-800">
-                                <div class="flex items-center overflow-hidden flex-1">
-                                    <svg class="w-5 h-5 text-green-500 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                    <div class="min-w-0">
-                                        <p id="docFileName" class="text-[10px] font-bold text-gray-700 dark:text-gray-300 truncate w-full"></p>
-                                    </div>
-                                </div>
-                                <button type="button" onclick="window.removeDocument(event)" class="text-red-500 hover:text-red-700 p-1.5 shrink-0 bg-red-100 dark:bg-red-900/50 rounded shadow-sm transition relative z-30 ml-1">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                </button>
-                            </div>
+                    <div class="relative flex items-center justify-between gap-3 bg-gray-50/50 dark:bg-themeDark/40 p-1.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 h-11 cursor-pointer hover:bg-gray-100/50 dark:hover:bg-themeDark/60 transition" onclick="document.getElementById('document_file').click()">
+                        <input type="file" id="document_file" class="hidden" accept=".pdf, image/jpeg, image/png, image/jpg" onchange="window.previewDocument(event)">
+                        
+                        <div id="docPlaceholder" class="flex items-center text-gray-400 pl-1.5 w-full">
+                            <svg class="w-4 h-4 mr-2 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <span class="text-xs font-semibold">Upload PDF/Image</span>
                         </div>
 
-                        <div id="currentDocumentWrapper" class="hidden w-full mt-2 text-center absolute -bottom-5">
-                            <a id="currentDocumentLink" href="#" target="_blank" class="text-[9px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-bold flex items-center justify-center gap-1" onclick="event.stopPropagation()">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                View Current Doc
-                            </a>
+                        <div id="docPreviewInfo" class="hidden flex items-center justify-between w-full pl-1.5 pr-1">
+                            <div class="flex items-center overflow-hidden">
+                                <svg class="w-4 h-4 text-emerald-500 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                <div class="truncate max-w-[120px]">
+                                    <p id="docFileName" class="text-[10px] font-bold text-gray-700 dark:text-gray-300 truncate"></p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="window.removeDocument(event)" class="text-red-500 hover:text-red-700 p-1 shrink-0 bg-red-50 dark:bg-red-950/20 rounded-md shadow-sm transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
                         </div>
                     </div>
+                    <div id="currentDocumentWrapper" class="hidden w-full text-center absolute -bottom-5">
+                        <a id="currentDocumentLink" href="#" target="_blank" class="text-[9px] text-themeBlue dark:text-indigo-400 hover:text-themeBlue/80 font-bold flex items-center justify-center gap-1" onclick="event.stopPropagation()">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            View Current Doc
+                        </a>
+                    </div>
                 </div>
+            </div>
 
             </div>
 
-            <h3 class="text-xl font-black text-gray-800 dark:text-white mb-6 border-l-4 border-themeGreen pl-3 uppercase mt-4">Family Details</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                <div class="bg-gray-50 dark:bg-gray-900/40 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
-                    <h4 class="text-[11px] font-black text-green-600 dark:text-green-500 uppercase mb-4 tracking-widest border-b border-green-100 dark:border-green-900/30 pb-2">Father's Details</h4>
+            <!-- Section 3: Family Details -->
+            <div class="flex items-center gap-2 mb-6">
+                <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-themeBlue to-themeGreen"></span>
+                <h3 class="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider font-secondary">Family Details</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-gray-50/50 dark:bg-themeDark/30 p-6 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
+                    <h4 class="text-[10px] font-black text-themeBlue uppercase mb-4 tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-2">Father's Details</h4>
                     <div class="space-y-4">
                         <input type="text" id="father_name" class="form-input" placeholder="Father's Name *" required>
                         <input type="text" id="father_occupation" class="form-input" placeholder="Occupation">
@@ -222,8 +305,8 @@
                     </div>
                 </div>
 
-                <div class="bg-gray-50 dark:bg-gray-900/40 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
-                    <h4 class="text-[11px] font-black text-themeIndigo dark:text-indigo-400 uppercase mb-4 tracking-widest border-b border-indigo-100 dark:border-indigo-900/30 pb-2">Mother's Details</h4>
+                <div class="bg-gray-50/50 dark:bg-themeDark/30 p-6 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
+                    <h4 class="text-[10px] font-black text-themeBlue uppercase mb-4 tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-2">Mother's Details</h4>
                     <div class="space-y-4">
                         <input type="text" id="mother_name" class="form-input" placeholder="Mother's Name *" required>
                         <input type="text" id="mother_occupation" class="form-input" placeholder="Occupation">
@@ -232,8 +315,8 @@
                     </div>
                 </div>
 
-                <div class="bg-gray-50 dark:bg-gray-900/40 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
-                    <h4 class="text-[11px] font-black text-themeRed dark:text-red-400 uppercase mb-4 tracking-widest border-b border-red-100 dark:border-red-900/30 pb-2">Emergency Guardian</h4>
+                <div class="bg-gray-50/50 dark:bg-themeDark/30 p-6 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
+                    <h4 class="text-[10px] font-black text-themeGreen uppercase mb-4 tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-2">Emergency Contact</h4>
                     <div class="space-y-4">
                         <input type="text" id="guardian_name" class="form-input" placeholder="Guardian Name">
                         <input type="text" id="guardian_occupation" class="form-input" placeholder="Occupation">
@@ -242,10 +325,15 @@
                 </div>
             </div>
 
-            <h3 class="text-xl font-black text-gray-800 dark:text-white mb-6 border-l-4 border-themePink pl-3 uppercase">Address Information</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                <div class="bg-gray-50 dark:bg-gray-900/40 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
-                    <h4 class="text-[11px] font-black text-themePink uppercase mb-4 tracking-widest border-b border-pink-100 dark:border-pink-900/30 pb-2">Present Address</h4>
+            <!-- Section 4: Address Information -->
+            <div class="flex items-center gap-2 mb-6">
+                <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-themeBlue to-themeGreen"></span>
+                <h3 class="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider font-secondary">Address Information</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                <div class="bg-gray-50/50 dark:bg-themeDark/30 p-6 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
+                    <h4 class="text-[10px] font-black text-themeBlue uppercase mb-4 tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-2">Present Address</h4>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="col-span-2">
                             <label class="form-label">Village / Road <span class="required-star">*</span></label>
@@ -285,13 +373,13 @@
                     </div>
                 </div>
 
-                <div class="bg-gray-50 dark:bg-gray-900/40 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 relative">
-                    <div class="flex justify-between items-center mb-4 border-b border-pink-100 dark:border-pink-900/30 pb-2">
-                        <h4 class="text-[11px] font-black text-themePink uppercase tracking-widest">Permanent Address</h4>
+                <div class="bg-gray-50/50 dark:bg-themeDark/30 p-6 rounded-3xl border border-gray-150 dark:border-white/[0.06] relative">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-white/[0.06] pb-2">
+                        <h4 class="text-[10px] font-black text-themeBlue uppercase tracking-widest">Permanent Address</h4>
                         
                         <div class="flex items-center gap-2">
-                            <input type="checkbox" id="same_as_present" onchange="window.togglePermanentAddress()" class="w-4 h-4 text-themeGreen border-gray-300 rounded focus:ring-themeGreen cursor-pointer">
-                            <label for="same_as_present" class="text-xs font-bold text-gray-600 dark:text-gray-400 cursor-pointer select-none">Same as Present</label>
+                            <input type="checkbox" id="same_as_present" onchange="window.togglePermanentAddress()" class="w-4 h-4 text-themeBlue border-gray-300 rounded focus:ring-themeBlue/15 cursor-pointer">
+                            <label for="same_as_present" class="text-xs font-black text-gray-500 cursor-pointer select-none">Same as Present</label>
                         </div>
                     </div>
 
@@ -335,17 +423,18 @@
                 </div>
             </div>
 
-            <div class="flex flex-col md:flex-row gap-4 items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-8 mt-6">
-                <a href="{{ route('students.index') }}" class="bg-themeRed hover:bg-red-800 text-white font-black py-4 px-10 rounded-2xl transition-all uppercase text-xs tracking-widest text-center w-full md:w-auto">Cancel</a>
-                <button type="submit" class="w-full md:w-auto bg-themeGreen hover:bg-green-900 text-white font-black py-5 px-24 rounded-2xl shadow-2xl transition-all hover:scale-[1.02] active:scale-95 uppercase tracking-widest text-sm">
+            <!-- Footer Action Panel -->
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between border-t border-gray-150 dark:border-white/[0.08] pt-8 mt-6">
+                <a href="{{ route('students.index') }}" class="h-11 px-10 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl uppercase tracking-[0.2em] text-xs flex items-center justify-center transition-all hover:-translate-y-0.5 active:scale-95 shadow-md shadow-rose-600/10 w-full md:w-auto">Cancel</a>
+                <button type="submit" class="h-11 px-12 bg-gradient-to-r from-themeBlue to-themeGreen hover:from-themeBlue/90 hover:to-themeGreen/90 text-white font-black uppercase tracking-[0.2em] text-xs rounded-xl shadow-md shadow-themeBlue/10 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 w-full md:w-auto">
                     Save Changes
                 </button>
             </div>
         </form>
 
-        <div class="mt-12 text-center border-t border-gray-50 dark:border-gray-900 pt-6">
+        <div class="mt-12 text-center border-t border-gray-150 dark:border-white/[0.08] pt-6">
             <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                Powered by <a href="https://www.codenextit.com" target="_blank" class="text-themeGreen font-bold hover:underline">Code Next IT</a>
+                Powered by <a href="https://www.codenextit.com" target="_blank" class="text-themeBlue font-bold hover:text-themeGreen transition-colors">Code Next IT</a>
             </p>
         </div>
     </div>
@@ -395,7 +484,7 @@
                 'guardian_name', 'guardian_mobile', 'guardian_occupation',
                 'present_village', 'present_post_office', 'present_post_code', 'present_district', 'present_division',
                 'permanent_village', 'permanent_post_office', 'permanent_post_code', 'permanent_district', 'permanent_division',
-                'branch_id', 'class_id', 'section_id', 'shift_id', 'session_year_id'
+                'branch_id', 'class_id', 'section_id', 'shift_id', 'session_year_id', 'card_number'
             ];
 
             fields.forEach(f => {
@@ -513,7 +602,7 @@
 
         const fields = [
             'roll_number', 'student_name', 'name_in_bangla', 'birth_certificate', 
-            'blood_group', 'religion', 'dob', 'gender', 'email', 'sms_status',
+            'blood_group', 'religion', 'dob', 'gender', 'email', 'sms_status', 'card_number',
             'father_name', 'father_nid', 'father_mobile', 'father_occupation', 
             'mother_name', 'mother_nid', 'mother_mobile', 'mother_occupation', 
             'guardian_name', 'guardian_mobile', 'guardian_occupation',
@@ -552,6 +641,34 @@
             let btn = document.querySelector('button[type="submit"]');
             btn.innerText = 'Save Changes';
             btn.disabled = false;
+        }
+    };
+
+    window.scanRfidCard = async function(event) {
+        try {
+            await showAlert("Please swipe the RFID card on the biometric device now, then click OK to scan.", "Card Swipe Scanner");
+            
+            let btn = event.currentTarget || document.querySelector('button[onclick*="scanRfidCard"]');
+            let origHtml = btn.innerHTML;
+            btn.innerHTML = '<svg class="w-4 h-4 animate-spin text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3-3m0 0l3 3m-3-3v12"/></svg> Detecting...';
+            btn.disabled = true;
+
+            let res = await axios.get('/ajax/students/scan-card', getAuthHeaders());
+            
+            if (res.data.status === 'success') {
+                document.getElementById('card_number').value = res.data.card_number;
+                document.getElementById('card_number').dispatchEvent(new Event('input'));
+                await showAlert("Success! Detected Card Number: " + res.data.card_number, "Scan Successful");
+            }
+        } catch (err) {
+            let errMsg = err.response?.data?.message || "Failed to scan card. Please make sure the device is connected and swipe was recent.";
+            showAlert(errMsg, "Scan Error");
+        } finally {
+            let btn = document.querySelector('button[onclick*="scanRfidCard"]');
+            if (btn) {
+                btn.innerHTML = `<svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-8.22-.07m8.22-.07a6 6 0 00-8.22-.07M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H10a1 1 0 01-1-1v-4z"/></svg> Scan Card`;
+                btn.disabled = false;
+            }
         }
     };
 </script>

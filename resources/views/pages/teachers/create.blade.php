@@ -126,6 +126,11 @@
                     </select>
                 </div>
 
+                <div class="relative">
+                    <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Biometric ID (Fingerprint/RFID ID)</label>
+                    <input type="text" id="biometric_id" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-semibold text-gray-700 dark:text-gray-250 px-3 placeholder-gray-400" placeholder="e.g. 101">
+                </div>
+
                 <div class="lg:col-span-2">
                     <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Present/Permanent Address <span class="text-red-500 ml-0.5">*</span></label>
                     <input type="text" id="address" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-semibold text-gray-700 dark:text-gray-250 px-3 placeholder-gray-400" placeholder="Enter full address" required>
@@ -271,6 +276,7 @@
 
         // Profile Info
         formData.append('employee_id', document.getElementById('employee_id').value);
+        formData.append('biometric_id', document.getElementById('biometric_id').value);
         formData.append('designation', document.getElementById('designation').value);
         formData.append('department', document.getElementById('department').value);
         formData.append('phone', document.getElementById('phone').value);

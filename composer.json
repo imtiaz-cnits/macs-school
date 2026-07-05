@@ -10,6 +10,7 @@
         "barryvdh/laravel-dompdf": "^3.1",
         "hasinhayder/tyro": "^1.3",
         "hasinhayder/tyro-dashboard": "^1.13",
+        "jmrashed/zkteco": "^1.2",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1"

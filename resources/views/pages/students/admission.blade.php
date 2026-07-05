@@ -510,6 +510,17 @@
             <input type="email" id="email" class="form-input" placeholder="Email Address">
         </div>
 
+        <div>
+            <label class="form-label">RFID Card Number</label>
+            <div class="flex gap-2">
+                <input type="text" id="card_number" class="form-input flex-1" placeholder="e.g. 0010754689">
+                <button type="button" onclick="window.scanRfidCard(event)" class="h-11 px-4 bg-gray-50/50 dark:bg-themeNavy hover:bg-themeBlue/5 border-2 border-gray-100 dark:border-gray-800 text-themeBlue font-black text-xs uppercase tracking-wider rounded-xl transition-all whitespace-nowrap active:scale-95 shrink-0 flex items-center justify-center gap-1.5" title="Swipe card on ZKTeco device, then click to auto-bind">
+                    <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-8.22-.07m8.22-.07a6 6 0 00-8.22-.07M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H10a1 1 0 01-1-1v-4z"/></svg>
+                    Scan Card
+                </button>
+            </div>
+        </div>
+
         <!-- SMS Status -->
         <div x-data="staticDropdownState('sms_status', 'Active', [{id: 'Active', name: 'Active'}, {id: 'Inactive', name: 'Inactive'}], 'Active')" class="relative">
             <label class="form-label">SMS Status</label>
@@ -853,7 +864,7 @@
         let formData = new FormData();
         
         const fields = [
-            'roll_number', 'student_name', 
+            'roll_number', 'student_name', 'card_number',
             'name_in_bangla', 'dob', 'gender', 'blood_group', 'religion', 'email',
             'father_name', 'father_nid', 'father_mobile', 'father_occupation',
             'mother_name', 'mother_nid', 'mother_mobile', 'mother_occupation',
@@ -903,6 +914,34 @@
         } finally {
             document.querySelector('button[type="submit"]').innerText = 'Confirm Admission';
             document.querySelector('button[type="submit"]').disabled = false;
+        }
+    };
+
+    window.scanRfidCard = async function(event) {
+        try {
+            await showAlert("Please swipe the RFID card on the biometric device now, then click OK to scan.", "Card Swipe Scanner");
+            
+            let btn = event.currentTarget || document.querySelector('button[onclick*="scanRfidCard"]');
+            let origHtml = btn.innerHTML;
+            btn.innerHTML = '<svg class="w-4 h-4 animate-spin text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3-3m0 0l3 3m-3-3v12"/></svg> Detecting...';
+            btn.disabled = true;
+
+            let res = await axios.get('/ajax/students/scan-card', getAuthHeaders());
+            
+            if (res.data.status === 'success') {
+                document.getElementById('card_number').value = res.data.card_number;
+                document.getElementById('card_number').dispatchEvent(new Event('input'));
+                await showAlert("Success! Detected Card Number: " + res.data.card_number, "Scan Successful");
+            }
+        } catch (err) {
+            let errMsg = err.response?.data?.message || "Failed to scan card. Please make sure the device is connected and swipe was recent.";
+            showAlert(errMsg, "Scan Error");
+        } finally {
+            let btn = document.querySelector('button[onclick*="scanRfidCard"]');
+            if (btn) {
+                btn.innerHTML = `<svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-8.22-.07m8.22-.07a6 6 0 00-8.22-.07M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H10a1 1 0 01-1-1v-4z"/></svg> Scan Card`;
+                btn.disabled = false;
+            }
         }
     };
 </script>

@@ -189,9 +189,15 @@
             </div>
         </div>
 
-        <!-- Action Button -->
-        <div class="flex justify-end">
-            <button type="button" @click="fetchStudents()" :disabled="loading" class="inline-flex items-center justify-center px-10 py-4 h-11 bg-gradient-to-r from-themeBlue to-themeGreen hover:from-themeBlue/90 hover:to-themeGreen/90 text-white font-black uppercase tracking-[0.2em] text-xs rounded-xl shadow-md shadow-themeBlue/10 transition-all hover:scale-105 active:scale-95 disabled:opacity-50">
+        <!-- Action Buttons -->
+        <div class="flex justify-end gap-3.5">
+            <button type="button" @click="syncBiometricLogs()" :disabled="loading" class="inline-flex items-center justify-center px-8 h-11 bg-gray-50/50 dark:bg-themeNavy text-themeBlue border-2 border-gray-100 dark:border-gray-800 hover:border-themeBlue hover:bg-themeBlue/5 text-xs font-black uppercase tracking-[0.2em] rounded-xl shadow-sm transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50">
+                <svg class="w-4 h-4 mr-2 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                <span>Sync Card Logs</span>
+            </button>
+            <button type="button" @click="fetchStudents()" :disabled="loading" class="inline-flex items-center justify-center px-10 h-11 bg-gradient-to-r from-themeBlue to-themeGreen hover:from-themeBlue/90 hover:to-themeGreen/90 text-white font-black uppercase tracking-[0.2em] text-xs rounded-xl shadow-md shadow-themeBlue/10 transition-all hover:scale-105 active:scale-95 disabled:opacity-50">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 <span x-text="loading ? 'Loading Students...' : 'Load Student List'"></span>
             </button>
@@ -230,6 +236,57 @@
             <div>
                 <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Marked Absent</p>
                 <h3 class="text-2xl font-black text-rose-500 tracking-tight" x-text="liveAbsent"></h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Attendance Logs Default Panel -->
+    <div x-show="showRecentLogs && recentLogs.length > 0" x-cloak class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] shadow-sm overflow-hidden mb-8" x-transition>
+        <div class="table-container bg-transparent !border-none !shadow-none !mt-0 !mb-0">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse table">
+                    <thead>
+                        <tr class="!bg-transparent">
+                            <th class="w-24 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Roll No</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Student Name</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Class & Section</th>
+                            <th class="w-48 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Swipe Time</th>
+                            <th class="w-32 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06] font-medium">
+                        <template x-for="log in recentLogs" :key="log.id">
+                            <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                                <td class="py-0 px-0 text-center font-mono font-black text-themeGreen dark:text-green-500 text-sm" x-text="log.student ? log.student.roll_number : 'N/A'"></td>
+                                <td class="py-0 px-0 text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-tight" x-text="log.student ? log.student.student_name : 'N/A'"></td>
+                                <td class="py-0 px-0 text-sm font-semibold text-gray-600 dark:text-gray-400" x-text="(log.class ? log.class.class_name : 'N/A') + ' - ' + (log.section ? log.section.section_name : 'N/A')"></td>
+                                <td class="py-0 px-0 text-center text-xs font-mono text-gray-555 dark:text-gray-400">
+                                    <div class="flex flex-col items-center justify-center py-1.5">
+                                        <template x-if="formatLogTime(log)">
+                                            <div>
+                                                <template x-if="!formatLogTime(log).out">
+                                                    <span class="text-gray-800 dark:text-gray-200" x-text="formatLogTime(log).in"></span>
+                                                </template>
+                                                <template x-if="formatLogTime(log).out">
+                                                    <div class="flex flex-col items-center gap-0.5 leading-tight">
+                                                        <span class="text-themeGreen dark:text-green-400 font-extrabold text-[10px]" x-text="'IN: ' + formatLogTime(log).in"></span>
+                                                        <span class="text-themeBlue dark:text-blue-400 font-extrabold text-[10px]" x-text="'OUT: ' + formatLogTime(log).out"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </td>
+                                <td class="py-0 px-0 text-center">
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-block"
+                                          :class="log.status === 'Present' ? 'bg-green-500/10 text-themeGreen border border-themeGreen/25' : 'bg-rose-500/10 text-rose-500 border border-rose-500/25'"
+                                          x-text="log.status">
+                                    </span>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -432,6 +489,10 @@
             students: [],
             attendance_data: {}, // key: student_id, val: "Present" / "Absent"
             
+            // Recent card logs
+            recentLogs: [],
+            showRecentLogs: true,
+            
             // Loading flags
             loading: false,
             saving: false,
@@ -440,12 +501,13 @@
             async init() {
                 this.loading = true;
                 try {
-                    const [branches, sessions, classes, sections, teachers] = await Promise.all([
+                    const [branches, sessions, classes, sections, teachers, recentLogsRes] = await Promise.all([
                         axios.get('/ajax/branches', getAuthHeaders()),
                         axios.get('/ajax/sessions', getAuthHeaders()),
                         axios.get('/ajax/classes', getAuthHeaders()),
                         axios.get('/ajax/sections', getAuthHeaders()),
-                        axios.get('/ajax/teachers', getAuthHeaders()) 
+                        axios.get('/ajax/teachers', getAuthHeaders()),
+                        axios.get('/ajax/attendance/recent', getAuthHeaders())
                     ]);
 
                     this.branches = branches.data.branchData || [];
@@ -453,6 +515,7 @@
                     this.classes = classes.data.classData || [];
                     this.sections = sections.data.sectionData || [];
                     this.teachers = teachers.data.teacherData || [];
+                    this.recentLogs = recentLogsRes.data.logs || [];
 
                     // Setup defaults if list items are single or populated
                     if (this.sessions.length > 0) {
@@ -460,12 +523,62 @@
                         this.form.session_year_id = firstSession.id;
                         this.sessionText = firstSession.session_name;
                     }
+
+                    // Poll recent logs every 4 seconds to make the UI update in real-time
+                    setInterval(async () => {
+                        if (this.showRecentLogs) {
+                            try {
+                                const recentLogsRes = await axios.get('/ajax/attendance/recent', getAuthHeaders());
+                                this.recentLogs = recentLogsRes.data.logs || [];
+                            } catch (err) {
+                                console.error("Poll Error:", err);
+                            }
+                        }
+                    }, 4000);
+
                 } catch (err) {
                     console.error("Filter Load Error:", err);
                     showAlert("Failed to initialize dropdown filters.", "Error");
                 } finally {
                     this.loading = false;
                 }
+            },
+
+            formatLogTime(log) {
+                if (!log) return null;
+                if (log.remarks && log.remarks.includes('Card Swiped')) {
+                    const inMatch = log.remarks.match(/In:\s*(\d{2}):(\d{2})/);
+                    const outMatch = log.remarks.match(/Out:\s*(\d{2}):(\d{2})/);
+                    
+                    const formatTimeStr = (hourStr, minStr) => {
+                        let hr = parseInt(hourStr, 10);
+                        const ampm = hr >= 12 ? 'PM' : 'AM';
+                        hr = hr % 12;
+                        hr = hr ? hr : 12;
+                        return `${hr}:${minStr} ${ampm}`;
+                    };
+                    
+                    if (inMatch) {
+                        return {
+                            in: formatTimeStr(inMatch[1], inMatch[2]),
+                            out: outMatch ? formatTimeStr(outMatch[1], outMatch[2]) : null
+                        };
+                    }
+                    
+                    const simpleMatch = log.remarks.match(/\((\d{2}):(\d{2})/);
+                    if (simpleMatch) {
+                        return {
+                            in: formatTimeStr(simpleMatch[1], simpleMatch[2]),
+                            out: null
+                        };
+                    }
+                }
+                if (!log.created_at) return null;
+                const d = new Date(log.created_at);
+                return {
+                    in: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+                    out: null
+                };
             },
 
             toggleDropdown(name) {
@@ -497,6 +610,7 @@
                     return;
                 }
 
+                this.showRecentLogs = false;
                 this.loading = true;
                 this.fetched = false;
                 this.students = [];
@@ -505,23 +619,63 @@
                     branch_id: this.form.branch_id, 
                     session_year_id: this.form.session_year_id, 
                     class_id: this.form.class_id, 
-                    section_id: this.form.section_id 
+                    section_id: this.form.section_id,
+                    attendance_date: this.form.attendance_date
                 }).toString();
 
                 try {
                     let res = await axios.get(`/ajax/attendance/students?${query}`, getAuthHeaders());
                     this.students = res.data.students || [];
                     
-                    // Reset and populate attendance_data default values to "Present"
+                    // Reset and populate attendance_data with existing status or "Present" default
                     this.attendance_data = {};
                     this.students.forEach(s => {
-                        this.attendance_data[s.id] = 'Present';
+                        this.attendance_data[s.id] = s.attendance_status || 'Present';
                     });
                     
                     this.fetched = true;
                 } catch (e) {
                     console.error(e);
                     showAlert("Failed to load students list.", "Error");
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async syncBiometricLogs() {
+                if (!this.form.class_id) {
+                    showAlert("Please select a Class!", "Attention");
+                    return;
+                }
+                if (!this.form.teacher_id) {
+                    showAlert("Please select the Taking Teacher!", "Attention");
+                    return;
+                }
+
+                const confirmed = await showConfirm(
+                    "Sync Biometric Logs",
+                    "Do you want to sync student attendance logs from the biometric machine for " + this.form.attendance_date + "?"
+                );
+                
+                if (!confirmed) return;
+
+                this.loading = true;
+                try {
+                    let res = await axios.post('/ajax/attendance/sync-biometric', {
+                        branch_id: this.form.branch_id,
+                        session_year_id: this.form.session_year_id,
+                        class_id: this.form.class_id, 
+                        section_id: this.form.section_id,
+                        teacher_id: this.form.teacher_id, 
+                        attendance_date: this.form.attendance_date, 
+                    }, getAuthHeaders());
+
+                    await showAlert(res.data.message, "Sync Success");
+                    await this.fetchStudents();
+                    
+                } catch (err) {
+                    let errMsg = err.response?.data?.message || "Biometric sync failed.";
+                    showAlert(errMsg, "Sync Error");
                 } finally {
                     this.loading = false;
                 }

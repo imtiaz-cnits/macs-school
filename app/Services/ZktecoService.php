@@ -47,6 +47,10 @@ class ZktecoService
         ];
     }
 
+    public function getIp() { return $this->ip; }
+    public function getPort() { return $this->port; }
+    public function getMode() { return $this->mode; }
+
     /**
      * Ping the actual socket
      */
@@ -75,20 +79,90 @@ class ZktecoService
             return $this->generateSimulationLogs($date);
         }
 
-        // Live connection logic (for ZKTeco device socket parsing)
-        if (!$this->ping()) {
-            throw new \Exception("Biometric Machine is offline or unreachable at {$this->ip}:{$this->port}");
+        // Live connection logic using ZKTeco library
+        try {
+            $zk = new \Jmrashed\Zkteco\Lib\ZKTeco($this->ip, $this->port);
+            
+            if (!$zk->connect()) {
+                throw new \Exception("Unable to establish connection with Biometric Device at {$this->ip}:{$this->port}");
+            }
+            
+            // Disable device to prevent changes while downloading log
+            $zk->disableDevice();
+            
+            $allLogs = $zk->getAttendance();
+            
+            // Re-enable device immediately
+            $zk->enableDevice();
+            $zk->disconnect();
+            
+            if (!is_array($allLogs)) {
+                return 0;
+            }
+            
+            $targetDateStr = $date->format('Y-m-d');
+            $filteredLogs = [];
+            
+            // Filter logs matching target date
+            foreach ($allLogs as $log) {
+                // Log contains keys: 'id', 'state', 'timestamp', 'type'
+                if (isset($log['timestamp']) && str_starts_with($log['timestamp'], $targetDateStr)) {
+                    $filteredLogs[] = $log;
+                }
+            }
+            
+            // Group by biometric user ID
+            $groupedLogs = [];
+            foreach ($filteredLogs as $log) {
+                $uid = $log['id'];
+                $time = Carbon::parse($log['timestamp'])->format('H:i:s');
+                if (!isset($groupedLogs[$uid])) {
+                    $groupedLogs[$uid] = [];
+                }
+                $groupedLogs[$uid][] = $time;
+            }
+            
+            $synced = 0;
+            
+            foreach ($groupedLogs as $biometricId => $times) {
+                // Find teacher matching biometric ID
+                $teacher = Teacher::where('biometric_id', $biometricId)->first();
+                if (!$teacher) {
+                    continue; // Skip logs for unregistered device IDs
+                }
+                
+                sort($times);
+                $checkIn = $times[0];
+                $checkOut = count($times) > 1 ? end($times) : null;
+                
+                // Determine Late status (arrival after 9:00 AM)
+                $status = 'Present';
+                if ($checkIn > '09:00:00') {
+                    $status = 'Late';
+                }
+                
+                StaffAttendance::updateOrCreate(
+                    [
+                        'teacher_id' => $teacher->id,
+                        'date' => $targetDateStr
+                    ],
+                    [
+                        'check_in' => $checkIn,
+                        'check_out' => $checkOut,
+                        'status' => $status,
+                        'remarks' => 'Biometric Swipe (Live)'
+                    ]
+                );
+                
+                $synced++;
+            }
+            
+            return $synced;
+            
+        } catch (\Exception $e) {
+            throw new \Exception("Biometric sync failed: " . $e->getMessage());
         }
-
-        // Under normal live integration:
-        // 1. Establish UDP/TCP socket commands to ZKTeco
-        // 2. Read logs from memory
-        // 3. Match biometric_id to teacher_id
-        // 4. Save check_in (earliest) and check_out (latest) logs for the day
-        
-        throw new \Exception("Offline socket integration ready. Please configure live credentials in .env.");
     }
-
     /**
      * Simulate logs for local verification and setup demo
      */
@@ -158,5 +232,79 @@ class ZktecoService
         }
 
         return $synced;
+    }
+
+    /**
+     * Get raw attendance logs grouped by card number
+     */
+    public function getRawLogsByCard($dateString = null)
+    {
+        $date = $dateString ? Carbon::parse($dateString) : Carbon::today();
+
+        if ($this->mode === 'simulation') {
+            $cards = [];
+            // Get all students with card numbers
+            $students = \App\Models\Student::whereNotNull('card_number')->get();
+            foreach ($students as $student) {
+                // 85% chance of card swipe present
+                if (rand(1, 100) <= 85) {
+                    $checkInHour = rand(8, 9);
+                    $checkInMin = rand(0, 59);
+                    if ($checkInHour === 9 && $checkInMin > 30) {
+                        $checkInMin = rand(0, 20); // Limit late range
+                    }
+                    $checkIn = Carbon::create($date->year, $date->month, $date->day, $checkInHour, $checkInMin, 0)->format('H:i:s');
+                    $cards[$student->card_number] = [$checkIn];
+                }
+            }
+            return $cards;
+        }
+
+        try {
+            $zk = new \Jmrashed\Zkteco\Lib\ZKTeco($this->ip, $this->port);
+            
+            if (!$zk->connect()) {
+                throw new \Exception("Unable to establish connection with Biometric Device at {$this->ip}:{$this->port}");
+            }
+            
+            $zk->disableDevice();
+            $allLogs = $zk->getAttendance();
+            $users = $zk->getUser();
+            $zk->enableDevice();
+            $zk->disconnect();
+            
+            if (!is_array($allLogs) || !is_array($users)) {
+                return [];
+            }
+            
+            $userCardMap = [];
+            foreach ($users as $user) {
+                if (isset($user['userid']) && !empty($user['cardno'])) {
+                    $userCardMap[$user['userid']] = trim($user['cardno']);
+                }
+            }
+            
+            $targetDateStr = $date->format('Y-m-d');
+            $cards = [];
+            
+            foreach ($allLogs as $log) {
+                if (isset($log['timestamp']) && str_starts_with($log['timestamp'], $targetDateStr)) {
+                    $uid = $log['id'];
+                    if (isset($userCardMap[$uid])) {
+                        $cardNo = $userCardMap[$uid];
+                        $time = Carbon::parse($log['timestamp'])->format('H:i:s');
+                        if (!isset($cards[$cardNo])) {
+                            $cards[$cardNo] = [];
+                        }
+                        $cards[$cardNo][] = $time;
+                    }
+                }
+            }
+            
+            return $cards;
+            
+        } catch (\Exception $e) {
+            throw new \Exception("Biometric sync failed: " . $e->getMessage());
+        }
     }
 }

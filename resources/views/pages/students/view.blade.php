@@ -148,6 +148,10 @@
                         <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Birth Certificate No</span>
                         <span class="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono" id="view_birth_certificate">...</span>
                     </div>
+                    <div class="col-span-2">
+                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">RFID Card Number</span>
+                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono" id="view_card_number">...</span>
+                    </div>
                     
                     <div class="col-span-2 h-[1px] bg-gray-100 dark:bg-white/[0.05] my-1"></div>
                     
@@ -396,6 +400,7 @@
             document.getElementById('view_blood_group').innerText = s.blood_group || 'N/A';
             document.getElementById('view_religion').innerText = s.religion || 'N/A';
             document.getElementById('view_birth_certificate').innerText = s.birth_certificate || 'N/A';
+            document.getElementById('view_card_number').innerText = s.card_number || 'N/A';
 
             // Document file attachment handler
             let docWrapper = document.getElementById('document_wrapper');

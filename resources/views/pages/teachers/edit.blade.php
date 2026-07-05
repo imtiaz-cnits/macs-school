@@ -87,6 +87,10 @@
                         <option value="">Select</option><option value="A+">A+</option><option value="A-">A-</option><option value="B+">B+</option><option value="B-">B-</option><option value="O+">O+</option><option value="O-">O-</option><option value="AB+">AB+</option><option value="AB-">AB-</option>
                     </select>
                 </div>
+                <div>
+                    <label class="form-label">Biometric ID (Fingerprint/RFID ID)</label>
+                    <input type="text" id="biometric_id" class="form-input" placeholder="e.g. 101">
+                </div>
                 <div class="lg:col-span-2">
                     <label class="form-label">Address <span class="required-star">*</span></label>
                     <input type="text" id="address" class="form-input" required>
@@ -140,6 +144,7 @@
             document.getElementById('joining_date').value = teacher.joining_date;
             document.getElementById('gender').value = teacher.gender;
             document.getElementById('blood_group').value = teacher.blood_group || '';
+            document.getElementById('biometric_id').value = teacher.biometric_id || '';
             document.getElementById('address').value = teacher.address;
 
             if(teacher.photo) {
@@ -169,6 +174,7 @@
         if(password) formData.append('password', password);
 
         formData.append('employee_id', document.getElementById('employee_id').value);
+        formData.append('biometric_id', document.getElementById('biometric_id').value);
         formData.append('designation', document.getElementById('designation').value);
         formData.append('department', document.getElementById('department').value);
         formData.append('phone', document.getElementById('phone').value);

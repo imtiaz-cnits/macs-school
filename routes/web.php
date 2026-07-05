@@ -152,6 +152,7 @@ Route::middleware(['auth', 'roles:editor,admin,super-admin'])->group(function ()
     // 🚨 ৬. Custom AJAX রাউটগুলো অবশ্যই Resource এর ঠিক উপরে বসবে 🚨
     Route::get('/ajax/students/promotion-list', [StudentController::class, 'getStudentsForPromotion'])->name('students.promotion.list');
     Route::get('/ajax/students/detect', [StudentController::class, 'detectStudentInfo'])->name('students.detect');
+    Route::get('/ajax/students/scan-card', [StudentController::class, 'scanRfidCard'])->name('students.scan-card');
     Route::post('/ajax/students/promote', [StudentController::class, 'promoteStudents'])->name('students.promote'); // (এটি মিসিং ছিল)
     Route::get('/ajax/students/export-excel', [StudentController::class, 'exportExcel'])->name('students.export.excel');
     Route::get('/ajax/students/export-pdf', [StudentController::class, 'exportPDF'])->name('students.export.pdf');
@@ -242,12 +243,14 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
     // ২. নির্দিষ্ট ক্লাসের স্টুডেন্ট লিস্ট পাওয়ার AJAX রাউট (GET)
     // এটি ড্রপডাউন থেকে ক্লাস সিলেক্ট করলে ওই ক্লাসের স্টুডেন্টদের ডাটা নিয়ে আসবে
     Route::get('/ajax/attendance/students', [\App\Http\Controllers\AttendanceController::class, 'getStudents']);
+    Route::get('/ajax/attendance/recent', [\App\Http\Controllers\AttendanceController::class, 'getRecentLogs']);
 
     Route::get('/ajax/teachers', [\App\Http\Controllers\AttendanceController::class, 'getTeachers']);
 
     // ৩. হাজিরা ডাটাবেসে সেভ করার AJAX রাউট (POST)
     // এই রাউটটি একইসাথে অনেক স্টুডেন্টের হাজিরা (Bulk Attendance) প্রসেস করবে
     Route::post('/ajax/attendance/save', [\App\Http\Controllers\AttendanceController::class, 'store']);
+    Route::post('/ajax/attendance/sync-biometric', [\App\Http\Controllers\AttendanceController::class, 'syncBiometric']);
 
     // হাজিরা রিপোর্ট দেখার পেজ
     Route::get('/attendance/report', [AttendanceController::class, 'reportIndex'])->name('attendance.report');

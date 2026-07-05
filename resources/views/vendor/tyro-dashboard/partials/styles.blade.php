@@ -239,6 +239,17 @@
     }
 
     .sidebar.collapsed .sidebar-back-btn {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 36px !important;
+        height: 36px !important;
+        padding: 0 !important;
+        margin: 8px auto 12px auto !important;
+        border-radius: 8px !important;
+    }
+
+    .sidebar.collapsed .sidebar-back-btn span {
         display: none !important;
     }
 

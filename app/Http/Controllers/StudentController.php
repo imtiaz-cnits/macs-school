@@ -100,6 +100,7 @@ class StudentController extends Controller
             
             'photo'                 => 'nullable|image|mimes:jpeg,png,jpg|max:2048', 
             'document_file'         => 'nullable|mimes:pdf,jpeg,png,jpg|max:2048',   
+            'card_number'           => 'nullable|string|unique:students,card_number',
         ]);
 
         try {
@@ -138,6 +139,7 @@ class StudentController extends Controller
 
             $student = Student::create([
                 'student_identity'      => $studentIdentity,
+                'card_number'           => $request->card_number,
                 'roll_number'           => $request->roll_number,
                 'student_name'          => $request->student_name,
                 'name_in_bangla'        => $request->name_in_bangla,
@@ -579,6 +581,84 @@ public function detectStudentInfo(Request $request)
 
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Detect raw RFID card number from the biometric device logs
+     */
+    public function scanRfidCard(Request $request): JsonResponse
+    {
+        try {
+            $zkService = app(\App\Services\ZktecoService::class);
+            
+            if ($zkService->getMode() === 'simulation') {
+                // Generate a mockup simulated card number
+                $simulatedCard = '0010' . rand(100000, 999999);
+                return response()->json([
+                    'status' => 'success',
+                    'card_number' => $simulatedCard,
+                    'message' => 'Simulated card detected successfully: ' . $simulatedCard
+                ], 200);
+            }
+            
+            $zk = new \Jmrashed\Zkteco\Lib\ZKTeco($zkService->getIp(), $zkService->getPort());
+            if (!$zk->connect()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unable to establish connection with ZKTeco biometric device.'
+                ], 500);
+            }
+            
+            $zk->disableDevice();
+            $allLogs = $zk->getAttendance();
+            $users = $zk->getUser();
+            $zk->enableDevice();
+            $zk->disconnect();
+            
+            if (empty($allLogs) || empty($users)) {
+                $logCount = is_array($allLogs) ? count($allLogs) : 0;
+                $userCount = is_array($users) ? count($users) : 0;
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "Scan failed. Device returned {$logCount} swipe logs and {$userCount} users. Make sure cards are successfully enrolled/verified on the physical machine first."
+                ], 400);
+            }
+            
+            // Map userid -> cardno
+            $userCardMap = [];
+            foreach ($users as $user) {
+                if (isset($user['userid']) && !empty($user['cardno'])) {
+                    $userCardMap[$user['userid']] = trim($user['cardno']);
+                }
+            }
+            
+            // Sort logs by timestamp descending to find the absolute newest entry
+            usort($allLogs, function($a, $b) {
+                return strcmp($b['timestamp'], $a['timestamp']);
+            });
+            
+            $newestLog = $allLogs[0];
+            $uid = $newestLog['id'];
+            
+            if (empty($userCardMap[$uid])) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'The most recent swipe record on the device has no RFID card number mapped in the device memory.'
+                ], 400);
+            }
+            
+            return response()->json([
+                'status' => 'success',
+                'card_number' => $userCardMap[$uid],
+                'message' => 'Card swipe detected: ' . $userCardMap[$uid]
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Biometric scan failed: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
