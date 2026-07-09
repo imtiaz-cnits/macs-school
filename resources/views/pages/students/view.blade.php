@@ -174,10 +174,11 @@
                     <div class="p-3 bg-blue-50/15 dark:bg-themeBlue/[0.03] border border-themeBlue/10 rounded-2xl">
                         <span class="text-[9px] font-black text-themeBlue uppercase tracking-widest block mb-2">Father's Info</span>
                         <div class="grid grid-cols-2 gap-x-2 gap-y-2 text-[11px]">
-                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name</span><span class="font-bold truncate block" id="view_father_name">...</span></div>
+                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name</span><span class="font-bold truncate block" id="view_father_name">...</span></div>
+                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name (Bangla)</span><span class="font-bold truncate block" id="view_father_name_bn">...</span></div>
                             <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Occupation</span><span class="font-bold truncate block" id="view_father_occupation">...</span></div>
                             <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Mobile</span><span class="font-bold block" id="view_father_mobile">...</span></div>
-                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">NID</span><span class="font-mono block" id="view_father_nid">...</span></div>
+                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">NID</span><span class="font-mono block" id="view_father_nid">...</span></div>
                         </div>
                     </div>
                     
@@ -185,10 +186,11 @@
                     <div class="p-3 bg-green-50/15 dark:bg-themeGreen/[0.03] border border-themeGreen/10 rounded-2xl">
                         <span class="text-[9px] font-black text-themeGreen uppercase tracking-widest block mb-2">Mother's Info</span>
                         <div class="grid grid-cols-2 gap-x-2 gap-y-2 text-[11px]">
-                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name</span><span class="font-bold truncate block" id="view_mother_name">...</span></div>
+                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name</span><span class="font-bold truncate block" id="view_mother_name">...</span></div>
+                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name (Bangla)</span><span class="font-bold truncate block" id="view_mother_name_bn">...</span></div>
                             <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Occupation</span><span class="font-bold truncate block" id="view_mother_occupation">...</span></div>
                             <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Mobile</span><span class="font-bold block" id="view_mother_mobile">...</span></div>
-                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">NID</span><span class="font-mono block" id="view_mother_nid">...</span></div>
+                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">NID</span><span class="font-mono block" id="view_mother_nid">...</span></div>
                         </div>
                     </div>
                     
@@ -417,11 +419,13 @@
 
             // Parents and Guardians
             document.getElementById('view_father_name').innerText = s.father_name || 'N/A';
+            document.getElementById('view_father_name_bn').innerText = s.father_name_bn || 'N/A';
             document.getElementById('view_father_occupation').innerText = s.father_occupation || 'N/A';
             document.getElementById('view_father_mobile').innerText = s.father_mobile || 'N/A';
             document.getElementById('view_father_nid').innerText = s.father_nid || 'N/A';
             
             document.getElementById('view_mother_name').innerText = s.mother_name || 'N/A';
+            document.getElementById('view_mother_name_bn').innerText = s.mother_name_bn || 'N/A';
             document.getElementById('view_mother_occupation').innerText = s.mother_occupation || 'N/A';
             document.getElementById('view_mother_mobile').innerText = s.mother_mobile || 'N/A';
             document.getElementById('view_mother_nid').innerText = s.mother_nid || 'N/A';

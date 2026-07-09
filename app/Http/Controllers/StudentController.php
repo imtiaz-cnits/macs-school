@@ -101,23 +101,57 @@ class StudentController extends Controller
             'photo'                 => 'nullable|image|mimes:jpeg,png,jpg|max:2048', 
             'document_file'         => 'nullable|mimes:pdf,jpeg,png,jpg|max:2048',   
             'card_number'           => 'nullable|string|unique:students,card_number',
+            'father_name_bn'        => 'nullable|string|max:255',
+            'mother_name_bn'        => 'nullable|string|max:255',
+            'student_identity'      => 'nullable|string|max:255|unique:students,student_identity',
         ]);
 
         try {
-            $year = date('Y');
-            $branchCode = str_pad($request->branch_id, 2, "0", STR_PAD_LEFT);
-            
-            $lastStudent = Student::whereYear('created_at', date('Y'))
-                                  ->where('branch_id', $request->branch_id)
-                                  ->latest('id')
-                                  ->first();
-
-            $serial = 1;
-            if ($lastStudent && preg_match('/-(\d+)$/', $lastStudent->student_identity, $matches)) {
-                $serial = (int)$matches[1] + 1;
+            if ($request->filled('student_identity') && 
+                !str_contains($request->student_identity, 'YYYY') && 
+                !str_contains($request->student_identity, 'MM') && 
+                !str_contains($request->student_identity, 'CLASS') && 
+                !str_contains($request->student_identity, 'XXXX')) {
+                $studentIdentity = $request->student_identity;
+            } else {
+                $year = date('Y');
+                $month = date('m');
+                
+                $class = \App\Models\Classes::find($request->class_id);
+                $className = $class ? $class->class_name : 'Class';
+                $classShort = 'XX';
+                $nameLower = strtolower($className);
+                if (str_contains($nameLower, 'one') || str_contains($nameLower, '1')) $classShort = 'C1';
+                elseif (str_contains($nameLower, 'two') || str_contains($nameLower, '2')) $classShort = 'C2';
+                elseif (str_contains($nameLower, 'three') || str_contains($nameLower, '3')) $classShort = 'C3';
+                elseif (str_contains($nameLower, 'four') || str_contains($nameLower, '4')) $classShort = 'C4';
+                elseif (str_contains($nameLower, 'five') || str_contains($nameLower, '5')) $classShort = 'C5';
+                elseif (str_contains($nameLower, 'six') || str_contains($nameLower, '6')) $classShort = 'C6';
+                elseif (str_contains($nameLower, 'seven') || str_contains($nameLower, '7')) $classShort = 'C7';
+                elseif (str_contains($nameLower, 'eight') || str_contains($nameLower, '8')) $classShort = 'C8';
+                elseif (str_contains($nameLower, 'nine') || str_contains($nameLower, '9')) $classShort = 'C9';
+                elseif (str_contains($nameLower, 'ten') || str_contains($nameLower, '10')) $classShort = 'C10';
+                elseif (str_contains($nameLower, 'nursery')) $classShort = 'NUR';
+                elseif (str_contains($nameLower, 'play')) $classShort = 'PLAY';
+                elseif (str_contains($nameLower, 'baby')) $classShort = 'BABY';
+                else {
+                    $words = explode(' ', preg_replace('/[^a-zA-Z0-9\s]/', '', $className));
+                    if (count($words) === 1) {
+                        $classShort = strtoupper(substr($words[0], 0, 3));
+                    } else {
+                        $classShort = '';
+                        foreach ($words as $w) {
+                            if (!empty($w)) $classShort .= $w[0];
+                        }
+                        $classShort = strtoupper($classShort);
+                    }
+                }
+                
+                do {
+                    $randomId = rand(1000, 9999);
+                    $studentIdentity = "{$year}-{$month}-{$classShort}-{$randomId}";
+                } while (Student::where('student_identity', $studentIdentity)->exists());
             }
-
-            $studentIdentity = "{$year}-{$branchCode}-" . str_pad($serial, 4, "0", STR_PAD_LEFT);
 
             $photoPath = null;
             if ($request->hasFile('photo')) {
@@ -151,11 +185,13 @@ class StudentController extends Controller
                 'email'                 => $request->email,
                 
                 'father_name'           => $request->father_name,
+                'father_name_bn'        => $request->father_name_bn,
                 'father_nid'            => $request->father_nid,
                 'father_mobile'         => $request->father_mobile,
                 'father_occupation'     => $request->father_occupation,
                 
                 'mother_name'           => $request->mother_name,
+                'mother_name_bn'        => $request->mother_name_bn,
                 'mother_nid'            => $request->mother_nid,
                 'mother_mobile'         => $request->mother_mobile,
                 'mother_occupation'     => $request->mother_occupation,
@@ -272,8 +308,22 @@ class StudentController extends Controller
                 $documentPath = $request->file('document_file')->store('student_documents', 'public');
             }
 
-            // সিকিউরিটির জন্য যে ফিল্ডগুলো আপডেট হবে না সেগুলো বাদ দেওয়া হলো
-            $data = $request->except(['photo', 'document_file', 'student_identity', 'admission_number', 'admission_date']);
+            $request->validate([
+                'student_identity' => 'nullable|string|max:255|unique:students,student_identity,' . $id,
+                'card_number'      => 'nullable|string|unique:students,card_number,' . $id,
+            ]);
+
+            // Security: allow updating student_identity if it is custom set and valid
+            $excepts = ['photo', 'document_file', 'admission_number', 'admission_date'];
+            if (!$request->filled('student_identity') || 
+                str_contains($request->student_identity, 'YYYY') || 
+                str_contains($request->student_identity, 'MM') || 
+                str_contains($request->student_identity, 'CLASS') || 
+                str_contains($request->student_identity, 'XXXX')) {
+                $excepts[] = 'student_identity';
+            }
+
+            $data = $request->except($excepts);
             $data['photo'] = $photoPath;
             $data['document_file'] = $documentPath;
 

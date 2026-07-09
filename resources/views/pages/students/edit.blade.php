@@ -119,12 +119,58 @@
                 <p class="text-sm font-medium text-gray-555 dark:text-gray-400 mt-1">Pabna International School - Smart Education Management System</p>
             </div>
             
-            <div class="id-display-card w-full md:w-auto min-w-[260px] p-3.5 rounded-2xl shadow-sm">
-                <label class="text-[10px] font-black text-themeBlue uppercase tracking-widest block mb-1">Student Identity</label>
-                <div class="relative flex items-center justify-between">
-                    <span id="display_identity" class="text-sm font-mono font-black text-themeBlue dark:text-themeBlue/90">PIS-XXXX-XX-XXXX</span>
-                    <svg class="w-4 h-4 text-themeBlue/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <!-- Student Identity Customizer Card -->
+            <div x-data="studentIdentityCustomizer()" class="bg-gray-50/50 dark:bg-themeNavy/60 border border-gray-200/50 dark:border-white/[0.06] rounded-2xl shadow-sm p-3.5 w-full md:w-auto min-w-[360px]">
+                <label class="text-[10px] font-black text-themeBlue uppercase tracking-widest block mb-2">Student Identity</label>
+                <div class="flex items-center gap-1.5 text-xs">
+                    <!-- Custom Year Dropdown -->
+                    <div class="relative" @click.away="yearOpen = false">
+                        <button type="button" @click="yearOpen = !yearOpen" class="w-[76px] flex items-center justify-between px-2 h-9 text-[11px] font-mono font-bold bg-white dark:bg-themeDark border border-gray-200 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-themeBlue/15 focus:border-themeBlue transition-all text-left">
+                            <span x-text="year || 'Year'"></span>
+                            <svg class="w-3 h-3 text-gray-400 shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="yearOpen" x-cloak x-transition class="absolute left-0 z-50 w-[80px] mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-48 overflow-y-auto">
+                            <template x-for="y in yearOptions" :key="y">
+                                <button type="button" @click="year = y; yearOpen = false; updateIdentity()" :class="year == y ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full text-center px-3 py-1.5 text-[11px] font-mono hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                                    <span x-text="y"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                    
+                    <span class="text-gray-400 font-black">-</span>
+                    
+                    <!-- Custom Month Dropdown -->
+                    <div class="relative" @click.away="monthOpen = false">
+                        <button type="button" @click="monthOpen = !monthOpen" class="w-[70px] flex items-center justify-between px-2 h-9 text-[11px] font-mono font-bold bg-white dark:bg-themeDark border border-gray-200 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-themeBlue/15 focus:border-themeBlue transition-all text-left">
+                            <span x-text="month || 'Month'"></span>
+                            <svg class="w-3 h-3 text-gray-400 shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="monthOpen" x-cloak x-transition class="absolute left-0 z-50 w-[75px] mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-48 overflow-y-auto">
+                            <template x-for="m in monthOptions" :key="m">
+                                <button type="button" @click="month = m; monthOpen = false; updateIdentity()" :class="month == m ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full text-center px-3 py-1.5 text-[11px] font-mono hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                                    <span x-text="m"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                    
+                    <span class="text-gray-400 font-black">-</span>
+                    
+                    <!-- Class Shortform Input -->
+                    <input type="text" x-model="classShort" @input="updateIdentity()" placeholder="Class" class="bg-white dark:bg-themeDark border border-gray-200 dark:border-gray-800 rounded-xl h-9 w-[60px] text-center text-[11px] font-mono font-bold text-gray-700 dark:text-gray-200 focus:outline-none focus:border-themeBlue focus:ring-2 focus:ring-themeBlue/15 transition-all uppercase" maxlength="4">
+                    
+                    <span class="text-gray-400 font-black">-</span>
+                    
+                    <!-- ID Input (Random Generated) -->
+                    <div class="relative flex items-center gap-1">
+                        <input type="text" x-model="randId" @input="updateIdentity()" placeholder="ID" class="bg-white dark:bg-themeDark border border-gray-200 dark:border-gray-800 rounded-xl h-9 w-[60px] text-center text-[11px] font-mono font-bold text-gray-700 dark:text-gray-200 focus:outline-none focus:border-themeBlue focus:ring-2 focus:ring-themeBlue/15 transition-all" maxlength="5">
+                        <button type="button" @click="regenerateId()" class="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-50 dark:bg-themeDark dark:hover:bg-themeDark/80 border border-gray-200 dark:border-gray-800 text-themeBlue rounded-xl transition-all active:scale-95 shrink-0" title="Regenerate ID">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                        </button>
+                    </div>
                 </div>
+                <input type="hidden" id="student_identity" value="">
             </div>
         </div>
 
@@ -299,6 +345,7 @@
                     <h4 class="text-[10px] font-black text-themeBlue uppercase mb-4 tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-2">Father's Details</h4>
                     <div class="space-y-4">
                         <input type="text" id="father_name" class="form-input" placeholder="Father's Name *" required>
+                        <input type="text" id="father_name_bn" class="form-input" placeholder="Father's Name (Bangla)">
                         <input type="text" id="father_occupation" class="form-input" placeholder="Occupation">
                         <input type="text" id="father_mobile" class="form-input" placeholder="Father's Mobile *" required>
                         <input type="text" id="father_nid" class="form-input" placeholder="Father's NID">
@@ -309,6 +356,7 @@
                     <h4 class="text-[10px] font-black text-themeBlue uppercase mb-4 tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-2">Mother's Details</h4>
                     <div class="space-y-4">
                         <input type="text" id="mother_name" class="form-input" placeholder="Mother's Name *" required>
+                        <input type="text" id="mother_name_bn" class="form-input" placeholder="Mother's Name (Bangla)">
                         <input type="text" id="mother_occupation" class="form-input" placeholder="Occupation">
                         <input type="text" id="mother_mobile" class="form-input" placeholder="Mother's Mobile *" required>
                         <input type="text" id="mother_nid" class="form-input" placeholder="Mother's NID">
@@ -444,6 +492,109 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
+    window.studentIdentityCustomizer = function(initialIdentity = '') {
+        return {
+            year: '',
+            month: '',
+            classShort: '',
+            randId: '',
+            yearOpen: false,
+            monthOpen: false,
+            yearOptions: [],
+            monthOptions: ['01','02','03','04','05','06','07','08','09','10','11','12'],
+            
+            init() {
+                const currentY = new Date().getFullYear();
+                for (let y = currentY - 2; y <= currentY + 4; y++) {
+                    this.yearOptions.push(String(y));
+                }
+                
+                if (initialIdentity) {
+                    this.parseIdentity(initialIdentity);
+                } else {
+                    this.year = String(currentY);
+                    this.month = String(new Date().getMonth() + 1).padStart(2, '0');
+                    this.regenerateId();
+                }
+                
+                // Listen to class hidden input changes
+                const classSelect = document.getElementById('class_id');
+                if (classSelect) {
+                    classSelect.addEventListener('change', () => {
+                        const classButton = classSelect.closest('.relative').querySelector('button span');
+                        if (classButton) {
+                            const className = classButton.innerText;
+                            if (className && className !== 'Select Class') {
+                                this.classShort = this.getClassShortform(className);
+                                this.updateIdentity();
+                            }
+                        }
+                    });
+                }
+                
+                // For edit form event listener
+                window.addEventListener('load-student-identity', (e) => {
+                    if (e.detail) {
+                        this.parseIdentity(e.detail);
+                        this.updateIdentity();
+                    }
+                });
+
+                this.updateIdentity();
+            },
+            
+            parseIdentity(idStr) {
+                if (!idStr) return;
+                const parts = idStr.split('-');
+                if (parts.length >= 1) this.year = parts[0];
+                if (parts.length >= 2) this.month = parts[1];
+                if (parts.length >= 3) this.classShort = parts[2];
+                if (parts.length >= 4) this.randId = parts[3];
+            },
+            
+            regenerateId() {
+                this.randId = String(Math.floor(1000 + Math.random() * 9000));
+                this.updateIdentity();
+            },
+            
+            getClassShortform(className) {
+                if (!className) return '';
+                const name = className.toLowerCase().trim();
+                if (name.includes('one') || name.includes('1')) return 'C1';
+                if (name.includes('two') || name.includes('2')) return 'C2';
+                if (name.includes('three') || name.includes('3')) return 'C3';
+                if (name.includes('four') || name.includes('4')) return 'C4';
+                if (name.includes('five') || name.includes('5')) return 'C5';
+                if (name.includes('six') || name.includes('6')) return 'C6';
+                if (name.includes('seven') || name.includes('7')) return 'C7';
+                if (name.includes('eight') || name.includes('8')) return 'C8';
+                if (name.includes('nine') || name.includes('9')) return 'C9';
+                if (name.includes('ten') || name.includes('10')) return 'C10';
+                if (name.includes('nursery')) return 'NUR';
+                if (name.includes('play')) return 'PLAY';
+                if (name.includes('baby')) return 'BABY';
+                
+                const words = className.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/);
+                if (words.length === 1) return words[0].substring(0, 3).toUpperCase();
+                return words.map(w => w[0]).join('').toUpperCase();
+            },
+            
+            updateIdentity() {
+                const y = this.year || 'YYYY';
+                const m = this.month || 'MM';
+                const c = this.classShort || 'CLASS';
+                const r = this.randId || 'XXXX';
+                
+                const fullId = `${y}-${m}-${c}-${r}`;
+                const inputEl = document.getElementById('student_identity');
+                if (inputEl) {
+                    inputEl.value = fullId;
+                    inputEl.dispatchEvent(new Event('change'));
+                }
+            }
+        };
+    };
+
     const studentId = "{{ $id ?? request()->segment(3) }}";
 
     const getAuthHeaders = () => ({ 
@@ -474,13 +625,13 @@
             fill('session_year_id', sessions.data.sessionData || sessions.data, 'session_name');
 
             const s = studentRes.data.data || studentRes.data;
-            document.getElementById('display_identity').innerText = s.student_identity || 'N/A';
+            window.dispatchEvent(new CustomEvent('load-student-identity', { detail: s.student_identity }));
             
             const fields = [
                 'roll_number', 'student_name', 'name_in_bangla', 'birth_certificate', 
                 'blood_group', 'religion', 'dob', 'gender', 'email', 'sms_status',
-                'father_name', 'father_nid', 'father_mobile', 'father_occupation', 
-                'mother_name', 'mother_nid', 'mother_mobile', 'mother_occupation', 
+                'father_name', 'father_name_bn', 'father_nid', 'father_mobile', 'father_occupation', 
+                'mother_name', 'mother_name_bn', 'mother_nid', 'mother_mobile', 'mother_occupation', 
                 'guardian_name', 'guardian_mobile', 'guardian_occupation',
                 'present_village', 'present_post_office', 'present_post_code', 'present_district', 'present_division',
                 'permanent_village', 'permanent_post_office', 'permanent_post_code', 'permanent_district', 'permanent_division',
@@ -601,10 +752,10 @@
         formData.append('_method', 'PUT');
 
         const fields = [
-            'roll_number', 'student_name', 'name_in_bangla', 'birth_certificate', 
+            'roll_number', 'student_name', 'name_in_bangla', 'birth_certificate', 'student_identity',
             'blood_group', 'religion', 'dob', 'gender', 'email', 'sms_status', 'card_number',
-            'father_name', 'father_nid', 'father_mobile', 'father_occupation', 
-            'mother_name', 'mother_nid', 'mother_mobile', 'mother_occupation', 
+            'father_name', 'father_name_bn', 'father_nid', 'father_mobile', 'father_occupation', 
+            'mother_name', 'mother_name_bn', 'mother_nid', 'mother_mobile', 'mother_occupation', 
             'guardian_name', 'guardian_mobile', 'guardian_occupation',
             'present_village', 'present_post_office', 'present_post_code', 'present_district', 'present_division',
             'permanent_village', 'permanent_post_office', 'permanent_post_code', 'permanent_district', 'permanent_division',
