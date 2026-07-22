@@ -147,9 +147,10 @@ class StudentController extends Controller
                     }
                 }
                 
+                $nextSerial = max(539, Student::count() + 1);
                 do {
-                    $randomId = rand(1000, 9999);
-                    $studentIdentity = "{$year}-{$month}-{$classShort}-{$randomId}";
+                    $studentIdentity = "{$year}-{$month}-{$classShort}-{$nextSerial}";
+                    $nextSerial++;
                 } while (Student::where('student_identity', $studentIdentity)->exists());
             }
 
@@ -710,5 +711,14 @@ public function detectStudentInfo(Request $request)
                 'message' => 'Biometric scan failed: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Get the next serial number for student identity
+     */
+    public function getNextSerial(): JsonResponse
+    {
+        $nextSerial = max(539, Student::count() + 1);
+        return response()->json(['status' => 'success', 'nextSerial' => $nextSerial], 200);
     }
 }

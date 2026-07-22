@@ -514,7 +514,7 @@
                 } else {
                     this.year = String(currentY);
                     this.month = String(new Date().getMonth() + 1).padStart(2, '0');
-                    this.regenerateId();
+                    this.fetchNextSerial();
                 }
                 
                 // Listen to class hidden input changes
@@ -552,9 +552,21 @@
                 if (parts.length >= 4) this.randId = parts[3];
             },
             
+            async fetchNextSerial() {
+                try {
+                    let res = await axios.get('/ajax/students/next-serial');
+                    if (res.data && res.data.nextSerial) {
+                        this.randId = String(res.data.nextSerial);
+                        this.updateIdentity();
+                    }
+                } catch (e) {
+                    this.randId = '539';
+                    this.updateIdentity();
+                }
+            },
+            
             regenerateId() {
-                this.randId = String(Math.floor(1000 + Math.random() * 9000));
-                this.updateIdentity();
+                this.fetchNextSerial();
             },
             
             getClassShortform(className) {

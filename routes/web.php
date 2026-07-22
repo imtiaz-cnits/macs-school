@@ -153,6 +153,7 @@ Route::middleware(['auth', 'roles:editor,admin,super-admin'])->group(function ()
     Route::get('/ajax/students/promotion-list', [StudentController::class, 'getStudentsForPromotion'])->name('students.promotion.list');
     Route::get('/ajax/students/detect', [StudentController::class, 'detectStudentInfo'])->name('students.detect');
     Route::get('/ajax/students/scan-card', [StudentController::class, 'scanRfidCard'])->name('students.scan-card');
+    Route::get('/ajax/students/next-serial', [StudentController::class, 'getNextSerial'])->name('students.next-serial');
     Route::post('/ajax/students/promote', [StudentController::class, 'promoteStudents'])->name('students.promote'); // (এটি মিসিং ছিল)
     Route::get('/ajax/students/export-excel', [StudentController::class, 'exportExcel'])->name('students.export.excel');
     Route::get('/ajax/students/export-pdf', [StudentController::class, 'exportPDF'])->name('students.export.pdf');

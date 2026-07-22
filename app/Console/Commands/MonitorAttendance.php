@@ -79,9 +79,16 @@ class MonitorAttendance extends Command
                     $checkInTime = $times[0];
                     $checkOutTime = count($times) > 1 ? end($times) : null;
                     
+                    $attendanceService = app(\App\Services\AttendanceService::class);
+                    $shift = $student->shift;
+                    if (!$shift) {
+                        $shift = \App\Models\Shift::where('type', 'student')->first();
+                    }
+
                     $status = 'Present';
-                    if ($checkInTime > '09:00:00') {
-                        $status = 'Late';
+                    if ($shift) {
+                        $punchCarbon = Carbon::parse($today . ' ' . $checkInTime, 'Asia/Dhaka');
+                        $status = $attendanceService->calculateStatus($punchCarbon, $shift);
                     }
                     
                     if ($checkOutTime) {

@@ -15,10 +15,14 @@ class ClassesController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            // ডাটাবেস থেকে সব ইউজারের ক্লাস লেটেস্ট অর্ডারে নিয়ে আসা হচ্ছে
-            $classes = Classes::latest()->get();
+            $classes = Classes::all();
+            $order = ['Play', 'Nursery', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+            $sorted = $classes->sortBy(function ($class) use ($order) {
+                $pos = array_search($class->class_name, $order);
+                return $pos !== false ? $pos : 999;
+            })->values();
             
-            return response()->json(['status' => 'success', 'classData' => $classes], 200);
+            return response()->json(['status' => 'success', 'classData' => $sorted], 200);
         } catch (Exception $e) {
             return response()->json(['status' => 'error', 'message' => 'Failed to fetch data'], 500);
         }

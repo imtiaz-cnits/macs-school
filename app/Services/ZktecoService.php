@@ -135,10 +135,16 @@ class ZktecoService
                 $checkIn = $times[0];
                 $checkOut = count($times) > 1 ? end($times) : null;
                 
-                // Determine Late status (arrival after 9:00 AM)
+                $attendanceService = app(\App\Services\AttendanceService::class);
+                $shift = $teacher->shift;
+                if (!$shift) {
+                    $shift = \App\Models\Shift::where('type', 'staff')->first();
+                }
+
                 $status = 'Present';
-                if ($checkIn > '09:00:00') {
-                    $status = 'Late';
+                if ($shift) {
+                    $punchCarbon = Carbon::parse($targetDateStr . ' ' . $checkIn, 'Asia/Dhaka');
+                    $status = $attendanceService->calculateStatus($punchCarbon, $shift);
                 }
                 
                 StaffAttendance::updateOrCreate(
@@ -193,10 +199,15 @@ class ZktecoService
             }
             $checkOutTime = Carbon::create($date->year, $date->month, $date->day, $checkOutHour, $checkOutMin, 0);
 
-            // Status decision (Late threshold: 9:00 AM)
+            $attendanceService = app(\App\Services\AttendanceService::class);
+            $shift = $teacher->shift;
+            if (!$shift) {
+                $shift = \App\Models\Shift::where('type', 'staff')->first();
+            }
+
             $status = 'Present';
-            if ($checkInTime->format('H:i:s') > '09:00:00') {
-                $status = 'Late';
+            if ($shift) {
+                $status = $attendanceService->calculateStatus($checkInTime, $shift);
             }
 
             // Randomly simulate an absent staff (5% chance)
