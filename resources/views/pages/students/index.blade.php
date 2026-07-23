@@ -466,7 +466,7 @@
                         </td>
                         <td class="py-0 px-0">
                             <div class="text-sm font-bold text-gray-900 dark:text-gray-100">${item.student_name}</div>
-                            <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 mt-1">ID: <span class="text-gray-700 dark:text-gray-300 font-bold">${item.student_identity || 'N/A'}</span></div>
+                            <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 mt-1">ID: <span class="text-gray-700 dark:text-gray-300 font-bold">${item.student_identity || 'N/A'}</span> <span class="mx-1 text-gray-300 dark:text-gray-700">|</span> Device ID: <span class="text-themeBlue font-bold">${item.id}</span></div>
                             <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 mt-0.5">Mob: <span class="text-gray-700 dark:text-gray-300 font-bold">${item.guardian_mobile}</span></div>
                         </td>
                         <td class="py-0 px-0">

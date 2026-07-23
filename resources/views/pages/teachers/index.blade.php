@@ -141,7 +141,9 @@
                             <div class="flex items-center gap-1.5 mt-0.5">
                                 <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider">ID: PIS-T-${item.id}</span>
                                 <span class="text-gray-300 dark:text-gray-700">•</span>
-                                <span class="text-[9px] font-black text-themeBlue uppercase tracking-wider">${email}</span>
+                                <span class="text-[9px] font-black text-themeBlue uppercase tracking-wider">Device ID: ${item.biometric_id || (10000 + parseInt(item.id))}</span>
+                                <span class="text-gray-300 dark:text-gray-700">•</span>
+                                <span class="text-[9px] font-black text-emerald-600 dark:text-emerald-450 uppercase tracking-wider">${email}</span>
                             </div>
                             <div class="text-[9px] font-bold text-gray-455 dark:text-gray-500 mt-1 flex items-center gap-1">
                                 <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
