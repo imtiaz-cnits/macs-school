@@ -128,6 +128,14 @@ class ZktecoService
                 // Find teacher matching biometric ID
                 $teacher = Teacher::where('biometric_id', $biometricId)->first();
                 if (!$teacher) {
+                    // Fallback: match teacher directly by ID (if biometricId - 10000 is a valid ID)
+                    if ($biometricId > 10000) {
+                        $teacherId = $biometricId - 10000;
+                        $teacher = Teacher::find($teacherId);
+                    }
+                }
+                
+                if (!$teacher) {
                     continue; // Skip logs for unregistered device IDs
                 }
                 
@@ -303,20 +311,20 @@ class ZktecoService
                     $uid = $log['id'];
                     $time = Carbon::parse($log['timestamp'])->format('H:i:s');
                     
-                    // Resolve card number if present and not zero
+                    // 1. Always map by direct user ID key (fallback/fingerprint support)
+                    $idKey = "id:{$uid}";
+                    if (!isset($cards[$idKey])) {
+                        $cards[$idKey] = [];
+                    }
+                    $cards[$idKey][] = $time;
+                    
+                    // 2. Map by card number if present and not zero (RFID support)
                     if (isset($userCardMap[$uid]) && trim($userCardMap[$uid]) !== '' && trim($userCardMap[$uid]) !== '0') {
                         $cardNo = trim($userCardMap[$uid]);
                         if (!isset($cards[$cardNo])) {
                             $cards[$cardNo] = [];
                         }
                         $cards[$cardNo][] = $time;
-                    } else {
-                        // Fallback to direct ID key
-                        $idKey = "id:{$uid}";
-                        if (!isset($cards[$idKey])) {
-                            $cards[$idKey] = [];
-                        }
-                        $cards[$idKey][] = $time;
                     }
                 }
             }
