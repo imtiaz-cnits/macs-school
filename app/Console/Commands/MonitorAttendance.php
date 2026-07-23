@@ -61,6 +61,11 @@ class MonitorAttendance extends Command
                 // Get raw card swipes for today from the device
                 $cardSwipes = $zkService->getRawLogsByCard($today);
                 
+                $this->info("[" . date('H:i:s') . "] Checked device: found " . count($cardSwipes) . " active user logs for today (" . $today . ").");
+                if (count($cardSwipes) > 0) {
+                    $this->info("  --> Raw keys detected: " . implode(', ', array_keys($cardSwipes)));
+                }
+                
                 foreach ($cardSwipes as $key => $times) {
                     if (empty($key)) continue;
                     
