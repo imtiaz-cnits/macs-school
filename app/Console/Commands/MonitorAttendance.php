@@ -134,7 +134,7 @@ class MonitorAttendance extends Command
                             ]
                         );
                         
-                        $this->info("[" . date('H:i:s') . "] PUNCH RECORD UPDATED: Student '{$student->student_name}' (Card: {$cardNo}) remarks set to: {$remarks}.");
+                        $this->info("[" . date('H:i:s') . "] PUNCH RECORD UPDATED: Student '{$student->student_name}' (Card: {$key}) remarks set to: {$remarks}.");
                         
                         // Send SMS instantly to guardian if SMS is Active
                         if ($student->sms_status === 'Active' && !empty($student->guardian_mobile)) {
