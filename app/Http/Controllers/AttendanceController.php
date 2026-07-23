@@ -240,17 +240,28 @@ class AttendanceController extends Controller
                 $status = 'Absent';
                 $remarks = 'Absent (Biometric Check)';
                 
-                // Check if student has card number and has swiped
+                $times = null;
                 if (!empty($student->card_number) && isset($cardSwipes[$student->card_number])) {
                     $times = $cardSwipes[$student->card_number];
+                } elseif (isset($cardSwipes["id:{$student->id}"])) {
+                    $times = $cardSwipes["id:{$student->id}"];
+                }
+
+                if ($times) {
                     sort($times);
                     $checkIn = $times[0];
                     $checkOut = count($times) > 1 ? end($times) : null;
                     
-                    // Late limit (e.g. 9:00 AM)
+                    $attendanceService = app(\App\Services\AttendanceService::class);
+                    $shift = $student->shift;
+                    if (!$shift) {
+                        $shift = \App\Models\Shift::where('type', 'student')->first();
+                    }
+
                     $status = 'Present';
-                    if ($checkIn > '09:00:00') {
-                        $status = 'Late';
+                    if ($shift) {
+                        $punchCarbon = Carbon::parse($date . ' ' . $checkIn, 'Asia/Dhaka');
+                        $status = $attendanceService->calculateStatus($punchCarbon, $shift);
                     }
                     
                     if ($checkOut) {
