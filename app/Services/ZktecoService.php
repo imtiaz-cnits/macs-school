@@ -301,13 +301,22 @@ class ZktecoService
             foreach ($allLogs as $log) {
                 if (isset($log['timestamp']) && str_starts_with($log['timestamp'], $targetDateStr)) {
                     $uid = $log['id'];
-                    if (isset($userCardMap[$uid])) {
-                        $cardNo = $userCardMap[$uid];
-                        $time = Carbon::parse($log['timestamp'])->format('H:i:s');
+                    $time = Carbon::parse($log['timestamp'])->format('H:i:s');
+                    
+                    // Resolve card number if present and not zero
+                    if (isset($userCardMap[$uid]) && trim($userCardMap[$uid]) !== '' && trim($userCardMap[$uid]) !== '0') {
+                        $cardNo = trim($userCardMap[$uid]);
                         if (!isset($cards[$cardNo])) {
                             $cards[$cardNo] = [];
                         }
                         $cards[$cardNo][] = $time;
+                    } else {
+                        // Fallback to direct ID key
+                        $idKey = "id:{$uid}";
+                        if (!isset($cards[$idKey])) {
+                            $cards[$idKey] = [];
+                        }
+                        $cards[$idKey][] = $time;
                     }
                 }
             }

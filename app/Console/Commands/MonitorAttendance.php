@@ -61,11 +61,17 @@ class MonitorAttendance extends Command
                 // Get raw card swipes for today from the device
                 $cardSwipes = $zkService->getRawLogsByCard($today);
                 
-                foreach ($cardSwipes as $cardNo => $times) {
-                    if (empty($cardNo)) continue;
+                foreach ($cardSwipes as $key => $times) {
+                    if (empty($key)) continue;
                     
-                    // Find student matching this card number
-                    $student = Student::where('card_number', $cardNo)->first();
+                    $student = null;
+                    if (str_starts_with($key, 'id:')) {
+                        $studentId = substr($key, 3);
+                        $student = Student::find($studentId);
+                    } else {
+                        $student = Student::where('card_number', $key)->first();
+                    }
+                    
                     if (!$student) {
                         continue;
                     }
