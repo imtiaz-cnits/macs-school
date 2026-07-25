@@ -279,6 +279,14 @@
             </div>
             @endif
 
+            <!-- Stock Management (Direct Link) -->
+            @if(auth()->check() && (auth()->user()->hasRole('editor') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+            <a href="{{ route('inventory.index') }}" class="sidebar-link {{ request()->routeIs('inventory.index') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                <span class="sidebar-text">Stock Inventory</span>
+            </a>
+            @endif
+
             <!-- Dynamic Resources (Drilldown Trigger) -->
             @php
                 $accessibleResources = [];

@@ -26,6 +26,7 @@ use App\Http\Controllers\FeeSetupController;
 use App\Http\Controllers\FeeCollectionController;
 use App\Http\Controllers\FeeInvoiceController;
 use App\Http\Controllers\FeeReportController;
+use App\Http\Controllers\InventoryController;
 
 // Custom Login Page Override
 Route::get('/login', function () {
@@ -400,5 +401,11 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
     });
 
     
-        
+    // Stock Inventory Routes
+    Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    Route::get('/ajax/inventory/items', [InventoryController::class, 'getItemsAjax']);
+    Route::post('/ajax/inventory/items', [InventoryController::class, 'storeItemAjax']);
+    Route::delete('/ajax/inventory/items/{id}', [InventoryController::class, 'deleteItemAjax']);
+    Route::post('/ajax/inventory/adjust', [InventoryController::class, 'adjustStockAjax']);
+    Route::get('/ajax/inventory/logs', [InventoryController::class, 'getLogsAjax']);
 });
