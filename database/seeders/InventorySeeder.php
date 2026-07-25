@@ -7,6 +7,8 @@ use App\Models\InventoryItem;
 use App\Models\InventoryLog;
 use Carbon\Carbon;
 
+use Illuminate\Support\Facades\Schema;
+
 class InventorySeeder extends Seeder
 {
     /**
@@ -15,8 +17,10 @@ class InventorySeeder extends Seeder
     public function run(): void
     {
         // Clear existing records to allow clean re-run
+        Schema::disableForeignKeyConstraints();
         InventoryLog::truncate();
         InventoryItem::truncate();
+        Schema::enableForeignKeyConstraints();
 
         $today = Carbon::today('Asia/Dhaka')->format('Y-m-d');
 
