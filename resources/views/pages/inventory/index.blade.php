@@ -250,10 +250,10 @@
     <!-- ==============================================
          MODAL 1: ADD/EDIT INVENTORY ITEM
          ============================================== -->
-    <div x-show="modals.item" x-cloak class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-themeDark/40 backdrop-blur-md" x-transition>
-        <div class="bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
+    <div x-show="modals.item" x-cloak class="fixed inset-0 z-[9999] overflow-y-auto flex items-center justify-center p-4 bg-themeDark/40 backdrop-blur-md" x-transition>
+        <div class="bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden transform transition-all">
             <!-- Modal Header -->
-            <div class="px-6 py-4 bg-gray-50/50 dark:bg-themeDark/30 border-b border-gray-100 dark:border-white/[0.06] flex items-center justify-between">
+            <div class="px-8 py-5 bg-gray-50/50 dark:bg-themeDark/30 border-b border-gray-100 dark:border-white/[0.06] flex items-center justify-between">
                 <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest" x-text="itemForm.id ? 'Edit Item Details' : 'Add New Item'"></h3>
                 <button type="button" @click="modals.item = false" class="text-gray-400 hover:text-gray-550 dark:hover:text-gray-300">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -262,7 +262,7 @@
             
             <form @submit.prevent="submitItemForm()">
                 <!-- Modal Body -->
-                <div class="p-6 space-y-4 text-left">
+                <div class="p-8 space-y-6 text-left">
                     <!-- Item Name -->
                     <div>
                         <label class="block text-[10px] font-black text-gray-550 dark:text-gray-450 uppercase tracking-widest mb-1.5 ml-1">Item Name *</label>
@@ -314,7 +314,7 @@
                 </div>
 
                 <!-- Modal Footer -->
-                <div class="px-6 py-4 bg-gray-50/50 dark:bg-themeDark/30 border-t border-gray-100 dark:border-white/[0.06] flex justify-end gap-3">
+                <div class="px-8 py-5 bg-gray-50/50 dark:bg-themeDark/30 border-t border-gray-100 dark:border-white/[0.06] flex justify-end gap-3">
                     <button type="button" @click="modals.item = false" class="h-10 px-5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-655 dark:text-gray-300 text-xs font-black rounded-lg transition-all uppercase tracking-widest">Cancel</button>
                     <button type="submit" class="h-10 px-6 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-lg shadow-sm hover:shadow-md transition-all uppercase tracking-widest" x-text="itemForm.id ? 'Save Changes' : 'Create Item'"></button>
                 </div>
@@ -325,10 +325,10 @@
     <!-- ==============================================
          MODAL 2: ADJUST STOCK (Plus / Minus)
          ============================================== -->
-    <div x-show="modals.adjust" x-cloak class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-themeDark/40 backdrop-blur-md" x-transition>
-        <div class="bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+    <div x-show="modals.adjust" x-cloak class="fixed inset-0 z-[9999] overflow-y-auto flex items-center justify-center p-4 bg-themeDark/40 backdrop-blur-md" x-transition>
+        <div class="bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden transform transition-all">
             <!-- Modal Header -->
-            <div class="px-6 py-4 bg-gray-50/50 dark:bg-themeDark/30 border-b border-gray-100 dark:border-white/[0.06] flex items-center justify-between">
+            <div class="px-8 py-5 bg-gray-50/50 dark:bg-themeDark/30 border-b border-gray-100 dark:border-white/[0.06] flex items-center justify-between">
                 <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Adjust Stock</h3>
                 <button type="button" @click="modals.adjust = false" class="text-gray-400 hover:text-gray-550 dark:hover:text-gray-300">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -337,7 +337,7 @@
             
             <form @submit.prevent="submitAdjustForm()">
                 <!-- Modal Body -->
-                <div class="p-6 space-y-4 text-left">
+                <div class="p-8 space-y-6 text-left">
                     <div class="p-4 bg-gray-50 dark:bg-themeDark/40 rounded-2xl border border-gray-100 dark:border-white/[0.05]">
                         <div class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Selected Item</div>
                         <div class="text-sm font-black text-gray-900 dark:text-white mt-0.5" x-text="selectedItem.name"></div>
@@ -383,7 +383,7 @@
                 </div>
 
                 <!-- Modal Footer -->
-                <div class="px-6 py-4 bg-gray-50/50 dark:bg-themeDark/30 border-t border-gray-100 dark:border-white/[0.06] flex justify-end gap-3">
+                <div class="px-8 py-5 bg-gray-50/50 dark:bg-themeDark/30 border-t border-gray-100 dark:border-white/[0.06] flex justify-end gap-3">
                     <button type="button" @click="modals.adjust = false" class="h-10 px-5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-655 dark:text-gray-300 text-xs font-black rounded-lg transition-all uppercase tracking-widest">Cancel</button>
                     <button type="submit" class="h-10 px-6 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-lg shadow-sm hover:shadow-md transition-all uppercase tracking-widest">Apply Adjust</button>
                 </div>
@@ -394,10 +394,10 @@
     <!-- ==============================================
          MODAL 3: INVENTORY TRANSACTION HISTORY
          ============================================== -->
-    <div x-show="modals.history" x-cloak class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-themeDark/40 backdrop-blur-md" x-transition>
-        <div class="bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all">
+    <div x-show="modals.history" x-cloak class="fixed inset-0 z-[9999] overflow-y-auto flex items-center justify-center p-4 bg-themeDark/40 backdrop-blur-md" x-transition>
+        <div class="bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden transform transition-all">
             <!-- Modal Header -->
-            <div class="px-6 py-4 bg-gray-50/50 dark:bg-themeDark/30 border-b border-gray-100 dark:border-white/[0.06] flex items-center justify-between">
+            <div class="px-8 py-5 bg-gray-50/50 dark:bg-themeDark/30 border-b border-gray-100 dark:border-white/[0.06] flex items-center justify-between">
                 <div>
                     <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Transaction History</h3>
                     <p class="text-[10px] font-semibold text-gray-500 mt-0.5" x-text="selectedItem.name"></p>
@@ -408,7 +408,7 @@
             </div>
             
             <!-- Modal Body -->
-            <div class="p-6 max-h-[400px] overflow-y-auto">
+            <div class="p-8 max-h-[400px] overflow-y-auto">
                 <div class="table-container bg-transparent !border-none !shadow-none !mt-0 !mb-0 overflow-x-auto">
                     <table class="w-full text-left border-collapse table">
                         <thead>
@@ -463,7 +463,7 @@
             </div>
             
             <!-- Modal Footer -->
-            <div class="px-6 py-4 bg-gray-50/50 dark:bg-themeDark/30 border-t border-gray-100 dark:border-white/[0.06] flex justify-end">
+            <div class="px-8 py-5 bg-gray-50/50 dark:bg-themeDark/30 border-t border-gray-100 dark:border-white/[0.06] flex justify-end">
                 <button type="button" @click="modals.history = false" class="h-10 px-6 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-655 dark:text-gray-300 text-xs font-black rounded-lg transition-all uppercase tracking-widest">Close</button>
             </div>
         </div>
