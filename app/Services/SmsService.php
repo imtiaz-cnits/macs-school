@@ -12,12 +12,14 @@ class SmsService
     protected $username;
     protected $apiKey;
     protected $senderId;
+    protected $testMode;
 
     public function __construct()
     {
         $this->username = config('services.mim_sms.username', 'info@codenextit.com');
         $this->apiKey = config('services.mim_sms.api_key', '2TLHE115406U4ON');
         $this->senderId = config('services.mim_sms.sender_id', '8809601004913');
+        $this->testMode = config('services.mim_sms.test_mode', true);
     }
 
     /**
@@ -36,22 +38,24 @@ class SmsService
             $cleanNumber = '88' . $cleanNumber;
         }
 
-        // Whitelist check: Only send to your test number (01788428280) for now
-        $allowedNumbers = ['8801788428280'];
-        if (!in_array($cleanNumber, $allowedNumbers)) {
-            Log::info("MIM SMS blocked: Mobile number {$cleanNumber} is not whitelisted for testing.");
-            
-            // Log to database as Blocked/Test Filter
-            SmsLog::create([
-                'student_id' => $studentId,
-                'mobile_number' => $mobileNumber,
-                'message' => $message,
-                'status' => 'Blocked (Test Mode)',
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now()
-            ]);
-            
-            return true; 
+        // Whitelist check: Only send to allowed numbers in test mode
+        if ($this->testMode) {
+            $allowedNumbers = ['8801788428280'];
+            if (!in_array($cleanNumber, $allowedNumbers)) {
+                Log::info("MIM SMS blocked: Mobile number {$cleanNumber} is not whitelisted for testing.");
+                
+                // Log to database as Blocked/Test Filter
+                SmsLog::create([
+                    'student_id' => $studentId,
+                    'mobile_number' => $mobileNumber,
+                    'message' => $message,
+                    'status' => 'Blocked (Test Mode)',
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now()
+                ]);
+                
+                return true; 
+            }
         }
 
         try {

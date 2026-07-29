@@ -39,6 +39,7 @@ return [
         'username' => env('MIM_SMS_USERNAME', 'info@codenextit.com'),
         'api_key' => env('MIM_SMS_API_KEY', '2TLHE115406U4ON'),
         'sender_id' => env('MIM_SMS_SENDER_ID', '8809601004913'),
+        'test_mode' => env('SMS_TEST_MODE', true),
     ],
 
 ];
