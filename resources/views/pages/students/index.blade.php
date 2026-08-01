@@ -42,10 +42,16 @@
                     try {
                         let res = await axios.get(ajaxUrl, getAuthHeaders());
                         let list = res.data[dataKey] || [];
-                        this.options = list.map(item => ({
-                            id: item[idField],
-                            name: item[nameField]
-                        }));
+                        this.options = list.map(item => {
+                            let name = item[nameField];
+                            if (id.includes('shift') && name) {
+                                name = name.replace(/\s*student/i, '').replace(/\s*staff/i, '').trim();
+                            }
+                            return {
+                                id: item[idField],
+                                name: name
+                            };
+                        });
                     } catch (e) {
                         console.error('Failed to load ' + id, e);
                     }
@@ -127,6 +133,33 @@
         </div>
 
         <!-- Dynamic Custom Dropdowns with Alpine.js -->
+        <!-- Branch -->
+        <div x-data="dropdownState('filter_branch', 'All Branches', '/ajax/branches', 'branchData', 'branch_name', 'id')" class="relative">
+            <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Branch</label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span x-text="selectedLabel">All Branches</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="filter_branch" value="">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <button type="button" @click="select(null)" :class="selectedValue === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                    <span>All Branches</span>
+                    <template x-if="selectedValue === ''">
+                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </template>
+                </button>
+                <template x-for="opt in options" :key="opt.id">
+                    <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                        <span x-text="opt.name"></span>
+                        <template x-if="selectedValue == opt.id">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                </template>
+            </div>
+        </div>
+
         <!-- Session -->
         <div x-data="dropdownState('filter_session', 'All Sessions', '/ajax/sessions', 'sessionData', 'session_name', 'id')" class="relative">
             <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Session</label>
@@ -181,35 +214,8 @@
             </div>
         </div>
 
-        <!-- Branch -->
-        <div x-data="dropdownState('filter_branch', 'All Branches', '/ajax/branches', 'branchData', 'branch_name', 'id')" class="relative">
-            <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Branch</label>
-            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
-                <span x-text="selectedLabel">All Branches</span>
-                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-            </button>
-            <input type="hidden" id="filter_branch" value="">
-            
-            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
-                <button type="button" @click="select(null)" :class="selectedValue === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
-                    <span>All Branches</span>
-                    <template x-if="selectedValue === ''">
-                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    </template>
-                </button>
-                <template x-for="opt in options" :key="opt.id">
-                    <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
-                        <span x-text="opt.name"></span>
-                        <template x-if="selectedValue == opt.id">
-                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        </template>
-                    </button>
-                </template>
-            </div>
-        </div>
-
         <!-- Shift -->
-        <div x-data="dropdownState('filter_shift', 'All Shifts', '/ajax/shifts', 'shiftData', 'shift_name', 'id')" class="relative">
+        <div x-data="dropdownState('filter_shift', 'All Shifts', '/ajax/shifts?type=student', 'shiftData', 'shift_name', 'id')" class="relative">
             <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Shift</label>
             <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                 <span x-text="selectedLabel">All Shifts</span>

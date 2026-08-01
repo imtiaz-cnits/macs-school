@@ -12,7 +12,11 @@ class ShiftController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $shifts = Shift::latest()->get();
+            $query = Shift::query();
+            if ($request->filled('type')) {
+                $query->where('type', $request->type);
+            }
+            $shifts = $query->latest()->get();
             return response()->json(['status' => 'success', 'shiftData' => $shifts], 200);
         } catch (Exception $e) {
             return response()->json(['status' => 'error', 'message' => 'Failed to fetch data'], 500);
