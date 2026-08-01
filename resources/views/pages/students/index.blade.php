@@ -458,6 +458,18 @@
                 let rollNumber = item.roll_number ? item.roll_number : 'N/A';
                 let studentGender = item.gender ? item.gender : 'N/A';
 
+                // Format Section to remove the word "Section" or "Section "
+                let formattedSection = sectionName;
+                if (sectionName && sectionName !== 'N/A') {
+                    formattedSection = sectionName.replace(/section\s*/i, '').trim();
+                }
+
+                // Format Shift to remove the word " Student" or "Student"
+                let formattedShift = shiftName;
+                if (shiftName && shiftName !== 'N/A') {
+                    formattedShift = shiftName.replace(/\s*student/i, '').trim();
+                }
+
                 let row = `
                     <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
                         <td class="py-0 px-0 text-sm font-bold text-gray-555 dark:text-gray-400">${startingSl + index + 1}</td>
@@ -475,9 +487,8 @@
                                 <span class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-themeDark text-[10px] font-black rounded-lg text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/[0.06]">ROLL: ${rollNumber}</span>
                             </div>
                             <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
-                                <span>Sec: <span class="text-gray-700 dark:text-gray-300 font-bold">${sectionName}</span></span>
-                                <span>Shift: <span class="text-gray-700 dark:text-gray-300 font-bold">${shiftName}</span></span>
-                                <span>Gender: <span class="text-gray-700 dark:text-gray-300 font-bold">${studentGender}</span></span>
+                                <span>Section: <span class="text-gray-700 dark:text-gray-300 font-bold">${formattedSection}</span></span>
+                                <span>Shift: <span class="text-gray-700 dark:text-gray-300 font-bold">${formattedShift}</span></span>
                             </div>
                         </td>
                         <td class="py-0 px-0">
