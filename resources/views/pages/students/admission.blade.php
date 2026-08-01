@@ -273,6 +273,14 @@
 @endsection
 
 @section('content')
+<!-- Back Button -->
+<a href="{{ route('students.index') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-themeBlue dark:hover:text-themeBlue transition-colors mb-4">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+    </svg>
+    Student List
+</a>
+
 <!-- Header Section -->
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 border-b border-gray-150 dark:border-white/[0.08] pb-6">
     <div>
@@ -811,12 +819,12 @@
     </div>
 
     <!-- Spacer to prevent content cut-off by the fixed footer -->
-    <div class="h-24"></div>
+    <div class="h-16"></div>
 
     <!-- Action Buttons Footer (Sticky) -->
     <div class="fixed bottom-0 left-0 right-0 md:left-64 z-40 bg-white/95 dark:bg-themeNavy/95 backdrop-blur-md px-6 py-4 flex flex-col sm:flex-row gap-4 items-center justify-between border-t border-gray-150 dark:border-white/[0.08] shadow-lg">
         <div class="flex gap-3 w-full sm:w-auto">
-            <a href="{{ route('students.index') }}" class="btn-sm bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450 border border-rose-100 dark:border-rose-900/30 rounded-xl hover:-translate-y-0.5 hover:shadow-md transition-all font-black uppercase tracking-wider text-center flex items-center justify-center !h-10 !px-8">Close</a>
+            <a href="{{ route('students.index') }}" class="btn-sm bg-rose-600 dark:bg-rose-950/20 text-white dark:text-white border border-rose-100 dark:border-rose-900/30 rounded-xl hover:-translate-y-0.5 hover:shadow-md transition-all font-black uppercase tracking-wider text-center flex items-center justify-center !h-10 !px-8">Close</a>
             <button type="reset" class="btn-sm bg-gray-150 dark:bg-themeNavy/50 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-xl hover:-translate-y-0.5 hover:shadow-md transition-all font-black uppercase tracking-wider !h-10 !px-8">Reset</button>
         </div>
         
@@ -825,13 +833,6 @@
         </button>
     </div>
 </form>
-
-<!-- Footer Branding -->
-<div class="mt-12 text-center border-t border-gray-50 dark:border-white/[0.04] pt-6">
-    <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em]">
-        Powered by <a href="https://www.codenextit.com" target="_blank" class="text-themeBlue dark:text-themeBlue/80 hover:underline decoration-2">Code Next IT</a>
-    </p>
-</div>
 @endsection
 
 @push('scripts')

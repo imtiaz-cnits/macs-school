@@ -95,6 +95,14 @@
 @endsection
 
 @section('content')
+<!-- Back Button -->
+<a href="{{ route('students.index') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-themeBlue dark:hover:text-themeBlue transition-colors mb-4">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+    </svg>
+    Student List
+</a>
+
 <div class="w-full min-h-screen text-gray-900 dark:text-gray-100">
     
     <div class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] shadow-sm p-6 md:p-10 relative overflow-hidden">
@@ -472,7 +480,7 @@
             </div>
 
             <!-- Spacer to prevent content cut-off by the fixed footer -->
-            <div class="h-24"></div>
+            <!-- <div class="h-24"></div> -->
 
             <!-- Footer Action Panel (Sticky) -->
             <div class="fixed bottom-0 left-0 right-0 md:left-64 z-40 bg-white/95 dark:bg-themeNavy/95 backdrop-blur-md px-6 py-4 flex flex-col md:flex-row gap-4 items-center justify-between border-t border-gray-150 dark:border-white/[0.08] shadow-lg">
