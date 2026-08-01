@@ -471,8 +471,11 @@
                 </div>
             </div>
 
-            <!-- Footer Action Panel -->
-            <div class="flex flex-col md:flex-row gap-4 items-center justify-between border-t border-gray-150 dark:border-white/[0.08] pt-8 mt-6">
+            <!-- Spacer to prevent content cut-off by the fixed footer -->
+            <div class="h-24"></div>
+
+            <!-- Footer Action Panel (Sticky) -->
+            <div class="fixed bottom-0 left-0 right-0 md:left-64 z-40 bg-white/95 dark:bg-themeNavy/95 backdrop-blur-md px-6 py-4 flex flex-col md:flex-row gap-4 items-center justify-between border-t border-gray-150 dark:border-white/[0.08] shadow-lg">
                 <a href="{{ route('students.index') }}" class="h-11 px-10 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl uppercase tracking-[0.2em] text-xs flex items-center justify-center transition-all hover:-translate-y-0.5 active:scale-95 shadow-md shadow-rose-600/10 w-full md:w-auto">Cancel</a>
                 <button type="submit" class="h-11 px-12 bg-gradient-to-r from-themeBlue to-themeGreen hover:from-themeBlue/90 hover:to-themeGreen/90 text-white font-black uppercase tracking-[0.2em] text-xs rounded-xl shadow-md shadow-themeBlue/10 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 w-full md:w-auto">
                     Save Changes

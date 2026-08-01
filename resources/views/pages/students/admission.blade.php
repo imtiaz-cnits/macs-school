@@ -810,8 +810,11 @@
         </div>
     </div>
 
-    <!-- Action Buttons Footer -->
-    <div class="flex flex-col sm:flex-row gap-4 items-center justify-between pt-8 border-t border-gray-100 dark:border-white/[0.06] mt-8">
+    <!-- Spacer to prevent content cut-off by the fixed footer -->
+    <div class="h-24"></div>
+
+    <!-- Action Buttons Footer (Sticky) -->
+    <div class="fixed bottom-0 left-0 right-0 md:left-64 z-40 bg-white/95 dark:bg-themeNavy/95 backdrop-blur-md px-6 py-4 flex flex-col sm:flex-row gap-4 items-center justify-between border-t border-gray-150 dark:border-white/[0.08] shadow-lg">
         <div class="flex gap-3 w-full sm:w-auto">
             <a href="{{ route('students.index') }}" class="btn-sm bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450 border border-rose-100 dark:border-rose-900/30 rounded-xl hover:-translate-y-0.5 hover:shadow-md transition-all font-black uppercase tracking-wider text-center flex items-center justify-center !h-10 !px-8">Close</a>
             <button type="reset" class="btn-sm bg-gray-150 dark:bg-themeNavy/50 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-xl hover:-translate-y-0.5 hover:shadow-md transition-all font-black uppercase tracking-wider !h-10 !px-8">Reset</button>
