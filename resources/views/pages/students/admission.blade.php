@@ -272,15 +272,16 @@
 <span>Student Management</span>
 @endsection
 
-@section('content')
-<!-- Back Button -->
-<a href="{{ route('students.index') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-themeBlue dark:hover:text-themeBlue transition-colors mb-4">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+@section('back_button')
+<a href="{{ route('students.index') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-gray-550 dark:text-gray-400 hover:text-themeBlue dark:hover:text-themeBlue transition-all hover:scale-102 active:scale-98">
+    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
     </svg>
     Student List
 </a>
+@endsection
 
+@section('content')
 <!-- Header Section -->
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 border-b border-gray-150 dark:border-white/[0.08] pb-6">
     <div>

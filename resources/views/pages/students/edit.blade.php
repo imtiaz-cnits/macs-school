@@ -94,15 +94,16 @@
 <span class="text-gray-500 dark:text-gray-400 font-medium">Edit Student</span>
 @endsection
 
-@section('content')
-<!-- Back Button -->
-<a href="{{ route('students.index') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-themeBlue dark:hover:text-themeBlue transition-colors mb-4">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+@section('back_button')
+<a href="{{ route('students.index') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-gray-555 dark:text-gray-400 hover:text-themeBlue dark:hover:text-themeBlue transition-all hover:scale-102 active:scale-98">
+    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
     </svg>
     Student List
 </a>
+@endsection
 
+@section('content')
 <div class="w-full min-h-screen text-gray-900 dark:text-gray-100">
     
     <div class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] shadow-sm p-6 md:p-10 relative overflow-hidden">

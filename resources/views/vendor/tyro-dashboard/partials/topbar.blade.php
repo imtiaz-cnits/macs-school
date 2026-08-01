@@ -12,6 +12,12 @@
                 <path d="M9 3v18" />
             </svg>
         </button>
+
+        @hasSection('back_button')
+            <div class="ml-3.5 border-l border-gray-200 dark:border-white/[0.08] pl-3.5 flex items-center h-6">
+                @yield('back_button')
+            </div>
+        @endif
     </div>
 
     <div class="topbar-right flex items-center gap-3">
