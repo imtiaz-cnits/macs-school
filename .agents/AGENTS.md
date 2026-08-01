@@ -110,6 +110,9 @@ To keep the layout feeling premium and maintain a unified styling across differe
   - Instantiate using `x-data="datePicker(formValue)"`.
   - Bind update events: `@date-selected.window="if($event.detail) formValue = $event.detail"`.
   - Structure inside a relative container featuring select trigger buttons, Month/Year selectors, and dynamic day grids.
+  - The Month/Year header must feature:
+    - A Month selection dropdown list (toggled via `mOpen` in Alpine) that lets the user choose any of the 12 months.
+    - A manual Year input field (`type="number"`, `class` with hidden spinners) to allow custom typing.
 - **Time Picker Wrapper**:
   - Instantiate using `x-data="timePicker(formValue)"`.
   - Bind update events: `@time-selected.window="if($event.detail) formValue = $event.detail"`.

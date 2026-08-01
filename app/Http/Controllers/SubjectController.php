@@ -24,7 +24,12 @@ class SubjectController extends Controller
                 });
             }
 
-            $subjects = $query->get();
+            // Handle Class Filter
+            if ($request->filled('class_id')) {
+                $query->where('class_id', $request->class_id);
+            }
+
+            $subjects = $query->paginate(15);
 
             return response()->json(['status' => 'success', 'subjectData' => $subjects], 200);
         } catch (\Exception $e) {

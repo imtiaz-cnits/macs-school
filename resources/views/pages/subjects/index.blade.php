@@ -38,14 +38,51 @@
     </div>
 
     <!-- Search filter -->
-    <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 mb-6 flex gap-4 items-center shadow-sm">
-        <div class="flex-grow relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+    <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 mb-6 shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <!-- Search Database -->
+            <div class="md:col-span-2">
+                <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Search Subject</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <input type="text" id="filter_search" placeholder="Search by Subject Name or Code..." class="w-full h-10 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-semibold text-gray-700 dark:text-gray-250 pl-11 placeholder-gray-400">
+                </div>
             </div>
-            <input type="text" id="filter_search" placeholder="Search by Subject Name or Code..." class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-semibold text-gray-700 dark:text-gray-250 pl-10 pr-3 placeholder-gray-400">
+
+            <!-- Class Filter -->
+            <div x-data="dropdownState('filter_class', 'All Classes', '/ajax/classes', 'classData', 'class_name', 'id')" class="relative">
+                <label class="block text-[10px] font-black tracking-widest text-gray-550 dark:text-gray-400 uppercase mb-1.5 ml-1">Class</label>
+                <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                    <span x-text="selectedLabel">All Classes</span>
+                    <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <input type="hidden" id="filter_class" value="">
+                
+                <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                    <button type="button" @click="select(null)" :class="selectedValue === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                        <span>All Classes</span>
+                        <template x-if="selectedValue === ''">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                    <template x-for="opt in options" :key="opt.id">
+                        <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                            <span x-text="opt.name"></span>
+                            <template x-if="selectedValue == opt.id">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Reset Button -->
+            <div>
+                <button onclick="window.resetFilter()" class="w-full h-10 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-655 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all shadow-sm flex items-center justify-center">Reset</button>
+            </div>
         </div>
-        <button onclick="window.resetFilter()" class="h-11 px-6 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-655 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all shadow-sm shrink-0">Reset</button>
     </div>
 
     <!-- Data Table Card -->
@@ -54,10 +91,10 @@
             <table class="w-full text-left border-collapse table">
                 <thead>
                     <tr class="!bg-transparent">
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center w-20">SL</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Subject Info</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] w-36">Type</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-48">Actions</th>
+                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center w-20">SL</th>
+                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Subject Info</th>
+                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] w-36">Type</th>
+                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-48">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="tableList">
@@ -72,6 +109,10 @@
                 </tbody>
             </table>
         </div>
+    </div>
+    
+    <!-- Pagination Footer -->
+    <div id="pagination-container" class="mt-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
     </div>
 </div>
 
@@ -305,7 +346,7 @@
 </div>
 @endsection
 
-@push('scripts')
+@@push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
@@ -315,6 +356,59 @@
     const getAuthHeaders = () => ({ 
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content } 
     });
+
+    // Custom dropdownState helper matching student list
+    window.dropdownState = function(id, defaultLabel, ajaxUrl, dataKey, nameField, idField) {
+        return {
+            open: false,
+            selectedLabel: defaultLabel,
+            selectedValue: '',
+            options: [],
+            disabled: false,
+            async init() {
+                let input = document.getElementById(id);
+                if (input) {
+                    this.selectedValue = input.value;
+                    this.disabled = input.disabled;
+                    input.addEventListener('change', () => {
+                        this.selectedValue = input.value;
+                        this.disabled = input.disabled;
+                        let found = this.options.find(o => o.id == input.value);
+                        this.selectedLabel = found ? found.name : defaultLabel;
+                    });
+                }
+
+                if (ajaxUrl) {
+                    try {
+                        let res = await axios.get(ajaxUrl, getAuthHeaders());
+                        let list = res.data[dataKey] || [];
+                        this.options = list.map(item => ({
+                            id: item[idField],
+                            name: item[nameField]
+                        }));
+                        if(this.selectedValue) {
+                            let found = this.options.find(o => o.id == this.selectedValue);
+                            if(found) this.selectedLabel = found.name;
+                        }
+                    } catch (e) {
+                        console.error('Failed to load ' + id, e);
+                    }
+                }
+            },
+            select(option) {
+                if (this.disabled) return;
+                this.selectedLabel = option ? option.name : defaultLabel;
+                this.selectedValue = option ? option.id : '';
+                this.open = false;
+                
+                let input = document.getElementById(id);
+                if (input) {
+                    input.value = this.selectedValue;
+                    input.dispatchEvent(new Event('change'));
+                }
+            }
+        };
+    };
 
     window.classesList = [];
 
@@ -332,30 +426,62 @@
     };
 
     // ১. সাবজেক্ট লিস্ট ফেচ করা
-    window.fetchList = async function() {
+    window.fetchList = async function(page = 1) {
         let list = document.getElementById('tableList');
         let search = document.getElementById('filter_search').value;
-        let q = new URLSearchParams({ search }).toString();
+        let class_id = document.getElementById('filter_class').value;
+        let q = new URLSearchParams({ search, class_id, page }).toString();
 
         try {
-            let res = await axios.get(`/ajax/subjects?${q}`, getAuthHeaders());
-            let data = res.data.subjectData || [];
-            list.innerHTML = data.length ? '' : `<tr><td colspan="4" class="py-12 text-center text-gray-500 font-bold uppercase tracking-wider">No subjects found.</td></tr>`;
+            // Skeleton load row
+            let skeletonHtml = '';
+            for (let i = 0; i < 5; i++) {
+                skeletonHtml += `
+                    <tr class="animate-pulse">
+                        <td class="py-0 px-0 text-center"><div class="h-4 w-6 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
+                        <td class="py-0 px-0">
+                            <div class="h-4 w-32 bg-gray-200 dark:bg-gray-700/60 rounded-md mb-2"></div>
+                            <div class="h-3 w-48 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
+                        </td>
+                        <td class="py-0 px-0">
+                            <div class="h-4 w-16 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
+                        </td>
+                        <td class="py-0 px-0">
+                            <div class="flex items-center justify-end gap-2.5">
+                                <div class="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700/60"></div>
+                                <div class="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700/60"></div>
+                            </div>
+                        </td>
+                    </tr>`;
+            }
+            list.innerHTML = skeletonHtml;
 
+            let res = await axios.get(`/ajax/subjects?${q}`, getAuthHeaders());
+            let paginator = res.data.subjectData;
+            let data = paginator.data || [];
+            
+            if (data.length === 0) {
+                list.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-sm font-semibold text-red-500 dark:text-red-400 uppercase tracking-wider">No subjects found.</td></tr>`;
+                document.getElementById('pagination-container').innerHTML = ''; 
+                return;
+            }
+
+            list.innerHTML = '';
             data.forEach((item, index) => {
+                let sl = (paginator.current_page - 1) * paginator.per_page + index + 1;
                 list.innerHTML += `
                     <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
-                        <td class="py-4 px-4 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm">${index + 1}</td>
-                        <td class="py-4 px-4">
+                        <td class="py-0 px-0 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm">${sl}</td>
+                        <td class="py-0 px-0">
                             <div class="text-sm font-bold text-gray-900 dark:text-gray-100">${item.subject_name}</div>
                             <div class="text-[9px] font-black text-gray-400 dark:text-gray-550 uppercase mt-1">
                                 Code: ${item.subject_code || 'N/A'} &nbsp;|&nbsp; Class: <span class="text-themeBlue font-black">${item.class ? item.class.class_name : 'N/A'}</span>
                             </div>
                         </td>
-                        <td class="py-4 px-4">
-                            <span class="px-2.5 py-1 bg-gray-55 dark:bg-themeDark border border-gray-100 dark:border-white/[0.06] text-gray-650 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg inline-block">${item.subject_type}</span>
+                        <td class="py-0 px-0">
+                            <span class="px-2.5 py-1 bg-gray-55 dark:bg-themeDark border border-gray-100 dark:border-white/[0.06] text-gray-655 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg inline-block">${item.subject_type}</span>
                         </td>
-                        <td class="py-4 px-4">
+                        <td class="py-0 px-0">
                             <div class="flex items-center justify-end gap-2.5">
                                 <!-- Edit Button -->
                                 <button onclick="window.EditSubject(${item.id})" class="action-btn text-themeBlue hover:text-themeBlue hover:border-themeBlue" title="Edit Subject">
@@ -369,8 +495,56 @@
                         </td>
                     </tr>`;
             });
-        } catch (e) { list.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-red-500 font-bold">Error loading data.</td></tr>`; }
+            renderPagination(paginator);
+        } catch (e) { 
+            list.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-red-500 font-bold">Error loading data.</td></tr>`; 
+        }
     };
+
+    // UI builder for pagination
+    function renderPagination(paginator) {
+        let container = document.getElementById('pagination-container');
+        if (!paginator || paginator.last_page <= 1) {
+            container.innerHTML = `<div class="text-xs font-semibold text-gray-400 dark:text-gray-550 uppercase tracking-wider">Showing ${paginator.total || 0} entries</div>`;
+            return;
+        }
+
+        let html = `<div class="text-xs font-semibold text-gray-400 dark:text-gray-555 uppercase tracking-wider mb-4 md:mb-0">
+                        Showing <span class="font-black text-gray-750 dark:text-gray-300">${paginator.from || 0}</span> to <span class="font-black text-gray-750 dark:text-gray-300">${paginator.to || 0}</span> of <span class="font-black text-gray-750 dark:text-gray-300">${paginator.total}</span> entries
+                    </div>`;
+        
+        html += `<div class="flex items-center space-x-1.5">`;
+
+        // Prev Button
+        if (paginator.current_page > 1) {
+            html += `<button onclick="window.fetchList(${paginator.current_page - 1})" class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs">Prev</button>`;
+        } else {
+            html += `<button disabled class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs opacity-50 cursor-not-allowed">Prev</button>`;
+        }
+
+        // Page Numbers
+        for(let i=1; i<=paginator.last_page; i++) {
+            if (i === 1 || i === paginator.last_page || Math.abs(paginator.current_page - i) <= 1) {
+                if (i === paginator.current_page) {
+                    html += `<button class="btn-xs btn-primary !h-9 !w-9 !p-0 !rounded-lg !text-xs shadow-sm">${i}</button>`;
+                } else {
+                    html += `<button onclick="window.fetchList(${i})" class="btn-xs btn-secondary !h-9 !w-9 !p-0 !rounded-lg !text-xs">${i}</button>`;
+                }
+            } else if (Math.abs(paginator.current_page - i) === 2) {
+                html += `<span class="px-2 text-gray-450 font-bold">...</span>`;
+            }
+        }
+
+        // Next Button
+        if (paginator.current_page < paginator.last_page) {
+            html += `<button onclick="window.fetchList(${paginator.current_page + 1})" class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs">Next</button>`;
+        } else {
+            html += `<button disabled class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs opacity-50 cursor-not-allowed">Next</button>`;
+        }
+
+        html += `</div>`;
+        container.innerHTML = html;
+    }
 
     // ২. সাবজেক্ট এডিট (ডাটা ফিল করা)
     window.EditSubject = async function(id) {
@@ -431,7 +605,15 @@
         }
     };
 
-    window.resetFilter = () => { document.getElementById('filter_search').value = ""; window.fetchList(); };
+    window.resetFilter = () => { 
+        document.getElementById('filter_search').value = ""; 
+        let classInput = document.getElementById('filter_class');
+        if (classInput) {
+            classInput.value = "";
+            classInput.dispatchEvent(new Event('change'));
+        }
+        window.fetchList(1); 
+    };
     
     // Live Search
     let typingTimer;
@@ -440,10 +622,14 @@
         typingTimer = setTimeout(window.fetchList, 400);
     };
 
-    // Initial Load
+    // Listen for dropdown filter changes
     document.addEventListener('DOMContentLoaded', async () => {
+        let classInput = document.getElementById('filter_class');
+        if (classInput) {
+            classInput.addEventListener('change', () => window.fetchList(1));
+        }
         await window.fetchClasses();
-        await window.fetchList();
+        await window.fetchList(1);
     });
 </script>
 @endpush
