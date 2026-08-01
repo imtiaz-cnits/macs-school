@@ -557,11 +557,25 @@
             
             parseIdentity(idStr) {
                 if (!idStr) return;
-                const parts = idStr.split('-');
-                if (parts.length >= 1) this.year = parts[0];
-                if (parts.length >= 2) this.month = parts[1];
-                if (parts.length >= 3) this.classShort = parts[2];
-                if (parts.length >= 4) this.randId = parts[3];
+                idStr = idStr.trim();
+                if (idStr.includes('-')) {
+                    const parts = idStr.split('-');
+                    if (parts.length >= 1) this.year = parts[0];
+                    if (parts.length >= 2) this.month = parts[1];
+                    if (parts.length >= 3) this.classShort = parts[2];
+                    if (parts.length >= 4) this.randId = parts[3];
+                } else if (idStr.length === 11) {
+                    const yy = idStr.substring(0, 2);
+                    const mm = idStr.substring(2, 4);
+                    const cc = idStr.substring(4, 6);
+                    const ss = idStr.substring(6, 11);
+                    this.year = '20' + yy;
+                    this.month = mm;
+                    this.classShort = cc;
+                    this.randId = String(parseInt(ss, 10));
+                } else {
+                    this.randId = idStr;
+                }
             },
             
             async fetchNextSerial() {
@@ -584,23 +598,23 @@
             getClassShortform(className) {
                 if (!className) return '';
                 const name = className.toLowerCase().trim();
-                if (name.includes('one') || name.includes('1')) return 'C1';
-                if (name.includes('two') || name.includes('2')) return 'C2';
-                if (name.includes('three') || name.includes('3')) return 'C3';
-                if (name.includes('four') || name.includes('4')) return 'C4';
-                if (name.includes('five') || name.includes('5')) return 'C5';
-                if (name.includes('six') || name.includes('6')) return 'C6';
-                if (name.includes('seven') || name.includes('7')) return 'C7';
-                if (name.includes('eight') || name.includes('8')) return 'C8';
-                if (name.includes('nine') || name.includes('9')) return 'C9';
-                if (name.includes('ten') || name.includes('10')) return 'C10';
-                if (name.includes('nursery')) return 'NUR';
-                if (name.includes('play')) return 'PLAY';
-                if (name.includes('baby')) return 'BABY';
+                if (name.includes('one') || name.includes('1')) return '01';
+                if (name.includes('two') || name.includes('2')) return '02';
+                if (name.includes('three') || name.includes('3')) return '03';
+                if (name.includes('four') || name.includes('4')) return '04';
+                if (name.includes('five') || name.includes('5')) return '05';
+                if (name.includes('six') || name.includes('6')) return '06';
+                if (name.includes('seven') || name.includes('7')) return '07';
+                if (name.includes('eight') || name.includes('8')) return '08';
+                if (name.includes('nine') || name.includes('9')) return '09';
+                if (name.includes('ten') || name.includes('10')) return '10';
+                if (name.includes('nursery')) return '0N';
+                if (name.includes('play')) return '0P';
+                if (name.includes('baby')) return '0B';
                 
                 const words = className.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/);
-                if (words.length === 1) return words[0].substring(0, 3).toUpperCase();
-                return words.map(w => w[0]).join('').toUpperCase();
+                if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+                return words.map(w => w[0]).join('').substring(0, 2).toUpperCase();
             },
             
             updateIdentity() {
@@ -609,7 +623,17 @@
                 const c = this.classShort || 'CLASS';
                 const r = this.randId || 'XXXX';
                 
-                const fullId = `${y}-${m}-${c}-${r}`;
+                let fullId = '';
+                if (y === 'YYYY' || m === 'MM' || c === 'CLASS' || r === 'XXXX') {
+                    fullId = `${y}-${m}-${c}-${r}`;
+                } else {
+                    const yy = String(y).slice(-2);
+                    const mm = String(m).padStart(2, '0');
+                    const cc = String(c).substring(0, 2).toUpperCase();
+                    const ss = String(r).padStart(5, '0');
+                    fullId = `${yy}${mm}${cc}${ss}`;
+                }
+                
                 const inputEl = document.getElementById('student_identity');
                 if (inputEl) {
                     inputEl.value = fullId;

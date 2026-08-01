@@ -114,42 +114,43 @@ class StudentController extends Controller
                 !str_contains($request->student_identity, 'XXXX')) {
                 $studentIdentity = $request->student_identity;
             } else {
-                $year = date('Y');
+                $year = date('y');
                 $month = date('m');
                 
                 $class = \App\Models\Classes::find($request->class_id);
                 $className = $class ? $class->class_name : 'Class';
                 $classShort = 'XX';
                 $nameLower = strtolower($className);
-                if (str_contains($nameLower, 'one') || str_contains($nameLower, '1')) $classShort = 'C1';
-                elseif (str_contains($nameLower, 'two') || str_contains($nameLower, '2')) $classShort = 'C2';
-                elseif (str_contains($nameLower, 'three') || str_contains($nameLower, '3')) $classShort = 'C3';
-                elseif (str_contains($nameLower, 'four') || str_contains($nameLower, '4')) $classShort = 'C4';
-                elseif (str_contains($nameLower, 'five') || str_contains($nameLower, '5')) $classShort = 'C5';
-                elseif (str_contains($nameLower, 'six') || str_contains($nameLower, '6')) $classShort = 'C6';
-                elseif (str_contains($nameLower, 'seven') || str_contains($nameLower, '7')) $classShort = 'C7';
-                elseif (str_contains($nameLower, 'eight') || str_contains($nameLower, '8')) $classShort = 'C8';
-                elseif (str_contains($nameLower, 'nine') || str_contains($nameLower, '9')) $classShort = 'C9';
-                elseif (str_contains($nameLower, 'ten') || str_contains($nameLower, '10')) $classShort = 'C10';
-                elseif (str_contains($nameLower, 'nursery')) $classShort = 'NUR';
-                elseif (str_contains($nameLower, 'play')) $classShort = 'PLAY';
-                elseif (str_contains($nameLower, 'baby')) $classShort = 'BABY';
+                if (str_contains($nameLower, 'one') || str_contains($nameLower, '1')) $classShort = '01';
+                elseif (str_contains($nameLower, 'two') || str_contains($nameLower, '2')) $classShort = '02';
+                elseif (str_contains($nameLower, 'three') || str_contains($nameLower, '3')) $classShort = '03';
+                elseif (str_contains($nameLower, 'four') || str_contains($nameLower, '4')) $classShort = '04';
+                elseif (str_contains($nameLower, 'five') || str_contains($nameLower, '5')) $classShort = '05';
+                elseif (str_contains($nameLower, 'six') || str_contains($nameLower, '6')) $classShort = '06';
+                elseif (str_contains($nameLower, 'seven') || str_contains($nameLower, '7')) $classShort = '07';
+                elseif (str_contains($nameLower, 'eight') || str_contains($nameLower, '8')) $classShort = '08';
+                elseif (str_contains($nameLower, 'nine') || str_contains($nameLower, '9')) $classShort = '09';
+                elseif (str_contains($nameLower, 'ten') || str_contains($nameLower, '10')) $classShort = '10';
+                elseif (str_contains($nameLower, 'nursery')) $classShort = '0N';
+                elseif (str_contains($nameLower, 'play')) $classShort = '0P';
+                elseif (str_contains($nameLower, 'baby')) $classShort = '0B';
                 else {
                     $words = explode(' ', preg_replace('/[^a-zA-Z0-9\s]/', '', $className));
                     if (count($words) === 1) {
-                        $classShort = strtoupper(substr($words[0], 0, 3));
+                        $classShort = strtoupper(substr($words[0], 0, 2));
                     } else {
                         $classShort = '';
                         foreach ($words as $w) {
                             if (!empty($w)) $classShort .= $w[0];
                         }
-                        $classShort = strtoupper($classShort);
+                        $classShort = strtoupper(substr($classShort, 0, 2));
                     }
                 }
                 
                 $nextSerial = max(539, Student::count() + 1);
                 do {
-                    $studentIdentity = "{$year}-{$month}-{$classShort}-{$nextSerial}";
+                    $paddedSerial = str_pad($nextSerial, 5, '0', STR_PAD_LEFT);
+                    $studentIdentity = "{$year}{$month}{$classShort}{$paddedSerial}";
                     $nextSerial++;
                 } while (Student::where('student_identity', $studentIdentity)->exists());
             }
