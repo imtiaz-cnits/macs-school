@@ -20,7 +20,7 @@ class StudentController extends Controller
   public function index(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
-            $query = \App\Models\Student::with(['branch', 'schoolClass', 'section', 'shift', 'sessionYear'])->latest();
+            $query = \App\Models\Student::with(['branch', 'schoolClass', 'section', 'shift', 'sessionYear'])->orderByRaw('CAST(roll_number AS UNSIGNED) ASC');
 
             // 🔍 ১. টেক্সট সার্চ লজিক
             if ($request->filled('search')) {
