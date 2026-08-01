@@ -41,7 +41,7 @@
         <!-- Biometric Connection Status -->
         <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-between">
             <div>
-                <div class="text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-widest mb-1">ZKTeco K60 Connection</div>
+                <div class="text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-widest mb-1">ZKTeco K40 Connection</div>
                 <div class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ $connection['ip'] }}</div>
                 <div class="text-[9px] font-bold text-gray-500 mt-0.5">{{ $connection['message'] }}</div>
             </div>

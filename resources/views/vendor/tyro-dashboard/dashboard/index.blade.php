@@ -99,8 +99,8 @@
     </div>
 </div>
 
-<!-- Metrics Grid (5 Column Layout) -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+<!-- Metrics Grid (6 Column Layout) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
     <!-- Stat 1: Students -->
     <div class="card bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-between">
         <div>
@@ -138,7 +138,7 @@
         <div>
             <div class="text-[10px] font-black tracking-widest text-gray-500 uppercase">Teachers</div>
             <div class="text-2xl font-black text-gray-800 dark:text-white mt-1">{{ number_format($totalTeachers) }}</div>
-            <div class="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-0.5">Faculty staff</div>
+            <div class="text-[10px] font-bold text-gray-400 dark:text-gray-550 mt-0.5">Faculty staff</div>
         </div>
         <div class="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center text-indigo-500">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -152,7 +152,7 @@
         <div>
             <div class="text-[10px] font-black tracking-widest text-gray-500 uppercase">Sections</div>
             <div class="text-2xl font-black text-gray-800 dark:text-white mt-1">{{ number_format($totalSections) }}</div>
-            <div class="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-0.5">Class divisions</div>
+            <div class="text-[10px] font-bold text-gray-400 dark:text-gray-555 mt-0.5">Class divisions</div>
         </div>
         <div class="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center text-amber-500">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -172,6 +172,18 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
+        </div>
+    </div>
+
+    <!-- Biometric Connection Status -->
+    <div class="card bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-between">
+        <div>
+            <div class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">ZKTeco K40 Connection</div>
+            <div class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ $connection['ip'] }}</div>
+            <div class="text-[9px] font-bold text-gray-400 dark:text-gray-500 mt-0.5">{{ $connection['message'] }}</div>
+        </div>
+        <div>
+            <span class="inline-flex h-3 w-3 rounded-full {{ $connection['status'] === 'Connected' ? 'bg-green-500 animate-pulse' : ($connection['status'] === 'Simulated' ? 'bg-themeBlue animate-pulse' : 'bg-red-500') }}"></span>
         </div>
     </div>
 </div>
