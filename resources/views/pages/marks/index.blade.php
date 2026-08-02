@@ -132,14 +132,21 @@
                     </button>
                     <div x-show="activeDropdown === 'subject'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
                         <button type="button" @click="selectSubject('', 'Select Subject')" class="w-full text-left px-4 py-2 text-xs hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-455 transition-colors">Select Subject</button>
-                        @foreach($subjects as $subject)
-                            <button type="button" @click="selectSubject('{{ $subject->id }}', '{{ $subject->subject_name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.subject_id == '{{ $subject->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
-                                <span>{{ $subject->subject_name }}</span>
-                                <template x-if="form.subject_id == '{{ $subject->id }}'">
+                        <template x-for="subject in filteredSubjects" :key="subject.id">
+                            <button type="button" @click="selectSubject(subject.id, subject.subject_name)" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.subject_id == subject.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                <span x-text="subject.subject_name"></span>
+                                <template x-if="form.subject_id == subject.id">
                                     <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                 </template>
                             </button>
-                        @endforeach
+                        </template>
+                        
+                        <!-- ক্লাস সিলেক্ট না করলে বা সাবজেক্ট না থাকলে এই মেসেজ দেখাবে -->
+                        <template x-if="filteredSubjects.length === 0">
+                            <div class="px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 text-center">
+                                Please select a class first
+                            </div>
+                        </template>
                     </div>
                 </div>
 
@@ -241,6 +248,15 @@
                 class_id: '{{ request("class_id") }}',
                 subject_id: '{{ request("subject_id") }}'
             },
+
+            // লারাভেল থেকে সব সাবজেক্ট JS Object হিসেবে নেওয়া হলো
+            allSubjects: @json($subjects),
+            
+            // Alpine Getter: ক্লাস সিলেক্ট করলে শুধুমাত্র ওই ক্লাসের সাবজেক্ট রিটার্ন করবে
+            get filteredSubjects() {
+                if (!this.form.class_id) return [];
+                return this.allSubjects.filter(subject => subject.class_id == this.form.class_id);
+            },
             
             selectSession(id, name) {
                 this.form.session_year_id = id;
@@ -261,6 +277,8 @@
                 this.form.class_id = id;
                 this.classText = name;
                 this.activeDropdown = null;
+                this.form.subject_id = '';
+                this.subjectText = 'Select Subject';
             },
             selectSubject(id, name) {
                 this.form.subject_id = id;
