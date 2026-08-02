@@ -12,7 +12,6 @@
     @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     select option { background: #ffffff; color: #1f2937; }
     .dark select option { background: #0f1e2c; color: #ffffff; }
-    .table th { background-color: transparent !important; }
 </style>
 @endpush
 
@@ -90,10 +89,10 @@
         <table class="w-full text-left border-collapse table">
             <thead>
                 <tr class="!bg-transparent">
-                    <th class="w-16 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-sm font-bold text-gray-555 dark:text-gray-400">SL</th>
-                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-sm font-bold text-gray-900 dark:text-gray-100">Subject Info</th>
-                    <th class="w-36 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-sm font-bold text-gray-900 dark:text-gray-100">Type</th>
-                    <th class="text-right w-44 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-sm font-bold text-gray-900 dark:text-gray-100">Actions</th>
+                    <th class="w-16 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0">SL</th>
+                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0">Subject Info</th>
+                    <th class="w-36 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0">Type</th>
+                    <th class="text-right w-44 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0">Actions</th>
                 </tr>
             </thead>
             <tbody id="tableList" class="divide-y divide-gray-150 dark:divide-white/[0.06]">
@@ -501,11 +500,11 @@
     function renderPagination(paginator) {
         let container = document.getElementById('pagination-container');
         if (!paginator || paginator.last_page <= 1) {
-            container.innerHTML = `<div class="text-xs font-semibold text-gray-400 dark:text-gray-550 uppercase tracking-wider">Showing ${paginator.total || 0} entries</div>`;
+            container.innerHTML = `<div class="text-xs font-semibold text-gray-400 dark:text-gray-555 uppercase tracking-widest">Showing ${paginator.total || 0} entries</div>`;
             return;
         }
 
-        let html = `<div class="text-xs font-semibold text-gray-400 dark:text-gray-555 uppercase tracking-wider mb-4 md:mb-0">
+        let html = `<div class="text-xs font-semibold text-gray-400 dark:text-gray-555 uppercase tracking-widest mb-4 md:mb-0">
                         Showing <span class="font-black text-gray-750 dark:text-gray-300">${paginator.from || 0}</span> to <span class="font-black text-gray-750 dark:text-gray-300">${paginator.to || 0}</span> of <span class="font-black text-gray-750 dark:text-gray-300">${paginator.total}</span> entries
                     </div>`;
         
@@ -513,18 +512,18 @@
 
         // Prev Button
         if (paginator.current_page > 1) {
-            html += `<button onclick="window.fetchList(${paginator.current_page - 1})" class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs">Prev</button>`;
+            html += `<button onclick="window.fetchList(${paginator.current_page - 1})" class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs uppercase font-black tracking-widest">PREV</button>`;
         } else {
-            html += `<button disabled class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs opacity-50 cursor-not-allowed">Prev</button>`;
+            html += `<button disabled class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs opacity-50 cursor-not-allowed uppercase font-black tracking-widest">PREV</button>`;
         }
 
         // Page Numbers
         for(let i=1; i<=paginator.last_page; i++) {
             if (i === 1 || i === paginator.last_page || Math.abs(paginator.current_page - i) <= 1) {
                 if (i === paginator.current_page) {
-                    html += `<button class="btn-xs btn-primary !h-9 !w-9 !p-0 !rounded-lg !text-xs shadow-sm">${i}</button>`;
+                    html += `<button class="btn-xs btn-primary !h-9 !w-9 !p-0 !rounded-lg !text-xs font-black shadow-sm">${i}</button>`;
                 } else {
-                    html += `<button onclick="window.fetchList(${i})" class="btn-xs btn-secondary !h-9 !w-9 !p-0 !rounded-lg !text-xs">${i}</button>`;
+                    html += `<button onclick="window.fetchList(${i})" class="btn-xs btn-secondary !h-9 !w-9 !p-0 !rounded-lg !text-xs font-black">${i}</button>`;
                 }
             } else if (Math.abs(paginator.current_page - i) === 2) {
                 html += `<span class="px-2 text-gray-450 font-bold">...</span>`;
@@ -533,9 +532,9 @@
 
         // Next Button
         if (paginator.current_page < paginator.last_page) {
-            html += `<button onclick="window.fetchList(${paginator.current_page + 1})" class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs">Next</button>`;
+            html += `<button onclick="window.fetchList(${paginator.current_page + 1})" class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs uppercase font-black tracking-widest">NEXT</button>`;
         } else {
-            html += `<button disabled class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs opacity-50 cursor-not-allowed">Next</button>`;
+            html += `<button disabled class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs opacity-50 cursor-not-allowed uppercase font-black tracking-widest">NEXT</button>`;
         }
 
         html += `</div>`;
