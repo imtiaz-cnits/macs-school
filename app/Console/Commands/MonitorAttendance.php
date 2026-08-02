@@ -50,7 +50,7 @@ class MonitorAttendance extends Command
         $sessionYearId = 1;
         $classId = 1;
         $sectionId = 1;
-        $teacherId = 1;
+        $teacherId = null;
         $creatorId = 1;
         
         // Loop persistently
