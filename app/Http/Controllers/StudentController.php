@@ -27,9 +27,12 @@ class StudentController extends Controller
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('student_name', 'LIKE', "%{$search}%")
-                      ->orWhere('student_identity', 'LIKE', "%{$search}%")
+                      ->orWhere('student_identity', 'LIKE', "%{$search}%") // Student ID Search
                       ->orWhere('roll_number', 'LIKE', "%{$search}%")
                       ->orWhere('father_mobile', 'LIKE', "%{$search}%");
+                      if (is_numeric($search)) {
+                        $q->orWhere('id', $search);
+                      }
                 });
             }
 
@@ -487,7 +490,11 @@ public function detectStudentInfo(Request $request)
                     $q->where('student_name', 'LIKE', "%{$search}%")
                       ->orWhere('student_identity', 'LIKE', "%{$search}%")
                       ->orWhere('roll_number', 'LIKE', "%{$search}%")
-                      ->orWhere('father_mobile', 'LIKE', "%{$search}%");
+                      ->orWhere('father_mobile', 'LIKE', "%{$search}%")
+                      ->orWhere('id', 'LIKE', "%{$search}%"); // 👈 Device ID Search Added
+                      if (is_numeric($search)) {
+                        $q->orWhere('id', $search);
+                      }
                 });
             }
             if ($request->filled('branch_id')) {
@@ -581,7 +588,11 @@ public function detectStudentInfo(Request $request)
                     $q->where('student_name', 'LIKE', "%{$search}%")
                       ->orWhere('student_identity', 'LIKE', "%{$search}%")
                       ->orWhere('roll_number', 'LIKE', "%{$search}%")
-                      ->orWhere('father_mobile', 'LIKE', "%{$search}%");
+                      ->orWhere('father_mobile', 'LIKE', "%{$search}%")
+                      ->orWhere('id', 'LIKE', "%{$search}%"); // 👈 Device ID Search Added
+                      if (is_numeric($search)) {
+            $q->orWhere('id', $search);
+        }
                 });
             }
             if ($request->filled('branch_id')) {
