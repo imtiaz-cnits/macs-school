@@ -37,12 +37,12 @@
         </button>
     </div>
 
-    <!-- Search filter -->
-    <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 mb-6 shadow-sm">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+    <!-- Filters Section (Placed borderless directly below title with reduced margins) -->
+    <div class="mb-2 pb-4 border-b border-gray-150 dark:border-white/[0.08]">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
             <!-- Search Database -->
             <div class="md:col-span-2">
-                <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Search Subject</label>
+                <label class="block text-[10px] font-black text-themeBlue uppercase mb-1.5 ml-1">Search Subject</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -53,7 +53,7 @@
 
             <!-- Class Filter -->
             <div x-data="dropdownState('filter_class', 'All Classes', '/ajax/classes', 'classData', 'class_name', 'id')" class="relative">
-                <label class="block text-[10px] font-black tracking-widest text-gray-550 dark:text-gray-400 uppercase mb-1.5 ml-1">Class</label>
+                <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5 ml-1">Class</label>
                 <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                     <span x-text="selectedLabel">All Classes</span>
                     <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
@@ -85,30 +85,28 @@
         </div>
     </div>
 
-    <!-- Data Table Card -->
-    <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
-        <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-            <table class="w-full text-left border-collapse table">
-                <thead>
-                    <tr class="!bg-transparent">
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center w-20">SL</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Subject Info</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] w-36">Type</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-48">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="tableList">
-                    <tr>
-                        <td colspan="4" class="py-12">
-                            <div class="flex flex-col items-center gap-3 animate-pulse justify-center">
-                                <div class="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded-md"></div>
-                                <span class="text-xs text-gray-455 dark:text-gray-500 font-bold uppercase tracking-widest">Loading Subjects...</span>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+    <!-- Borderless Table View (Zero margins, tight gap layout) -->
+    <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
+        <table class="w-full text-left border-collapse table">
+            <thead>
+                <tr class="!bg-transparent">
+                    <th class="w-16 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-sm font-bold text-gray-555 dark:text-gray-400">SL</th>
+                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-sm font-bold text-gray-900 dark:text-gray-100">Subject Info</th>
+                    <th class="w-36 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-sm font-bold text-gray-900 dark:text-gray-100">Type</th>
+                    <th class="text-right w-44 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-sm font-bold text-gray-900 dark:text-gray-100">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableList" class="divide-y divide-gray-150 dark:divide-white/[0.06]">
+                <tr>
+                    <td colspan="4" class="py-12">
+                        <div class="flex flex-col items-center gap-3 animate-pulse justify-center">
+                            <div class="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded-md"></div>
+                            <span class="text-xs text-gray-455 dark:text-gray-500 font-bold uppercase tracking-widest">Loading Subjects...</span>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
     
     <!-- Pagination Footer -->
@@ -432,30 +430,30 @@
         let class_id = document.getElementById('filter_class').value;
         let q = new URLSearchParams({ search, class_id, page }).toString();
 
-        try {
-            // Skeleton load row
-            let skeletonHtml = '';
-            for (let i = 0; i < 5; i++) {
-                skeletonHtml += `
-                    <tr class="animate-pulse">
-                        <td class="py-0 px-0 text-center"><div class="h-4 w-6 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
-                        <td class="py-0 px-0">
-                            <div class="h-4 w-32 bg-gray-200 dark:bg-gray-700/60 rounded-md mb-2"></div>
-                            <div class="h-3 w-48 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
-                        </td>
-                        <td class="py-0 px-0">
-                            <div class="h-4 w-16 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
-                        </td>
-                        <td class="py-0 px-0">
-                            <div class="flex items-center justify-end gap-2.5">
-                                <div class="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700/60"></div>
-                                <div class="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700/60"></div>
-                            </div>
-                        </td>
-                    </tr>`;
-            }
-            list.innerHTML = skeletonHtml;
+        // Skeleton load row
+        let skeletonHtml = '';
+        for (let i = 0; i < 5; i++) {
+            skeletonHtml += `
+                <tr class="animate-pulse">
+                    <td class="py-0 px-0"><div class="h-4 w-6 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
+                    <td class="py-0 px-0">
+                        <div class="h-4 w-32 bg-gray-200 dark:bg-gray-700/60 rounded-md mb-2"></div>
+                        <div class="h-3 w-48 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
+                    </td>
+                    <td class="py-0 px-0">
+                        <div class="h-4 w-16 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
+                    </td>
+                    <td class="py-0 px-0">
+                        <div class="flex items-center justify-end gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700/60"></div>
+                            <div class="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700/60"></div>
+                        </div>
+                    </td>
+                </tr>`;
+        }
+        list.innerHTML = skeletonHtml;
 
+        try {
             let res = await axios.get(`/ajax/subjects?${q}`, getAuthHeaders());
             let paginator = res.data.subjectData;
             let data = paginator.data || [];
@@ -470,16 +468,14 @@
             data.forEach((item, index) => {
                 let sl = (paginator.current_page - 1) * paginator.per_page + index + 1;
                 list.innerHTML += `
-                    <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
-                        <td class="py-0 px-0 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm">${sl}</td>
+                    <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                        <td class="py-0 px-0 text-sm font-bold text-gray-555 dark:text-gray-400">${sl}</td>
                         <td class="py-0 px-0">
                             <div class="text-sm font-bold text-gray-900 dark:text-gray-100">${item.subject_name}</div>
-                            <div class="text-[9px] font-black text-gray-400 dark:text-gray-550 uppercase mt-1">
-                                Code: ${item.subject_code || 'N/A'} &nbsp;|&nbsp; Class: <span class="text-themeBlue font-black">${item.class ? item.class.class_name : 'N/A'}</span>
-                            </div>
+                            <div class="text-xs font-semibold text-gray-400 dark:text-gray-555 mt-1">Code: <span class="text-gray-700 dark:text-gray-300 font-bold">${item.subject_code || 'N/A'}</span> <span class="mx-1 text-gray-300 dark:text-gray-700">|</span> Class: <span class="text-themeBlue font-bold">${item.class ? item.class.class_name : 'N/A'}</span></div>
                         </td>
                         <td class="py-0 px-0">
-                            <span class="px-2.5 py-1 bg-gray-55 dark:bg-themeDark border border-gray-100 dark:border-white/[0.06] text-gray-655 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider rounded-lg inline-block">${item.subject_type}</span>
+                            <span class="px-2 py-0.5 bg-gray-100 dark:bg-themeDark text-[10px] font-black rounded-lg text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/[0.06] uppercase tracking-wider inline-block">${item.subject_type}</span>
                         </td>
                         <td class="py-0 px-0">
                             <div class="flex items-center justify-end gap-2.5">
@@ -488,7 +484,7 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                 </button>
                                 <!-- Delete Button -->
-                                <button onclick="window.DeleteID(${item.id})" class="action-btn text-red-650 hover:text-red-800 hover:border-red-600" title="Delete Subject">
+                                <button onclick="window.DeleteID(${item.id})" class="action-btn text-red-650 hover:text-red-850 hover:border-red-600" title="Delete Subject">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                 </button>
                             </div>
