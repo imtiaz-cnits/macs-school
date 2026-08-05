@@ -258,6 +258,12 @@ class StudentController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
+            // Fee Invoices History
+            $invoices = \App\Models\FeeInvoice::with(['feeSetup.category'])
+                ->where('student_id', $id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
             return response()->json([
                 'status' => 'success', 
                 'data' => $student,
@@ -268,7 +274,8 @@ class StudentController extends Controller
                     'late' => $lateCount,
                     'percentage' => $attendancePercentage
                 ],
-                'marks' => $marks
+                'marks' => $marks,
+                'invoices' => $invoices
             ], 200);
         } catch (Exception $e) {
             Log::error("Profile View Error: " . $e->getMessage());

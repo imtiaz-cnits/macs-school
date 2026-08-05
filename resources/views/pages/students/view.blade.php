@@ -323,6 +323,40 @@
                 </div>
             </div>
 
+            <!-- Fees & Invoices History Table -->
+            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300">
+                <h3 class="flex items-center gap-2 text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-2">
+                    <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-1.958-.59a2.502 2.502 0 010-3.236c1.117-.837 2.8-.837 3.917 0l.44.33M12 3v3m0 12v3" /></svg>
+                    Fees & Invoices History
+                </h3>
+                
+                <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
+                    <table class="w-full text-left border-collapse table">
+                        <thead>
+                            <tr class="!bg-transparent">
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Invoice No</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Fee Type / Month</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Net Amt</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Paid</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Due</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fees_table_body">
+                            <!-- Pulsing Loading Row Skeletons -->
+                            <tr class="animate-pulse">
+                                <td class="!py-3.5 !px-3"><div class="h-4 w-20 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
+                                <td class="!py-3.5 !px-3"><div class="h-4 w-28 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
+                                <td class="!py-3.5 !px-3 text-right"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
+                                <td class="!py-3.5 !px-3 text-right"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
+                                <td class="!py-3.5 !px-3 text-right"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
+                                <td class="!py-3.5 !px-3 text-center"><div class="h-4 w-14 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Subject-Wise Evaluation Stats -->
             <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300">
                 <h3 class="flex items-center gap-2 text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-4">
@@ -465,6 +499,53 @@
             const circumference = 238.76;
             const offset = circumference - (attendance.percentage / 100) * circumference;
             document.getElementById('attendance_circle').setAttribute('stroke-dashoffset', offset);
+
+            // ==========================================
+            // DYNAMIC FEES & INVOICES PROCESSING
+            // ==========================================
+            let invoices = res.data.invoices || [];
+            let feesBody = document.getElementById('fees_table_body');
+            feesBody.innerHTML = ''; // Clear skeleton
+
+            if (invoices.length > 0) {
+                invoices.forEach(inv => {
+                    let invoiceNo = inv.invoice_no || 'N/A';
+                    let categoryName = inv.fee_setup && inv.fee_setup.category ? inv.fee_setup.category.name : 'Fee Payment';
+                    let feeMonth = inv.fee_setup && inv.fee_setup.fee_month ? ` (${inv.fee_setup.fee_month})` : '';
+                    let feeDetails = categoryName + feeMonth;
+
+                    let netAmt = inv.net_amount !== null ? parseFloat(inv.net_amount) : 0;
+                    let paidAmt = inv.paid_amount !== null ? parseFloat(inv.paid_amount) : 0;
+                    let dueAmt = inv.due_amount !== null ? parseFloat(inv.due_amount) : 0;
+                    
+                    let status = inv.status || 'Unpaid';
+                    let statusClass = 'bg-red-100 text-red-600 dark:bg-red-950/30 dark:text-red-500';
+                    if (status === 'Paid') {
+                        statusClass = 'bg-green-100 text-themeGreen dark:bg-green-950/30 dark:text-green-500';
+                    } else if (status === 'Partially Paid') {
+                        statusClass = 'bg-amber-100 text-amber-600 dark:bg-amber-950/30 dark:text-amber-500';
+                    }
+
+                    feesBody.innerHTML += `
+                        <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                            <td class="py-2.5 px-3 text-sm font-mono font-black text-gray-900 dark:text-gray-100">${invoiceNo}</td>
+                            <td class="py-2.5 px-3 text-sm font-bold text-gray-600 dark:text-gray-400">${feeDetails}</td>
+                            <td class="py-2.5 px-3 text-sm font-bold text-gray-900 dark:text-gray-100 text-right font-mono">৳${netAmt.toFixed(2)}</td>
+                            <td class="py-2.5 px-3 text-sm font-bold text-themeGreen text-right font-mono">৳${paidAmt.toFixed(2)}</td>
+                            <td class="py-2.5 px-3 text-sm font-bold text-red-500 text-right font-mono">৳${dueAmt.toFixed(2)}</td>
+                            <td class="py-2.5 px-3 text-center">
+                                <span class="inline-block px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg ${statusClass}">${status}</span>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                feesBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-xs font-semibold text-gray-400 dark:text-gray-550">No Fee Invoices Found.</td>
+                    </tr>
+                `;
+            }
 
             // ==========================================
             // DYNAMIC MARKS & RESULTS PROCESSING
