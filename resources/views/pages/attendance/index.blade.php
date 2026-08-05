@@ -497,7 +497,7 @@
                         this.sessionText = firstSession.session_name;
                     }
 
-                    // Poll recent logs every 4 seconds to make the UI update in real-time
+                    // Poll recent logs or class list every 4 seconds to make the UI update in real-time
                     setInterval(async () => {
                         if (this.showRecentLogs) {
                             try {
@@ -506,6 +506,8 @@
                             } catch (err) {
                                 console.error("Poll Error:", err);
                             }
+                        } else if (this.fetched) {
+                            await this.fetchStudents(true);
                         }
                     }, 4000);
 
@@ -608,16 +610,18 @@
                 this.activeDropdown = null;
             },
 
-            async fetchStudents() {
+            async fetchStudents(silent = false) {
                 if (!this.form.class_id) {
                     showAlert("Please select a Class!", "Attention");
                     return;
                 }
 
                 this.showRecentLogs = false;
-                this.loading = true;
-                this.fetched = false;
-                this.students = [];
+                if (!silent) {
+                    this.loading = true;
+                    this.fetched = false;
+                    this.students = [];
+                }
 
                 let query = new URLSearchParams({ 
                     branch_id: this.form.branch_id, 
@@ -633,9 +637,13 @@
                     this.fetched = true;
                 } catch (e) {
                     console.error(e);
-                    showAlert("Failed to load attendance list.", "Error");
+                    if (!silent) {
+                        showAlert("Failed to load attendance list.", "Error");
+                    }
                 } finally {
-                    this.loading = false;
+                    if (!silent) {
+                        this.loading = false;
+                    }
                 }
             },
 
