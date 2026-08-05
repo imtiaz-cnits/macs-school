@@ -247,11 +247,6 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
     Route::get('/ajax/attendance/students', [\App\Http\Controllers\AttendanceController::class, 'getStudents']);
     Route::get('/ajax/attendance/recent', [\App\Http\Controllers\AttendanceController::class, 'getRecentLogs']);
 
-    Route::get('/ajax/teachers', [\App\Http\Controllers\AttendanceController::class, 'getTeachers']);
-
-    // ৩. হাজিরা ডাটাবেসে সেভ করার AJAX রাউট (POST)
-    // এই রাউটটি একইসাথে অনেক স্টুডেন্টের হাজিরা (Bulk Attendance) প্রসেস করবে
-    Route::post('/ajax/attendance/save', [\App\Http\Controllers\AttendanceController::class, 'store']);
     Route::post('/ajax/attendance/sync-biometric', [\App\Http\Controllers\AttendanceController::class, 'syncBiometric']);
 
     // হাজিরা রিপোর্ট দেখার পেজ

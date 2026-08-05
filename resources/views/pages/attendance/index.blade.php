@@ -38,7 +38,7 @@
 
     <!-- Filters Panel Card -->
     <div class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] p-6 shadow-sm mb-8 no-print">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <!-- Branch -->
             <div class="relative" @click.away="activeDropdown === 'branch' && (activeDropdown = null)">
                 <label class="block text-[10px] font-black text-gray-550 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Branch</label>
@@ -127,27 +127,6 @@
                 </div>
             </div>
 
-            <!-- Taking Teacher -->
-            <div class="relative" @click.away="activeDropdown === 'teacher' && (activeDropdown = null)">
-                <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Taking Teacher *</label>
-                <button type="button" @click="toggleDropdown('teacher')" class="w-full h-10 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-205 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
-                    <span class="truncate" x-text="teacherText"></span>
-                    <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                </button>
-                <div x-show="activeDropdown === 'teacher'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
-                    <button type="button" @click="selectValue('teacher_id', '', 'Select Teacher')" class="w-full text-left px-4 py-2 text-xs hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-400 transition-colors">
-                        Select Teacher
-                    </button>
-                    <template x-for="item in teachers" :key="item.id">
-                        <button type="button" @click="selectValue('teacher_id', item.id, item.name)" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.teacher_id === item.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
-                            <span x-text="item.name"></span>
-                            <template x-if="form.teacher_id === item.id">
-                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                            </template>
-                        </button>
-                    </template>
-                </div>
-            </div>
 
             <!-- Custom Date Picker Component -->
             <div class="relative" x-data="datePicker(form.attendance_date)" @date-selected.window="if($event.detail) form.attendance_date = $event.detail" @click.away="show = false">
@@ -199,7 +178,7 @@
             </button>
             <button type="button" @click="fetchStudents()" :disabled="loading" class="inline-flex items-center justify-center px-10 h-11 bg-gradient-to-r from-themeBlue to-themeGreen hover:from-themeBlue/90 hover:to-themeGreen/90 text-white font-black uppercase tracking-[0.2em] text-xs rounded-xl shadow-md shadow-themeBlue/10 transition-all hover:scale-105 active:scale-95 disabled:opacity-50">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <span x-text="loading ? 'Loading Students...' : 'Load Student List'"></span>
+                <span x-text="loading ? 'Loading Attendance...' : 'Load Attendance'"></span>
             </button>
         </div>
     </div>
@@ -293,53 +272,54 @@
 
     <!-- Student List Table Panel -->
     <div x-show="fetched && students.length > 0" x-cloak class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] shadow-sm overflow-hidden" x-transition>
-        <form @submit.prevent="submitAttendance()">
-            <div class="table-container bg-transparent !border-none !shadow-none !mt-0 !mb-0">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse table">
-                        <thead>
-                            <tr class="!bg-transparent">
-                                <th class="w-24 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Roll No</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Student Name</th>
-                                <th class="w-64 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Attendance Status</th>
+        <div class="table-container bg-transparent !border-none !shadow-none !mt-0 !mb-0">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse table">
+                    <thead>
+                        <tr class="!bg-transparent">
+                            <th class="w-24 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Roll No</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Student Name</th>
+                            <th class="w-48 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Swipe Time / Details</th>
+                            <th class="w-32 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Attendance Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06] font-medium">
+                        <template x-for="(s, index) in students" :key="s.id">
+                            <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                                <td class="py-0 px-0 text-center font-mono font-black text-themeGreen dark:text-green-500 text-lg" x-text="s.roll_number"></td>
+                                <td class="py-0 px-0 text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-tight" x-text="s.student_name"></td>
+                                <td class="py-0 px-0 text-center text-xs font-mono text-gray-555 dark:text-gray-400">
+                                    <div class="flex flex-col items-center justify-center py-1.5">
+                                        <template x-if="formatStudentSwipeTime(s.remarks)">
+                                            <div>
+                                                <template x-if="!formatStudentSwipeTime(s.remarks).out">
+                                                    <span class="text-gray-800 dark:text-gray-200" x-text="formatStudentSwipeTime(s.remarks).in"></span>
+                                                </template>
+                                                <template x-if="formatStudentSwipeTime(s.remarks).out">
+                                                    <div class="flex flex-col items-center gap-0.5 leading-tight">
+                                                        <span class="text-themeGreen dark:text-green-400 font-extrabold text-[10px]" x-text="'IN: ' + formatStudentSwipeTime(s.remarks).in"></span>
+                                                        <span class="text-themeBlue dark:text-blue-400 font-extrabold text-[10px]" x-text="'OUT: ' + formatStudentSwipeTime(s.remarks).out"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                        <template x-if="!formatStudentSwipeTime(s.remarks)">
+                                            <span class="text-gray-400 dark:text-gray-600">-</span>
+                                        </template>
+                                    </div>
+                                </td>
+                                <td class="py-0 px-0 text-center">
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-block"
+                                          :class="s.attendance_status === 'Present' || s.attendance_status === 'Late' ? 'bg-green-500/10 text-themeGreen border border-themeGreen/25' : s.attendance_status === 'Absent' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/25' : 'bg-gray-500/10 text-gray-400 border border-gray-500/25'"
+                                          x-text="s.attendance_status || 'Not Synced'">
+                                    </span>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06] font-medium">
-                            <template x-for="(s, index) in students" :key="s.id">
-                                <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
-                                    <td class="py-0 px-0 text-center font-mono font-black text-themeGreen dark:text-green-500 text-lg" x-text="s.roll_number"></td>
-                                    <td class="py-0 px-0 text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-tight" x-text="s.student_name"></td>
-                                    <td class="py-0 px-0">
-                                        <div class="flex items-center justify-center gap-3">
-                                            <!-- Present Toggle -->
-                                            <button type="button" @click="attendance_data[s.id] = 'Present'" 
-                                                    class="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 hover:-translate-y-0.5"
-                                                    :class="attendance_data[s.id] === 'Present' ? 'bg-themeGreen text-white shadow-sm' : 'bg-gray-100/50 dark:bg-themeDark text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'">
-                                                Present
-                                            </button>
-                                            <!-- Absent Toggle -->
-                                            <button type="button" @click="attendance_data[s.id] = 'Absent'" 
-                                                    class="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 hover:-translate-y-0.5"
-                                                    :class="attendance_data[s.id] === 'Absent' ? 'bg-rose-600 text-white shadow-sm' : 'bg-gray-100/50 dark:bg-themeDark text-gray-400 hover:text-rose-500 dark:hover:text-rose-400'">
-                                                Absent
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
+                        </template>
+                    </tbody>
+                </table>
             </div>
-            
-            <!-- Submit Panel Footer -->
-            <div class="p-6 bg-gray-50/50 dark:bg-themeDark/30 border-t border-gray-100 dark:border-white/[0.06] flex flex-col md:flex-row justify-between items-center gap-4">
-                <p class="text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-widest italic">Ensure all statuses are marked correctly before submission</p>
-                <button type="submit" :disabled="saving" class="bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black py-4 px-12 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all uppercase tracking-widest text-xs active:scale-95 disabled:opacity-50">
-                    <span x-text="saving ? 'Submitting...' : 'Submit Attendance'"></span>
-                </button>
-            </div>
-        </form>
+        </div>
     </div>
 
     <!-- Skeleton Pulse Loader during load state -->
@@ -463,7 +443,6 @@
             sessions: [],
             classes: [],
             sections: [],
-            teachers: [],
 
             // Form inputs
             form: {
@@ -471,7 +450,6 @@
                 session_year_id: '',
                 class_id: '',
                 section_id: '',
-                teacher_id: '',
                 attendance_date: '{{ date("Y-m-d") }}'
             },
 
@@ -483,11 +461,9 @@
             sessionText: 'Select Session',
             classText: 'Select Class',
             sectionText: 'Select Section',
-            teacherText: 'Select Teacher',
 
             // Students attendance lists
             students: [],
-            attendance_data: {}, // key: student_id, val: "Present" / "Absent"
             
             // Recent card logs
             recentLogs: [],
@@ -495,18 +471,16 @@
             
             // Loading flags
             loading: false,
-            saving: false,
             fetched: false,
 
             async init() {
                 this.loading = true;
                 try {
-                    const [branches, sessions, classes, sections, teachers, recentLogsRes] = await Promise.all([
+                    const [branches, sessions, classes, sections, recentLogsRes] = await Promise.all([
                         axios.get('/ajax/branches', getAuthHeaders()),
                         axios.get('/ajax/sessions', getAuthHeaders()),
                         axios.get('/ajax/classes', getAuthHeaders()),
                         axios.get('/ajax/sections', getAuthHeaders()),
-                        axios.get('/ajax/teachers', getAuthHeaders()),
                         axios.get('/ajax/attendance/recent', getAuthHeaders())
                     ]);
 
@@ -514,7 +488,6 @@
                     this.sessions = sessions.data.sessionData || [];
                     this.classes = classes.data.classData || [];
                     this.sections = sections.data.sectionData || [];
-                    this.teachers = teachers.data.teacherData || [];
                     this.recentLogs = recentLogsRes.data.logs || [];
 
                     // Setup defaults if list items are single or populated
@@ -581,6 +554,38 @@
                 };
             },
 
+            formatStudentSwipeTime(remarks) {
+                if (!remarks) return null;
+                if (remarks.includes('Card Swiped')) {
+                    const inMatch = remarks.match(/In:\s*(\d{2}):(\d{2})/);
+                    const outMatch = remarks.match(/Out:\s*(\d{2}):(\d{2})/);
+                    
+                    const formatTimeStr = (hourStr, minStr) => {
+                        let hr = parseInt(hourStr, 10);
+                        const ampm = hr >= 12 ? 'PM' : 'AM';
+                        hr = hr % 12;
+                        hr = hr ? hr : 12;
+                        return `${hr}:${minStr} ${ampm}`;
+                    };
+                    
+                    if (inMatch) {
+                        return {
+                            in: formatTimeStr(inMatch[1], inMatch[2]),
+                            out: outMatch ? formatTimeStr(outMatch[1], outMatch[2]) : null
+                        };
+                    }
+                    
+                    const simpleMatch = remarks.match(/\((\d{2}):(\d{2})/);
+                    if (simpleMatch) {
+                        return {
+                            in: formatTimeStr(simpleMatch[1], simpleMatch[2]),
+                            out: null
+                        };
+                    }
+                }
+                return null;
+            },
+
             toggleDropdown(name) {
                 this.activeDropdown = this.activeDropdown === name ? null : name;
             },
@@ -592,8 +597,7 @@
                     branch_id: 'branchText',
                     session_year_id: 'sessionText',
                     class_id: 'classText',
-                    section_id: 'sectionText',
-                    teacher_id: 'teacherText'
+                    section_id: 'sectionText'
                 };
                 
                 const targetTextVar = mapping[field];
@@ -626,17 +630,10 @@
                 try {
                     let res = await axios.get(`/ajax/attendance/students?${query}`, getAuthHeaders());
                     this.students = res.data.students || [];
-                    
-                    // Reset and populate attendance_data with existing status or "Present" default
-                    this.attendance_data = {};
-                    this.students.forEach(s => {
-                        this.attendance_data[s.id] = s.attendance_status || 'Present';
-                    });
-                    
                     this.fetched = true;
                 } catch (e) {
                     console.error(e);
-                    showAlert("Failed to load students list.", "Error");
+                    showAlert("Failed to load attendance list.", "Error");
                 } finally {
                     this.loading = false;
                 }
@@ -647,14 +644,10 @@
                     showAlert("Please select a Class!", "Attention");
                     return;
                 }
-                if (!this.form.teacher_id) {
-                    showAlert("Please select the Taking Teacher!", "Attention");
-                    return;
-                }
 
                 const confirmed = await showConfirm(
-                    "Sync Biometric Logs",
-                    "Do you want to sync student attendance logs from the biometric machine for " + this.form.attendance_date + "?"
+                     "Sync Biometric Logs",
+                     "Do you want to sync student attendance logs from the biometric machine for " + this.form.attendance_date + "?"
                 );
                 
                 if (!confirmed) return;
@@ -666,7 +659,6 @@
                         session_year_id: this.form.session_year_id,
                         class_id: this.form.class_id, 
                         section_id: this.form.section_id,
-                        teacher_id: this.form.teacher_id, 
                         attendance_date: this.form.attendance_date, 
                     }, getAuthHeaders());
 
@@ -687,42 +679,11 @@
             },
 
             get livePresent() {
-                return this.students.filter(s => this.attendance_data[s.id] === 'Present').length;
+                return this.students.filter(s => s.attendance_status === 'Present' || s.attendance_status === 'Late').length;
             },
 
             get liveAbsent() {
-                return this.students.filter(s => this.attendance_data[s.id] === 'Absent').length;
-            },
-
-            async submitAttendance() {
-                if (!this.form.teacher_id) {
-                    showAlert("Please select the Taking Teacher!", "Attention");
-                    return;
-                }
-
-                this.saving = true;
-                try {
-                    let res = await axios.post('/ajax/attendance/save', { 
-                        branch_id: this.form.branch_id,
-                        session_year_id: this.form.session_year_id,
-                        class_id: this.form.class_id, 
-                        section_id: this.form.section_id,
-                        teacher_id: this.form.teacher_id, 
-                        attendance_date: this.form.attendance_date, 
-                        attendance_data: this.attendance_data 
-                    }, getAuthHeaders());
-                    
-                    await showAlert(res.data.message || "Alhamdulillah! Attendance saved successfully.", "Success");
-                    window.location.reload();
-                    
-                } catch (err) { 
-                    let errMsg = err.response && err.response.data && err.response.data.message 
-                        ? err.response.data.message 
-                        : "Failed to save attendance.";
-                    showAlert(errMsg, "Save Error");
-                } finally {
-                    this.saving = false;
-                }
+                return this.students.filter(s => s.attendance_status === 'Absent').length;
             }
         };
     }

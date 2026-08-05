@@ -13,31 +13,6 @@ use Carbon\Carbon; // ডেট এবং টাইমের জন্য
 
 class AttendanceController extends Controller
 {
-    public function getTeachers(): JsonResponse
-    {
-        try {
-            $teachers = Teacher::with('user:id,name')
-                ->get()
-                ->map(function ($teacher) {
-                    return [
-                        'id'   => $teacher->id,
-                        'name' => $teacher->user->name ?? 'No Name'
-                    ];
-                });
-
-            return response()->json([
-                'status' => 'success',
-                'teacherData' => $teachers
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Teachers load failed: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
     public function getStudents(Request $request): JsonResponse
     {
         $request->validate([
@@ -72,10 +47,12 @@ class AttendanceController extends Controller
                 $attendances = Attendance::whereIn('student_id', $students->pluck('id'))
                     ->where('attendance_date', $request->attendance_date)
                     ->get()
-                    ->pluck('status', 'student_id');
+                    ->keyBy('student_id');
 
                 foreach ($students as $student) {
-                    $student->attendance_status = $attendances[$student->id] ?? null;
+                    $att = $attendances->get($student->id);
+                    $student->attendance_status = $att ? $att->status : null;
+                    $student->remarks = $att ? $att->remarks : null;
                 }
             }
 
@@ -89,109 +66,6 @@ class AttendanceController extends Controller
         }
     }
 
-    public function store(Request $request): JsonResponse
-    {
-        $request->validate([
-            'branch_id'       => 'nullable|exists:branches,id',
-            'session_year_id' => 'nullable|exists:session_years,id',
-            'class_id'        => 'required|exists:classes,id',
-            'section_id'      => 'nullable|exists:sections,id',
-            'teacher_id'      => 'required|exists:teachers,id',
-            'attendance_date' => 'required|date',
-            'attendance_data' => 'required|array',
-        ]);
-
-        try {
-            // ১. ডাটাবেস ট্রানজ্যাকশন শুরু
-            DB::beginTransaction();
-
-            $date = $request->attendance_date;
-            $creator_id = Auth::id();
-
-            // অ্যাবসেন্ট স্টুডেন্টদের আইডি কালেক্ট করার জন্য অ্যারে
-            $absentStudentIds = [];
-
-            foreach ($request->attendance_data as $student_id => $status) {
-                Attendance::updateOrCreate(
-                    [
-                        'student_id'      => $student_id,
-                        'attendance_date' => $date,
-                    ],
-                    [
-                        'branch_id'       => $request->branch_id,
-                        'session_year_id' => $request->session_year_id,
-                        'class_id'        => $request->class_id,
-                        'section_id'      => $request->section_id,
-                        'teacher_id'      => $request->teacher_id,
-                        'user_id'         => $creator_id,
-                        'status'          => $status,
-                    ]
-                );
-
-                // যদি স্ট্যাটাস অ্যাবসেন্ট হয়, তবে লিস্টে আইডি অ্যাড হবে
-                if ($status == 'Absent') {
-                    $absentStudentIds[] = $student_id;
-                }
-            }
-
-            // ২. এটেন্ডেন্স সফলভাবে সেভ হলো
-            DB::commit();
-
-            // ==========================================
-            // SMART ATTENDANCE SMS MODULE (Starts Here)
-            // ==========================================
-            $sentCount = 0;
-            $smsMessage = "";
-
-            if (count($absentStudentIds) > 0) {
-                try {
-                    $attendanceDateFormatted = Carbon::parse($date)->format('d-M-Y');
-                    $smsService = app(\App\Services\SmsService::class);
-
-                    // Fetch active students with valid mobile numbers
-                    $absentStudents = Student::whereIn('id', $absentStudentIds)
-                                             ->where('sms_status', 'Active')
-                                             ->whereNotNull('guardian_mobile')
-                                             ->get();
-
-                    foreach ($absentStudents as $student) {
-                        // Smart Check: Check if duplicate absent message was already sent today
-                        $alreadySentToday = SmsLog::where('student_id', $student->id)
-                                                  ->whereDate('created_at', Carbon::today())
-                                                  ->where('message', 'like', '%ABSENT today%')
-                                                  ->exists();
-
-                        if (!$alreadySentToday) {
-                            $student_name = $student->student_name ?? $student->first_name;
-                            $messageBody = "Dear Guardian, your child {$student_name} is ABSENT today ({$attendanceDateFormatted}). Please contact the school. - MACS School";
-
-                            $smsService->sendSms($student->guardian_mobile, $messageBody, $student->id);
-                            $sentCount++;
-                        }
-                    }
-
-                    $smsMessage = " and SMS sent to {$sentCount} absent student(s)!";
-
-                } catch (\Exception $smsEx) {
-                    $smsMessage = " (however, SMS delivery encountered a server issue)";
-                }
-            }
-            // ==========================================
-
-            return response()->json([
-                'status' => 'success', 
-                'message' => 'Alhamdulillah! Attendance saved successfully.' . $smsMessage
-            ], 200);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'status' => 'error', 
-                'message' => 'সেভ করতে সমস্যা হয়েছে: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
     public function syncBiometric(Request $request): JsonResponse
     {
         $request->validate([
@@ -199,7 +73,7 @@ class AttendanceController extends Controller
             'session_year_id' => 'nullable|exists:session_years,id',
             'class_id'        => 'required|exists:classes,id',
             'section_id'      => 'nullable|exists:sections,id',
-            'teacher_id'      => 'required|exists:teachers,id',
+            'teacher_id'      => 'nullable|exists:teachers,id',
             'attendance_date' => 'required|date',
         ]);
 
