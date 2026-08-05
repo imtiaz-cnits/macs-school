@@ -334,7 +334,22 @@
                             {{ number_format($setup->amount, 2) }}
                         </td>
                         <td class="py-4 px-4 text-right no-print">
-                            <div class="flex items-center justify-end">
+                            <div class="flex items-center justify-end gap-2">
+                                <button type="button" @click="$dispatch('open-edit-modal', {
+                                    id: '{{ $setup->id }}',
+                                    branch_id: '{{ $setup->branch_id }}',
+                                    branch_name: '{{ addslashes($setup->branch->branch_name ?? '') }}',
+                                    session_year_id: '{{ $setup->session_year_id }}',
+                                    session_name: '{{ addslashes($setup->sessionYear->session_name ?? '') }}',
+                                    class_id: '{{ $setup->class_id }}',
+                                    class_name: '{{ addslashes($setup->schoolClass->class_name ?? '') }}',
+                                    fee_category_id: '{{ $setup->fee_category_id }}',
+                                    category_name: '{{ addslashes($setup->category->name ?? '') }}',
+                                    fee_month: '{{ $setup->fee_month ?? '' }}',
+                                    amount: '{{ $setup->amount }}'
+                                })" class="action-btn text-themeBlue hover:text-themeBlue hover:border-themeBlue" title="Edit Assignment">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </button>
                                 <form action="{{ route('fees.setup.destroy', $setup->id) }}" method="POST" class="inline" onsubmit="return confirmDelete(event);">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="action-btn text-red-650 hover:text-red-800 hover:border-red-600" title="Remove Assignment">
@@ -351,6 +366,151 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div x-data="editFeeSetupModal()" @open-edit-modal.window="openModal($event.detail)" x-show="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto no-print" x-cloak>
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-themeDark/40 backdrop-blur-md transition-opacity" @click="closeModal()"></div>
+        
+        <!-- Modal Content Container -->
+        <div class="relative bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl w-full max-w-2xl p-6 md:p-8 shadow-2xl overflow-y-visible transform transition-all" x-show="isOpen" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/[0.05] mb-6">
+                <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <svg class="w-5 h-5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    Edit Class-wise Fee
+                </h3>
+                <button @click="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-250 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Form -->
+            <form :action="`/fees/setup/${form.id}`" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    
+                    <!-- Branch -->
+                    <div>
+                        <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Branch <span class="text-red-500 ml-0.5">*</span></label>
+                        <div class="relative w-full text-gray-900 dark:text-white" @click.away="activeDropdown = null">
+                            <button type="button" @click="toggleDropdown('branch')" class="w-full h-11 px-3 bg-gray-55/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                                <span class="truncate" x-text="branchText"></span>
+                                <svg class="w-4 h-4 text-gray-450 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <input type="hidden" name="branch_id" :value="form.branch_id" required>
+                            <div x-show="activeDropdown === 'branch'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-155 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-48 overflow-y-auto" x-transition>
+                                <template x-for="item in branches" :key="item.value">
+                                    <button type="button" @click="selectValue('branch_id', item.value, item.label)" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.branch_id == item.value ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                        <span x-text="item.label"></span>
+                                        <svg x-show="form.branch_id == item.value" class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Session -->
+                    <div>
+                        <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Session <span class="text-red-500 ml-0.5">*</span></label>
+                        <div class="relative w-full text-gray-900 dark:text-white" @click.away="activeDropdown = null">
+                            <button type="button" @click="toggleDropdown('session')" class="w-full h-11 px-3 bg-gray-55/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                                <span class="truncate" x-text="sessionText"></span>
+                                <svg class="w-4 h-4 text-gray-455 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <input type="hidden" name="session_year_id" :value="form.session_year_id" required>
+                            <div x-show="activeDropdown === 'session'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-48 overflow-y-auto" x-transition>
+                                <template x-for="item in sessions" :key="item.value">
+                                    <button type="button" @click="selectValue('session_year_id', item.value, item.label)" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.session_year_id == item.value ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                        <span x-text="item.label"></span>
+                                        <svg x-show="form.session_year_id == item.value" class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Class -->
+                    <div>
+                        <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Class <span class="text-red-500 ml-0.5">*</span></label>
+                        <div class="relative w-full text-gray-900 dark:text-white" @click.away="activeDropdown = null">
+                            <button type="button" @click="toggleDropdown('class')" class="w-full h-11 px-3 bg-gray-55/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                                <span class="truncate" x-text="classText"></span>
+                                <svg class="w-4 h-4 text-gray-455 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <input type="hidden" name="class_id" :value="form.class_id" required>
+                            <div x-show="activeDropdown === 'class'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-48 overflow-y-auto" x-transition>
+                                <template x-for="item in classes" :key="item.value">
+                                    <button type="button" @click="selectValue('class_id', item.value, item.label)" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.class_id == item.value ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                        <span x-text="item.label"></span>
+                                        <svg x-show="form.class_id == item.value" class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fee Category -->
+                    <div>
+                        <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Fee Category <span class="text-red-500 ml-0.5">*</span></label>
+                        <div class="relative w-full text-gray-900 dark:text-white" @click.away="activeDropdown = null">
+                            <button type="button" @click="toggleDropdown('category')" class="w-full h-11 px-3 bg-gray-55/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                                <span class="truncate" x-text="categoryText"></span>
+                                <svg class="w-4 h-4 text-gray-455 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <input type="hidden" name="fee_category_id" :value="form.fee_category_id" required>
+                            <div x-show="activeDropdown === 'category'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-48 overflow-y-auto" x-transition>
+                                <template x-for="item in categories" :key="item.value">
+                                    <button type="button" @click="selectValue('fee_category_id', item.value, item.label)" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.fee_category_id == item.value ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                        <span x-text="item.label"></span>
+                                        <svg x-show="form.fee_category_id == item.value" class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fee Month -->
+                    <div>
+                        <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Fee Month (Optional)</label>
+                        <div class="relative w-full text-gray-900 dark:text-white" @click.away="activeDropdown = null">
+                            <button type="button" @click="toggleDropdown('month')" class="w-full h-11 px-3 bg-gray-55/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                                <span class="truncate" x-text="monthText"></span>
+                                <svg class="w-4 h-4 text-gray-455 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <input type="hidden" name="fee_month" :value="form.fee_month">
+                            <div x-show="activeDropdown === 'month'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-48 overflow-y-auto" x-transition>
+                                <template x-for="item in months" :key="item.value">
+                                    <button type="button" @click="selectValue('fee_month', item.value, item.label)" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.fee_month === item.value ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                        <span x-text="item.label"></span>
+                                        <svg x-show="form.fee_month === item.value" class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Amount -->
+                    <div>
+                        <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Amount (৳) <span class="text-red-500 ml-0.5">*</span></label>
+                        <input type="number" step="0.01" name="amount" x-model="form.amount" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-mono font-bold text-red-500 dark:text-red-400 px-3 placeholder-gray-400" placeholder="0.00" required>
+                    </div>
+
+                </div>
+
+                <!-- Footer Buttons -->
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-white/[0.05]">
+                    <button type="button" @click="closeModal()" class="h-11 px-6 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-600 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-widest transition-all">
+                        Cancel
+                    </button>
+                    <button type="submit" class="h-11 px-8 bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-xs uppercase tracking-widest active:scale-95">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -387,6 +547,113 @@
         if (await showDanger('Remove Fee Assignment', 'Are you sure you want to remove this class fee setup? This might affect student billing logs.')) {
             form.submit();
         }
+    }
+
+    function editFeeSetupModal() {
+        return {
+            isOpen: false,
+            branches: [],
+            sessions: [],
+            classes: [],
+            categories: [],
+            months: [
+                { value: '', label: '-- One Time / Yearly Fee --' },
+                { value: 'January', label: 'January' },
+                { value: 'February', label: 'February' },
+                { value: 'March', label: 'March' },
+                { value: 'April', label: 'April' },
+                { value: 'May', label: 'May' },
+                { value: 'June', label: 'June' },
+                { value: 'July', label: 'July' },
+                { value: 'August', label: 'August' },
+                { value: 'September', label: 'September' },
+                { value: 'October', label: 'October' },
+                { value: 'November', label: 'November' },
+                { value: 'December', label: 'December' }
+            ],
+            form: {
+                id: '',
+                branch_id: '',
+                session_year_id: '',
+                class_id: '',
+                fee_category_id: '',
+                fee_month: '',
+                amount: ''
+            },
+            branchText: 'Select Branch',
+            sessionText: 'Select Session',
+            classText: 'Select Class',
+            categoryText: 'Select Category',
+            monthText: '-- One Time / Yearly Fee --',
+            activeDropdown: null,
+
+            init() {
+                this.branches = [
+                    @foreach($branches as $b)
+                        { value: '{{ $b->id }}', label: '{{ addslashes($b->branch_name) }}' },
+                    @endforeach
+                ];
+                this.sessions = [
+                    @foreach($sessions as $s)
+                        { value: '{{ $s->id }}', label: '{{ addslashes($s->session_name) }}' },
+                    @endforeach
+                ];
+                this.classes = [
+                    @foreach($classes as $c)
+                        { value: '{{ $c->id }}', label: '{{ addslashes($c->class_name) }}' },
+                    @endforeach
+                ];
+                this.categories = [
+                    @foreach($categories as $cat)
+                        { value: '{{ $cat->id }}', label: '{{ addslashes($cat->name) }}' },
+                    @endforeach
+                ];
+            },
+
+            openModal(data) {
+                this.form.id = data.id;
+                this.form.branch_id = data.branch_id;
+                this.form.session_year_id = data.session_year_id;
+                this.form.class_id = data.class_id;
+                this.form.fee_category_id = data.fee_category_id;
+                this.form.fee_month = data.fee_month || '';
+                this.form.amount = data.amount;
+
+                this.branchText = data.branch_name;
+                this.sessionText = data.session_name;
+                this.classText = data.class_name;
+                this.categoryText = data.category_name;
+                
+                const foundMonth = this.months.find(m => m.value === (data.fee_month || ''));
+                this.monthText = foundMonth ? foundMonth.label : '-- One Time / Yearly Fee --';
+
+                this.isOpen = true;
+            },
+
+            closeModal() {
+                this.isOpen = false;
+                this.activeDropdown = null;
+            },
+
+            toggleDropdown(name) {
+                this.activeDropdown = this.activeDropdown === name ? null : name;
+            },
+
+            selectValue(field, val, text) {
+                this.form[field] = val;
+                const mapping = {
+                    branch_id: 'branchText',
+                    session_year_id: 'sessionText',
+                    class_id: 'classText',
+                    fee_category_id: 'categoryText',
+                    fee_month: 'monthText'
+                };
+                if (mapping[field]) {
+                    this[mapping[field]] = text;
+                }
+                this.activeDropdown = null;
+            }
+        };
     }
 </script>
 @endpush

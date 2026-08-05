@@ -133,6 +133,44 @@ class FeeSetupController extends Controller
         return redirect()->route('fees.categories.index')->with('success', 'Fee Category Updated Successfully!');
     }
 
+    public function setupUpdate(Request $request, $id)
+    {
+        $setup = FeeSetup::findOrFail($id);
+
+        $request->validate([
+            'branch_id' => 'required|exists:branches,id',
+            'class_id' => 'required|exists:classes,id',
+            'session_year_id' => 'required|exists:session_years,id',
+            'fee_category_id' => 'required|exists:fee_categories,id',
+            'amount' => 'required|numeric|min:0',
+            'fee_month' => 'nullable|string',
+        ]);
+
+        // চেক করা হচ্ছে অন্য কোনো ফি সেটআপ এই তথ্যের সাথে মেলে কিনা (নিজের আইডি বাদ দিয়ে)
+        $exists = FeeSetup::where([
+            'branch_id' => $request->branch_id,
+            'class_id' => $request->class_id,
+            'session_year_id' => $request->session_year_id,
+            'fee_category_id' => $request->fee_category_id,
+            'fee_month' => $request->fee_month,
+        ])->where('id', '!=', $id)->exists();
+
+        if ($exists) {
+            return back()->with('error', 'Another fee setup with these details already exists!');
+        }
+
+        $setup->update([
+            'branch_id' => $request->branch_id,
+            'class_id' => $request->class_id,
+            'session_year_id' => $request->session_year_id,
+            'fee_category_id' => $request->fee_category_id,
+            'amount' => $request->amount,
+            'fee_month' => $request->fee_month,
+        ]);
+
+        return back()->with('success', 'Fee Setup Updated Successfully!');
+    }
+
     public function setupDestroy($id)
     {
         FeeSetup::findOrFail($id)->delete();

@@ -370,6 +370,7 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
         // Fee Setups
         Route::get('/setup', [FeeSetupController::class, 'setupIndex'])->name('setup.index');
         Route::post('/setup', [FeeSetupController::class, 'setupStore'])->name('setup.store');
+        Route::put('/setup/{id}', [FeeSetupController::class, 'setupUpdate'])->name('setup.update');
         Route::delete('/setup/{id}', [FeeSetupController::class, 'setupDestroy'])->name('setup.destroy');
 
         // Fee Collection (নতুন)
