@@ -370,7 +370,7 @@
     </div>
 
     <!-- Edit Modal -->
-    <div x-data="editFeeSetupModal()" @open-edit-modal.window="openModal($event.detail)" x-show="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto no-print" x-cloak>
+    <div x-data="editFeeSetupModal()" @open-edit-modal.window="openModal($event.detail)" x-show="isOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto no-print" x-cloak>
         <!-- Backdrop -->
         <div class="fixed inset-0 bg-themeDark/40 backdrop-blur-md transition-opacity" @click="closeModal()"></div>
         
