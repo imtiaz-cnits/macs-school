@@ -303,7 +303,7 @@
             </div>
         </div>
 
-        <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
+        <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto" x-data="{}">
             <table class="w-full text-left border-collapse table">
                 <thead>
                     <tr class="!bg-transparent">
