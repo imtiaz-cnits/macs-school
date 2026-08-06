@@ -18,9 +18,10 @@ class AttendanceController extends Controller
         $request->validate([
             'branch_id'       => 'nullable|exists:branches,id',
             'session_year_id' => 'nullable|exists:session_years,id',
-            'class_id'        => 'required|exists:classes,id',
+            'class_id'        => 'nullable|exists:classes,id',
             'section_id'      => 'nullable|exists:sections,id',
             'attendance_date' => 'nullable|date',
+            'search'          => 'nullable|string',
         ]);
 
         try {
@@ -31,32 +32,61 @@ class AttendanceController extends Controller
             if ($request->filled('class_id')) $query->where('class_id', $request->class_id);
             if ($request->filled('section_id')) $query->where('section_id', $request->section_id);
 
-            $students = $query->select('id', 'student_name', 'roll_number')
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('student_name', 'like', "%{$search}%")
+                      ->orWhere('student_identity', 'like', "%{$search}%")
+                      ->orWhere('guardian_mobile', 'like', "%{$search}%")
+                      ->orWhere('roll_number', 'like', "%{$search}%");
+                });
+            }
+
+            // Calculate stats based on the filtered query (cloning the query before pagination)
+            $allStudentIds = (clone $query)->pluck('id');
+            $totalCount = $allStudentIds->count();
+            
+            $date = $request->input('attendance_date', date('Y-m-d'));
+            
+            $presentCount = Attendance::whereIn('student_id', $allStudentIds)
+                ->where('attendance_date', $date)
+                ->whereIn('status', ['Present', 'Late'])
+                ->count();
+                
+            $absentCount = Attendance::whereIn('student_id', $allStudentIds)
+                ->where('attendance_date', $date)
+                ->where('status', 'Absent')
+                ->count();
+
+            $students = $query->select('id', 'student_name', 'roll_number', 'class_id', 'section_id')
+                              ->with(['schoolClass', 'section'])
                               ->orderBy('roll_number', 'asc')
-                              ->get();
+                              ->paginate(15);
 
-            if ($students->isEmpty()) {
-                return response()->json([
-                    'status' => 'success', 
-                    'students' => [], 
-                    'message' => 'এই ক্রাইটেরিয়ায় কোনো স্টুডেন্ট পাওয়া যায়নি।'
-                ], 200);
+            $attendances = Attendance::whereIn('student_id', $students->pluck('id'))
+                ->where('attendance_date', $date)
+                ->get()
+                ->keyBy('student_id');
+
+            foreach ($students as $student) {
+                $att = $attendances->get($student->id);
+                $student->attendance_status = $att ? $att->status : null;
+                $student->remarks = $att ? $att->remarks : null;
+                
+                $className = $student->schoolClass ? $student->schoolClass->class_name : 'N/A';
+                $sectionName = $student->section ? $student->section->section_name : 'N/A';
+                $student->class_section_name = "{$className} - {$sectionName}";
             }
 
-            if ($request->filled('attendance_date')) {
-                $attendances = Attendance::whereIn('student_id', $students->pluck('id'))
-                    ->where('attendance_date', $request->attendance_date)
-                    ->get()
-                    ->keyBy('student_id');
-
-                foreach ($students as $student) {
-                    $att = $attendances->get($student->id);
-                    $student->attendance_status = $att ? $att->status : null;
-                    $student->remarks = $att ? $att->remarks : null;
-                }
-            }
-
-            return response()->json(['status' => 'success', 'students' => $students], 200);
+            return response()->json([
+                'status' => 'success', 
+                'students' => $students,
+                'stats' => [
+                    'total' => $totalCount,
+                    'present' => $presentCount,
+                    'absent' => $absentCount
+                ]
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -71,7 +101,7 @@ class AttendanceController extends Controller
         $request->validate([
             'branch_id'       => 'nullable|exists:branches,id',
             'session_year_id' => 'nullable|exists:session_years,id',
-            'class_id'        => 'required|exists:classes,id',
+            'class_id'        => 'nullable|exists:classes,id',
             'section_id'      => 'nullable|exists:sections,id',
             'teacher_id'      => 'nullable|exists:teachers,id',
             'attendance_date' => 'required|date',
@@ -91,7 +121,8 @@ class AttendanceController extends Controller
             $cardSwipes = $zkService->getRawLogsByCard($date);
 
             // 2. Fetch all students in this class/section
-            $studentQuery = Student::where('class_id', $classId);
+            $studentQuery = Student::query();
+            if ($classId) $studentQuery->where('class_id', $classId);
             if ($sectionId) $studentQuery->where('section_id', $sectionId);
             if ($branchId) $studentQuery->where('branch_id', $branchId);
             if ($sessionYearId) $studentQuery->where('session_year_id', $sessionYearId);
@@ -101,7 +132,7 @@ class AttendanceController extends Controller
             if ($students->isEmpty()) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'No students found in the selected Class/Section.'
+                    'message' => 'No students found matching the selected filters.'
                 ], 400);
             }
 
@@ -154,10 +185,10 @@ class AttendanceController extends Controller
                         'attendance_date' => $date,
                     ],
                     [
-                        'branch_id'       => $branchId,
-                        'session_year_id' => $sessionYearId,
-                        'class_id'        => $classId,
-                        'section_id'      => $sectionId,
+                        'branch_id'       => $student->branch_id,
+                        'session_year_id' => $student->session_year_id,
+                        'class_id'        => $student->class_id,
+                        'section_id'      => $student->section_id,
                         'teacher_id'      => $teacherId,
                         'user_id'         => $creatorId,
                         'status'          => $status,
