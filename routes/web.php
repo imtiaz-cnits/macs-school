@@ -248,7 +248,7 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
     // এটি ড্রপডাউন থেকে ক্লাস সিলেক্ট করলে ওই ক্লাসের স্টুডেন্টদের ডাটা নিয়ে আসবে
     Route::get('/ajax/attendance/students', [\App\Http\Controllers\AttendanceController::class, 'getStudents']);
     Route::get('/ajax/attendance/recent', [\App\Http\Controllers\AttendanceController::class, 'getRecentLogs']);
-
+    Route::get('/ajax/attendance/device-status', [\App\Http\Controllers\AttendanceController::class, 'getDeviceStatus']);
     Route::post('/ajax/attendance/sync-biometric', [\App\Http\Controllers\AttendanceController::class, 'syncBiometric']);
 
     // হাজিরা রিপোর্ট দেখার পেজ

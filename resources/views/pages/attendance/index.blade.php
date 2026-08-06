@@ -30,8 +30,22 @@
                 Daily Attendance
             </h1>
         </div>
-        <div class="bg-themeGreen/10 px-5 py-2 rounded-xl border border-themeGreen/20 backdrop-blur-sm">
-            <span class="text-xs font-black text-themeGreen uppercase tracking-widest">Date: {{ date('d M, Y') }}</span>
+        <div class="flex items-center gap-3">
+             <!-- Device Connection Status (Width-wise inline badge) -->
+             <div class="px-4 py-2 rounded-xl border flex items-center gap-2 backdrop-blur-sm transition-all"
+                  :class="deviceStatus && deviceStatus.connected ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-rose-500/10 border-rose-500/20 text-rose-500'">
+                 <span class="relative flex h-2 w-2">
+                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                           :class="deviceStatus && deviceStatus.connected ? 'bg-emerald-400' : 'bg-rose-400'"></span>
+                     <span class="relative inline-flex rounded-full h-2 w-2"
+                           :class="deviceStatus && deviceStatus.connected ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+                 </span>
+                 <span class="text-xs font-black uppercase tracking-wider" x-text="deviceStatus ? (deviceStatus.status + ' (' + deviceStatus.ip + ')') : 'Checking Machine...'"></span>
+             </div>
+
+             <div class="bg-themeGreen/10 px-5 py-2 rounded-xl border border-themeGreen/20 backdrop-blur-sm">
+                 <span class="text-xs font-black text-themeGreen uppercase tracking-widest">Date: {{ date('d M, Y') }}</span>
+             </div>
         </div>
     </div>
 
@@ -443,6 +457,8 @@
                 absent: 0
             },
             
+            deviceStatus: null,
+            
             // Loading flags
             loading: false,
             fetched: false,
@@ -476,11 +492,15 @@
                         this.fetchStudents(1);
                     });
 
+                    // Fetch device status
+                    await this.fetchDeviceStatus();
+
                     // Trigger initial auto load
                     await this.fetchStudents(1);
 
                     // Poll the current page list silently every 4 seconds to make the UI update in real-time
                     setInterval(async () => {
+                        this.fetchDeviceStatus();
                         if (this.fetched && !this.loading) {
                             await this.fetchStudents(this.paginator.current_page, true);
                         }
@@ -491,6 +511,21 @@
                     showAlert("Failed to initialize dropdown filters.", "Error");
                 } finally {
                     this.loading = false;
+                }
+            },
+
+            async fetchDeviceStatus() {
+                try {
+                    let res = await axios.get('/ajax/attendance/device-status', getAuthHeaders());
+                    this.deviceStatus = res.data.device || null;
+                } catch (e) {
+                    console.error("Device Status Error:", e);
+                    this.deviceStatus = {
+                        status: 'Disconnected',
+                        connected: false,
+                        ip: 'Unknown',
+                        message: 'Error fetching status'
+                    };
                 }
             },
 

@@ -348,4 +348,25 @@ class AttendanceController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get ZKTeco biometric machine connection status
+     */
+    public function getDeviceStatus(): JsonResponse
+    {
+        try {
+            $zkService = app(\App\Services\ZktecoService::class);
+            $status = $zkService->getConnectionStatus();
+            
+            return response()->json([
+                'status' => 'success',
+                'device' => $status
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
