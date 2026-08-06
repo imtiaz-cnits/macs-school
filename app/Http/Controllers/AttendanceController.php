@@ -58,9 +58,9 @@ class AttendanceController extends Controller
                 ->where('status', 'Absent')
                 ->count();
 
-            $orderBy = 'attendances.updated_at DESC, students.roll_number ASC';
+            $orderBy = 'attendances.updated_at DESC, CAST(students.roll_number AS UNSIGNED) ASC, students.roll_number ASC';
             if ($request->filled('class_id')) {
-                $orderBy = 'students.roll_number ASC';
+                $orderBy = 'CAST(students.roll_number AS UNSIGNED) ASC, students.roll_number ASC';
             }
 
             $students = $query->select('students.id', 'students.student_name', 'students.roll_number', 'students.class_id', 'students.section_id')
