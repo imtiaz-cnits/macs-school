@@ -27,23 +27,23 @@ class AttendanceController extends Controller
         try {
             $query = Student::query();
 
-            if ($request->filled('branch_id')) $query->where('branch_id', $request->branch_id);
-            if ($request->filled('session_year_id')) $query->where('session_year_id', $request->session_year_id);
-            if ($request->filled('class_id')) $query->where('class_id', $request->class_id);
-            if ($request->filled('section_id')) $query->where('section_id', $request->section_id);
+            if ($request->filled('branch_id')) $query->where('students.branch_id', $request->branch_id);
+            if ($request->filled('session_year_id')) $query->where('students.session_year_id', $request->session_year_id);
+            if ($request->filled('class_id')) $query->where('students.class_id', $request->class_id);
+            if ($request->filled('section_id')) $query->where('students.section_id', $request->section_id);
 
             if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where(function($q) use ($search) {
-                    $q->where('student_name', 'like', "%{$search}%")
-                      ->orWhere('student_identity', 'like', "%{$search}%")
-                      ->orWhere('guardian_mobile', 'like', "%{$search}%")
-                      ->orWhere('roll_number', 'like', "%{$search}%");
+                    $q->where('students.student_name', 'like', "%{$search}%")
+                      ->orWhere('students.student_identity', 'like', "%{$search}%")
+                      ->orWhere('students.guardian_mobile', 'like', "%{$search}%")
+                      ->orWhere('students.roll_number', 'like', "%{$search}%");
                 });
             }
 
-            // Calculate stats based on the filtered query (cloning the query before pagination)
-            $allStudentIds = (clone $query)->pluck('id');
+            // Calculate stats based on the filtered query (cloning the query before leftJoin and pagination)
+            $allStudentIds = (clone $query)->pluck('students.id');
             $totalCount = $allStudentIds->count();
             
             $date = $request->input('attendance_date', date('Y-m-d'));
@@ -58,21 +58,17 @@ class AttendanceController extends Controller
                 ->where('status', 'Absent')
                 ->count();
 
-            $students = $query->select('id', 'student_name', 'roll_number', 'class_id', 'section_id')
+            $students = $query->select('students.id', 'students.student_name', 'students.roll_number', 'students.class_id', 'students.section_id')
+                              ->leftJoin('attendances', function($join) use ($date) {
+                                  $join->on('students.id', '=', 'attendances.student_id')
+                                       ->where('attendances.attendance_date', '=', $date);
+                              })
+                              ->selectRaw('attendances.status as attendance_status, attendances.remarks, attendances.updated_at as attendance_updated_at')
                               ->with(['schoolClass', 'section'])
-                              ->orderBy('roll_number', 'asc')
+                              ->orderByRaw('attendances.updated_at DESC, students.roll_number ASC')
                               ->paginate(15);
 
-            $attendances = Attendance::whereIn('student_id', $students->pluck('id'))
-                ->where('attendance_date', $date)
-                ->get()
-                ->keyBy('student_id');
-
             foreach ($students as $student) {
-                $att = $attendances->get($student->id);
-                $student->attendance_status = $att ? $att->status : null;
-                $student->remarks = $att ? $att->remarks : null;
-                
                 $className = $student->schoolClass ? $student->schoolClass->class_name : 'N/A';
                 $sectionName = $student->section ? $student->section->section_name : 'N/A';
                 $student->class_section_name = "{$className} - {$sectionName}";

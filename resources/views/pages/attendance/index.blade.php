@@ -263,8 +263,8 @@
                                         </template>
                                     </div>
                                 </td>
-                                <td class="py-0 px-0 text-center">
-                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-block"
+                                <td class="py-0 px-0 text-center whitespace-nowrap">
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-block whitespace-nowrap"
                                           :class="s.attendance_status === 'Present' || s.attendance_status === 'Late' ? 'bg-green-500/10 text-themeGreen border border-themeGreen/25' : s.attendance_status === 'Absent' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/25' : 'bg-gray-500/10 text-gray-400 border border-gray-500/25'"
                                           x-text="s.attendance_status || 'Not Synced'">
                                     </span>
