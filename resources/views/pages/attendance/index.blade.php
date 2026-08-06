@@ -37,7 +37,7 @@
 
     <!-- Filters Panel Card -->
     <div class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] p-6 shadow-sm mb-8 no-print">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-3">
             <!-- Branch -->
             <div class="relative" @click.away="activeDropdown === 'branch' && (activeDropdown = null)">
                 <label class="block text-[10px] font-black text-gray-550 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Branch</label>
@@ -168,7 +168,7 @@
         </div>
 
         <!-- Action Row -->
-        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-2">
             <!-- Search Field -->
             <div class="w-full md:max-w-md">
                 <input type="text" x-model="form.search" @input="debouncedFetch()" placeholder="Search by Name, ID, Mobile or Roll..." class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-xs font-bold text-gray-700 dark:text-gray-200 px-3 placeholder-gray-400">
@@ -233,7 +233,7 @@
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Student Name</th>
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Class & Section</th>
                             <th class="w-48 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Swipe Time / Details</th>
-                            <th class="w-32 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Attendance Status</th>
+                            <th class="w-48 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Attendance Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06] font-medium">
