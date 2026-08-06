@@ -733,6 +733,184 @@ public function detectStudentInfo(Request $request)
     }
 
     /**
+     * Sync RFID Card for a specific student from the biometric device
+     */
+    public function syncRfidCard(Request $request, $id): JsonResponse
+    {
+        try {
+            $student = Student::find($id);
+            if (!$student) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Student not found.'
+                ], 404);
+            }
+
+            $zkService = app(\App\Services\ZktecoService::class);
+            
+            if ($zkService->getMode() === 'simulation') {
+                $simulatedCard = '0010' . rand(100000, 999999);
+                $student->card_number = $simulatedCard;
+                $student->save();
+                
+                return response()->json([
+                    'status' => 'success',
+                    'card_number' => $simulatedCard,
+                    'message' => "Simulated RFID Card {$simulatedCard} synced successfully for {$student->student_name}."
+                ], 200);
+            }
+            
+            $zk = new \Jmrashed\Zkteco\Lib\ZKTeco($zkService->getIp(), $zkService->getPort());
+            if (!$zk->connect()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unable to establish connection with ZKTeco biometric device.'
+                ], 500);
+            }
+            
+            $zk->disableDevice();
+            $users = $zk->getUser();
+            $zk->enableDevice();
+            $zk->disconnect();
+            
+            if (empty($users)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No users found on the biometric device.'
+                ], 400);
+            }
+            
+            $matchedUser = null;
+            foreach ($users as $user) {
+                if (isset($user['userid']) && (int)$user['userid'] === (int)$student->id) {
+                    $matchedUser = $user;
+                    break;
+                }
+            }
+            
+            if (!$matchedUser || empty($matchedUser['cardno'])) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "No RFID card mapped for Student ID/Device ID {$student->id} on the biometric machine."
+                ], 400);
+            }
+            
+            $cardNo = trim($matchedUser['cardno']);
+            
+            $existing = Student::where('card_number', $cardNo)->where('id', '!=', $student->id)->first();
+            if ($existing) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "Card number {$cardNo} is already assigned to another student: {$existing->student_name}."
+                ], 400);
+            }
+
+            $student->card_number = $cardNo;
+            $student->save();
+            
+            return response()->json([
+                'status' => 'success',
+                'card_number' => $cardNo,
+                'message' => "RFID Card {$cardNo} synced successfully for {$student->student_name}."
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to sync RFID card: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Sync RFID Cards in bulk for all students from the biometric device
+     */
+    public function bulkSyncRfidCards(Request $request): JsonResponse
+    {
+        try {
+            $students = Student::all();
+            if ($students->isEmpty()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No students found to sync.'
+                ], 400);
+            }
+
+            $zkService = app(\App\Services\ZktecoService::class);
+            $syncedCount = 0;
+            
+            if ($zkService->getMode() === 'simulation') {
+                foreach ($students as $student) {
+                    if (empty($student->card_number)) {
+                        $simulatedCard = '0010' . rand(100000, 999999);
+                        $student->card_number = $simulatedCard;
+                        $student->save();
+                        $syncedCount++;
+                    }
+                }
+                
+                return response()->json([
+                    'status' => 'success',
+                    'message' => "Simulated bulk sync complete. Synced {$syncedCount} student RFID cards."
+                ], 200);
+            }
+            
+            $zk = new \Jmrashed\Zkteco\Lib\ZKTeco($zkService->getIp(), $zkService->getPort());
+            if (!$zk->connect()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unable to establish connection with ZKTeco biometric device.'
+                ], 500);
+            }
+            
+            $zk->disableDevice();
+            $users = $zk->getUser();
+            $zk->enableDevice();
+            $zk->disconnect();
+            
+            if (empty($users)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No users found on the biometric device.'
+                ], 400);
+            }
+            
+            $userCardMap = [];
+            foreach ($users as $user) {
+                if (isset($user['userid']) && !empty($user['cardno'])) {
+                    $userCardMap[(int)$user['userid']] = trim($user['cardno']);
+                }
+            }
+            
+            foreach ($students as $student) {
+                $studentId = (int)$student->id;
+                if (isset($userCardMap[$studentId])) {
+                    $cardNo = $userCardMap[$studentId];
+                    if ($student->card_number !== $cardNo) {
+                        $existing = Student::where('card_number', $cardNo)->where('id', '!=', $student->id)->exists();
+                        if (!$existing) {
+                            $student->card_number = $cardNo;
+                            $student->save();
+                            $syncedCount++;
+                        }
+                    }
+                }
+            }
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => "Bulk card sync completed successfully! Synced/Updated {$syncedCount} student RFID cards."
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to sync RFID cards in bulk: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get the next serial number for student identity
      */
     public function getNextSerial(): JsonResponse

@@ -96,6 +96,14 @@
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">Monitor, filter, and manage registered student accounts.</p>
     </div>
     <div class="flex items-center gap-2">
+        <!-- Bulk RFID Sync -->
+        <button type="button" onclick="bulkSyncRfidCards()" class="btn-sm bg-white dark:bg-themeNavy text-themeBlue border border-themeBlue/25 rounded-xl hover:bg-themeBlue/5 hover:-translate-y-0.5 hover:shadow-md transition-all flex items-center gap-1.5 !h-9 !px-3">
+            <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span>Bulk RFID Sync</span>
+        </button>
+
         <!-- Add Student -->
         <a href="{{ route('student.admission') }}" class="btn-sm bg-gradient-to-r from-themeBlue to-themeGreen text-white border-none rounded-xl hover:-translate-y-0.5 hover:shadow-lg transition-all flex items-center gap-1.5 !h-9 !px-4">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
@@ -484,8 +492,12 @@
                         </td>
                         <td class="py-0 px-0">
                             <div class="text-sm font-bold text-gray-900 dark:text-gray-100">${item.student_name}</div>
-                            <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 mt-1">ID: <span class="text-gray-700 dark:text-gray-300 font-bold">${item.student_identity || 'N/A'}</span> <span class="mx-1 text-gray-300 dark:text-gray-700">|</span> Device ID: <span class="text-themeBlue font-bold">${item.id}</span></div>
-                            <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 mt-0.5">Mob: <span class="text-gray-700 dark:text-gray-300 font-bold">${item.guardian_mobile}</span></div>
+                            <div class="text-xs font-semibold text-gray-400 dark:text-gray-550 mt-1">
+                                ID: <span class="text-gray-700 dark:text-gray-300 font-bold">${item.student_identity || 'N/A'}</span>
+                                <span class="mx-1 text-gray-300 dark:text-gray-700">|</span> Device ID: <span class="text-themeBlue font-bold">${item.id}</span>
+                                <span class="mx-1 text-gray-300 dark:text-gray-700">|</span> Card: <span class="${item.card_number ? 'text-themeGreen font-black' : 'text-gray-400 font-semibold'}" id="card-num-${item.id}">${item.card_number || 'N/A'}</span>
+                            </div>
+                            <div class="text-xs font-semibold text-gray-400 dark:text-gray-550 mt-0.5">Mob: <span class="text-gray-700 dark:text-gray-300 font-bold">${item.guardian_mobile}</span></div>
                         </td>
                         <td class="py-0 px-0">
                             <div class="text-sm text-gray-800 dark:text-gray-200">
@@ -499,6 +511,9 @@
                         </td>
                         <td class="py-0 px-0">
                             <div class="flex items-center justify-end gap-2">
+                                <button onclick="syncRfidCardSingle(${item.id})" class="action-btn text-themeGreen hover:text-themeGreen hover:border-themeGreen" title="Sync RFID Card">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                                </button>
                                 <a href="/student/view/${item.id}" class="action-btn text-themeBlue hover:text-themeBlue hover:border-themeBlue" title="View Details">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 </a>
@@ -633,6 +648,51 @@
     ['filter_branch', 'filter_class', 'filter_section', 'filter_session', 'filter_shift', 'filter_gender'].forEach(id => {
         document.getElementById(id).addEventListener('change', function() { window.fetchList(1); });
     });
+
+    window.syncRfidCardSingle = async function(studentId) {
+        try {
+            let confirmed = await showConfirm("Sync Student RFID Card", "Do you want to sync this student's RFID card from the biometric device?");
+            if (!confirmed) return;
+
+            let res = await axios.post(`/ajax/students/${studentId}/sync-card`, {}, getAuthHeaders());
+            if (res.data.status === 'success') {
+                let cardEl = document.getElementById(`card-num-${studentId}`);
+                if (cardEl) {
+                    cardEl.innerText = res.data.card_number;
+                    cardEl.className = 'text-themeGreen font-black';
+                }
+                await showAlert(res.data.message, "Sync Success");
+            } else {
+                await showAlert(res.data.message || "Failed to sync card.", "Error");
+            }
+        } catch (err) {
+            let errMsg = err.response?.data?.message || "RFID sync failed.";
+            await showAlert(errMsg, "Sync Error");
+        }
+    };
+
+    window.bulkSyncRfidCards = async function() {
+        try {
+            let confirmed = await showConfirm(
+                "Bulk RFID Card Sync",
+                "Do you want to sync/update RFID cards from the biometric machine for all students who have device mappings?"
+            );
+            if (!confirmed) return;
+
+            await showAlert("Syncing biometric cards in the background... Please wait.", "Info");
+
+            let res = await axios.post('/ajax/students/bulk-sync-cards', {}, getAuthHeaders());
+            if (res.data.status === 'success') {
+                await showAlert(res.data.message, "Sync Success");
+                window.fetchList(1);
+            } else {
+                await showAlert(res.data.message || "Bulk sync failed.", "Error");
+            }
+        } catch (err) {
+            let errMsg = err.response?.data?.message || "Bulk RFID sync failed.";
+            await showAlert(errMsg, "Sync Error");
+        }
+    };
 
     // Init
     document.addEventListener('DOMContentLoaded', () => {

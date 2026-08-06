@@ -149,8 +149,15 @@
                         <span class="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono" id="view_birth_certificate">...</span>
                     </div>
                     <div class="col-span-2">
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">RFID Card Number</span>
-                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono" id="view_card_number">...</span>
+                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-widest mb-0.5 block">RFID Card Number</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono" id="view_card_number">...</span>
+                            <button type="button" onclick="syncRfidCardSingle({{ $id }})" class="p-1.5 bg-themeBlue/10 hover:bg-themeBlue/20 text-themeBlue rounded-lg transition-colors" title="Sync Card from Machine">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="col-span-2 h-[1px] bg-gray-100 dark:bg-white/[0.05] my-1"></div>
@@ -659,5 +666,24 @@
             window.location.href = '/students';
         }
     });
+    async function syncRfidCardSingle(studentId) {
+        try {
+            document.getElementById('loadingOverlay').classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+            
+            let res = await axios.post(`/ajax/students/${studentId}/sync-card`, {}, getAuthHeaders());
+            if (res.data.status === 'success') {
+                document.getElementById('view_card_number').innerText = res.data.card_number;
+                await showAlert(res.data.message, "Sync Success");
+            } else {
+                await showAlert(res.data.message || "Failed to sync card.", "Error");
+            }
+        } catch (err) {
+            let errMsg = err.response?.data?.message || "Card sync failed.";
+            await showAlert(errMsg, "Error");
+        } finally {
+            document.getElementById('loadingOverlay').classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 300);
+        }
+    }
 </script>
 @endpush
