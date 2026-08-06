@@ -58,6 +58,11 @@ class AttendanceController extends Controller
                 ->where('status', 'Absent')
                 ->count();
 
+            $orderBy = 'attendances.updated_at DESC, students.roll_number ASC';
+            if ($request->filled('class_id')) {
+                $orderBy = 'students.roll_number ASC';
+            }
+
             $students = $query->select('students.id', 'students.student_name', 'students.roll_number', 'students.class_id', 'students.section_id')
                               ->leftJoin('attendances', function($join) use ($date) {
                                   $join->on('students.id', '=', 'attendances.student_id')
@@ -65,7 +70,7 @@ class AttendanceController extends Controller
                               })
                               ->selectRaw('attendances.status as attendance_status, attendances.remarks, attendances.updated_at as attendance_updated_at')
                               ->with(['schoolClass', 'section'])
-                              ->orderByRaw('attendances.updated_at DESC, students.roll_number ASC')
+                              ->orderByRaw($orderBy)
                               ->paginate(15);
 
             foreach ($students as $student) {

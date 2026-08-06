@@ -21,7 +21,7 @@
 <div x-data="attendancePage()" x-init="init()" class="w-full min-h-screen">
     
     <!-- Header Section -->
-    <div class="mb-8 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+    <div class="mb-4 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
         <div>
             <h1 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
                 <svg class="w-8 h-8 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -29,7 +29,6 @@
                 </svg>
                 Daily Attendance
             </h1>
-            <p class="text-sm font-medium text-gray-555 dark:text-gray-400 mt-1">Pabna International School</p>
         </div>
         <div class="bg-themeGreen/10 px-5 py-2 rounded-xl border border-themeGreen/20 backdrop-blur-sm">
             <span class="text-xs font-black text-themeGreen uppercase tracking-widest">Date: {{ date('d M, Y') }}</span>
