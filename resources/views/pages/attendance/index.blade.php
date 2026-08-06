@@ -168,10 +168,13 @@
         </div>
 
         <!-- Action Row -->
-        <div class="flex flex-col md:flex-row items-center justify-between gap-2">
-            <!-- Search Field -->
-            <div class="w-full md:max-w-md">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Search Field & Clear Filter -->
+            <div class="w-full md:max-w-xl flex items-center gap-3">
                 <input type="text" x-model="form.search" @input="debouncedFetch()" placeholder="Search by Name, ID, Mobile or Roll..." class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-xs font-bold text-gray-700 dark:text-gray-200 px-3 placeholder-gray-400">
+                <button type="button" @click="clearFilters()" class="inline-flex items-center justify-center px-4 h-11 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 whitespace-nowrap">
+                    Clear Filter
+                </button>
             </div>
 
             <!-- Sync Button -->
@@ -621,6 +624,26 @@
                 } finally {
                     this.loading = false;
                 }
+            },
+
+            clearFilters() {
+                this.form.branch_id = '';
+                this.form.class_id = '';
+                this.form.section_id = '';
+                this.form.search = '';
+                this.form.attendance_date = '{{ date("Y-m-d") }}';
+                
+                this.branchText = 'Select Branch';
+                this.classText = 'Select Class';
+                this.sectionText = 'Select Section';
+                
+                if (this.sessions.length > 0) {
+                    const firstSession = this.sessions[0];
+                    this.form.session_year_id = firstSession.id;
+                    this.sessionText = firstSession.session_name;
+                }
+                
+                this.fetchStudents(1);
             },
 
             renderPagination() {
