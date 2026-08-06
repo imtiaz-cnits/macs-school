@@ -172,7 +172,6 @@
         <div class="flex flex-col md:flex-row items-center justify-between gap-4">
             <!-- Search Field -->
             <div class="w-full md:max-w-md">
-                <label class="block text-[10px] font-black text-themeBlue uppercase tracking-widest mb-1.5 ml-1">Search Student</label>
                 <input type="text" x-model="form.search" @input="debouncedFetch()" placeholder="Search by Name, ID, Mobile or Roll..." class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-xs font-bold text-gray-700 dark:text-gray-200 px-3 placeholder-gray-400">
             </div>
 
