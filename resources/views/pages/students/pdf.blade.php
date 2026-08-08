@@ -40,7 +40,7 @@
         }
 
         .title-cell {
-            width: 62%;
+            width: 92%;
             vertical-align: middle;
             padding-left: 10px;
         }
@@ -199,10 +199,10 @@
                     <span class="filter-label">Class:</span> {{ $filters['class'] }} &nbsp;&nbsp;|&nbsp;&nbsp; 
                     <span class="filter-label">Section:</span> {{ $filters['section'] }} &nbsp;&nbsp;|&nbsp;&nbsp; 
                     <span class="filter-label">Shift:</span> {{ $filters['shift'] }}
+                    <span style="float: right; font-size: 7.5px; color: #94a3b8; font-style: italic; font-weight: normal;">
+                        Generated: {{ date('d M, Y h:i A') }}
+                    </span>
                 </div>
-            </td>
-            <td style="text-align: right; vertical-align: bottom; font-size: 7.5px; color: #94a3b8; font-style: italic; padding-bottom: 2px;">
-                Generated: {{ date('d M, Y h:i A') }}
             </td>
         </tr>
     </table>
