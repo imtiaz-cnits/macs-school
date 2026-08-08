@@ -621,7 +621,9 @@ public function detectStudentInfo(Request $request)
                 $query->where('gender', $request->gender);
             }
 
-            $students = $query->get();
+            $students = $query->get()->sortBy(function ($student) {
+                return (int) $student->roll_number;
+            })->values();
 
             // Dynamic Branch Name
             $branchName = 'Pabna International School';

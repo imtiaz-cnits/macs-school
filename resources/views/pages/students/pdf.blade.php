@@ -5,7 +5,7 @@
     <title>Student List Report</title>
     <style>
         @page { 
-            margin: 20px 25px; 
+            margin: 12px 18px; 
             size: A4 portrait; 
         }
         
@@ -14,158 +14,143 @@
             margin: 0; 
             padding: 0; 
             background: #ffffff;
-            color: #333333;
+            color: #1a202c;
         }
 
         /* Header Style */
         .header-container {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
-            border-bottom: 3px solid #1e4630;
-            padding-bottom: 12px;
+            margin-bottom: 8px;
+            border-bottom: 2px solid #009A49; /* MACS Green Accent Line */
+            padding-bottom: 6px;
         }
 
         .logo-cell {
-            width: 12%;
+            width: 8%;
             vertical-align: middle;
         }
 
         .logo-img {
-            width: 65px;
-            height: 65px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
         }
 
         .title-cell {
-            width: 88%;
+            width: 62%;
             vertical-align: middle;
-            padding-left: 15px;
+            padding-left: 10px;
         }
 
         .school-name {
-            font-size: 24px;
-            font-weight: bold;
-            color: #1e4630;
+            font-size: 18px;
+            font-weight: 900;
+            color: #008ED6; /* MACS Sky Blue */
             margin: 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .school-subtitle {
-            font-size: 11px;
-            color: #666666;
-            margin: 3px 0 0 0;
-            font-weight: bold;
+            font-size: 9.5px;
+            color: #4a5568;
+            margin: 2px 0 0 0;
+            font-weight: 700;
         }
 
         .report-title {
-            font-size: 15px;
-            font-weight: bold;
-            color: #cc0000;
-            margin: 5px 0 0 0;
-            text-transform: uppercase;
-        }
-
-        /* Filter Info Cards */
-        .filters-table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: #f3f6f4;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            margin-bottom: 20px;
             font-size: 11px;
-        }
-
-        .filters-table td {
-            padding: 8px 12px;
-            color: #4a5568;
+            font-weight: 900;
+            color: #009A49; /* MACS Green */
+            margin: 3px 0 0 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .filter-label {
-            font-weight: bold;
-            color: #1e4630;
+            font-weight: 800;
+            color: #008ED6;
         }
 
         /* Table Style */
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
         }
 
         .data-table th {
-            background-color: #1e4630;
+            background-color: #008ED6; /* MACS Sky Blue */
             color: #ffffff;
-            font-size: 11px;
-            font-weight: bold;
+            font-size: 9px;
+            font-weight: 900;
             text-transform: uppercase;
-            padding: 10px 8px;
+            padding: 5px 6px;
             text-align: left;
-            border: 1px solid #1e4630;
+            border: 1px solid #008ED6;
         }
 
         .data-table td {
-            padding: 8px 8px;
-            font-size: 11px;
+            padding: 3px 5px;
+            font-size: 9px;
             border-bottom: 1px solid #e2e8f0;
             vertical-align: middle;
         }
 
         .data-table tr:nth-child(even) {
-            background-color: #f9fafb;
+            background-color: #f8fafc;
         }
 
         /* Helpers & Badges */
         .student-photo {
-            width: 42px;
-            height: 42px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            border: 1.5px solid #cbd5e1;
+            border: 1px solid #cbd5e1;
             object-fit: cover;
         }
 
         .student-name {
-            font-size: 12px;
-            font-weight: bold;
-            color: #1a202c;
+            font-size: 9.5px;
+            font-weight: 700;
+            color: #0f172a;
         }
 
         .student-id {
-            font-size: 10px;
-            color: #1e4630;
-            font-weight: bold;
-            margin-top: 2px;
+            font-size: 8px;
+            color: #009A49; /* MACS Green */
+            font-weight: 800;
+            margin-top: 1px;
         }
 
         .class-badge {
-            font-size: 11px;
-            font-weight: bold;
-            color: #1e4630;
+            font-size: 9px;
+            font-weight: 700;
+            color: #0f172a;
         }
 
         .roll-badge {
-            font-size: 9.5px;
-            font-weight: bold;
-            background-color: #edf2f7;
-            color: #4a5568;
-            padding: 2px 5px;
-            border-radius: 4px;
-            border: 1px solid #cbd5e1;
+            font-size: 8px;
+            font-weight: 800;
+            background-color: #f1f5f9;
+            color: #475569;
+            padding: 0.5px 3px;
+            border-radius: 2px;
+            border: 1px solid #e2e8f0;
             display: inline-block;
-            margin-top: 3px;
+            margin-top: 1.5px;
         }
 
         .contact-info {
-            font-size: 10px;
-            color: #4a5568;
-            line-height: 1.4;
+            font-size: 8px;
+            color: #475569;
+            line-height: 1.25;
         }
 
         .contact-bold {
-            color: #2d3748;
-            font-weight: bold;
+            color: #1e293b;
+            font-weight: 700;
         }
 
         /* Footer Style */
@@ -174,11 +159,11 @@
             bottom: 0;
             left: 0;
             right: 0;
-            font-size: 9px;
-            color: #718096;
+            font-size: 7.5px;
+            color: #94a3b8;
             text-align: center;
             border-top: 1px solid #e2e8f0;
-            padding-top: 8px;
+            padding-top: 4px;
         }
     </style>
 </head>
@@ -192,38 +177,14 @@
             </td>
             <td class="title-cell">
                 <div class="school-name">{{ $branchName }}</div>
+                <div class="school-subtitle">
+                    <span class="filter-label">Branch:</span> {{ $filters['branch'] }} &nbsp;&nbsp;|&nbsp;&nbsp; 
+                    <span class="filter-label">Class:</span> {{ $filters['class'] }}
+                </div>
                 <div class="report-title">Student Report</div>
             </td>
-        </tr>
-    </table>
-
-    <!-- Applied Filters Info -->
-    <table class="filters-table">
-        <tr>
-            <td width="33%">
-                <span class="filter-label">Branch:</span> {{ $filters['branch'] }}
-            </td>
-            <td width="33%">
-                <span class="filter-label">Class:</span> {{ $filters['class'] }}
-            </td>
-            <td width="34%">
-                <span class="filter-label">Section:</span> {{ $filters['section'] }}
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <span class="filter-label">Session:</span> {{ $filters['session'] }}
-            </td>
-            <td>
-                <span class="filter-label">Shift:</span> {{ $filters['shift'] }}
-            </td>
-            <td>
-                <span class="filter-label">Gender:</span> {{ $filters['gender'] }}
-            </td>
-        </tr>
-        <tr>
-            <td colspan="3" style="text-align: right; color: #a0aec0; font-style: italic; font-size: 9px; padding-top: 2px;">
-                Report Generated on: {{ date('d M, Y h:i A') }}
+            <td style="text-align: right; vertical-align: bottom; font-size: 7.5px; color: #94a3b8; font-style: italic; padding-bottom: 2px;">
+                Generated: {{ date('d M, Y h:i A') }}
             </td>
         </tr>
     </table>
@@ -232,10 +193,10 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th width="5%" style="text-align: center;">SL</th>
-                <th width="10%" style="text-align: center;">Photo</th>
-                <th width="28%">Student Information</th>
-                <th width="27%">Academic Details</th>
+                <th width="4%" style="text-align: center;">SL</th>
+                <th width="8%" style="text-align: center;">Photo</th>
+                <th width="30%">Student Information</th>
+                <th width="28%">Academic Details</th>
                 <th width="30%">Contact & Details</th>
             </tr>
         </thead>
@@ -265,19 +226,19 @@
                         }
 
                         // Style background color based on gender
-                        $avatarBg = '#1e4630'; // Theme Green
+                        $avatarBg = '#008ED6'; // MACS Sky Blue for boys
                         if ($student->gender === 'Female') {
-                            $avatarBg = '#8b1e3f'; // Premium Maroon-Rose for girls
+                            $avatarBg = '#e0115f'; // Soft pink/rose for girls
                         }
                     }
                 @endphp
                 <tr>
-                    <td style="text-align: center; font-weight: bold; color: #4a5568;">{{ $index + 1 }}</td>
+                    <td style="text-align: center; font-weight: bold; color: #475569;">{{ $index + 1 }}</td>
                     <td style="text-align: center;">
                         @if($hasCustomPhoto)
                             <img src="{{ $photoPath }}" class="student-photo" alt="Student">
                         @else
-                            <div style="width: 38px; height: 38px; line-height: 38px; border-radius: 50%; background-color: {{ $avatarBg }}; color: #ffffff; text-align: center; font-weight: bold; font-size: 13px; border: 1.5px solid #cbd5e1; display: inline-block;">
+                            <div style="width: 26px; height: 26px; line-height: 26px; border-radius: 50%; background-color: {{ $avatarBg }}; color: #ffffff; text-align: center; font-weight: bold; font-size: 9.5px; border: 1px solid #cbd5e1; display: inline-block;">
                                 {{ $initials }}
                             </div>
                         @endif
@@ -289,13 +250,13 @@
                     <td>
                         <div class="class-badge">Class: {{ $student->schoolClass->class_name ?? 'N/A' }}</div>
                         <div class="roll-badge">Roll: {{ $student->roll_number ?? 'N/A' }}</div>
-                        <div style="font-size: 9px; color: #718096; margin-top: 3px;">
+                        <div style="font-size: 7.5px; color: #64748b; margin-top: 1.5px;">
                             Section: {{ $student->section->section_name ?? 'N/A' }} | Shift: {{ $student->shift->shift_name ?? 'N/A' }}
                         </div>
                     </td>
                     <td>
                         <div class="contact-info">
-                            <span class="contact-bold">Mob:</span> {{ $student->guardian_mobile ?? 'N/A' }}<br>
+                            <span class="contact-bold">Emergency Contact:</span> {{ $student->guardian_mobile ?? 'N/A' }}<br>
                             <span class="contact-bold">Gender:</span> {{ $student->gender ?? 'N/A' }}<br>
                             <span class="contact-bold">DOB:</span> {{ $student->dob ? date('d-m-Y', strtotime($student->dob)) : 'N/A' }}
                         </div>
@@ -303,7 +264,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 30px; color: #e53e3e; font-weight: bold; font-size: 13px;">
+                    <td colspan="5" style="text-align: center; padding: 20px; color: #ef4444; font-weight: bold; font-size: 11px;">
                         No students found matching the filters.
                     </td>
                 </tr>
@@ -313,7 +274,7 @@
 
     <!-- Printed Footer -->
     <div class="footer">
-        Pabna International School - Registered Student List Report. Page 1 of 1 (System Auto Generated)
+        {{ $branchName }} - Registered Student List Report. (System Auto Generated)
     </div>
 
 </body>
