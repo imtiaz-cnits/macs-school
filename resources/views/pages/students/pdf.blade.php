@@ -54,10 +54,19 @@
             letter-spacing: 0.5px;
         }
 
+        .school-branch {
+            font-size: 13px;
+            font-weight: 800;
+            color: #009A49; /* MACS Green */
+            margin: 2px 0 0 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .school-subtitle {
             font-size: 9.5px;
             color: #4a5568;
-            margin: 2px 0 0 0;
+            margin: 4px 0 0 0;
             font-weight: 700;
         }
 
@@ -85,17 +94,17 @@
         .data-table th {
             background-color: #008ED6; /* MACS Sky Blue */
             color: #ffffff;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 900;
             text-transform: uppercase;
-            padding: 8px 10px;
+            padding: 10px 10px;
             text-align: left;
             border: 1px solid #008ED6;
         }
 
         .data-table td {
-            padding: 8px 10px;
-            font-size: 10.5px;
+            padding: 16px 10px;
+            font-size: 11px;
             border-bottom: 1px solid #e2e8f0;
             vertical-align: middle;
         }
@@ -106,38 +115,38 @@
 
         /* Helpers & Badges */
         .student-photo {
-            width: 34px;
-            height: 34px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             border: 1px solid #cbd5e1;
             object-fit: cover;
         }
 
         .student-name {
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 700;
             color: #0f172a;
         }
 
         .student-id {
-            font-size: 9px;
+            font-size: 10px;
             color: #009A49; /* MACS Green */
             font-weight: 800;
             margin-top: 1px;
         }
 
         .class-badge {
-            font-size: 10.5px;
+            font-size: 12.5px;
             font-weight: 700;
             color: #0f172a;
         }
 
         .roll-badge {
-            font-size: 9px;
+            font-size: 10.5px;
             font-weight: 800;
             background-color: #f1f5f9;
             color: #475569;
-            padding: 1px 4px;
+            padding: 2px 6px;
             border-radius: 2px;
             border: 1px solid #e2e8f0;
             display: inline-block;
@@ -145,9 +154,9 @@
         }
 
         .contact-info {
-            font-size: 9.5px;
+            font-size: 10.5px;
             color: #475569;
-            line-height: 1.35;
+            line-height: 1.4;
         }
 
         .contact-bold {
@@ -193,7 +202,10 @@
                 @endif
             </td>
             <td class="title-cell">
-                <div class="school-name">MACS School and College{{ $branchName && $branchName !== 'Pabna International School' ? ', ' . $branchName : '' }}</div>
+                <div class="school-name">MACS School and College</div>
+                @if($branchName && $branchName !== 'Pabna International School')
+                    <div class="school-branch">{{ $branchName }}</div>
+                @endif
                 <div class="school-subtitle">
                     <span class="filter-label">Session:</span> {{ $filters['session'] }} &nbsp;&nbsp;|&nbsp;&nbsp; 
                     <span class="filter-label">Class:</span> {{ $filters['class'] }} &nbsp;&nbsp;|&nbsp;&nbsp; 
