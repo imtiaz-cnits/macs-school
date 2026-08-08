@@ -3,6 +3,8 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Student List Report</title>
+    <!-- Load Google Font: Onest -->
+    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;750;900&display=swap" rel="stylesheet">
     <style>
         @page { 
             margin: 12px 18px; 
@@ -10,7 +12,7 @@
         }
         
         body { 
-            font-family: 'Helvetica', 'Arial', sans-serif; 
+            font-family: 'Onest', 'Helvetica', 'Arial', sans-serif; 
             margin: 0; 
             padding: 0; 
             background: #ffffff;
@@ -169,11 +171,26 @@
 </head>
 <body>
 
+    @php
+        $logoPath = public_path('img/macs_logo.jpeg');
+        $logoSrc = '';
+        if (file_exists($logoPath)) {
+            $logoSrc = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($logoPath));
+        } else {
+            $fallbackPath = public_path('img/logo.svg');
+            if (file_exists($fallbackPath)) {
+                $logoSrc = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($fallbackPath));
+            }
+        }
+    @endphp
+
     <!-- Branded Header -->
     <table class="header-container">
         <tr>
             <td class="logo-cell">
-                <img src="{{ public_path('img/logo.svg') }}" class="logo-img" alt="Logo">
+                @if($logoSrc)
+                    <img src="{{ $logoSrc }}" class="logo-img" alt="Logo">
+                @endif
             </td>
             <td class="title-cell">
                 <div class="school-name">{{ $branchName }}</div>
