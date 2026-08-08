@@ -34,8 +34,8 @@
         }
 
         .logo-img {
-            width: 48px;
-            height: 48px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
         }
 
@@ -103,7 +103,7 @@
         }
 
         .data-table td {
-            padding: 10px 10px;
+            padding: 8px 10px;
             font-size: 11px;
             border-bottom: 1px solid #e2e8f0;
             vertical-align: middle;
