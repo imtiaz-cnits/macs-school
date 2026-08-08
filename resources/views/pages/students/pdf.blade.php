@@ -193,12 +193,13 @@
                 @endif
             </td>
             <td class="title-cell">
-                <div class="school-name">{{ $branchName }}</div>
+                <div class="school-name">MACS School and College{{ $branchName && $branchName !== 'Pabna International School' ? ', ' . $branchName : '' }}</div>
                 <div class="school-subtitle">
-                    <span class="filter-label">Branch:</span> {{ $filters['branch'] }} &nbsp;&nbsp;|&nbsp;&nbsp; 
-                    <span class="filter-label">Class:</span> {{ $filters['class'] }}
+                    <span class="filter-label">Session:</span> {{ $filters['session'] }} &nbsp;&nbsp;|&nbsp;&nbsp; 
+                    <span class="filter-label">Class:</span> {{ $filters['class'] }} &nbsp;&nbsp;|&nbsp;&nbsp; 
+                    <span class="filter-label">Section:</span> {{ $filters['section'] }} &nbsp;&nbsp;|&nbsp;&nbsp; 
+                    <span class="filter-label">Shift:</span> {{ $filters['shift'] }}
                 </div>
-                <div class="report-title">Student Report</div>
             </td>
             <td style="text-align: right; vertical-align: bottom; font-size: 7.5px; color: #94a3b8; font-style: italic; padding-bottom: 2px;">
                 Generated: {{ date('d M, Y h:i A') }}
