@@ -103,7 +103,7 @@
         }
 
         .data-table td {
-            padding: 16px 10px;
+            padding: 10px 10px;
             font-size: 11px;
             border-bottom: 1px solid #e2e8f0;
             vertical-align: middle;
