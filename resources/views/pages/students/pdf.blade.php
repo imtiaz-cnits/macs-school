@@ -208,87 +208,105 @@
     </table>
 
     <!-- Data Table -->
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th width="4%" style="text-align: center;">SL</th>
-                <th width="8%" style="text-align: center;">Photo</th>
-                <th width="30%">Student Information</th>
-                <th width="28%">Academic Details</th>
-                <th width="30%">Contact & Details</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($students as $index => $student)
-                @php
-                    $hasCustomPhoto = false;
-                    $photoPath = '';
-                    if ($student->photo) {
-                        if (!str_starts_with($student->photo, 'img/')) {
-                            $checkPath = public_path('storage/' . $student->photo);
-                            if (file_exists($checkPath)) {
-                                $photoPath = $checkPath;
-                                $hasCustomPhoto = true;
+    @forelse($students->chunk(15) as $chunkIndex => $studentChunk)
+        @if($chunkIndex > 0)
+            <div style="page-break-before: always;"></div>
+        @endif
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th width="4%" style="text-align: center;">SL</th>
+                    <th width="8%" style="text-align: center;">Photo</th>
+                    <th width="30%">Student Information</th>
+                    <th width="28%">Academic Details</th>
+                    <th width="30%">Contact & Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($studentChunk as $studentIndex => $student)
+                    @php
+                        $hasCustomPhoto = false;
+                        $photoPath = '';
+                        if ($student->photo) {
+                            if (!str_starts_with($student->photo, 'img/')) {
+                                $checkPath = public_path('storage/' . $student->photo);
+                                if (file_exists($checkPath)) {
+                                    $photoPath = $checkPath;
+                                    $hasCustomPhoto = true;
+                                }
                             }
                         }
-                    }
 
-                    if (!$hasCustomPhoto) {
-                        // Extract initials
-                        $words = explode(" ", trim($student->student_name));
-                        $initials = "";
-                        if (count($words) >= 2) {
-                            $initials = strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
-                        } else {
-                            $initials = strtoupper(substr($words[0] ?? 'S', 0, 2));
-                        }
+                        if (!$hasCustomPhoto) {
+                            // Extract initials
+                            $words = explode(" ", trim($student->student_name));
+                            $initials = "";
+                            if (count($words) >= 2) {
+                                $initials = strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
+                            } else {
+                                $initials = strtoupper(substr($words[0] ?? 'S', 0, 2));
+                            }
 
-                        // Style background color based on gender
-                        $avatarBg = '#008ED6'; // MACS Sky Blue for boys
-                        if ($student->gender === 'Female') {
-                            $avatarBg = '#e0115f'; // Soft pink/rose for girls
+                            // Style background color based on gender
+                            $avatarBg = '#008ED6'; // MACS Sky Blue for boys
+                            if ($student->gender === 'Female') {
+                                $avatarBg = '#e0115f'; // Soft pink/rose for girls
+                            }
                         }
-                    }
-                @endphp
-                <tr>
-                    <td style="text-align: center; font-weight: bold; color: #475569;">{{ $index + 1 }}</td>
-                    <td style="text-align: center;">
-                        @if($hasCustomPhoto)
-                            <img src="{{ $photoPath }}" class="student-photo" alt="Student">
-                        @else
-                            <div style="width: 26px; height: 26px; line-height: 26px; border-radius: 50%; background-color: {{ $avatarBg }}; color: #ffffff; text-align: center; font-weight: bold; font-size: 9.5px; border: 1px solid #cbd5e1; display: inline-block;">
-                                {{ $initials }}
+                    @endphp
+                    <tr>
+                        <td style="text-align: center; font-weight: bold; color: #475569;">{{ ($chunkIndex * 15) + $studentIndex + 1 }}</td>
+                        <td style="text-align: center;">
+                            @if($hasCustomPhoto)
+                                <img src="{{ $photoPath }}" class="student-photo" alt="Student">
+                            @else
+                                <div style="width: 26px; height: 26px; line-height: 26px; border-radius: 50%; background-color: {{ $avatarBg }}; color: #ffffff; text-align: center; font-weight: bold; font-size: 9.5px; border: 1px solid #cbd5e1; display: inline-block;">
+                                    {{ $initials }}
+                                </div>
+                            @endif
+                        </td>
+                        <td>
+                            <div class="student-name">{{ $student->student_name }}</div>
+                            <div class="student-id">ID: {{ $student->student_identity ?? 'N/A' }}</div>
+                        </td>
+                        <td>
+                            <div class="class-badge">Class: {{ $student->schoolClass->class_name ?? 'N/A' }}</div>
+                            <div class="roll-badge">Roll: {{ $student->roll_number ?? 'N/A' }}</div>
+                            <div style="font-size: 7.5px; color: #64748b; margin-top: 1.5px;">
+                                Section: {{ $student->section->section_name ?? 'N/A' }} | Shift: {{ $student->shift->shift_name ?? 'N/A' }}
                             </div>
-                        @endif
-                    </td>
-                    <td>
-                        <div class="student-name">{{ $student->student_name }}</div>
-                        <div class="student-id">ID: {{ $student->student_identity ?? 'N/A' }}</div>
-                    </td>
-                    <td>
-                        <div class="class-badge">Class: {{ $student->schoolClass->class_name ?? 'N/A' }}</div>
-                        <div class="roll-badge">Roll: {{ $student->roll_number ?? 'N/A' }}</div>
-                        <div style="font-size: 7.5px; color: #64748b; margin-top: 1.5px;">
-                            Section: {{ $student->section->section_name ?? 'N/A' }} | Shift: {{ $student->shift->shift_name ?? 'N/A' }}
-                        </div>
-                    </td>
-                    <td>
-                        <div class="contact-info">
-                            <span class="contact-bold">Emergency Contact:</span> {{ $student->guardian_mobile ?? 'N/A' }}<br>
-                            <span class="contact-bold">Gender:</span> {{ $student->gender ?? 'N/A' }}<br>
-                            <span class="contact-bold">DOB:</span> {{ $student->dob ? date('d-m-Y', strtotime($student->dob)) : 'N/A' }}
-                        </div>
-                    </td>
+                        </td>
+                        <td>
+                            <div class="contact-info">
+                                <span class="contact-bold">Emergency Contact:</span> {{ $student->guardian_mobile ?? 'N/A' }}<br>
+                                <span class="contact-bold">Gender:</span> {{ $student->gender ?? 'N/A' }}<br>
+                                <span class="contact-bold">DOB:</span> {{ $student->dob ? date('d-m-Y', strtotime($student->dob)) : 'N/A' }}
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @empty
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th width="4%" style="text-align: center;">SL</th>
+                    <th width="8%" style="text-align: center;">Photo</th>
+                    <th width="30%">Student Information</th>
+                    <th width="28%">Academic Details</th>
+                    <th width="30%">Contact & Details</th>
                 </tr>
-            @empty
+            </thead>
+            <tbody>
                 <tr>
                     <td colspan="5" style="text-align: center; padding: 20px; color: #ef4444; font-weight: bold; font-size: 11px;">
                         No students found matching the filters.
                     </td>
                 </tr>
-            @endforelse
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    @endforelse
 
     <!-- Printed Footer -->
     <div class="footer">
