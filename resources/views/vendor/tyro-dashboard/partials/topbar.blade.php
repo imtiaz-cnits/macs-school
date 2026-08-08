@@ -41,7 +41,7 @@
                 // Refresh status every 30 seconds
                 setInterval(() => this.fetchDeviceStatus(), 30000);
             }
-        }" class="px-3 py-1.5 rounded-xl border flex items-center gap-2 transition-all shrink-0 select-none bg-rose-500/10 border-rose-500/20 text-rose-500"
+        }" class="px-3 py-2 rounded-xl border flex items-center gap-2 transition-all shrink-0 select-none bg-rose-500/10 border-rose-500/20 text-rose-500"
            :class="deviceStatus && deviceStatus.connected ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-rose-500/10 border-rose-500/20 text-rose-500'">
             <span class="relative flex h-2 w-2">
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"

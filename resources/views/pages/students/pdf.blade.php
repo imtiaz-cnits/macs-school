@@ -85,17 +85,17 @@
         .data-table th {
             background-color: #008ED6; /* MACS Sky Blue */
             color: #ffffff;
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 900;
             text-transform: uppercase;
-            padding: 5px 6px;
+            padding: 8px 10px;
             text-align: left;
             border: 1px solid #008ED6;
         }
 
         .data-table td {
-            padding: 3px 5px;
-            font-size: 9px;
+            padding: 8px 10px;
+            font-size: 10.5px;
             border-bottom: 1px solid #e2e8f0;
             vertical-align: middle;
         }
@@ -106,38 +106,38 @@
 
         /* Helpers & Badges */
         .student-photo {
-            width: 28px;
-            height: 28px;
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
             border: 1px solid #cbd5e1;
             object-fit: cover;
         }
 
         .student-name {
-            font-size: 9.5px;
+            font-size: 11px;
             font-weight: 700;
             color: #0f172a;
         }
 
         .student-id {
-            font-size: 8px;
+            font-size: 9px;
             color: #009A49; /* MACS Green */
             font-weight: 800;
             margin-top: 1px;
         }
 
         .class-badge {
-            font-size: 9px;
+            font-size: 10.5px;
             font-weight: 700;
             color: #0f172a;
         }
 
         .roll-badge {
-            font-size: 8px;
+            font-size: 9px;
             font-weight: 800;
             background-color: #f1f5f9;
             color: #475569;
-            padding: 0.5px 3px;
+            padding: 1px 4px;
             border-radius: 2px;
             border: 1px solid #e2e8f0;
             display: inline-block;
@@ -145,9 +145,9 @@
         }
 
         .contact-info {
-            font-size: 8px;
+            font-size: 9.5px;
             color: #475569;
-            line-height: 1.25;
+            line-height: 1.35;
         }
 
         .contact-bold {
@@ -260,7 +260,7 @@
                             @if($hasCustomPhoto)
                                 <img src="{{ $photoPath }}" class="student-photo" alt="Student">
                             @else
-                                <div style="width: 26px; height: 26px; line-height: 26px; border-radius: 50%; background-color: {{ $avatarBg }}; color: #ffffff; text-align: center; font-weight: bold; font-size: 9.5px; border: 1px solid #cbd5e1; display: inline-block;">
+                                <div style="width: 32px; height: 32px; line-height: 32px; border-radius: 50%; background-color: {{ $avatarBg }}; color: #ffffff; text-align: center; font-weight: bold; font-size: 11px; border: 1px solid #cbd5e1; display: inline-block;">
                                     {{ $initials }}
                                 </div>
                             @endif
