@@ -21,6 +21,37 @@
     </div>
 
     <div class="topbar-right flex items-center gap-3">
+        <!-- Biometric Machine Status Badge -->
+        <div x-data="{
+            deviceStatus: null,
+            async fetchDeviceStatus() {
+                try {
+                    let res = await axios.get('/ajax/attendance/device-status');
+                    this.deviceStatus = res.data.device || null;
+                } catch (e) {
+                    this.deviceStatus = {
+                        status: 'Disconnected',
+                        connected: false,
+                        ip: 'Unknown'
+                    };
+                }
+            },
+            init() {
+                this.fetchDeviceStatus();
+                // Refresh status every 30 seconds
+                setInterval(() => this.fetchDeviceStatus(), 30000);
+            }
+        }" class="px-3 py-1.5 rounded-xl border flex items-center gap-2 transition-all shrink-0 select-none bg-rose-500/10 border-rose-500/20 text-rose-500"
+           :class="deviceStatus && deviceStatus.connected ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-rose-500/10 border-rose-500/20 text-rose-500'">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                      :class="deviceStatus && deviceStatus.connected ? 'bg-emerald-400' : 'bg-rose-400'"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2"
+                      :class="deviceStatus && deviceStatus.connected ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+            </span>
+            <span class="text-[10px] font-black uppercase tracking-wider" x-text="deviceStatus ? (deviceStatus.status + ' (' + deviceStatus.ip + ')') : 'Checking Machine...'"></span>
+        </div>
+
         <!-- Theme Toggle -->
         <button type="button" class="topbar-btn flex items-center justify-center !w-9 !h-9 !rounded-xl !bg-gray-100 dark:!bg-themeNavy/45 !border !border-gray-200 dark:!border-gray-800/80 hover:!text-themeBlue hover:scale-105 active:scale-95 transition-all cursor-pointer" onclick="toggleTheme()" aria-label="Toggle theme">
             <svg class="sun-icon hidden !w-5 !h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
