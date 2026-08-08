@@ -8,16 +8,16 @@
         @import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;900&display=swap');
 
         /* A4 Page Setup - Tight Margins to fit 3 cards per page */
-        @page { size: A4 portrait; margin: 15px 20px; }
-        body { font-family: 'Figtree', 'Helvetica', sans-serif; margin: 0; padding: 0; color: #000; font-size: 10px; }
+        @page { size: A4 portrait; margin: 10px 15px; }
+        body { font-family: 'Figtree', 'Helvetica', sans-serif; margin: 0; padding: 0; color: #000; font-size: 9.5px; }
         
-        /* 🚨 3 Cards per page - Height optimized to 255px to fit perfectly on A4 without spilling */
+        /* 🚨 3 Cards per page - Height optimized to 245px to fit perfectly on A4 without spilling */
         .admit-card-box { 
             border: 2px dashed #009A49; 
-            padding: 8px 10px;
+            padding: 6px 8px;
             border-radius: 10px; 
-            margin-bottom: 8px; 
-            height: 255px; /* 🚨 Optimized height for 3 cards per page */
+            margin-bottom: 6px; 
+            height: 245px; /* 🚨 Optimized height for 3 cards per page */
             box-sizing: border-box;
             position: relative;
             overflow: hidden;
@@ -26,31 +26,31 @@
         .page-break { page-break-after: always; }
         
         /* Header */
-        .header-table { width: 100%; border: none; margin-bottom: 3px; }
+        .header-table { width: 100%; border: none; margin-bottom: 2px; }
         .header-table td { border: none; vertical-align: top; }
-        .school-name { font-size: 13px; font-weight: 900; color: #002C53; text-transform: uppercase; letter-spacing: 0.5px; }
-        .school-address { font-size: 8px; font-weight: bold; color: #555; margin-bottom: 2px; }
-        .admit-title { background: #002C53; color: #fff; font-size: 9px; font-weight: 900; padding: 3px 12px; border-radius: 20px; display: inline-block; margin-top: 1px; text-transform: uppercase; letter-spacing: 0.8px; }
+        .school-name { font-size: 12px; font-weight: 900; color: #002C53; text-transform: uppercase; letter-spacing: 0.5px; }
+        .school-address { font-size: 8px; font-weight: bold; color: #555; margin-bottom: 1px; }
+        .admit-title { background: #002C53; color: #fff; font-size: 8.5px; font-weight: 900; padding: 2px 10px; border-radius: 20px; display: inline-block; margin-top: 1px; text-transform: uppercase; letter-spacing: 0.8px; }
         
         /* Student Info Table */
-        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 3px; }
-        .info-table td { padding: 2px 2px; font-size: 10px; border: none; border-bottom: 1px dashed #e2e8f0; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 2px; }
+        .info-table td { padding: 1.5px 2px; font-size: 9.5px; border: none; border-bottom: 1px dashed #e2e8f0; }
         .info-table .label { font-weight: bold; width: 18%; color: #009A49; }
         .info-table .val { width: 32%; font-weight: bold; text-transform: uppercase; color: #1a1a1a; }
         
         /* Routine Table */
-        .routine-table { width: 100%; border-collapse: collapse; margin-bottom: 3px; font-size: 8px; }
-        .routine-table th { background: #f8fafc; border: 1px solid #cbd5e1; padding: 3px 2px; color: #009A49; font-weight: 900; text-transform: uppercase; }
-        .routine-table td { border: 1px solid #cbd5e1; padding: 3px 2px; text-align: center; font-weight: bold; color: #334155; }
+        .routine-table { width: 100%; border-collapse: collapse; margin-bottom: 2px; font-size: 8px; }
+        .routine-table th { background: #f8fafc; border: 1px solid #cbd5e1; padding: 2px 2px; color: #009A49; font-weight: 900; text-transform: uppercase; }
+        .routine-table td { border: 1px solid #cbd5e1; padding: 2px 2px; text-align: center; font-weight: bold; color: #334155; }
         
         /* Signatures - Positioned absolutely at the bottom */
-        .signature-wrapper { position: absolute; bottom: 8px; left: 0; width: 100%; padding: 0 10px; box-sizing: border-box; }
+        .signature-wrapper { position: absolute; bottom: 6px; left: 0; width: 100%; padding: 0 8px; box-sizing: border-box; }
         .signatures { width: 100%; border: none; }
-        .signatures td { border: none; text-align: center; width: 33%; font-weight: bold; font-size: 9px; color: #475569; }
-        .sign-line { border-top: 1px solid #94a3b8; display: inline-block; width: 110px; padding-top: 3px; }
+        .signatures td { border: none; text-align: center; width: 33%; font-weight: bold; font-size: 8.5px; color: #475569; }
+        .sign-line { border-top: 1px solid #94a3b8; display: inline-block; width: 110px; padding-top: 2px; }
         
         /* Photo Box */
-        .photo-box { width: 50px; height: 60px; border: 1px solid #cbd5e1; text-align: center; line-height: 60px; font-size: 9px; color: #64748b; background: #f8fafc; float: right; object-fit: cover; border-radius: 5px; }
+        .photo-box { width: 45px; height: 55px; border: 1px solid #cbd5e1; text-align: center; line-height: 55px; font-size: 8.5px; color: #64748b; background: #f8fafc; float: right; object-fit: cover; border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -100,9 +100,9 @@
                 <tr>
                     <td style="width: 15%; text-align: center; vertical-align: middle;">
                         @if($logoSrc)
-                            <img src="{{ $logoSrc }}" style="width: 45px; height: 45px; border-radius: 50%; object-fit: contain;" alt="Logo" />
+                            <img src="{{ $logoSrc }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: contain;" alt="Logo" />
                         @else
-                            <div style="width: 45px; height: 45px; border: 1px solid #cbd5e1; border-radius: 50%; line-height: 45px; text-align: center; font-size: 8px; color: #64748b; font-weight: bold;">LOGO</div>
+                            <div style="width: 40px; height: 40px; border: 1px solid #cbd5e1; border-radius: 50%; line-height: 40px; text-align: center; font-size: 8px; color: #64748b; font-weight: bold;">LOGO</div>
                         @endif
                     </td>
                     <td style="width: 65%; text-align: center; vertical-align: top; padding-top: 1px;">
@@ -126,16 +126,22 @@
                     <td class="val" colspan="3" style="font-size: 11px; color: #000;">{{ $student->student_name ?? $student->first_name.' '.$student->last_name }}</td>
                 </tr>
                 <tr>
-                    <td class="label">Roll / ID:</td>
+                    <td class="label">Roll Number:</td>
+                    <td class="val">{{ $student->roll_number }}</td>
+                    <td class="label">Student ID:</td>
                     <td class="val">{{ $student->student_identity }}</td>
+                </tr>
+                <tr>
                     <td class="label">Class:</td>
                     <td class="val">{{ $schoolClass->class_name }}</td>
+                    <td class="label">Section:</td>
+                    <td class="val">{{ $student->section->section_name ?? 'N/A' }}</td>
                 </tr>
                 <tr>
                     <td class="label">Session:</td>
                     <td class="val">{{ $session->session_name }}</td>
-                    <td class="label">Section:</td>
-                    <td class="val">{{ $student->section->section_name ?? 'N/A' }}</td>
+                    <td class="label">Shift:</td>
+                    <td class="val">{{ $student->shift->shift_name ?? 'N/A' }}</td>
                 </tr>
             </table>
 
@@ -151,17 +157,30 @@
                     </thead>
                     <tbody>
                         @foreach($routines as $routine)
+                        @php
+                            $displayStartTime = \Carbon\Carbon::parse($routine->start_time)->format('h:i A');
+                            $displayEndTime = \Carbon\Carbon::parse($routine->end_time)->format('h:i A');
+                            
+                            $shiftName = strtolower($student->shift->shift_name ?? '');
+                            if (str_contains($shiftName, 'morning')) {
+                                $displayStartTime = '09:00 AM';
+                                $displayEndTime = '12:00 PM';
+                            } elseif (str_contains($shiftName, 'day')) {
+                                $displayStartTime = '12:00 PM';
+                                $displayEndTime = '03:00 PM';
+                            }
+                        @endphp
                         <tr>
                             <td>{{ \Carbon\Carbon::parse($routine->exam_date)->format('d M Y') }}</td>
                             <td style="text-align: left; padding-left: 5px;">{{ $routine->subject->subject_name }}</td>
-                            <td>{{ \Carbon\Carbon::parse($routine->start_time)->format('h:i A') }}</td>
-                            <td>{{ \Carbon\Carbon::parse($routine->end_time)->format('h:i A') }}</td>
+                            <td>{{ $displayStartTime }}</td>
+                            <td>{{ $displayEndTime }}</td>
                         </tr>
                         @endforeach
                     </tbody>
                 </table>
             @else
-                <div style="text-align: center; color: #94a3b8; font-size: 9px; margin: 8px 0;">(Exam Routine Not Published Yet)</div>
+                <div style="text-align: center; color: #94a3b8; font-size: 8.5px; margin: 4px 0;">(Exam Routine Not Published Yet)</div>
             @endif
 
             <div class="signature-wrapper">
