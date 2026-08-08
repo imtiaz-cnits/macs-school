@@ -32,7 +32,7 @@
         </div>
         <div class="flex items-center gap-3">
              <!-- Device Connection Status (Width-wise inline badge) -->
-             <div class="px-4 py-2 rounded-xl border flex items-center gap-2 backdrop-blur-sm transition-all"
+             <div class="px-4 py-3 rounded-xl border flex items-center gap-2 backdrop-blur-sm transition-all"
                   :class="deviceStatus && deviceStatus.connected ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-rose-500/10 border-rose-500/20 text-rose-500'">
                  <span class="relative flex h-2 w-2">
                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"

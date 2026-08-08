@@ -19,16 +19,50 @@
        🔥 EXAM PRINT CSS (A4 Portrait Formal)
        ========================================== */
     @media print {
-        @page { size: A4 portrait; margin: 15mm; }
-        body * { visibility: hidden; }
+        @page { size: A4 portrait; margin: 10mm; }
+        body * { display: none !important; }
         
-        #printableRoutine, #printableRoutine * { 
-            visibility: visible; color: #000 !important; background: #fff !important;
-            -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+        body.print-single #printableRoutine, 
+        body.print-single #printableRoutine * { 
+            display: block !important;
+            visibility: visible !important; 
+            color: #000 !important; 
+            background: #fff !important;
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important;
         }
         
-        #printableRoutine { position: absolute; left: 0; top: 0; width: 100%; padding: 0; box-shadow: none !important; border: none !important; }
-        .no-print { display: none !important; }
+        body.print-single #printableRoutine { 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            padding: 0; 
+            box-shadow: none !important; 
+            border: none !important; 
+        }
+
+        body.print-dual #dualShiftPrintLayout, 
+        body.print-dual #dualShiftPrintLayout * { 
+            display: block !important;
+            visibility: visible !important; 
+            color: #000 !important; 
+            background: #fff !important;
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important;
+        }
+        
+        body.print-dual #dualShiftPrintLayout { 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            padding: 0; 
+            box-shadow: none !important; 
+            border: none !important; 
+        }
+        
+        .page-break { page-break-before: always; }
 
         /* Print Header - Formal School Style */
         .school-header { text-align: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 20px; }
@@ -37,7 +71,6 @@
         .school-header p { font-size: 16px !important; margin: 5px 0 0 0 !important; font-weight: bold; }
 
         /* Exam Table */
-        table { width: 100% !important; border-collapse: collapse !important; border: 2px solid #000 !important; }
         th, td { border: 1px solid #000 !important; padding: 12px !important; text-align: center; font-size: 16px !important; }
         th { background-color: #e5e7eb !important; font-weight: bold !important; text-transform: uppercase; }
         td { font-weight: 600 !important; }
@@ -59,15 +92,25 @@
             </h1>
             <p class="text-sm font-medium text-gray-555 dark:text-gray-400 mt-1">Manage exam schedules, subject slots, timings, and print formal sheets</p>
         </div>
+        <div class="flex items-center gap-2">
+            <button type="button" @click="openDualShiftModal()" class="bg-gradient-to-r from-themeBlue to-themeGreen text-white px-5 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md hover:-translate-y-0.5 hover:shadow-lg flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                Dual Shift Print
+            </button>
+        </div>
     </div>
 
     <!-- Main Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        <!-- Left Column: Add Exam Subject Form -->
+        <!-- Left Column: Add/Edit Exam Subject Form -->
         <div class="lg:col-span-4 no-print">
             <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
-                <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-4 mb-6">Add Exam Subject</h3>
+                <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-4 mb-6">
+                    <span x-text="editMode ? 'Edit Exam Subject' : 'Add Exam Subject'"></span>
+                </h3>
                 
                 <form @submit.prevent="saveSchedule()">
                     <div class="space-y-4">
@@ -98,10 +141,10 @@
                                 <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Exam Name *</label>
                                 <button type="button" @click="dropdownOpen = dropdownOpen === 'exam' ? null : 'exam'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                                     <span class="truncate" x-text="examText"></span>
-                                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <div x-show="dropdownOpen === 'exam'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
-                                    <button type="button" @click="selectExam('', 'Select Exam')" class="w-full text-left px-4 py-2 text-xs hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-450 transition-colors">Select Exam</button>
+                                    <button type="button" @click="selectExam('', 'Select Exam')" class="w-full text-left px-4 py-2 text-xs hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-455 transition-colors">Select Exam</button>
                                     @foreach($exams as $exam)
                                         <button type="button" @click="selectExam('{{ $exam->id }}', '{{ $exam->name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.exam_id == '{{ $exam->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                                             <span>{{ $exam->name }}</span>
@@ -119,7 +162,7 @@
                             <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Class *</label>
                             <button type="button" @click="dropdownOpen = dropdownOpen === 'class' ? null : 'class'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                                 <span class="truncate" x-text="classText"></span>
-                                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                             </button>
                             <div x-show="dropdownOpen === 'class'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
                                 <button type="button" @click="selectClass('', 'Select Class...')" class="w-full text-left px-4 py-2 text-xs hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-455 transition-colors">Select Class...</button>
@@ -139,7 +182,7 @@
                             <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Subject *</label>
                             <button type="button" @click="dropdownOpen = dropdownOpen === 'subject' ? null : 'subject'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                                 <span class="truncate" x-text="subjectText"></span>
-                                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                             </button>
                             <div x-show="dropdownOpen === 'subject'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
                                 <button type="button" @click="selectSubject('', 'Select Subject...')" class="w-full text-left px-4 py-2 text-xs hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-455 transition-colors">Select Subject...</button>
@@ -161,7 +204,7 @@
                                 <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Exam Date *</label>
                                 <button type="button" @click="show = !show" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                                     <span class="truncate" x-text="formatDisplay(value)"></span>
-                                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 </button>
                                 <div x-show="show" x-cloak class="absolute z-50 w-64 mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl p-3" x-transition>
                                     <div class="flex items-center justify-between mb-3">
@@ -224,7 +267,7 @@
                                 <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">End Time *</label>
                                 <button type="button" @click="show = !show" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                                     <span class="truncate" x-text="formatDisplay(value)"></span>
-                                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 </button>
                                 <div x-show="show" x-cloak class="absolute z-50 w-48 mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl p-3" x-transition>
                                     <div class="flex gap-2 justify-center items-center">
@@ -251,81 +294,541 @@
                             </div>
                         </div>
 
-                        <!-- Action Button -->
-                        <button type="submit" :disabled="saving" class="w-full bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all uppercase tracking-widest text-xs active:scale-95 flex items-center justify-center gap-2">
-                            <span x-text="saving ? 'Saving...' : '+ Add to Schedule'"></span>
-                        </button>
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3">
+                            <button type="submit" :disabled="saving" class="flex-grow bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all uppercase tracking-widest text-xs active:scale-95 flex items-center justify-center gap-2">
+                                <span x-text="saving ? 'Saving...' : (editMode ? 'Update Schedule' : '+ Add to Schedule')"></span>
+                            </button>
+                            <button x-show="editMode" type="button" @click="cancelEdit()" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-white font-black py-4 px-6 rounded-xl text-xs uppercase tracking-widest transition-all">
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Right Column: Exam Routine Schedule Viewer Sheet -->
+        <!-- Right Column: Exam Routine Schedule Viewer Sheet & Saved Routines -->
         <div class="lg:col-span-8">
-            <div class="flex justify-between items-center mb-6 no-print">
-                <span x-show="loading" class="text-xs font-bold text-gray-500 uppercase animate-pulse">Syncing...</span>
-                <button type="button" @click="window.print()" class="ml-auto bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                    Print Schedule
-                </button>
-            </div>
-
-            <!-- Placeholder select information -->
-            <div x-show="noData" class="text-center py-20 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl no-print">
-                <h4 class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Select Details</h4>
-                <p class="text-xs text-gray-450 dark:text-gray-500 font-bold mt-2">Choose Session, Exam & Class to view the schedule.</p>
-            </div>
-
-            <!-- Routine Board table sheet -->
-            <div x-show="!noData" class="bg-white dark:bg-themeNavy rounded-3xl p-6 border border-gray-100 dark:border-white/[0.06] shadow-sm overflow-x-auto" id="printableRoutine">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 no-print">
+                <!-- Tab Headers -->
+                <div class="flex bg-gray-100 dark:bg-themeDark p-1 rounded-2xl border border-gray-200/50 dark:border-white/[0.04]">
+                    <button type="button" @click="activeTab = 'planner'" class="px-5 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all" :class="activeTab === 'planner' ? 'bg-white dark:bg-themeNavy text-themeBlue shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'">
+                        Routine Planner
+                    </button>
+                    <button type="button" @click="activeTab = 'saved'; loadSavedRoutines();" class="px-5 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all" :class="activeTab === 'saved' ? 'bg-white dark:bg-themeNavy text-themeBlue shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'">
+                        Saved Routines
+                    </button>
+                </div>
                 
-                <!-- School print header -->
-                <div class="school-header hidden print:block mb-6">
-                    <h1>MACS School & College</h1>
-                    <h3 x-text="printExamName">Term Examination - 2026</h3>
-                    <p x-text="printClassInfo">Class: Five</p>
+                <div class="flex items-center gap-2">
+                    <span x-show="loading" class="text-xs font-bold text-gray-555 uppercase animate-pulse">Syncing...</span>
+                    <button x-show="activeTab === 'planner'" type="button" @click="printSingleRoutine()" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                        Print Schedule
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 1: Routine Planner Content -->
+            <div x-show="activeTab === 'planner'" class="space-y-6">
+                <!-- Placeholder select information -->
+                <div x-show="noData" class="text-center py-20 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl no-print">
+                    <h4 class="text-xs font-black text-gray-400 dark:text-gray-550 uppercase tracking-widest">Select Details</h4>
+                    <p class="text-xs text-gray-450 dark:text-gray-500 font-bold mt-2">Choose Session, Exam & Class to view the schedule.</p>
                 </div>
 
-                <div class="table-container bg-transparent !border-none !shadow-none !mt-0 !mb-0">
-                    <table class="w-full text-left border-collapse table">
+                <!-- Routine Board table sheet -->
+                <div x-show="!noData" class="bg-white dark:bg-themeNavy rounded-3xl p-6 border border-gray-100 dark:border-white/[0.06] shadow-sm overflow-x-auto" id="printableRoutine">
+                    
+                    <!-- School print header -->
+                    <div class="school-header hidden print:block mb-6">
+                        <h1>MACS School & College</h1>
+                        <h3 x-text="printExamName">Term Examination - 2026</h3>
+                        <p x-text="printClassInfo">Class: Five</p>
+                    </div>
+
+                    <div class="table-container bg-transparent !border-none !shadow-none !mt-0 !mb-0">
+                        <table class="w-full text-left border-collapse table">
+                            <thead>
+                                <tr class="!bg-transparent">
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Date & Day</th>
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Subject</th>
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Time</th>
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Room</th>
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center no-print w-24">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06]">
+                                <template x-for="slot in routineSlots" :key="slot.id">
+                                    <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                                        <td class="py-0 px-0">
+                                            <span class="font-bold text-gray-900 dark:text-gray-100 text-sm" x-text="formatDate(slot.exam_date)"></span>
+                                        </td>
+                                        <td class="py-0 px-0">
+                                            <span class="font-bold text-gray-900 dark:text-gray-100 text-sm" x-text="slot.subject ? (slot.subject.subject_name || slot.subject.name) : 'N/A'"></span>
+                                        </td>
+                                        <td class="py-0 px-0">
+                                            <span class="inline-block px-2.5 py-1 text-[10px] font-bold text-themeBlue bg-themeBlue/10 rounded-lg" x-text="`${formatTime(slot.start_time)} - ${formatTime(slot.end_time)}`"></span>
+                                        </td>
+                                        <td class="py-0 px-0 text-sm font-bold text-gray-600 dark:text-gray-400" x-text="slot.room_number || 'TBA'"></td>
+                                        <td class="py-0 px-0 text-center no-print">
+                                            <div class="flex items-center justify-center gap-2">
+                                                <button type="button" @click="startEditRoutine(slot)" class="action-btn text-themeBlue hover:text-themeBlue hover:border-themeBlue" title="Edit Slot">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                </button>
+                                                <button type="button" @click="deleteRoutine(slot.id)" class="action-btn text-red-600 hover:text-red-800 hover:border-red-600" title="Delete Slot">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <template x-if="routineSlots.length === 0">
+                                    <tr>
+                                        <td colspan="5" class="py-12 text-center text-gray-400 font-bold uppercase tracking-wider">No exams scheduled yet</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Saved Routines Content -->
+            <div x-show="activeTab === 'saved'" class="space-y-6" x-cloak>
+                <div class="bg-white dark:bg-themeNavy rounded-3xl p-6 border border-gray-100 dark:border-white/[0.06] shadow-sm overflow-x-auto animate-fadeIn">
+                    <div class="table-container bg-transparent !border-none !shadow-none !mt-0 !mb-0">
+                        <table class="w-full text-left border-collapse table">
+                            <thead>
+                                <tr class="!bg-transparent">
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Session</th>
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Exam Name</th>
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Scheduled Classes</th>
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Date Range</th>
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center w-36">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06]">
+                                <template x-for="r in savedRoutines" :key="`${r.session_year_id}-${r.exam_id}`">
+                                    <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                                        <td class="py-0 px-0">
+                                            <span class="font-mono font-black text-gray-700 dark:text-gray-300 text-sm" x-text="r.session_name"></span>
+                                        </td>
+                                        <td class="py-0 px-0">
+                                            <span class="font-bold text-gray-900 dark:text-gray-100 text-sm" x-text="r.exam_name"></span>
+                                        </td>
+                                        <td class="py-0 px-0 text-sm font-semibold text-gray-650 dark:text-gray-450" x-text="r.classes || 'N/A'"></td>
+                                        <td class="py-0 px-0 text-sm font-bold text-gray-650 dark:text-gray-450 font-mono" x-text="r.date_range"></td>
+                                        <td class="py-0 px-0 text-center">
+                                            <div class="flex items-center justify-center gap-2">
+                                                <button type="button" @click="viewSavedRoutine(r)" class="action-btn text-themeBlue hover:text-themeBlue hover:border-themeBlue" title="View/Edit Planner">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                </button>
+                                                <button type="button" @click="deleteSavedRoutine(r)" class="action-btn text-red-600 hover:text-red-800 hover:border-red-600" title="Delete Full Routine">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <template x-if="savedRoutines.length === 0">
+                                    <tr>
+                                        <td colspan="5" class="py-12 text-center text-gray-400 font-bold uppercase tracking-wider">No routines created yet</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dual Shift Print Configuration Modal -->
+    <div x-show="showPrintModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto no-print flex items-center justify-center p-4 bg-black/40 backdrop-blur-md" x-transition>
+        <div class="bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-3xl p-6 w-full max-w-4xl shadow-2xl relative">
+            <h3 class="text-lg font-black text-gray-800 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-4">
+                Dual Shift Print Setup
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[60vh] overflow-y-auto pr-2">
+                <!-- Left: Shift 1 Config -->
+                <div class="space-y-4 p-4 bg-blue-50/15 dark:bg-themeBlue/[0.02] border border-themeBlue/10 rounded-2xl">
+                    <h4 class="text-xs font-black text-themeBlue uppercase tracking-widest mb-2 border-b border-themeBlue/15 pb-2">Shift 1 (Top Half)</h4>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Shift Name</label>
+                        <input type="text" x-model="printConfig.shift1.name" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Classes Range Label</label>
+                        <input type="text" x-model="printConfig.shift1.classRange" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Timing Label</label>
+                        <input type="text" x-model="printConfig.shift1.timeLabel" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Footnote Note (Optional)</label>
+                        <input type="text" x-model="printConfig.shift1.footnote" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">Include Classes</label>
+                        <div class="grid grid-cols-2 gap-2 bg-white dark:bg-themeDark border border-gray-100 dark:border-gray-800 rounded-xl p-3 max-h-36 overflow-y-auto">
+                            @foreach($classes as $c)
+                                <label class="flex items-center gap-2 text-xs font-bold text-gray-700 dark:text-gray-300 cursor-pointer">
+                                    <input type="checkbox" value="{{ $c->id }}" x-model="printConfig.shift1.classes" class="rounded text-themeBlue focus:ring-themeBlue/30">
+                                    <span>{{ $c->class_name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Shift 2 Config -->
+                <div class="space-y-4 p-4 bg-green-50/15 dark:bg-themeGreen/[0.02] border border-themeGreen/10 rounded-2xl">
+                    <h4 class="text-xs font-black text-themeGreen uppercase tracking-widest mb-2 border-b border-themeGreen/15 pb-2">Shift 2 (Bottom Half)</h4>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Shift Name</label>
+                        <input type="text" x-model="printConfig.shift2.name" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Classes Range Label</label>
+                        <input type="text" x-model="printConfig.shift2.classRange" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Timing Label</label>
+                        <input type="text" x-model="printConfig.shift2.timeLabel" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Footnote Note (Optional)</label>
+                        <input type="text" x-model="printConfig.shift2.footnote" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">Include Classes</label>
+                        <div class="grid grid-cols-2 gap-2 bg-white dark:bg-themeDark border border-gray-100 dark:border-gray-800 rounded-xl p-3 max-h-36 overflow-y-auto">
+                            @foreach($classes as $c)
+                                <label class="flex items-center gap-2 text-xs font-bold text-gray-700 dark:text-gray-300 cursor-pointer">
+                                    <input type="checkbox" value="{{ $c->id }}" x-model="printConfig.shift2.classes" class="rounded text-themeBlue focus:ring-themeBlue/30">
+                                    <span>{{ $c->class_name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Full-Width: Announcement Block Config -->
+                <div class="md:col-span-2 space-y-4 p-4 bg-gray-50 dark:bg-themeNavy border border-gray-200 dark:border-white/[0.06] rounded-2xl">
+                    <h4 class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-widest mb-2 border-b border-gray-200 dark:border-white/[0.06] pb-2">Parent Announcement Flyer (Back Side)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Announcement Title</label>
+                            <input type="text" x-model="printConfig.announcement.title" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Dues Payment Limit Date</label>
+                            <input type="text" x-model="printConfig.announcement.dueLimit" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Announcement Text</label>
+                        <textarea x-model="printConfig.announcement.text" rows="3" class="w-full p-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Principal Seal Title</label>
+                            <input type="text" x-model="printConfig.announcement.principalTitle" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Principal Name / Seal Details</label>
+                            <input type="text" x-model="printConfig.announcement.principalName" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Contact Phone</label>
+                            <input type="text" x-model="printConfig.announcement.phone" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6 border-t border-gray-100 dark:border-white/[0.06] pt-4">
+                <button type="button" @click="showPrintModal = false" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold px-6 py-3 rounded-xl text-xs uppercase tracking-widest transition-all">
+                    Close
+                </button>
+                <button type="button" @click="generateAndPrintDual()" class="bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all uppercase tracking-widest text-xs">
+                    Print Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dual Shift Print Only Container -->
+    <div id="dualShiftPrintLayout" class="hidden print:block text-black bg-white" style="font-family: 'Inter', sans-serif;">
+        <!-- PAGE 1: ROUTINES FRONT PAGE -->
+        <div class="print-page flex flex-col justify-between" style="height: 277mm; padding: 5mm 0; box-sizing: border-box;">
+            
+            <!-- SHIFT 1 TABLE (TOP HALF) -->
+            <div class="flex flex-col justify-between" style="height: 128mm; border-bottom: 2px dashed #000; padding-bottom: 5mm; box-sizing: border-box; overflow: hidden;">
+                <div>
+                    <!-- Header -->
+                    <div class="text-center" style="margin-bottom: 3mm;">
+                        <h2 class="text-xl font-extrabold uppercase tracking-wide" style="margin: 0;">MACS School & College</h2>
+                        <h3 class="text-sm font-extrabold underline uppercase" style="margin: 2px 0 0 0;" x-text="printConfig.announcement.title">2nd Term Examination - 2026</h3>
+                        <div class="inline-block border border-black px-4 py-0.5 text-xs font-black uppercase tracking-wider" style="margin-top: 4px;">Routine</div>
+                    </div>
+                    
+                    <!-- Meta Info Row -->
+                    <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 3mm;">
+                        <div class="border border-black px-3 py-1 bg-gray-100" x-text="printConfig.shift1.name">First Shift</div>
+                        <div class="border border-black px-4 py-1" x-text="printConfig.shift1.classRange">Play - 4th</div>
+                        <div class="border border-black px-3 py-1" x-text="printConfig.shift1.timeLabel">Time: 09:00 AM to 11:00 AM</div>
+                    </div>
+                    
+                    <!-- Table -->
+                    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; font-size: 11px;">
                         <thead>
-                            <tr class="!bg-transparent">
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Date & Day</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Subject</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Time</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Room</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center no-print w-24">Action</th>
+                            <tr style="background-color: #f3f4f6;">
+                                <th style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 15%;">Date</th>
+                                <th style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 15%;">Day</th>
+                                <template x-for="clsName in shift1ClassNames">
+                                    <th style="border: 1px solid #000; padding: 4px; font-weight: bold;" x-text="clsName"></th>
+                                </template>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06]">
-                            <template x-for="slot in routineSlots" :key="slot.id">
-                                <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
-                                    <td class="py-0 px-0">
-                                        <span class="font-bold text-gray-900 dark:text-gray-100 text-sm" x-text="formatDate(slot.exam_date)"></span>
-                                    </td>
-                                    <td class="py-0 px-0">
-                                        <span class="font-bold text-gray-900 dark:text-gray-100 text-sm" x-text="slot.subject ? (slot.subject.subject_name || slot.subject.name) : 'N/A'"></span>
-                                    </td>
-                                    <td class="py-0 px-0">
-                                        <span class="inline-block px-2.5 py-1 text-[10px] font-bold text-themeBlue bg-themeBlue/10 rounded-lg" x-text="`${formatTime(slot.start_time)} - ${formatTime(slot.end_time)}`"></span>
-                                    </td>
-                                    <td class="py-0 px-0 text-sm font-bold text-gray-600 dark:text-gray-400" x-text="slot.room_number || 'TBA'"></td>
-                                    <td class="py-0 px-0 text-center no-print">
-                                        <div class="flex items-center justify-center">
-                                            <button type="button" @click="deleteRoutine(slot.id)" class="action-btn text-red-600 hover:text-red-800 hover:border-red-600" title="Delete Slot">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </template>
-                            <template x-if="routineSlots.length === 0">
+                        <tbody>
+                            <template x-for="row in shift1Rows">
                                 <tr>
-                                    <td colspan="5" class="py-12 text-center text-gray-400 font-bold uppercase tracking-wider">No exams scheduled yet</td>
+                                    <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: center; font-family: monospace;" x-text="row.formattedDate"></td>
+                                    <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: center;" x-text="row.day"></td>
+                                    <template x-for="clsId in printConfig.shift1.classes">
+                                        <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold;" x-text="row.subjects[clsId] || 'X'"></td>
+                                    </template>
                                 </tr>
                             </template>
                         </tbody>
                     </table>
+                </div>
+                
+                <!-- Footnote -->
+                <div class="text-center text-[10px] font-bold" x-show="printConfig.shift1.footnote" x-text="printConfig.shift1.footnote" style="margin-top: 3px;"></div>
+            </div>
+
+            <!-- SHIFT 2 TABLE (BOTTOM HALF) -->
+            <div class="flex flex-col justify-between" style="height: 128mm; pt-5mm; box-sizing: border-box; overflow: hidden;">
+                <div>
+                    <!-- Header -->
+                    <div class="text-center" style="margin-bottom: 3mm;">
+                        <h2 class="text-xl font-extrabold uppercase tracking-wide" style="margin: 0;">MACS School & College</h2>
+                        <h3 class="text-sm font-extrabold underline uppercase" style="margin: 2px 0 0 0;" x-text="printConfig.announcement.title">2nd Term Examination - 2026</h3>
+                        <div class="inline-block border border-black px-4 py-0.5 text-xs font-black uppercase tracking-wider" style="margin-top: 4px;">Routine</div>
+                    </div>
+                    
+                    <!-- Meta Info Row -->
+                    <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 3mm;">
+                        <div class="border border-black px-3 py-1 bg-gray-100" x-text="printConfig.shift2.name">Second Shift</div>
+                        <div class="border border-black px-4 py-1" x-text="printConfig.shift2.classRange">5th - 9th</div>
+                        <div class="border border-black px-3 py-1" x-text="printConfig.shift2.timeLabel">Time: 12:00 PM to 02:00 PM</div>
+                    </div>
+                    
+                    <!-- Table -->
+                    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; font-size: 11px;">
+                        <thead>
+                            <tr style="background-color: #f3f4f6;">
+                                <th style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 15%;">Date</th>
+                                <th style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 15%;">Day</th>
+                                <template x-for="clsName in shift2ClassNames">
+                                    <th style="border: 1px solid #000; padding: 4px; font-weight: bold;" x-text="clsName"></th>
+                                </template>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="row in shift2Rows">
+                                <tr>
+                                    <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: center; font-family: monospace;" x-text="row.formattedDate"></td>
+                                    <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: center;" x-text="row.day"></td>
+                                    <template x-for="clsId in printConfig.shift2.classes">
+                                        <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold;" x-text="row.subjects[clsId] || 'X'"></td>
+                                    </template>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Footnote -->
+                <div class="text-center text-[10px] font-bold" x-show="printConfig.shift2.footnote" x-text="printConfig.shift2.footnote" style="margin-top: 3px;"></div>
+            </div>
+            
+        </div>
+
+        <div class="page-break"></div>
+
+        <!-- PAGE 2: PARENT FLYER BACK PAGE -->
+        <div class="print-page flex flex-col justify-between" style="height: 277mm; padding: 5mm 0; box-sizing: border-box;">
+            
+            <!-- FLYER TOP HALF -->
+            <div class="flex flex-col justify-between" style="height: 128mm; border-bottom: 2px dashed #000; padding-bottom: 5mm; box-sizing: border-box; overflow: hidden; font-size: 11px; line-height: 1.4;">
+                <div class="space-y-2">
+                    <div class="text-center">
+                        <p class="font-extrabold uppercase text-[10px]" style="margin: 0;">Bismillahir Rahmanir Rahim</p>
+                        <h3 class="text-lg font-black uppercase tracking-wide mt-1" style="margin: 0 0 2px 0;">MACS School & College</h3>
+                        <p class="text-[10px] font-bold" x-text="`${printConfig.announcement.title} Announcement`"></p>
+                    </div>
+                    
+                    <div class="font-bold">
+                        <p>Dear Guardian & Student,</p>
+                        <p class="text-justify font-semibold mt-1" style="text-indent: 1.5em;" x-text="printConfig.announcement.text"></p>
+                    </div>
+
+                    <!-- Details & Fees Section -->
+                    <div class="grid grid-cols-12 gap-4 items-start" style="margin-top: 4px;">
+                        <!-- Student details line fields -->
+                        <div class="col-span-8 space-y-2">
+                            <div class="flex items-center gap-2 border-b border-black pb-0.5">
+                                <span class="font-bold flex-shrink-0">Student Name:</span>
+                                <span class="flex-grow font-semibold"></span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="flex items-center gap-1 border-b border-black pb-0.5">
+                                    <span class="font-bold">Class:</span>
+                                    <span class="font-semibold"></span>
+                                </div>
+                                <div class="flex items-center gap-1 border-b border-black pb-0.5">
+                                    <span class="font-bold">Sec:</span>
+                                    <span class="font-semibold"></span>
+                                </div>
+                                <div class="flex items-center gap-1 border-b border-black pb-0.5">
+                                    <span class="font-bold">Roll:</span>
+                                    <span class="font-semibold"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Fees Checklist Table -->
+                        <div class="col-span-4">
+                            <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 10px;">
+                                <thead>
+                                    <tr style="background-color: #f3f4f6;">
+                                        <th style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left;">Particulars</th>
+                                        <th style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: right;">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold;">Tuition Fee</td>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: right;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold;">Exam Fee</td>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: right;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold;">Others</td>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: right;"></td>
+                                    </tr>
+                                    <tr style="background-color: #f9fafb;">
+                                        <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold;">Total =</td>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: right;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Signatures & Contact -->
+                <div class="flex justify-between items-end" style="margin-top: 5mm;">
+                    <div class="text-center w-36">
+                        <div class="border-t border-black pt-1 font-bold text-[10px]">Class Teacher's Signature</div>
+                    </div>
+                    <div class="text-center text-[10px] font-extrabold border border-dashed border-black px-3 py-1 rounded" x-show="printConfig.announcement.phone" x-text="`Contact: ${printConfig.announcement.phone}`"></div>
+                    <div class="text-center w-36">
+                        <p class="font-extrabold text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalName"></p>
+                        <div class="border-t border-black pt-1 font-bold text-[10px]" x-text="printConfig.announcement.principalTitle"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FLYER BOTTOM HALF (DUPLICATE) -->
+            <div class="flex flex-col justify-between" style="height: 128mm; pt-5mm; box-sizing: border-box; overflow: hidden; font-size: 11px; line-height: 1.4;">
+                <div class="space-y-2">
+                    <div class="text-center">
+                        <p class="font-extrabold uppercase text-[10px]" style="margin: 0;">Bismillahir Rahmanir Rahim</p>
+                        <h3 class="text-lg font-black uppercase tracking-wide mt-1" style="margin: 0 0 2px 0;">MACS School & College</h3>
+                        <p class="text-[10px] font-bold" x-text="`${printConfig.announcement.title} Announcement`"></p>
+                    </div>
+                    
+                    <div class="font-bold">
+                        <p>Dear Guardian & Student,</p>
+                        <p class="text-justify font-semibold mt-1" style="text-indent: 1.5em;" x-text="printConfig.announcement.text"></p>
+                    </div>
+
+                    <!-- Details & Fees Section -->
+                    <div class="grid grid-cols-12 gap-4 items-start" style="margin-top: 4px;">
+                        <!-- Student details line fields -->
+                        <div class="col-span-8 space-y-2">
+                            <div class="flex items-center gap-2 border-b border-black pb-0.5">
+                                <span class="font-bold flex-shrink-0">Student Name:</span>
+                                <span class="flex-grow font-semibold"></span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="flex items-center gap-1 border-b border-black pb-0.5">
+                                    <span class="font-bold">Class:</span>
+                                    <span class="font-semibold"></span>
+                                </div>
+                                <div class="flex items-center gap-1 border-b border-black pb-0.5">
+                                    <span class="font-bold">Sec:</span>
+                                    <span class="font-semibold"></span>
+                                </div>
+                                <div class="flex items-center gap-1 border-b border-black pb-0.5">
+                                    <span class="font-bold">Roll:</span>
+                                    <span class="font-semibold"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Fees Checklist Table -->
+                        <div class="col-span-4">
+                            <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 10px;">
+                                <thead>
+                                    <tr style="background-color: #f3f4f6;">
+                                        <th style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left;">Particulars</th>
+                                        <th style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: right;">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold;">Tuition Fee</td>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: right;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold;">Exam Fee</td>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: right;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold;">Others</td>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: right;"></td>
+                                    </tr>
+                                    <tr style="background-color: #f9fafb;">
+                                        <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold;">Total =</td>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: right;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Signatures & Contact -->
+                <div class="flex justify-between items-end" style="margin-top: 5mm;">
+                    <div class="text-center w-36">
+                        <div class="border-t border-black pt-1 font-bold text-[10px]">Class Teacher's Signature</div>
+                    </div>
+                    <div class="text-center text-[10px] font-extrabold border border-dashed border-black px-3 py-1 rounded" x-show="printConfig.announcement.phone" x-text="`Contact: ${printConfig.announcement.phone}`"></div>
+                    <div class="text-center w-36">
+                        <p class="font-extrabold text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalName"></p>
+                        <div class="border-t border-black pt-1 font-bold text-[10px]" x-text="printConfig.announcement.principalTitle"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -492,6 +995,42 @@
             printExamName: 'Term Examination',
             printClassInfo: 'Class Name',
             
+            activeTab: 'planner',
+            savedRoutines: [],
+            editMode: false,
+            editingSlotId: null,
+            showPrintModal: false,
+            
+            shift1ClassNames: [],
+            shift2ClassNames: [],
+            shift1Rows: [],
+            shift2Rows: [],
+            
+            printConfig: {
+                shift1: {
+                    name: 'First Shift',
+                    classRange: 'Play - Four',
+                    timeLabel: 'Time: 09:00 AM - 11:30 AM',
+                    footnote: 'N.B. Admit Card will not be issued without clearance of all dues.',
+                    classes: []
+                },
+                shift2: {
+                    name: 'Second Shift',
+                    classRange: 'Five - Ten',
+                    timeLabel: 'Time: 12:00 PM - 02:30 PM',
+                    footnote: 'N.B. Admit Card will not be issued without clearance of all dues.',
+                    classes: []
+                },
+                announcement: {
+                    title: '2nd Term Examination - 2026',
+                    dueLimit: 'August 15, 2026',
+                    text: 'Dear Guardian/Student, all dues (including tuition and exam fees) must be cleared by the due limit date. If not cleared, the student will not be allowed to sit for the exams.',
+                    principalTitle: 'Principal',
+                    principalName: 'M.A. Rashid',
+                    phone: '+880 1712-345678'
+                }
+            },
+
             form: {
                 session_year_id: '{{ $sessions->first()->id ?? "" }}',
                 exam_id: '',
@@ -510,6 +1049,15 @@
             
             init() {
                 this.loadRoutine();
+                let cached = localStorage.getItem('dualShiftPrintConfig');
+                if (cached) {
+                    try {
+                        let parsed = JSON.parse(cached);
+                        this.printConfig = { ...this.printConfig, ...parsed };
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
             },
             
             selectSession(id, name) {
@@ -540,6 +1088,7 @@
             },
             
             formatTime(timeStr) {
+                if (!timeStr) return '';
                 let [hours, minutes] = timeStr.split(':');
                 let ampm = hours >= 12 ? 'PM' : 'AM';
                 hours = hours % 12 || 12;
@@ -547,6 +1096,7 @@
             },
 
             formatDate(dateString) {
+                if (!dateString) return '';
                 const options = { day: '2-digit', month: 'short', year: 'numeric', weekday: 'long' };
                 return new Date(dateString).toLocaleDateString('en-US', options);
             },
@@ -585,19 +1135,30 @@
                 
                 this.saving = true;
                 try {
-                    const res = await axios.post('/exam-routine/store', this.form, { 
-                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content } 
-                    });
+                    let res;
+                    if (this.editMode) {
+                        res = await axios.put(`/exam-routine/update/${this.editingSlotId}`, this.form, {
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                        });
+                    } else {
+                        res = await axios.post('/exam-routine/store', this.form, { 
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content } 
+                        });
+                    }
                     
                     if (res.data.status === 'error') {
                         showModal('Error', res.data.message, 'danger');
                     } else {
                         showSuccess(res.data.message);
                         
-                        // Clear specific input fields for next subject entry
+                        // Reset input values
                         this.form.subject_id = '';
                         this.subjectText = 'Select Subject...';
                         this.form.room_number = '';
+                        
+                        if (this.editMode) {
+                            this.cancelEdit();
+                        }
                         
                         this.loadRoutine();
                     }
@@ -610,6 +1171,35 @@
                 } finally {
                     this.saving = false;
                 }
+            },
+            
+            startEditRoutine(slot) {
+                this.editMode = true;
+                this.editingSlotId = slot.id;
+                this.form.session_year_id = slot.session_year_id;
+                this.form.exam_id = slot.exam_id;
+                this.form.class_id = slot.class_id;
+                this.form.subject_id = slot.subject_id;
+                this.form.exam_date = slot.exam_date;
+                this.form.room_number = slot.room_number || '';
+                this.form.start_time = slot.start_time.substring(0, 5);
+                this.form.end_time = slot.end_time.substring(0, 5);
+                
+                // Resolve texts
+                @foreach($classes as $c)
+                    if (slot.class_id == '{{ $c->id }}') this.classText = '{{ $c->class_name }}';
+                @endforeach
+                @foreach($subjects as $s)
+                    if (slot.subject_id == '{{ $s->id }}') this.subjectText = '{{ $s->subject_name ?? $s->name }}';
+                @endforeach
+            },
+            
+            cancelEdit() {
+                this.editMode = false;
+                this.editingSlotId = null;
+                this.form.subject_id = '';
+                this.subjectText = 'Select Subject...';
+                this.form.room_number = '';
             },
             
             async deleteRoutine(id) {
@@ -628,6 +1218,182 @@
                         }
                         showModal('Error', errMsg, 'danger');
                     }
+                }
+            },
+
+            async loadSavedRoutines() {
+                this.loading = true;
+                try {
+                    const res = await axios.get('/exam-routine/saved');
+                    this.savedRoutines = res.data.routines;
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            viewSavedRoutine(routine) {
+                this.form.session_year_id = routine.session_year_id;
+                this.form.exam_id = routine.exam_id;
+                this.sessionText = routine.session_name;
+                this.examText = routine.exam_name;
+                
+                // Switch class selection to the first class that is part of this routine
+                // to automatically populate the planner table
+                const classIds = routine.classes.split(',').map(s => s.trim());
+                if (classIds.length > 0) {
+                    @foreach($classes as $c)
+                        if ('{{ $c->class_name }}' === classIds[0]) {
+                            this.form.class_id = '{{ $c->id }}';
+                            this.classText = '{{ $c->class_name }}';
+                        }
+                    @endforeach
+                }
+                
+                this.activeTab = 'planner';
+                this.loadRoutine();
+            },
+
+            async deleteSavedRoutine(routine) {
+                const confirmed = await showDanger('Delete Entire Exam Routine', `Are you sure you want to permanently delete all exam slots for ${routine.exam_name} (${routine.session_name})?`);
+                if (confirmed) {
+                    const doubleConfirmed = await showDanger('Confirm Permanent Deletion', 'This action cannot be undone and will delete all class schedules for this exam. Confirm?');
+                    if (doubleConfirmed) {
+                        try {
+                            const res = await axios.post('/exam-routine/bulk-destroy', {
+                                session_year_id: routine.session_year_id,
+                                exam_id: routine.exam_id
+                            }, {
+                                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                            });
+                            showSuccess(res.data.message);
+                            this.loadSavedRoutines();
+                            // Reset current loaded routine if it matched the deleted one
+                            if (this.form.session_year_id == routine.session_year_id && this.form.exam_id == routine.exam_id) {
+                                this.routineSlots = [];
+                                this.noData = true;
+                            }
+                        } catch (err) {
+                            let errMsg = 'Failed to delete routine.';
+                            if (err.response && err.response.data && err.response.data.message) {
+                                errMsg = err.response.data.message;
+                            }
+                            showModal('Error', errMsg, 'danger');
+                        }
+                    }
+                }
+            },
+
+            openDualShiftModal() {
+                this.showPrintModal = true;
+            },
+
+            printSingleRoutine() {
+                document.body.classList.remove('print-dual');
+                document.body.classList.add('print-single');
+                setTimeout(() => {
+                    window.print();
+                    document.body.classList.remove('print-single');
+                }, 100);
+            },
+
+            async generateAndPrintDual() {
+                // Save config to localStorage
+                localStorage.setItem('dualShiftPrintConfig', JSON.stringify(this.printConfig));
+                
+                // Fetch classes list to resolve names
+                let classMap = {};
+                @foreach($classes as $c)
+                    classMap['{{ $c->id }}'] = '{{ $c->class_name }}';
+                @endforeach
+
+                // Build header names
+                this.shift1ClassNames = this.printConfig.shift1.classes.map(id => classMap[id] || '');
+                this.shift2ClassNames = this.printConfig.shift2.classes.map(id => classMap[id] || '');
+
+                this.loading = true;
+                try {
+                    // Fetch routines for Shift 1
+                    let shift1Slots = [];
+                    if (this.printConfig.shift1.classes.length > 0) {
+                        let promises = this.printConfig.shift1.classes.map(cid => 
+                            axios.get('/exam-routine/get', { params: { 
+                                session_year_id: this.form.session_year_id, 
+                                exam_id: this.form.exam_id, 
+                                class_id: cid 
+                            } })
+                        );
+                        let results = await Promise.all(promises);
+                        results.forEach(res => {
+                            shift1Slots.push(...res.data.routine);
+                        });
+                    }
+
+                    // Fetch routines for Shift 2
+                    let shift2Slots = [];
+                    if (this.printConfig.shift2.classes.length > 0) {
+                        let promises = this.printConfig.shift2.classes.map(cid => 
+                            axios.get('/exam-routine/get', { params: { 
+                                session_year_id: this.form.session_year_id, 
+                                exam_id: this.form.exam_id, 
+                                class_id: cid 
+                            } })
+                        );
+                        let results = await Promise.all(promises);
+                        results.forEach(res => {
+                            shift2Slots.push(...res.data.routine);
+                        });
+                    }
+
+                    // Pivot Shift 1
+                    let shift1Dates = {};
+                    shift1Slots.forEach(slot => {
+                        let d = slot.exam_date;
+                        if (!shift1Dates[d]) {
+                            shift1Dates[d] = {
+                                date: d,
+                                formattedDate: new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                                day: new Date(d).toLocaleDateString('en-US', { weekday: 'short' }),
+                                subjects: {}
+                            };
+                        }
+                        shift1Dates[d].subjects[slot.class_id] = slot.subject ? (slot.subject.subject_name || slot.subject.name) : '';
+                    });
+                    this.shift1Rows = Object.values(shift1Dates).sort((a,b) => a.date.localeCompare(b.date));
+
+                    // Pivot Shift 2
+                    let shift2Dates = {};
+                    shift2Slots.forEach(slot => {
+                        let d = slot.exam_date;
+                        if (!shift2Dates[d]) {
+                            shift2Dates[d] = {
+                                date: d,
+                                formattedDate: new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                                day: new Date(d).toLocaleDateString('en-US', { weekday: 'short' }),
+                                subjects: {}
+                            };
+                        }
+                        shift2Dates[d].subjects[slot.class_id] = slot.subject ? (slot.subject.subject_name || slot.subject.name) : '';
+                    });
+                    this.shift2Rows = Object.values(shift2Dates).sort((a,b) => a.date.localeCompare(b.date));
+
+                    // Open print window
+                    this.showPrintModal = false;
+                    
+                    document.body.classList.remove('print-single');
+                    document.body.classList.add('print-dual');
+                    
+                    setTimeout(() => {
+                        window.print();
+                        document.body.classList.remove('print-dual');
+                    }, 200);
+
+                } catch (err) {
+                    console.error(err);
+                    showModal('Error', 'Failed to compile dual shift printable layout datasets.', 'danger');
+                } finally {
+                    this.loading = false;
                 }
             }
         };

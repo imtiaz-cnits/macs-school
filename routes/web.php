@@ -351,9 +351,12 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
     // Exam Routine Routes
     Route::prefix('exam-routine')->name('exam-routine.')->group(function () {
         Route::get('/', [ExamRoutineController::class, 'index'])->name('index');
+        Route::get('/list', [ExamRoutineController::class, 'listRoutines'])->name('list');
         Route::get('/get', [ExamRoutineController::class, 'getRoutine'])->name('get');
         Route::post('/store', [ExamRoutineController::class, 'store'])->name('store');
+        Route::put('/update/{id}', [ExamRoutineController::class, 'update'])->name('update');
         Route::delete('/destroy/{id}', [ExamRoutineController::class, 'destroy'])->name('destroy');
+        Route::post('/bulk-destroy', [ExamRoutineController::class, 'bulkDestroy'])->name('bulk-destroy');
     });
 
         // Fee Management Routes
