@@ -7,6 +7,10 @@
 @endpush
 
 @push('styles')
+<!-- Load Google Fonts Noto Serif Bengali -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <!-- Load Alpine.js to fix dropdown component issues -->
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <style>
@@ -58,6 +62,7 @@
             background: #fff !important;
             -webkit-print-color-adjust: exact !important; 
             print-color-adjust: exact !important;
+            font-family: 'Noto Serif Bengali', serif !important;
         }
         
         body.print-single #printableRoutine { 
@@ -79,6 +84,7 @@
             background: #fff !important;
             -webkit-print-color-adjust: exact !important; 
             print-color-adjust: exact !important;
+            font-family: 'Noto Serif Bengali', serif !important;
         }
         
         body.print-dual #dualShiftPrintLayout { 
@@ -606,7 +612,7 @@
     </div>
 
     <!-- Dual Shift Print Only Container -->
-    <div id="dualShiftPrintLayout" class="hidden print:block text-black bg-white" style="font-family: 'Onest', sans-serif;">
+    <div id="dualShiftPrintLayout" class="hidden print:block text-black bg-white" style="font-family: 'Noto Serif Bengali', serif;">
         <!-- PAGE 1: ROUTINES FRONT PAGE -->
         <div class="print-page flex flex-col justify-between" style="height: 277mm; padding: 5mm 0; box-sizing: border-box;">
             
