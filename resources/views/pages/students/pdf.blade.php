@@ -205,7 +205,7 @@
                     <span class="filter-label">Section:</span> {{ $filters['section'] }} &nbsp;&nbsp;|&nbsp;&nbsp; 
                     <span class="filter-label">Shift:</span> {{ $filters['shift'] }}
                     <span style="float: right; font-size: 7.5px; color: #94a3b8; font-style: italic; font-weight: normal;">
-                        Generated: {{ date('d M, Y h:i A') }}
+                        Generated: {{ \Carbon\Carbon::now('Asia/Dhaka')->format('d M, Y h:i A') }}
                     </span>
                 </div>
             </td>
