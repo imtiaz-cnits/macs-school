@@ -72,7 +72,6 @@
         body.print-single #printableRoutine * { 
             visibility: visible !important; 
             color: #000 !important; 
-            background: #fff !important;
             -webkit-print-color-adjust: exact !important; 
             print-color-adjust: exact !important;
             font-family: 'Noto Serif Bengali', serif !important;
@@ -94,10 +93,16 @@
         body.print-dual #dualShiftPrintLayout * { 
             visibility: visible !important; 
             color: #000 !important; 
-            background: #fff !important;
             -webkit-print-color-adjust: exact !important; 
             print-color-adjust: exact !important;
             font-family: 'Noto Serif Bengali', serif !important;
+        }
+
+        th.routine-th,
+        tr.routine-header-tr th {
+            background-color: #d1d5db !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
         
         body.print-dual #dualShiftPrintLayout { 
@@ -662,40 +667,40 @@
                 <div class="print-page flex flex-col justify-between" style="height: 272mm; padding: 3mm 0; box-sizing: border-box;">
                     
                     <!-- SHIFT 1 TABLE (TOP HALF) -->
-                    <div class="flex flex-col justify-between" style="height: 128mm; border-bottom: 2px dashed #000; padding-bottom: 4mm; box-sizing: border-box; overflow: hidden;">
+                    <div class="flex flex-col justify-between" style="height: 128mm; border-bottom: 2px dashed #000; padding-bottom: 3mm; box-sizing: border-box; overflow: hidden;">
                         <div>
                             <!-- Header -->
-                            <div class="text-center" style="margin-bottom: 3mm;">
+                            <div class="text-center" style="margin-bottom: 2mm;">
                                 <h2 class="text-2xl font-black" style="margin: 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h2>
-                                <h3 class="text-base font-extrabold" style="margin: 2px 0 0 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
-                                <div style="display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 2px 15px; font-size: 11px; font-weight: bold; margin-top: 3px; background-color: #f3f4f6;">রুটিন</div>
+                                <h3 class="text-base font-extrabold" style="margin: 1px 0 0 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
+                                <div style="display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 2px 18px; font-size: 14px; font-weight: 900; margin-top: 2px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
                             </div>
                             
                             <!-- Meta Info Row -->
-                            <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 3mm;">
-                                <div style="border: 3px double #000; padding: 3px 12px; font-weight: bold;" x-text="printConfig.shift1.name">প্রথম শিফট</div>
-                                <div style="border: 3px double #000; padding: 3px 16px; font-weight: bold;" x-text="printConfig.shift1.classRange">প্লে - ৪র্থ</div>
-                                <div style="border: 3px double #000; padding: 3px 12px; font-weight: bold;" x-text="printConfig.shift1.timeLabel">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</div>
+                            <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 2mm;">
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift1.name">প্রথম শিফট</div>
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 14px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift1.classRange">প্লে - ৪র্থ</div>
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift1.timeLabel">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</div>
                             </div>
                             
                             <!-- Table -->
-                            <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; font-size: 11px;">
+                            <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 11px; line-height: 1.2;">
                                 <thead>
-                                    <tr style="background-color: #f3f4f6;">
-                                        <th style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 15%;">তারিখ</th>
-                                        <th style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 15%;">বার</th>
+                                    <tr class="routine-header-tr">
+                                        <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
+                                        <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
                                         <template x-for="clsName in shift1ClassNames">
-                                            <th style="border: 1px solid #000; padding: 4px; font-weight: bold;" x-text="translateClass(clsName)"></th>
+                                            <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
                                         </template>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <template x-for="row in shift1Rows">
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: center;" x-text="formatDateBangla(row.date)"></td>
-                                            <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: center;" x-text="getDayBangla(row.date)"></td>
+                                            <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="formatDateBangla(row.date)"></td>
+                                            <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="getDayBangla(row.date)"></td>
                                             <template x-for="clsId in printConfig.shift1.classes">
-                                                <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold;" x-text="translateSubject(row.subjects[clsId])"></td>
+                                                <td style="border: 1px solid #000; padding: 2.5px 2px; text-align: center; font-weight: bold; font-size: 11px;" x-text="translateSubject(row.subjects[clsId])"></td>
                                             </template>
                                         </tr>
                                     </template>
@@ -704,44 +709,44 @@
                         </div>
                         
                         <!-- Footnote -->
-                        <div class="text-center text-[10px] font-bold" x-show="printConfig.shift1.footnote" x-text="printConfig.shift1.footnote" style="margin-top: 3px;"></div>
+                        <div class="text-center text-[10px] font-bold" x-show="printConfig.shift1.footnote" x-text="printConfig.shift1.footnote" style="margin-top: 2px;"></div>
                     </div>
 
                     <!-- SHIFT 2 TABLE (BOTTOM HALF) -->
-                    <div class="flex flex-col justify-between" style="height: 128mm; padding-top: 4mm; box-sizing: border-box; overflow: hidden;">
+                    <div class="flex flex-col justify-between" style="height: 128mm; padding-top: 3mm; box-sizing: border-box; overflow: hidden;">
                         <div>
                             <!-- Header -->
-                            <div class="text-center" style="margin-bottom: 3mm;">
+                            <div class="text-center" style="margin-bottom: 2mm;">
                                 <h2 class="text-2xl font-black" style="margin: 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h2>
-                                <h3 class="text-base font-extrabold" style="margin: 2px 0 0 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
-                                <div style="display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 2px 15px; font-size: 11px; font-weight: bold; margin-top: 3px; background-color: #f3f4f6;">রুটিন</div>
+                                <h3 class="text-base font-extrabold" style="margin: 1px 0 0 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
+                                <div style="display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 2px 18px; font-size: 14px; font-weight: 900; margin-top: 2px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
                             </div>
                             
                             <!-- Meta Info Row -->
-                            <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 3mm;">
-                                <div style="border: 3px double #000; padding: 3px 12px; font-weight: bold;" x-text="printConfig.shift2.name">দ্বিতীয় শিফট</div>
-                                <div style="border: 3px double #000; padding: 3px 16px; font-weight: bold;" x-text="printConfig.shift2.classRange">৫ম - ৯ম</div>
-                                <div style="border: 3px double #000; padding: 3px 12px; font-weight: bold;" x-text="printConfig.shift2.timeLabel">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</div>
+                            <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 2mm;">
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift2.name">দ্বিতীয় শিফট</div>
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 14px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift2.classRange">৫ম - ৯ম</div>
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift2.timeLabel">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</div>
                             </div>
                             
                             <!-- Table -->
-                            <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; font-size: 11px;">
+                            <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 11px; line-height: 1.2;">
                                 <thead>
-                                    <tr style="background-color: #f3f4f6;">
-                                        <th style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 15%;">তারিখ</th>
-                                        <th style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 15%;">বার</th>
+                                    <tr class="routine-header-tr">
+                                        <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
+                                        <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
                                         <template x-for="clsName in shift2ClassNames">
-                                            <th style="border: 1px solid #000; padding: 4px; font-weight: bold;" x-text="translateClass(clsName)"></th>
+                                            <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
                                         </template>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <template x-for="row in shift2Rows">
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: center;" x-text="formatDateBangla(row.date)"></td>
-                                            <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: center;" x-text="getDayBangla(row.date)"></td>
+                                            <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="formatDateBangla(row.date)"></td>
+                                            <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="getDayBangla(row.date)"></td>
                                             <template x-for="clsId in printConfig.shift2.classes">
-                                                <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold;" x-text="translateSubject(row.subjects[clsId])"></td>
+                                                <td style="border: 1px solid #000; padding: 2.5px 2px; text-align: center; font-weight: bold; font-size: 11px;" x-text="translateSubject(row.subjects[clsId])"></td>
                                             </template>
                                         </tr>
                                     </template>
@@ -750,7 +755,7 @@
                         </div>
                         
                         <!-- Footnote -->
-                        <div class="text-center text-[10px] font-bold" x-show="printConfig.shift2.footnote" x-text="printConfig.shift2.footnote" style="margin-top: 3px;"></div>
+                        <div class="text-center text-[10px] font-bold" x-show="printConfig.shift2.footnote" x-text="printConfig.shift2.footnote" style="margin-top: 2px;"></div>
                     </div>
                     
                 </div>
@@ -906,40 +911,40 @@
                         <div class="print-page flex flex-col justify-between" style="height: 272mm; padding: 3mm 0; box-sizing: border-box;">
                             
                             <!-- SHIFT 1 TABLE (TOP HALF) -->
-                            <div class="flex flex-col justify-between" style="height: 128mm; border-bottom: 2px dashed #000; padding-bottom: 4mm; box-sizing: border-box; overflow: hidden;">
+                            <div class="flex flex-col justify-between" style="height: 128mm; border-bottom: 2px dashed #000; padding-bottom: 3mm; box-sizing: border-box; overflow: hidden;">
                                 <div>
                                     <!-- Header -->
-                                    <div class="text-center" style="margin-bottom: 3mm;">
+                                    <div class="text-center" style="margin-bottom: 2mm;">
                                         <h2 class="text-2xl font-black" style="margin: 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h2>
-                                        <h3 class="text-base font-extrabold" style="margin: 2px 0 0 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
-                                        <div style="display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 2px 15px; font-size: 11px; font-weight: bold; margin-top: 3px; background-color: #f3f4f6;">রুটিন</div>
+                                        <h3 class="text-base font-extrabold" style="margin: 1px 0 0 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
+                                        <div style="display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 2px 18px; font-size: 14px; font-weight: 900; margin-top: 2px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
                                     </div>
                                     
                                     <!-- Meta Info Row -->
-                                    <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 3mm;">
-                                        <div style="border: 3px double #000; padding: 3px 12px; font-weight: bold;" x-text="printConfig.shift1.name">প্রথম শিফট</div>
-                                        <div style="border: 3px double #000; padding: 3px 16px; font-weight: bold;" x-text="printConfig.shift1.classRange">প্লে - ৪র্থ</div>
-                                        <div style="border: 3px double #000; padding: 3px 12px; font-weight: bold;" x-text="printConfig.shift1.timeLabel">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</div>
+                                    <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 2mm;">
+                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift1.name">প্রথম শিফট</div>
+                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 14px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift1.classRange">প্লে - ৪র্থ</div>
+                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift1.timeLabel">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</div>
                                     </div>
                                     
                                     <!-- Table -->
-                                    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; font-size: 11px;">
+                                    <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 11px; line-height: 1.2;">
                                         <thead>
-                                            <tr style="background-color: #f3f4f6;">
-                                                <th style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 15%;">তারিখ</th>
-                                                <th style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 15%;">বার</th>
+                                            <tr class="routine-header-tr">
+                                                <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
+                                                <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
                                                 <template x-for="clsName in shift1ClassNames">
-                                                    <th style="border: 1px solid #000; padding: 4px; font-weight: bold;" x-text="translateClass(clsName)"></th>
+                                                    <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
                                                 </template>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <template x-for="row in shift1Rows">
                                                 <tr>
-                                                    <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: center;" x-text="formatDateBangla(row.date)"></td>
-                                                    <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: center;" x-text="getDayBangla(row.date)"></td>
+                                                    <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="formatDateBangla(row.date)"></td>
+                                                    <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="getDayBangla(row.date)"></td>
                                                     <template x-for="clsId in printConfig.shift1.classes">
-                                                        <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold;" x-text="translateSubject(row.subjects[clsId])"></td>
+                                                        <td style="border: 1px solid #000; padding: 2.5px 2px; text-align: center; font-weight: bold; font-size: 11px;" x-text="translateSubject(row.subjects[clsId])"></td>
                                                     </template>
                                                 </tr>
                                             </template>
@@ -948,44 +953,44 @@
                                 </div>
                                 
                                 <!-- Footnote -->
-                                <div class="text-center text-[10px] font-bold" x-show="printConfig.shift1.footnote" x-text="printConfig.shift1.footnote" style="margin-top: 3px;"></div>
+                                <div class="text-center text-[10px] font-bold" x-show="printConfig.shift1.footnote" x-text="printConfig.shift1.footnote" style="margin-top: 2px;"></div>
                             </div>
 
                             <!-- SHIFT 2 TABLE (BOTTOM HALF) -->
-                            <div class="flex flex-col justify-between" style="height: 128mm; padding-top: 4mm; box-sizing: border-box; overflow: hidden;">
+                            <div class="flex flex-col justify-between" style="height: 128mm; padding-top: 3mm; box-sizing: border-box; overflow: hidden;">
                                 <div>
                                     <!-- Header -->
-                                    <div class="text-center" style="margin-bottom: 3mm;">
+                                    <div class="text-center" style="margin-bottom: 2mm;">
                                         <h2 class="text-2xl font-black" style="margin: 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h2>
-                                        <h3 class="text-base font-extrabold" style="margin: 2px 0 0 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
-                                        <div style="display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 2px 15px; font-size: 11px; font-weight: bold; margin-top: 3px; background-color: #f3f4f6;">রুটিন</div>
+                                        <h3 class="text-base font-extrabold" style="margin: 1px 0 0 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
+                                        <div style="display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 2px 18px; font-size: 14px; font-weight: 900; margin-top: 2px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
                                     </div>
                                     
                                     <!-- Meta Info Row -->
-                                    <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 3mm;">
-                                        <div style="border: 3px double #000; padding: 3px 12px; font-weight: bold;" x-text="printConfig.shift2.name">দ্বিতীয় শিফট</div>
-                                        <div style="border: 3px double #000; padding: 3px 16px; font-weight: bold;" x-text="printConfig.shift2.classRange">৫ম - ৯ম</div>
-                                        <div style="border: 3px double #000; padding: 3px 12px; font-weight: bold;" x-text="printConfig.shift2.timeLabel">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</div>
+                                    <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 2mm;">
+                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift2.name">দ্বিতীয় শিফট</div>
+                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 14px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift2.classRange">৫ম - ৯ম</div>
+                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift2.timeLabel">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</div>
                                     </div>
                                     
                                     <!-- Table -->
-                                    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; font-size: 11px;">
+                                    <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 11px; line-height: 1.2;">
                                         <thead>
-                                            <tr style="background-color: #f3f4f6;">
-                                                <th style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 15%;">তারিখ</th>
-                                                <th style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 15%;">বার</th>
+                                            <tr class="routine-header-tr">
+                                                <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
+                                                <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
                                                 <template x-for="clsName in shift2ClassNames">
-                                                    <th style="border: 1px solid #000; padding: 4px; font-weight: bold;" x-text="translateClass(clsName)"></th>
+                                                    <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
                                                 </template>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <template x-for="row in shift2Rows">
                                                 <tr>
-                                                    <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: center;" x-text="formatDateBangla(row.date)"></td>
-                                                    <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: center;" x-text="getDayBangla(row.date)"></td>
+                                                    <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="formatDateBangla(row.date)"></td>
+                                                    <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="getDayBangla(row.date)"></td>
                                                     <template x-for="clsId in printConfig.shift2.classes">
-                                                        <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold;" x-text="translateSubject(row.subjects[clsId])"></td>
+                                                        <td style="border: 1px solid #000; padding: 2.5px 2px; text-align: center; font-weight: bold; font-size: 11px;" x-text="translateSubject(row.subjects[clsId])"></td>
                                                     </template>
                                                 </tr>
                                             </template>
@@ -994,7 +999,7 @@
                                 </div>
                                 
                                 <!-- Footnote -->
-                                <div class="text-center text-[10px] font-bold" x-show="printConfig.shift2.footnote" x-text="printConfig.shift2.footnote" style="margin-top: 3px;"></div>
+                                <div class="text-center text-[10px] font-bold" x-show="printConfig.shift2.footnote" x-text="printConfig.shift2.footnote" style="margin-top: 2px;"></div>
                             </div>
                             
                         </div>
