@@ -36,7 +36,7 @@
        🔥 EXAM PRINT CSS (A4 Portrait Formal)
        ========================================== */
     @media print {
-        @page { size: A4 portrait; margin: 10mm; }
+        @page { size: A4 portrait; margin: 4mm 6mm; }
         
         /* Hide all layout sidebars, topbar, alerts, and other UI controls */
         .sidebar, 
@@ -664,10 +664,10 @@
         <template x-if="!batchClassId || batchStudents.length === 0">
             <div>
                 <!-- PAGE 1: ROUTINES FRONT PAGE -->
-                <div class="print-page flex flex-col justify-between" style="height: 272mm; padding: 3mm 0; box-sizing: border-box;">
+                <div class="print-page flex flex-col" style="padding: 1mm 0; box-sizing: border-box;">
                     
                     <!-- SHIFT 1 TABLE (TOP HALF) -->
-                    <div class="flex flex-col justify-between" style="height: 128mm; border-bottom: 2px dashed #000; padding-bottom: 3mm; box-sizing: border-box; overflow: hidden;">
+                    <div style="border-bottom: 2px dashed #000; padding-bottom: 3mm; margin-bottom: 3mm; box-sizing: border-box;">
                         <div>
                             <!-- Header -->
                             <div class="text-center" style="margin-bottom: 2mm;">
@@ -713,7 +713,7 @@
                     </div>
 
                     <!-- SHIFT 2 TABLE (BOTTOM HALF) -->
-                    <div class="flex flex-col justify-between" style="height: 128mm; padding-top: 3mm; box-sizing: border-box; overflow: hidden;">
+                    <div style="padding-top: 2mm; box-sizing: border-box;">
                         <div>
                             <!-- Header -->
                             <div class="text-center" style="margin-bottom: 2mm;">
@@ -908,10 +908,10 @@
                 <template x-for="(pair, pairIndex) in chunkedBatchStudents" :key="pairIndex">
                     <div>
                         <!-- PAGE 1: ROUTINES FRONT PAGE (ALWAYS OVERALL 2 SHIFTS) -->
-                        <div class="print-page flex flex-col justify-between" style="height: 272mm; padding: 3mm 0; box-sizing: border-box;">
+                        <div class="print-page flex flex-col" style="padding: 1mm 0; box-sizing: border-box;">
                             
                             <!-- SHIFT 1 TABLE (TOP HALF) -->
-                            <div class="flex flex-col justify-between" style="height: 128mm; border-bottom: 2px dashed #000; padding-bottom: 3mm; box-sizing: border-box; overflow: hidden;">
+                            <div style="border-bottom: 2px dashed #000; padding-bottom: 3mm; margin-bottom: 3mm; box-sizing: border-box;">
                                 <div>
                                     <!-- Header -->
                                     <div class="text-center" style="margin-bottom: 2mm;">
@@ -957,7 +957,7 @@
                             </div>
 
                             <!-- SHIFT 2 TABLE (BOTTOM HALF) -->
-                            <div class="flex flex-col justify-between" style="height: 128mm; padding-top: 3mm; box-sizing: border-box; overflow: hidden;">
+                            <div style="padding-top: 2mm; box-sizing: border-box;">
                                 <div>
                                     <!-- Header -->
                                     <div class="text-center" style="margin-bottom: 2mm;">
@@ -1486,45 +1486,59 @@
                 return days[dayIndex];
             },
 
+            fixMojibake(str) {
+                if (!str) return '';
+                if (typeof str !== 'string') return String(str);
+                try {
+                    if (/[\u00C0-\u00FF]/.test(str)) {
+                        let decoded = decodeURIComponent(escape(str));
+                        if (decoded) return decoded;
+                    }
+                } catch(e) {}
+                return str;
+            },
+
             translateClass(cls) {
                 if (!cls) return '';
+                cls = this.fixMojibake(cls);
                 let c = cls.toLowerCase().trim();
-                if (c === 'play') return 'প্লে';
-                if (c === 'nursery') return 'নার্সারী';
-                if (c === 'one') return 'প্রথম';
-                if (c === 'two') return 'দ্বিতীয়';
-                if (c === 'three') return 'তৃতীয়';
-                if (c === 'four') return 'চতুর্থ';
-                if (c === 'five') return 'পঞ্চম';
-                if (c === 'six') return 'ষষ্ঠ';
-                if (c === 'seven') return 'সপ্তম';
-                if (c === 'eight') return 'অষ্টম';
-                if (c === 'nine') return 'নবম';
-                if (c === 'ten') return 'দশম';
+                if (c === 'play' || c === 'প্লে') return 'প্লে';
+                if (c === 'nursery' || c === 'নার্সারী') return 'নার্সারী';
+                if (c === 'one' || c === 'প্রথম') return 'প্রথম';
+                if (c === 'two' || c === 'দ্বিতীয়') return 'দ্বিতীয়';
+                if (c === 'three' || c === 'তৃতীয়') return 'তৃতীয়';
+                if (c === 'four' || c === 'চতুর্থ') return 'চতুর্থ';
+                if (c === 'five' || c === 'পঞ্চম') return 'পঞ্চম';
+                if (c === 'six' || c === 'ষষ্ঠ') return 'ষষ্ঠ';
+                if (c === 'seven' || c === 'সপ্তম') return 'সপ্তম';
+                if (c === 'eight' || c === 'অষ্টম') return 'অষ্টম';
+                if (c === 'nine' || c === 'নবম') return 'নবম';
+                if (c === 'ten' || c === 'দশম') return 'দশম';
                 return cls;
             },
 
             translateSubject(sub) {
                 if (!sub) return '×';
+                sub = this.fixMojibake(sub);
                 let s = sub.toLowerCase().trim();
-                if (s.includes('bangla') || s.includes('বাংলা')) {
+                if (s.includes('bangla') || s.includes('বাংলা') || s.includes('বাং')) {
                     if (s.includes('1st') || s.includes('১ম')) return 'বাংলা ১ম পত্র';
                     if (s.includes('2nd') || s.includes('২য়')) return 'বাংলা ২য় পত্র';
                     return 'বাংলা';
                 }
-                if (s.includes('english') || s.includes('ইংরেজি')) {
+                if (s.includes('english') || s.includes('ইংরেজি') || s.includes('ইঙ্গরেজী') || s.includes('ইংশরেজী')) {
                     if (s.includes('1st') || s.includes('১ম')) return 'ইংরেজি ১ম পত্র';
                     if (s.includes('2nd') || s.includes('২য়')) return 'ইংরেজি ২য় পত্র';
                     return 'ইংরেজি';
                 }
-                if (s.includes('math') || s.includes('গণিত')) return 'গণিত';
+                if (s.includes('math') || s.includes('গণিত') || s.includes('গণি')) return 'গণিত';
                 if (s.includes('arabic') || s.includes('আরবী') || s.includes('ধর্ম')) return 'আরবী/ধর্মশিক্ষা';
                 if (s.includes('drawing') || s.includes('ড্রইং') || s.includes('অঙ্কন')) return 'ড্রইং';
                 if (s.includes('science') || s.includes('বিজ্ঞান')) return 'বিজ্ঞান';
-                if (s.includes('islam') || s.includes('ইসলাম শিক্ষা')) return 'ইসলাম শিক্ষা';
+                if (s.includes('islam') || s.includes('ইসলাম')) return 'ইসলাম শিক্ষা';
                 if (s.includes('physical') || s.includes('শারীরিক')) return 'শারীরিক শিঃ';
                 if (s.includes('s.b.a') || s.includes('sba')) return 'S.B.A';
-                if (s.includes('gk') || s.includes('general knowledge') || s.includes('সাধারণ জ্ঞান')) return 'সাঃ জ্ঞান';
+                if (s.includes('gk') || s.includes('general knowledge') || s.includes('সাধারণ')) return 'সাঃ জ্ঞান';
                 if (s.includes('social') || s.includes('সমাজ')) return 'সমাজ';
                 if (s.includes('ict') || s.includes('তথ্য')) return 'তথ্য ও যোগাঃ';
                 if (s.includes('physics') || s.includes('পদার্থ')) return 'পদার্থ/ইতিহাস';
@@ -1766,10 +1780,8 @@
             },
 
             async generateAndPrintDual() {
-                // Save config to localStorage
                 localStorage.setItem('dualShiftPrintConfig', JSON.stringify(this.printConfig));
                 
-                // Fetch classes list to resolve names
                 let classMap = {};
                 @foreach($classes as $c)
                     classMap['{{ $c->id }}'] = '{{ $c->class_name }}';
@@ -1777,103 +1789,89 @@
 
                 this.loading = true;
                 try {
-                    if (this.printMode === 'batch') {
-                        if (!this.batchClassId) {
-                            showModal('Error', 'Please select a Class for batch printing.', 'danger');
-                            this.loading = false;
-                            return;
+                    // 1. ALWAYS Compile Overall Shift 1 & Shift 2 Routines (For Page 1 Front Side)
+                    this.shift1ClassNames = this.printConfig.shift1.classes.map(id => classMap[id] || '');
+                    this.shift2ClassNames = this.printConfig.shift2.classes.map(id => classMap[id] || '');
+
+                    let shift1Slots = [];
+                    if (this.printConfig.shift1.classes.length > 0) {
+                        let promises = this.printConfig.shift1.classes.map(cid => 
+                            axios.get('/exam-routine/get', { params: { 
+                                session_year_id: this.form.session_year_id, 
+                                exam_id: this.form.exam_id, 
+                                class_id: cid 
+                            } })
+                        );
+                        let results = await Promise.all(promises);
+                        results.forEach(res => {
+                            shift1Slots.push(...(res.data.routine || []));
+                        });
+                    }
+
+                    let shift2Slots = [];
+                    if (this.printConfig.shift2.classes.length > 0) {
+                        let promises = this.printConfig.shift2.classes.map(cid => 
+                            axios.get('/exam-routine/get', { params: { 
+                                session_year_id: this.form.session_year_id, 
+                                exam_id: this.form.exam_id, 
+                                class_id: cid 
+                            } })
+                        );
+                        let results = await Promise.all(promises);
+                        results.forEach(res => {
+                            shift2Slots.push(...(res.data.routine || []));
+                        });
+                    }
+
+                    let shift1Dates = {};
+                    shift1Slots.forEach(slot => {
+                        let d = slot.exam_date;
+                        if (!shift1Dates[d]) {
+                            shift1Dates[d] = {
+                                date: d,
+                                formattedDate: new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                                day: new Date(d).toLocaleDateString('en-US', { weekday: 'short' }),
+                                subjects: {}
+                            };
                         }
+                        shift1Dates[d].subjects[slot.class_id] = slot.subject ? (slot.subject.subject_name || slot.subject.name) : '';
+                    });
+                    this.shift1Rows = Object.values(shift1Dates).sort((a,b) => a.date.localeCompare(b.date));
+
+                    let shift2Dates = {};
+                    shift2Slots.forEach(slot => {
+                        let d = slot.exam_date;
+                        if (!shift2Dates[d]) {
+                            shift2Dates[d] = {
+                                date: d,
+                                formattedDate: new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                                day: new Date(d).toLocaleDateString('en-US', { weekday: 'short' }),
+                                subjects: {}
+                            };
+                        }
+                        shift2Dates[d].subjects[slot.class_id] = slot.subject ? (slot.subject.subject_name || slot.subject.name) : '';
+                    });
+                    this.shift2Rows = Object.values(shift2Dates).sort((a,b) => a.date.localeCompare(b.date));
+
+                    // 2. If Batch Class is selected, fetch students & batch class slots (For Page 2 Back Side)
+                    if (this.batchClassId) {
                         this.batchClassName = classMap[this.batchClassId] || '';
 
-                        // Fetch students
                         let sRes = await axios.get('/exam-routine/students-by-class', { params: { class_id: this.batchClassId } });
-                        this.batchStudents = sRes.data.students;
+                        this.batchStudents = sRes.data.students || [];
 
-                        if (this.batchStudents.length === 0) {
-                            showModal('Notification', 'No students found in the selected class.', 'info');
-                            this.loading = false;
-                            return;
-                        }
-
-                        // Fetch routine slots for the class
                         let rRes = await axios.get('/exam-routine/get', { params: { 
                             session_year_id: this.form.session_year_id, 
                             exam_id: this.form.exam_id, 
                             class_id: this.batchClassId 
                         } });
-                        this.batchClassSlots = rRes.data.routine;
-
+                        this.batchClassSlots = rRes.data.routine || [];
                     } else {
-                        // Build header names for General mode
-                        this.shift1ClassNames = this.printConfig.shift1.classes.map(id => classMap[id] || '');
-                        this.shift2ClassNames = this.printConfig.shift2.classes.map(id => classMap[id] || '');
-
-                        // Fetch routines for Shift 1
-                        let shift1Slots = [];
-                        if (this.printConfig.shift1.classes.length > 0) {
-                            let promises = this.printConfig.shift1.classes.map(cid => 
-                                axios.get('/exam-routine/get', { params: { 
-                                    session_year_id: this.form.session_year_id, 
-                                    exam_id: this.form.exam_id, 
-                                    class_id: cid 
-                                } })
-                            );
-                            let results = await Promise.all(promises);
-                            results.forEach(res => {
-                                shift1Slots.push(...res.data.routine);
-                            });
-                        }
-
-                        // Fetch routines for Shift 2
-                        let shift2Slots = [];
-                        if (this.printConfig.shift2.classes.length > 0) {
-                            let promises = this.printConfig.shift2.classes.map(cid => 
-                                axios.get('/exam-routine/get', { params: { 
-                                    session_year_id: this.form.session_year_id, 
-                                    exam_id: this.form.exam_id, 
-                                    class_id: cid 
-                                } })
-                            );
-                            let results = await Promise.all(promises);
-                            results.forEach(res => {
-                                shift2Slots.push(...res.data.routine);
-                            });
-                        }
-
-                        // Pivot Shift 1
-                        let shift1Dates = {};
-                        shift1Slots.forEach(slot => {
-                            let d = slot.exam_date;
-                            if (!shift1Dates[d]) {
-                                shift1Dates[d] = {
-                                    date: d,
-                                    formattedDate: new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-                                    day: new Date(d).toLocaleDateString('en-US', { weekday: 'short' }),
-                                    subjects: {}
-                                };
-                            }
-                            shift1Dates[d].subjects[slot.class_id] = slot.subject ? (slot.subject.subject_name || slot.subject.name) : '';
-                        });
-                        this.shift1Rows = Object.values(shift1Dates).sort((a,b) => a.date.localeCompare(b.date));
-
-                        // Pivot Shift 2
-                        let shift2Dates = {};
-                        shift2Slots.forEach(slot => {
-                            let d = slot.exam_date;
-                            if (!shift2Dates[d]) {
-                                shift2Dates[d] = {
-                                    date: d,
-                                    formattedDate: new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-                                    day: new Date(d).toLocaleDateString('en-US', { weekday: 'short' }),
-                                    subjects: {}
-                                };
-                            }
-                            shift2Dates[d].subjects[slot.class_id] = slot.subject ? (slot.subject.subject_name || slot.subject.name) : '';
-                        });
-                        this.shift2Rows = Object.values(shift2Dates).sort((a,b) => a.date.localeCompare(b.date));
+                        this.batchStudents = [];
+                        this.batchClassSlots = [];
                     }
 
-                    // Open print window
+                    // 3. Trigger Print Window
                     this.showPrintModal = false;
                     
                     document.body.classList.remove('print-single');
