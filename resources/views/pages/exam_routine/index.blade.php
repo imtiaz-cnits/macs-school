@@ -53,7 +53,6 @@
         /* If we are printing single routine */
         body.print-single #printableRoutine, 
         body.print-single #printableRoutine * { 
-            display: block !important;
             visibility: visible !important; 
             color: #000 !important; 
             background: #fff !important;
@@ -62,6 +61,7 @@
         }
         
         body.print-single #printableRoutine { 
+            display: block !important;
             position: absolute; 
             left: 0; 
             top: 0; 
@@ -74,7 +74,6 @@
         /* If we are printing dual shift */
         body.print-dual #dualShiftPrintLayout, 
         body.print-dual #dualShiftPrintLayout * { 
-            display: block !important;
             visibility: visible !important; 
             color: #000 !important; 
             background: #fff !important;
@@ -83,6 +82,7 @@
         }
         
         body.print-dual #dualShiftPrintLayout { 
+            display: block !important;
             position: absolute; 
             left: 0; 
             top: 0; 
