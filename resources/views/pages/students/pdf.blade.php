@@ -109,6 +109,10 @@
             vertical-align: middle;
         }
 
+        .data-table tr {
+            page-break-inside: avoid;
+        }
+
         .data-table tr:nth-child(even) {
             background-color: #f8fafc;
         }
@@ -191,18 +195,6 @@
                 $logoSrc = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($fallbackPath));
             }
         }
-
-        // Custom chunking logic: Page 1 gets 15 records, subsequent pages get 20 records
-        $chunks = collect();
-        if ($students->isNotEmpty()) {
-            $chunks->push($students->slice(0, 15));
-            if ($students->count() > 15) {
-                foreach ($students->slice(15)->chunk(20) as $chunk) {
-                    $chunks->push($chunk);
-                }
-            }
-        }
-        $slCounter = 1;
     @endphp
 
     <!-- Branded Header -->
@@ -232,10 +224,7 @@
     </table>
 
     <!-- Data Table -->
-    @forelse($chunks as $chunkIndex => $studentChunk)
-        @if($chunkIndex > 0)
-            <div style="page-break-before: always;"></div>
-        @endif
+    @if($students->isNotEmpty())
         <table class="data-table">
             <thead>
                 <tr>
@@ -247,7 +236,23 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($studentChunk as $studentIndex => $student)
+                @foreach($students as $index => $student)
+                    @if($index === 15)
+                        </tbody>
+                        </table>
+                        <div style="page-break-before: always;"></div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th width="4%" style="text-align: center;">SL</th>
+                                    <th width="8%" style="text-align: center;">Photo</th>
+                                    <th width="30%">Student Information</th>
+                                    <th width="28%">Academic Details</th>
+                                    <th width="30%">Contact & Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    @endif
                     @php
                         $hasCustomPhoto = false;
                         $photoPath = '';
@@ -279,7 +284,7 @@
                         }
                     @endphp
                     <tr>
-                        <td style="text-align: center; font-weight: bold; color: #475569;">{{ $slCounter++ }}</td>
+                        <td style="text-align: center; font-weight: bold; color: #475569;">{{ $loop->iteration }}</td>
                         <td style="text-align: center;">
                             @if($hasCustomPhoto)
                                 <img src="{{ $photoPath }}" class="student-photo" alt="Student">
@@ -311,7 +316,7 @@
                 @endforeach
             </tbody>
         </table>
-    @empty
+    @else
         <table class="data-table">
             <thead>
                 <tr>
@@ -330,7 +335,7 @@
                 </tr>
             </tbody>
         </table>
-    @endforelse
+    @endif
 
     <!-- Printed Footer -->
     <div class="footer">
