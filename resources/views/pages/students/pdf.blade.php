@@ -191,6 +191,18 @@
                 $logoSrc = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($fallbackPath));
             }
         }
+
+        // Custom chunking logic: Page 1 gets 15 records, subsequent pages get 20 records
+        $chunks = collect();
+        if ($students->isNotEmpty()) {
+            $chunks->push($students->slice(0, 15));
+            if ($students->count() > 15) {
+                foreach ($students->slice(15)->chunk(20) as $chunk) {
+                    $chunks->push($chunk);
+                }
+            }
+        }
+        $slCounter = 1;
     @endphp
 
     <!-- Branded Header -->
@@ -220,7 +232,7 @@
     </table>
 
     <!-- Data Table -->
-    @forelse($students->chunk(15) as $chunkIndex => $studentChunk)
+    @forelse($chunks as $chunkIndex => $studentChunk)
         @if($chunkIndex > 0)
             <div style="page-break-before: always;"></div>
         @endif
@@ -267,7 +279,7 @@
                         }
                     @endphp
                     <tr>
-                        <td style="text-align: center; font-weight: bold; color: #475569;">{{ ($chunkIndex * 15) + $studentIndex + 1 }}</td>
+                        <td style="text-align: center; font-weight: bold; color: #475569;">{{ $slCounter++ }}</td>
                         <td style="text-align: center;">
                             @if($hasCustomPhoto)
                                 <img src="{{ $photoPath }}" class="student-photo" alt="Student">
