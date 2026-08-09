@@ -353,6 +353,7 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
         Route::get('/', [ExamRoutineController::class, 'index'])->name('index');
         Route::get('/list', [ExamRoutineController::class, 'listRoutines'])->name('list');
         Route::get('/get', [ExamRoutineController::class, 'getRoutine'])->name('get');
+        Route::get('/students-by-class', [ExamRoutineController::class, 'getStudentsByClass'])->name('students-by-class');
         Route::post('/store', [ExamRoutineController::class, 'store'])->name('store');
         Route::put('/update/{id}', [ExamRoutineController::class, 'update'])->name('update');
         Route::delete('/destroy/{id}', [ExamRoutineController::class, 'destroy'])->name('destroy');

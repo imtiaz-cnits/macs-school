@@ -18,7 +18,7 @@ class ExamRoutineController extends Controller
         $sessions = SessionYear::orderBy('session_name', 'desc')->get();
         $classes = Classes::all();
         $subjects = Subject::all();
-        $exams = Exam::orderBy('id', 'desc')->get(); 
+        $exams = Exam::orderBy('name', 'asc')->get(); 
         
         return view('pages.exam_routine.index', compact('sessions', 'classes', 'subjects', 'exams'));
     }
@@ -157,5 +157,20 @@ class ExamRoutineController extends Controller
     {
         ExamRoutine::findOrFail($id)->delete();
         return response()->json(['status' => 'success', 'message' => 'Routine deleted successfully!']);
+    }
+
+    // নির্দিষ্ট ক্লাসের সকল শিক্ষার্থী আনা
+    public function getStudentsByClass(Request $request): JsonResponse
+    {
+        $request->validate([
+            'class_id' => 'required'
+        ]);
+
+        $students = \App\Models\Student::with(['section'])
+            ->where('class_id', $request->class_id)
+            ->orderByRaw('CAST(roll_number AS UNSIGNED) ASC')
+            ->get();
+
+        return response()->json(['status' => 'success', 'students' => $students]);
     }
 }
