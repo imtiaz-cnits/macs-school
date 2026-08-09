@@ -1671,10 +1671,10 @@
                                 <tbody>
                                     <template x-for="row in shift2Rows">
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 0.5px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="formatDateBangla(row.date)"></td>
-                                            <td style="border: 1px solid #000; padding: 0.5px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="getDayBangla(row.date)"></td>
+                                            <td style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="formatDateBangla(row.date)"></td>
+                                            <td style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="getDayBangla(row.date)"></td>
                                             <template x-for="clsId in printConfig.shift2.classes">
-                                                <td style="border: 1px solid #000; padding: 0.5px 0px; text-align: center; font-weight: bold;" :style="getSubjectStyle(row.subjects[clsId])" x-text="translateSubject(row.subjects[clsId])"></td>
+                                                <td style="border: 1px solid #000; padding: 0px 0px; text-align: center; font-weight: bold;" :style="getSubjectStyle(row.subjects[clsId])" x-text="translateSubject(row.subjects[clsId])"></td>
                                             </template>
                                         </tr>
                                     </template>
@@ -1924,10 +1924,10 @@
                                         <tbody>
                                             <template x-for="row in shift2Rows">
                                                 <tr>
-                                                    <td style="border: 1px solid #000; padding: 0.5px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="formatDateBangla(row.date)"></td>
-                                                    <td style="border: 1px solid #000; padding: 0.5px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="getDayBangla(row.date)"></td>
+                                                    <td style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="formatDateBangla(row.date)"></td>
+                                                    <td style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="getDayBangla(row.date)"></td>
                                                     <template x-for="clsId in printConfig.shift2.classes">
-                                                        <td style="border: 1px solid #000; padding: 0.5px 0px; text-align: center; font-weight: bold;" :style="getSubjectStyle(row.subjects[clsId])" x-text="translateSubject(row.subjects[clsId])"></td>
+                                                        <td style="border: 1px solid #000; padding: 0px 0px; text-align: center; font-weight: bold;" :style="getSubjectStyle(row.subjects[clsId])" x-text="translateSubject(row.subjects[clsId])"></td>
                                                     </template>
                                                 </tr>
                                             </template>
@@ -2054,7 +2054,9 @@
                     </div>             </div>
                             </div>
                             
-                        </div>(Directly Below Student Info) -->
+                        </div>
+                        
+                        <!-- (Directly Below Student Info) -->
                                 <div class="grid grid-cols-12 gap-2 items-end" style="padding: 0 5px; margin-top: 2.5mm;">
                                     <!-- Left table -->
                                     <div class="col-span-5">
