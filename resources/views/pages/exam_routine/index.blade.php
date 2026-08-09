@@ -489,7 +489,7 @@
     </div>
 
     <!-- Dual Shift Print Configuration Modal -->
-    <div x-show="showPrintModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto no-print flex items-center justify-center p-4 bg-black/40 backdrop-blur-md" x-transition>
+    <div x-show="showPrintModal" x-cloak class="fixed inset-0 z-[99999] overflow-y-auto no-print flex items-center justify-center p-4 bg-black/40 backdrop-blur-md" x-transition>
         <div class="bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-3xl p-6 w-full max-w-4xl shadow-2xl relative">
             <h3 class="text-lg font-black text-gray-800 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-4">
                 Dual Shift Print Setup
@@ -1070,6 +1070,15 @@
                         console.error(e);
                     }
                 }
+                
+                // Watch modal state to disable/enable page scroll
+                this.$watch('showPrintModal', val => {
+                    if (val) {
+                        document.body.classList.add('overflow-hidden');
+                    } else {
+                        document.body.classList.remove('overflow-hidden');
+                    }
+                });
             },
             
             selectSession(id, name) {
