@@ -168,18 +168,7 @@
             font-weight: 700;
         }
 
-        /* Footer Style */
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            font-size: 7.5px;
-            color: #94a3b8;
-            text-align: center;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 4px;
-        }
+
     </style>
 </head>
 <body>
@@ -321,10 +310,7 @@
         </table>
     @endif
 
-    <!-- Printed Footer -->
-    <div class="footer">
-        {{ $branchName }} - Registered Student List Report. (System Auto Generated)
-    </div>
+
 
 </body>
 </html>
