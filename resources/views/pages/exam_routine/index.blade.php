@@ -21,37 +21,36 @@
     @media print {
         @page { size: A4 portrait; margin: 10mm; }
         
-        /* Hide all page layouts, sidebar, topbar, modal overlays, action buttons, etc. */
+        /* Hide all layout sidebars, topbar, alerts, and other UI controls */
         .sidebar, 
         .topbar,
         .sidebar-overlay,
         .mobile-menu-btn,
         .no-print,
+        .alert,
         #globalModal {
             display: none !important;
         }
-        
-        /* Reset spacing of page content */
+
+        /* Reset layout containers to flow normally without grids or sidebars */
         .dashboard-layout,
         .main-content,
-        .page-content {
+        .page-content,
+        .grid,
+        .lg:col-span-8,
+        div[x-data="examRoutinePage()"] {
             margin: 0 !important;
             padding: 0 !important;
             background: #fff !important;
             border: none !important;
             width: 100% !important;
             max-width: 100% !important;
+            display: block !important;
+            float: none !important;
+            box-shadow: none !important;
         }
 
-        /* Hide all main elements of the routine page except the printable routine container */
-        body.print-single div[x-data="examRoutinePage()"] > *:not(#printableRoutine) {
-            display: none !important;
-        }
-        
-        body.print-dual div[x-data="examRoutinePage()"] > *:not(#dualShiftPrintLayout) {
-            display: none !important;
-        }
-        
+        /* If we are printing single routine */
         body.print-single #printableRoutine, 
         body.print-single #printableRoutine * { 
             display: block !important;
@@ -72,6 +71,7 @@
             border: none !important; 
         }
 
+        /* If we are printing dual shift */
         body.print-dual #dualShiftPrintLayout, 
         body.print-dual #dualShiftPrintLayout * { 
             display: block !important;
@@ -90,6 +90,17 @@
             padding: 0; 
             box-shadow: none !important; 
             border: none !important; 
+        }
+        
+        /* Specific view overrides when printing single shift */
+        body.print-single #dualShiftPrintLayout {
+            display: none !important;
+        }
+
+        /* Specific view overrides when printing dual shift */
+        body.print-dual #printableRoutine,
+        body.print-dual div.grid {
+            display: none !important;
         }
         
         .page-break { page-break-before: always; }
