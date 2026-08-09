@@ -20,7 +20,37 @@
        ========================================== */
     @media print {
         @page { size: A4 portrait; margin: 10mm; }
-        body * { display: none !important; }
+        
+        /* Hide all page layouts, sidebar, topbar, modal overlays, action buttons, etc. */
+        .sidebar, 
+        .topbar,
+        .sidebar-overlay,
+        .mobile-menu-btn,
+        .no-print,
+        #globalModal {
+            display: none !important;
+        }
+        
+        /* Reset spacing of page content */
+        .dashboard-layout,
+        .main-content,
+        .page-content {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            border: none !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        /* Hide all main elements of the routine page except the printable routine container */
+        body.print-single div[x-data="examRoutinePage()"] > *:not(#printableRoutine) {
+            display: none !important;
+        }
+        
+        body.print-dual div[x-data="examRoutinePage()"] > *:not(#dualShiftPrintLayout) {
+            display: none !important;
+        }
         
         body.print-single #printableRoutine, 
         body.print-single #printableRoutine * { 
