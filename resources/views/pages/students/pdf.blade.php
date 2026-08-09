@@ -236,23 +236,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($students as $index => $student)
-                    @if($index === 15)
-                        </tbody>
-                        </table>
-                        <div style="page-break-before: always;"></div>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th width="4%" style="text-align: center;">SL</th>
-                                    <th width="8%" style="text-align: center;">Photo</th>
-                                    <th width="30%">Student Information</th>
-                                    <th width="28%">Academic Details</th>
-                                    <th width="30%">Contact & Details</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                    @endif
+                @foreach($students as $student)
                     @php
                         $hasCustomPhoto = false;
                         $photoPath = '';
