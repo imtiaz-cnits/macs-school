@@ -22,6 +22,7 @@
 
     <div class="topbar-right flex items-center gap-3">
         <!-- Biometric Machine Status Badge -->
+        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
         <div x-data="{
             deviceStatus: null,
             async fetchDeviceStatus() {

@@ -37,14 +37,17 @@ class ZktecoService
             ];
         }
 
-        $pingable = $this->ping();
-        return [
-            'status' => $pingable ? 'Connected' : 'Disconnected',
-            'connected' => $pingable,
-            'ip' => $this->ip,
-            'port' => $this->port,
-            'message' => $pingable ? 'Device linked successfully' : 'Device socket unreachable'
-        ];
+        // Cache the status for 15 seconds to prevent concurrent socket locking conflicts
+        return \Illuminate\Support\Facades\Cache::remember('zkteco_connection_status', 15, function () {
+            $pingable = $this->ping();
+            return [
+                'status' => $pingable ? 'Connected' : 'Disconnected',
+                'connected' => $pingable,
+                'ip' => $this->ip,
+                'port' => $this->port,
+                'message' => $pingable ? 'Device linked successfully' : 'Device socket unreachable'
+            ];
+        });
     }
 
     public function getIp() { return $this->ip; }
