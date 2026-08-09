@@ -667,40 +667,40 @@
                 <div class="print-page flex flex-col" style="padding: 1mm 0; box-sizing: border-box;">
                     
                     <!-- SHIFT 1 TABLE (TOP HALF) -->
-                    <div style="border-bottom: 2px dashed #000; padding-bottom: 3mm; margin-bottom: 3mm; box-sizing: border-box;">
+                    <div style="border-bottom: 2px dashed #000; padding-bottom: 2mm; margin-bottom: 2mm; box-sizing: border-box;">
                         <div>
                             <!-- Header -->
-                            <div class="text-center" style="margin-bottom: 2mm;">
-                                <h2 class="text-2xl font-black" style="margin: 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h2>
-                                <h3 class="text-base font-extrabold" style="margin: 1px 0 0 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
-                                <div style="display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 2px 18px; font-size: 14px; font-weight: 900; margin-top: 2px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
+                            <div class="text-center" style="margin-bottom: 1.5mm;">
+                                <h2 class="text-xl font-black" style="margin: 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h2>
+                                <h3 class="text-xs font-extrabold" style="margin: 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
+                                <div style="display: inline-block; border: 1.5px solid #000; border-radius: 3px; padding: 1px 12px; font-size: 11px; font-weight: 900; margin-top: 1px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
                             </div>
                             
                             <!-- Meta Info Row -->
-                            <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 2mm;">
-                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift1.name">প্রথম শিফট</div>
-                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 14px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift1.classRange">প্লে - ৪র্থ</div>
-                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift1.timeLabel">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</div>
+                            <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 1.5mm;">
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 1px 8px; font-weight: 800; font-size: 11.5px;" x-text="printConfig.shift1.name">প্রথম শিফট</div>
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 1px 10px; font-weight: 800; font-size: 11.5px;" x-text="printConfig.shift1.classRange">প্লে - ৪র্থ</div>
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 1px 8px; font-weight: 800; font-size: 11.5px;" x-text="printConfig.shift1.timeLabel">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</div>
                             </div>
                             
                             <!-- Table -->
-                            <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 11px; line-height: 1.2;">
+                            <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px; line-height: 1.05;">
                                 <thead>
                                     <tr class="routine-header-tr">
-                                        <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
-                                        <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
+                                        <th class="routine-th" style="border: 1px solid #000; padding: 1px 0px; font-weight: bold; font-size: 10.5px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
+                                        <th class="routine-th" style="border: 1px solid #000; padding: 1px 0px; font-weight: bold; font-size: 10.5px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
                                         <template x-for="clsName in shift1ClassNames">
-                                            <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
+                                            <th class="routine-th" style="border: 1px solid #000; padding: 1px 0px; font-weight: bold; font-size: 10.5px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
                                         </template>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <template x-for="row in shift1Rows">
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="formatDateBangla(row.date)"></td>
-                                            <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="getDayBangla(row.date)"></td>
+                                            <td style="border: 1px solid #000; padding: 0.5px 0px; font-weight: bold; text-align: center; font-size: 10px;" x-text="formatDateBangla(row.date)"></td>
+                                            <td style="border: 1px solid #000; padding: 0.5px 0px; font-weight: bold; text-align: center; font-size: 10px;" x-text="getDayBangla(row.date)"></td>
                                             <template x-for="clsId in printConfig.shift1.classes">
-                                                <td style="border: 1px solid #000; padding: 2.5px 2px; text-align: center; font-weight: bold; font-size: 11px;" x-text="translateSubject(row.subjects[clsId])"></td>
+                                                <td style="border: 1px solid #000; padding: 0.5px 0px; text-align: center; font-weight: bold; font-size: 10px;" x-text="translateSubject(row.subjects[clsId])"></td>
                                             </template>
                                         </tr>
                                     </template>
@@ -709,44 +709,44 @@
                         </div>
                         
                         <!-- Footnote -->
-                        <div class="text-center text-[10px] font-bold" x-show="printConfig.shift1.footnote" x-text="printConfig.shift1.footnote" style="margin-top: 2px;"></div>
+                        <div class="text-center text-[9px] font-bold" x-show="printConfig.shift1.footnote" x-text="printConfig.shift1.footnote" style="margin-top: 1px;"></div>
                     </div>
 
                     <!-- SHIFT 2 TABLE (BOTTOM HALF) -->
-                    <div style="padding-top: 2mm; box-sizing: border-box;">
+                    <div style="padding-top: 1mm; box-sizing: border-box;">
                         <div>
                             <!-- Header -->
-                            <div class="text-center" style="margin-bottom: 2mm;">
-                                <h2 class="text-2xl font-black" style="margin: 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h2>
-                                <h3 class="text-base font-extrabold" style="margin: 1px 0 0 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
-                                <div style="display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 2px 18px; font-size: 14px; font-weight: 900; margin-top: 2px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
+                            <div class="text-center" style="margin-bottom: 1.5mm;">
+                                <h2 class="text-xl font-black" style="margin: 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h2>
+                                <h3 class="text-xs font-extrabold" style="margin: 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
+                                <div style="display: inline-block; border: 1.5px solid #000; border-radius: 3px; padding: 1px 12px; font-size: 11px; font-weight: 900; margin-top: 1px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
                             </div>
                             
                             <!-- Meta Info Row -->
-                            <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 2mm;">
-                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift2.name">দ্বিতীয় শিফট</div>
-                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 14px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift2.classRange">৫ম - ৯ম</div>
-                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift2.timeLabel">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</div>
+                            <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 1.5mm;">
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 1px 8px; font-weight: 800; font-size: 11.5px;" x-text="printConfig.shift2.name">দ্বিতীয় শিফট</div>
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 1px 10px; font-weight: 800; font-size: 11.5px;" x-text="printConfig.shift2.classRange">৫ম - ৯ম</div>
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 1px 8px; font-weight: 800; font-size: 11.5px;" x-text="printConfig.shift2.timeLabel">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</div>
                             </div>
                             
                             <!-- Table -->
-                            <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 11px; line-height: 1.2;">
+                            <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px; line-height: 1.05;">
                                 <thead>
                                     <tr class="routine-header-tr">
-                                        <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
-                                        <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
+                                        <th class="routine-th" style="border: 1px solid #000; padding: 1px 0px; font-weight: bold; font-size: 10.5px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
+                                        <th class="routine-th" style="border: 1px solid #000; padding: 1px 0px; font-weight: bold; font-size: 10.5px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
                                         <template x-for="clsName in shift2ClassNames">
-                                            <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
+                                            <th class="routine-th" style="border: 1px solid #000; padding: 1px 0px; font-weight: bold; font-size: 10.5px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
                                         </template>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <template x-for="row in shift2Rows">
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="formatDateBangla(row.date)"></td>
-                                            <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="getDayBangla(row.date)"></td>
+                                            <td style="border: 1px solid #000; padding: 0.5px 0px; font-weight: bold; text-align: center; font-size: 10px;" x-text="formatDateBangla(row.date)"></td>
+                                            <td style="border: 1px solid #000; padding: 0.5px 0px; font-weight: bold; text-align: center; font-size: 10px;" x-text="getDayBangla(row.date)"></td>
                                             <template x-for="clsId in printConfig.shift2.classes">
-                                                <td style="border: 1px solid #000; padding: 2.5px 2px; text-align: center; font-weight: bold; font-size: 11px;" x-text="translateSubject(row.subjects[clsId])"></td>
+                                                <td style="border: 1px solid #000; padding: 0.5px 0px; text-align: center; font-weight: bold; font-size: 10px;" x-text="translateSubject(row.subjects[clsId])"></td>
                                             </template>
                                         </tr>
                                     </template>
@@ -755,7 +755,7 @@
                         </div>
                         
                         <!-- Footnote -->
-                        <div class="text-center text-[10px] font-bold" x-show="printConfig.shift2.footnote" x-text="printConfig.shift2.footnote" style="margin-top: 2px;"></div>
+                        <div class="text-center text-[9px] font-bold" x-show="printConfig.shift2.footnote" x-text="printConfig.shift2.footnote" style="margin-top: 1px;"></div>
                     </div>
                     
                 </div>
@@ -763,59 +763,57 @@
                 <div class="page-break"></div>
 
                 <!-- PAGE 2: PARENT FLYER BACK PAGE (BLANK TEMPLATE) -->
-                <div class="print-page flex flex-col justify-between" style="height: 272mm; padding: 3mm 0; box-sizing: border-box;">
+                <div class="print-page flex flex-col" style="padding: 1mm 0; box-sizing: border-box;">
                     
                     <!-- FLYER TOP HALF -->
-                    <div class="flex flex-col justify-between" style="height: 128mm; border-bottom: 2px dashed #000; padding: 2mm 5mm; box-sizing: border-box; font-size: 11px; line-height: 1.35; font-family: 'Noto Serif Bengali', serif;">
-                        <div>
-                            <div class="text-center" style="margin-bottom: 1.5mm;">
-                                <p class="font-extrabold uppercase text-[9px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
-                                <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
-                                <p class="text-[10px] font-bold" style="margin: 1px 0 0 0;" x-text="`${printConfig.announcement.title} নোটিশ`"></p>
-                            </div>
-                            
-                            <div class="font-bold" style="padding: 0 5px;">
-                                <p style="margin: 0; font-size: 10.5px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
-                                <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 10.5px;" x-text="printConfig.announcement.text"></p>
-                            </div>
+                    <div style="border-bottom: 2px dashed #000; padding: 2mm 5mm 4mm 5mm; box-sizing: border-box; font-size: 11px; line-height: 1.35; font-family: 'Noto Serif Bengali', serif; margin-bottom: 3mm;">
+                        <div class="text-center" style="margin-bottom: 1.5mm;">
+                            <p class="font-extrabold uppercase text-[9px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
+                            <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
+                            <p class="text-[10px] font-bold" style="margin: 1px 0 0 0;" x-text="`${printConfig.announcement.title} নোটিশ`"></p>
+                        </div>
+                        
+                        <div class="font-bold" style="padding: 0 5px;">
+                            <p style="margin: 0; font-size: 10.5px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
+                            <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 10.5px;" x-text="printConfig.announcement.text"></p>
+                        </div>
 
-                            <!-- Right Signatures Area -->
-                            <div class="flex justify-end" style="padding-right: 15px; margin-top: 1.5mm;">
-                                <div class="text-center" style="line-height: 1.2;">
-                                    <p class="font-extrabold text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
-                                    <div style="height: 6mm;"></div>
-                                    <p class="font-black text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
-                                    <p class="font-bold text-[9px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
-                                </div>
-                            </div>
-
-                            <!-- Student Info Blanks -->
-                            <div class="font-bold text-xs" style="padding: 0 5px; margin-top: 2mm;">
-                                <p style="margin: 0;">ছাত্র/ছাত্রীর নাম :.................................................................শ্রেণি :....................শাখা :..............রোল :....................</p>
+                        <!-- Right Signatures Area -->
+                        <div class="flex justify-end" style="padding-right: 15px; margin-top: 1.5mm;">
+                            <div class="text-center" style="line-height: 1.2;">
+                                <p class="font-extrabold text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
+                                <div style="height: 5mm;"></div>
+                                <p class="font-black text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
+                                <p class="font-bold text-[9px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
                             </div>
                         </div>
 
-                        <!-- Bottom Details -->
-                        <div class="grid grid-cols-12 gap-2 items-end" style="padding: 0 5px; margin-top: 1mm;">
+                        <!-- Student Info Blanks -->
+                        <div class="font-bold text-xs" style="padding: 0 5px; margin-top: 2mm;">
+                            <p style="margin: 0;">ছাত্র/ছাত্রীর নাম :.................................................................শ্রেণি :....................শাখা :..............রোল :....................</p>
+                        </div>
+
+                        <!-- Student Fee Box & Details (Directly Below Student Info) -->
+                        <div class="grid grid-cols-12 gap-2 items-end" style="padding: 0 5px; margin-top: 2.5mm;">
                             <!-- Left table -->
                             <div class="col-span-5">
-                                <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px;">
+                                <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px; line-height: 1.2;">
                                     <tbody>
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; width: 45%; text-align: left;">বেতন</td>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; width: 55%; text-align: center; font-weight: bold;" x-text="toBanglaNum(batchTuitionFee)"></td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; width: 45%; text-align: left; background-color: #fff;">বেতন</td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; width: 55%; text-align: center; font-weight: bold;" x-text="batchTuitionFee ? toBanglaNum(batchTuitionFee) : '................'"></td>
                                         </tr>
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; text-align: left;">পরীক্ষা ফি</td>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; text-align: center; font-weight: bold;" x-text="toBanglaNum(batchExamFee)"></td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">পরীক্ষা ফি</td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="batchExamFee ? toBanglaNum(batchExamFee) : '................'"></td>
                                         </tr>
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; text-align: left;">অন্যান্য</td>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; text-align: center; font-weight: bold;" x-text="toBanglaNum(batchOtherFee)"></td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">অন্যান্য</td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="batchOtherFee ? toBanglaNum(batchOtherFee) : '................'"></td>
                                         </tr>
-                                        <tr style="background-color: #f9fafb;">
-                                            <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; text-align: left;">মোট=</td>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; text-align: center; font-black;" x-text="toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0) || '')"></td>
+                                        <tr style="background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left;">মোট =</td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: 900;" x-text="(batchTuitionFee || batchExamFee || batchOtherFee) ? toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0)) : '................'"></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -828,61 +826,59 @@
                             </div>
                             
                             <!-- Right -->
-                            <div class="col-span-3 text-right pb-1 font-black text-xs" x-show="printConfig.announcement.phone" x-text="`প্রয়োজনে : ${toBanglaNum(printConfig.announcement.phone)}`"></div>
+                            <div class="col-span-3 text-right pb-1 font-black text-xs" x-text="`প্রয়োজনে : ${toBanglaNum(printConfig.announcement.phone || '০১৮১৬-২২০৩০০')}`"></div>
                         </div>
                     </div>
 
                     <!-- FLYER BOTTOM HALF -->
-                    <div class="flex flex-col justify-between" style="height: 128mm; padding: 2mm 5mm; box-sizing: border-box; font-size: 11px; line-height: 1.35; font-family: 'Noto Serif Bengali', serif;">
-                        <div>
-                            <div class="text-center" style="margin-bottom: 1.5mm;">
-                                <p class="font-extrabold uppercase text-[9px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
-                                <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
-                                <p class="text-[10px] font-bold" style="margin: 1px 0 0 0;" x-text="`${printConfig.announcement.title} নোটিশ`"></p>
-                            </div>
-                            
-                            <div class="font-bold" style="padding: 0 5px;">
-                                <p style="margin: 0; font-size: 10.5px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
-                                <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 10.5px;" x-text="printConfig.announcement.text"></p>
-                            </div>
+                    <div style="padding: 2mm 5mm 4mm 5mm; box-sizing: border-box; font-size: 11px; line-height: 1.35; font-family: 'Noto Serif Bengali', serif;">
+                        <div class="text-center" style="margin-bottom: 1.5mm;">
+                            <p class="font-extrabold uppercase text-[9px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
+                            <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
+                            <p class="text-[10px] font-bold" style="margin: 1px 0 0 0;" x-text="`${printConfig.announcement.title} নোটিশ`"></p>
+                        </div>
+                        
+                        <div class="font-bold" style="padding: 0 5px;">
+                            <p style="margin: 0; font-size: 10.5px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
+                            <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 10.5px;" x-text="printConfig.announcement.text"></p>
+                        </div>
 
-                            <!-- Right Signatures Area -->
-                            <div class="flex justify-end" style="padding-right: 15px; margin-top: 1.5mm;">
-                                <div class="text-center" style="line-height: 1.2;">
-                                    <p class="font-extrabold text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
-                                    <div style="height: 6mm;"></div>
-                                    <p class="font-black text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
-                                    <p class="font-bold text-[9px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
-                                </div>
-                            </div>
-
-                            <!-- Student Info Blanks -->
-                            <div class="font-bold text-xs" style="padding: 0 5px; margin-top: 2mm;">
-                                <p style="margin: 0;">ছাত্র/ছাত্রীর নাম :.................................................................শ্রেণি :....................শাখা :..............রোল :....................</p>
+                        <!-- Right Signatures Area -->
+                        <div class="flex justify-end" style="padding-right: 15px; margin-top: 1.5mm;">
+                            <div class="text-center" style="line-height: 1.2;">
+                                <p class="font-extrabold text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
+                                <div style="height: 5mm;"></div>
+                                <p class="font-black text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
+                                <p class="font-bold text-[9px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
                             </div>
                         </div>
 
-                        <!-- Bottom Details -->
-                        <div class="grid grid-cols-12 gap-2 items-end" style="padding: 0 5px; margin-top: 1mm;">
+                        <!-- Student Info Blanks -->
+                        <div class="font-bold text-xs" style="padding: 0 5px; margin-top: 2mm;">
+                            <p style="margin: 0;">ছাত্র/ছাত্রীর নাম :.................................................................শ্রেণি :....................শাখা :..............রোল :....................</p>
+                        </div>
+
+                        <!-- Student Fee Box & Details (Directly Below Student Info) -->
+                        <div class="grid grid-cols-12 gap-2 items-end" style="padding: 0 5px; margin-top: 2.5mm;">
                             <!-- Left table -->
                             <div class="col-span-5">
-                                <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px;">
+                                <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px; line-height: 1.2;">
                                     <tbody>
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; width: 45%; text-align: left;">বেতন</td>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; width: 55%; text-align: center; font-weight: bold;" x-text="toBanglaNum(batchTuitionFee)"></td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; width: 45%; text-align: left; background-color: #fff;">বেতন</td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; width: 55%; text-align: center; font-weight: bold;" x-text="batchTuitionFee ? toBanglaNum(batchTuitionFee) : '................'"></td>
                                         </tr>
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; text-align: left;">পরীক্ষা ফি</td>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; text-align: center; font-weight: bold;" x-text="toBanglaNum(batchExamFee)"></td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">পরীক্ষা ফি</td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="batchExamFee ? toBanglaNum(batchExamFee) : '................'"></td>
                                         </tr>
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; text-align: left;">অন্যান্য</td>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; text-align: center; font-weight: bold;" x-text="toBanglaNum(batchOtherFee)"></td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">অন্যান্য</td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="batchOtherFee ? toBanglaNum(batchOtherFee) : '................'"></td>
                                         </tr>
-                                        <tr style="background-color: #f9fafb;">
-                                            <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; text-align: left;">মোট=</td>
-                                            <td style="border: 1px solid #000; padding: 1px 4px; text-align: center; font-black;" x-text="toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0) || '')"></td>
+                                        <tr style="background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left;">মোট =</td>
+                                            <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: 900;" x-text="(batchTuitionFee || batchExamFee || batchOtherFee) ? toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0)) : '................'"></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -895,7 +891,7 @@
                             </div>
                             
                             <!-- Right -->
-                            <div class="col-span-3 text-right pb-1 font-black text-xs" x-show="printConfig.announcement.phone" x-text="`প্রয়োজনে : ${toBanglaNum(printConfig.announcement.phone)}`"></div>
+                            <div class="col-span-3 text-right pb-1 font-black text-xs" x-text="`প্রয়োজনে : ${toBanglaNum(printConfig.announcement.phone || '০১৮১৬-২২০৩০০')}`"></div>
                         </div>
                     </div>
                 </div>
@@ -911,40 +907,40 @@
                         <div class="print-page flex flex-col" style="padding: 1mm 0; box-sizing: border-box;">
                             
                             <!-- SHIFT 1 TABLE (TOP HALF) -->
-                            <div style="border-bottom: 2px dashed #000; padding-bottom: 3mm; margin-bottom: 3mm; box-sizing: border-box;">
+                            <div style="border-bottom: 2px dashed #000; padding-bottom: 1mm; margin-bottom: 1mm; box-sizing: border-box;">
                                 <div>
                                     <!-- Header -->
-                                    <div class="text-center" style="margin-bottom: 2mm;">
-                                        <h2 class="text-2xl font-black" style="margin: 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h2>
-                                        <h3 class="text-base font-extrabold" style="margin: 1px 0 0 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
-                                        <div style="display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 2px 18px; font-size: 14px; font-weight: 900; margin-top: 2px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
+                                    <div class="text-center" style="margin-bottom: 1mm;">
+                                        <h2 class="text-xl font-black" style="margin: 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h2>
+                                        <h3 class="text-sm font-extrabold" style="margin: 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
+                                        <div style="display: inline-block; border: 1.5px solid #000; border-radius: 3px; padding: 1px 12px; font-size: 11px; font-weight: 900; margin-top: 0px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
                                     </div>
                                     
                                     <!-- Meta Info Row -->
-                                    <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 2mm;">
-                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift1.name">প্রথম শিফট</div>
-                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 14px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift1.classRange">প্লে - ৪র্থ</div>
-                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift1.timeLabel">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</div>
+                                    <div class="flex justify-between items-center text-[10px] font-extrabold" style="margin-bottom: 1mm;">
+                                        <div style="border: 1.5px solid #000; border-radius: 2px; padding: 0px 4px; font-weight: 800;" x-text="printConfig.shift1.name">প্রথম শিফট</div>
+                                        <div style="border: 1.5px solid #000; border-radius: 2px; padding: 0px 4px; font-weight: 800;" x-text="printConfig.shift1.classRange">প্লে - ৪র্থ</div>
+                                        <div style="border: 1.5px solid #000; border-radius: 2px; padding: 0px 4px; font-weight: 800;" x-text="printConfig.shift1.timeLabel">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</div>
                                     </div>
                                     
                                     <!-- Table -->
-                                    <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 11px; line-height: 1.2;">
+                                    <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; line-height: 1;">
                                         <thead>
                                             <tr class="routine-header-tr">
-                                                <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
-                                                <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
+                                                <th class="routine-th" style="border: 1px solid #000; padding: 0px; font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 12%;">তারিখ</th>
+                                                <th class="routine-th" style="border: 1px solid #000; padding: 0px; font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 10%;">বার</th>
                                                 <template x-for="clsName in shift1ClassNames">
-                                                    <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
+                                                    <th class="routine-th" style="border: 1px solid #000; padding: 0px; font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
                                                 </template>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <template x-for="row in shift1Rows">
                                                 <tr>
-                                                    <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="formatDateBangla(row.date)"></td>
-                                                    <td style="border: 1px solid #000; padding: 2.5px 2px; font-weight: bold; text-align: center; font-size: 11px;" x-text="getDayBangla(row.date)"></td>
+                                                    <td style="border: 1px solid #000; padding: 0px; font-weight: bold; text-align: center;" x-text="formatDateBangla(row.date)"></td>
+                                                    <td style="border: 1px solid #000; padding: 0px; font-weight: bold; text-align: center;" x-text="getDayBangla(row.date)"></td>
                                                     <template x-for="clsId in printConfig.shift1.classes">
-                                                        <td style="border: 1px solid #000; padding: 2.5px 2px; text-align: center; font-weight: bold; font-size: 11px;" x-text="translateSubject(row.subjects[clsId])"></td>
+                                                        <td style="border: 1px solid #000; padding: 0px; text-align: center; font-weight: bold;" x-text="translateSubject(row.subjects[clsId])"></td>
                                                     </template>
                                                 </tr>
                                             </template>
@@ -953,34 +949,34 @@
                                 </div>
                                 
                                 <!-- Footnote -->
-                                <div class="text-center text-[10px] font-bold" x-show="printConfig.shift1.footnote" x-text="printConfig.shift1.footnote" style="margin-top: 2px;"></div>
+                                <div class="text-center text-[8px] font-bold" x-show="printConfig.shift1.footnote" x-text="printConfig.shift1.footnote" style="margin-top: 0px;"></div>
                             </div>
 
                             <!-- SHIFT 2 TABLE (BOTTOM HALF) -->
-                            <div style="padding-top: 2mm; box-sizing: border-box;">
+                            <div style="padding-top: 0mm; box-sizing: border-box;">
                                 <div>
                                     <!-- Header -->
-                                    <div class="text-center" style="margin-bottom: 2mm;">
-                                        <h2 class="text-2xl font-black" style="margin: 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h2>
-                                        <h3 class="text-base font-extrabold" style="margin: 1px 0 0 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
-                                        <div style="display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 2px 18px; font-size: 14px; font-weight: 900; margin-top: 2px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
+                                    <div class="text-center" style="margin-bottom: 1mm;">
+                                        <h2 class="text-xl font-black" style="margin: 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h2>
+                                        <h3 class="text-sm font-extrabold" style="margin: 0;" x-text="printConfig.announcement.title">২য় সাময়িক পরীক্ষা-২০২৬</h3>
+                                        <div style="display: inline-block; border: 1.5px solid #000; border-radius: 3px; padding: 1px 12px; font-size: 11px; font-weight: 900; margin-top: 0px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
                                     </div>
                                     
                                     <!-- Meta Info Row -->
-                                    <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 2mm;">
-                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift2.name">দ্বিতীয় শিফট</div>
-                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 14px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift2.classRange">৫ম - ৯ম</div>
-                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 10px; font-weight: 800; font-size: 13.5px;" x-text="printConfig.shift2.timeLabel">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</div>
+                                    <div class="flex justify-between items-center text-[10px] font-extrabold" style="margin-bottom: 1mm;">
+                                        <div style="border: 1.5px solid #000; border-radius: 2px; padding: 0px 4px; font-weight: 800;" x-text="printConfig.shift2.name">দ্বিতীয় শিফট</div>
+                                        <div style="border: 1.5px solid #000; border-radius: 2px; padding: 0px 4px; font-weight: 800;" x-text="printConfig.shift2.classRange">৫ম - ৯ম</div>
+                                        <div style="border: 1.5px solid #000; border-radius: 2px; padding: 0px 4px; font-weight: 800;" x-text="printConfig.shift2.timeLabel">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</div>
                                     </div>
                                     
                                     <!-- Table -->
-                                    <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 11px; line-height: 1.2;">
+                                    <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; line-height: 1;">
                                         <thead>
                                             <tr class="routine-header-tr">
-                                                <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
-                                                <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
+                                                <th class="routine-th" style="border: 1px solid #000; padding: 0px; font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 12%;">তারিখ</th>
+                                                <th class="routine-th" style="border: 1px solid #000; padding: 0px; font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 10%;">বার</th>
                                                 <template x-for="clsName in shift2ClassNames">
-                                                    <th class="routine-th" style="border: 1px solid #000; padding: 3px 2px; font-weight: bold; font-size: 12px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
+                                                    <th class="routine-th" style="border: 1px solid #000; padding: 0px; font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
                                                 </template>
                                             </tr>
                                         </thead>
@@ -1007,64 +1003,62 @@
                         <div class="page-break"></div>
                         
                         <!-- PAGE 2: PARENT FLYERS BACK PAGE (Top = Student A, Bottom = Student B) -->
-                        <div class="print-page flex flex-col justify-between" style="height: 272mm; padding: 3mm 0; box-sizing: border-box;">
+                        <div class="print-page flex flex-col" style="padding: 1mm 0; box-sizing: border-box;">
                             
                             <!-- TOP FLYER (Student A) -->
-                            <div class="flex flex-col justify-between" style="height: 128mm; border-bottom: 2px dashed #000; padding: 2mm 5mm; box-sizing: border-box; font-size: 11px; line-height: 1.35; font-family: 'Noto Serif Bengali', serif;">
-                                <div>
-                                    <div class="text-center" style="margin-bottom: 1.5mm;">
-                                        <p class="font-extrabold uppercase text-[9px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
-                                        <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
-                                        <p class="text-[10px] font-bold" style="margin: 1px 0 0 0;" x-text="`${printConfig.announcement.title} নোটিশ`"></p>
-                                    </div>
-                                    
-                                    <div class="font-bold" style="padding: 0 5px;">
-                                        <p style="margin: 0; font-size: 10.5px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
-                                        <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 10.5px;" x-text="printConfig.announcement.text"></p>
-                                    </div>
-                                    
-                                    <!-- Right Signatures Area -->
-                                    <div class="flex justify-end" style="padding-right: 15px; margin-top: 1.5mm;">
-                                        <div class="text-center" style="line-height: 1.2;">
-                                            <p class="font-extrabold text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
-                                            <div style="height: 6mm;"></div>
-                                            <p class="font-black text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
-                                            <p class="font-bold text-[9px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Student Info Dynamic (Student A) -->
-                                    <div class="font-bold text-xs" style="padding: 0 5px; margin-top: 2mm;">
-                                        <p style="margin: 0;">
-                                            <span>ছাত্র/ছাত্রীর নাম : </span><span class="font-black underline" x-text="pair[0].student_name"></span>
-                                            <span style="margin-left: 8px;">শ্রেণি : </span><span class="font-black underline" x-text="translateClass(batchClassName)"></span>
-                                            <span style="margin-left: 8px;">শাখা : </span><span class="font-black underline" x-text="pair[0].section ? (pair[0].section.section_name.includes('A') ? 'এ' : (pair[0].section.section_name.includes('B') ? 'বি' : pair[0].section.section_name)) : ''"></span>
-                                            <span style="margin-left: 8px;">রোল : </span><span class="font-black underline" x-text="toBanglaNum(pair[0].roll_number)"></span>
-                                        </p>
+                            <div style="border-bottom: 2px dashed #000; padding: 2mm 5mm 4mm 5mm; box-sizing: border-box; font-size: 11px; line-height: 1.35; font-family: 'Noto Serif Bengali', serif; margin-bottom: 3mm;">
+                                <div class="text-center" style="margin-bottom: 1.5mm;">
+                                    <p class="font-extrabold uppercase text-[9px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
+                                    <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
+                                    <p class="text-[10px] font-bold" style="margin: 1px 0 0 0;" x-text="`${printConfig.announcement.title} নোটিশ`"></p>
+                                </div>
+                                
+                                <div class="font-bold" style="padding: 0 5px;">
+                                    <p style="margin: 0; font-size: 10.5px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
+                                    <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 10.5px;" x-text="printConfig.announcement.text"></p>
+                                </div>
+                                
+                                <!-- Right Signatures Area -->
+                                <div class="flex justify-end" style="padding-right: 15px; margin-top: 1.5mm;">
+                                    <div class="text-center" style="line-height: 1.2;">
+                                        <p class="font-extrabold text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
+                                        <div style="height: 5mm;"></div>
+                                        <p class="font-black text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
+                                        <p class="font-bold text-[9px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
                                     </div>
                                 </div>
+                                
+                                <!-- Student Info Dynamic (Student A) -->
+                                <div class="font-bold text-xs" style="padding: 0 5px; margin-top: 2mm;">
+                                    <p style="margin: 0;">
+                                        <span>ছাত্র/ছাত্রীর নাম : </span><span class="font-black underline" x-text="pair[0].student_name"></span>
+                                        <span style="margin-left: 8px;">শ্রেণি : </span><span class="font-black underline" x-text="translateClass(batchClassName)"></span>
+                                        <span style="margin-left: 8px;">শাখা : </span><span class="font-black underline" x-text="pair[0].section ? (pair[0].section.section_name.includes('A') ? 'এ' : (pair[0].section.section_name.includes('B') ? 'বি' : pair[0].section.section_name)) : ''"></span>
+                                        <span style="margin-left: 8px;">রোল : </span><span class="font-black underline" x-text="toBanglaNum(pair[0].roll_number)"></span>
+                                    </p>
+                                </div>
 
-                                <!-- Bottom Details (Student A) -->
-                                <div class="grid grid-cols-12 gap-2 items-end" style="padding: 0 5px; margin-top: 1mm;">
+                                <!-- Student Fee Box & Details (Directly Below Student Info) -->
+                                <div class="grid grid-cols-12 gap-2 items-end" style="padding: 0 5px; margin-top: 2.5mm;">
                                     <!-- Left table -->
                                     <div class="col-span-5">
-                                        <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px;">
+                                        <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px; line-height: 1.2;">
                                             <tbody>
                                                 <tr>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; width: 45%; text-align: left;">বেতন</td>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; width: 55%; text-align: center; font-weight: bold;" x-text="toBanglaNum(batchTuitionFee)"></td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; width: 45%; text-align: left; background-color: #fff;">বেতন</td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; width: 55%; text-align: center; font-weight: bold;" x-text="batchTuitionFee ? toBanglaNum(batchTuitionFee) : '................'"></td>
                                                 </tr>
                                                 <tr>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; text-align: left;">পরীক্ষা ফি</td>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; text-align: center; font-weight: bold;" x-text="toBanglaNum(batchExamFee)"></td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">পরীক্ষা ফি</td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="batchExamFee ? toBanglaNum(batchExamFee) : '................'"></td>
                                                 </tr>
                                                 <tr>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; text-align: left;">অন্যান্য</td>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; text-align: center; font-weight: bold;" x-text="toBanglaNum(batchOtherFee)"></td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">অন্যান্য</td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="batchOtherFee ? toBanglaNum(batchOtherFee) : '................'"></td>
                                                 </tr>
-                                                <tr style="background-color: #f9fafb;">
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; text-align: left;">মোট=</td>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; text-align: center; font-black;" x-text="toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0) || '')"></td>
+                                                <tr style="background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left;">মোট =</td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: 900;" x-text="(batchTuitionFee || batchExamFee || batchOtherFee) ? toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0)) : '................'"></td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -1077,71 +1071,69 @@
                                     </div>
                                     
                                     <!-- Right -->
-                                    <div class="col-span-3 text-right pb-1 font-black text-xs" x-show="printConfig.announcement.phone" x-text="`প্রয়োজনে : ${toBanglaNum(printConfig.announcement.phone)}`"></div>
+                                    <div class="col-span-3 text-right pb-1 font-black text-xs" x-text="`প্রয়োজনে : ${toBanglaNum(printConfig.announcement.phone || '০১৮১৬-২২০৩০০')}`"></div>
                                 </div>
                             </div>
                             
                             <!-- BOTTOM FLYER (Student B / Empty template if not exists) -->
-                            <div class="flex flex-col justify-between" style="height: 128mm; padding: 2mm 5mm; box-sizing: border-box; font-size: 11px; line-height: 1.35; font-family: 'Noto Serif Bengali', serif;">
-                                <div>
-                                    <div class="text-center" style="margin-bottom: 1.5mm;">
-                                        <p class="font-extrabold uppercase text-[9px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
-                                        <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
-                                        <p class="text-[10px] font-bold" style="margin: 1px 0 0 0;" x-text="`${printConfig.announcement.title} নোটিশ`"></p>
-                                    </div>
-                                    
-                                    <div class="font-bold" style="padding: 0 5px;">
-                                        <p style="margin: 0; font-size: 10.5px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
-                                        <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 10.5px;" x-text="printConfig.announcement.text"></p>
-                                    </div>
-                                    
-                                    <!-- Right Signatures Area -->
-                                    <div class="flex justify-end" style="padding-right: 15px; margin-top: 1.5mm;">
-                                        <div class="text-center" style="line-height: 1.2;">
-                                            <p class="font-extrabold text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
-                                            <div style="height: 6mm;"></div>
-                                            <p class="font-black text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
-                                            <p class="font-bold text-[9px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Student Info Dynamic (Student B) -->
-                                    <div class="font-bold text-xs" style="padding: 0 5px; margin-top: 2mm;">
-                                        <template x-if="pair[1]">
-                                            <p style="margin: 0;">
-                                                <span>ছাত্র/ছাত্রীর নাম : </span><span class="font-black underline" x-text="pair[1].student_name"></span>
-                                                <span style="margin-left: 8px;">শ্রেণি : </span><span class="font-black underline" x-text="translateClass(batchClassName)"></span>
-                                                <span style="margin-left: 8px;">শাখা : </span><span class="font-black underline" x-text="pair[1].section ? (pair[1].section.section_name.includes('A') ? 'এ' : (pair[1].section.section_name.includes('B') ? 'বি' : pair[1].section.section_name)) : ''"></span>
-                                                <span style="margin-left: 8px;">রোল : </span><span class="font-black underline" x-text="toBanglaNum(pair[1].roll_number)"></span>
-                                            </p>
-                                        </template>
-                                        <template x-if="!pair[1]">
-                                            <p style="margin: 0;">ছাত্র/ছাত্রীর নাম :.................................................................শ্রেণি :....................শাখা :..............রোল :....................</p>
-                                        </template>
+                            <div style="padding: 2mm 5mm 4mm 5mm; box-sizing: border-box; font-size: 11px; line-height: 1.35; font-family: 'Noto Serif Bengali', serif;">
+                                <div class="text-center" style="margin-bottom: 1.5mm;">
+                                    <p class="font-extrabold uppercase text-[9px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
+                                    <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
+                                    <p class="text-[10px] font-bold" style="margin: 1px 0 0 0;" x-text="`${printConfig.announcement.title} নোটিশ`"></p>
+                                </div>
+                                
+                                <div class="font-bold" style="padding: 0 5px;">
+                                    <p style="margin: 0; font-size: 10.5px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
+                                    <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 10.5px;" x-text="printConfig.announcement.text"></p>
+                                </div>
+                                
+                                <!-- Right Signatures Area -->
+                                <div class="flex justify-end" style="padding-right: 15px; margin-top: 1.5mm;">
+                                    <div class="text-center" style="line-height: 1.2;">
+                                        <p class="font-extrabold text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
+                                        <div style="height: 5mm;"></div>
+                                        <p class="font-black text-[10px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
+                                        <p class="font-bold text-[9px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
                                     </div>
                                 </div>
+                                
+                                <!-- Student Info Dynamic (Student B) -->
+                                <div class="font-bold text-xs" style="padding: 0 5px; margin-top: 2mm;">
+                                    <template x-if="pair[1]">
+                                        <p style="margin: 0;">
+                                            <span>ছাত্র/ছাত্রীর নাম : </span><span class="font-black underline" x-text="pair[1].student_name"></span>
+                                            <span style="margin-left: 8px;">শ্রেণি : </span><span class="font-black underline" x-text="translateClass(batchClassName)"></span>
+                                            <span style="margin-left: 8px;">শাখা : </span><span class="font-black underline" x-text="pair[1].section ? (pair[1].section.section_name.includes('A') ? 'এ' : (pair[1].section.section_name.includes('B') ? 'বি' : pair[1].section.section_name)) : ''"></span>
+                                            <span style="margin-left: 8px;">রোল : </span><span class="font-black underline" x-text="toBanglaNum(pair[1].roll_number)"></span>
+                                        </p>
+                                    </template>
+                                    <template x-if="!pair[1]">
+                                        <p style="margin: 0;">ছাত্র/ছাত্রীর নাম :.................................................................শ্রেণি :....................শাখা :..............রোল :....................</p>
+                                    </template>
+                                </div>
 
-                                <!-- Bottom Details (Student B) -->
-                                <div class="grid grid-cols-12 gap-2 items-end" style="padding: 0 5px; margin-top: 1mm;">
+                                <!-- Student Fee Box & Details (Directly Below Student Info) -->
+                                <div class="grid grid-cols-12 gap-2 items-end" style="padding: 0 5px; margin-top: 2.5mm;">
                                     <!-- Left table -->
                                     <div class="col-span-5">
-                                        <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px;">
+                                        <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px; line-height: 1.2;">
                                             <tbody>
                                                 <tr>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; width: 45%; text-align: left;">বেতন</td>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; width: 55%; text-align: center; font-weight: bold;" x-text="pair[1] ? toBanglaNum(batchTuitionFee) : ''"></td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; width: 45%; text-align: left; background-color: #fff;">বেতন</td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; width: 55%; text-align: center; font-weight: bold;" x-text="pair[1] && batchTuitionFee ? toBanglaNum(batchTuitionFee) : '................'"></td>
                                                 </tr>
                                                 <tr>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; text-align: left;">পরীক্ষা ফি</td>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; text-align: center; font-weight: bold;" x-text="pair[1] ? toBanglaNum(batchExamFee) : ''"></td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">পরীক্ষা ফি</td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="pair[1] && batchExamFee ? toBanglaNum(batchExamFee) : '................'"></td>
                                                 </tr>
                                                 <tr>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; text-align: left;">অন্যান্য</td>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; text-align: center; font-weight: bold;" x-text="pair[1] ? toBanglaNum(batchOtherFee) : ''"></td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">অন্যান্য</td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="pair[1] && batchOtherFee ? toBanglaNum(batchOtherFee) : '................'"></td>
                                                 </tr>
-                                                <tr style="background-color: #f9fafb;">
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; font-weight: bold; text-align: left;">মোট=</td>
-                                                    <td style="border: 1px solid #000; padding: 1px 4px; text-align: center; font-black;" x-text="pair[1] ? toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0) || '') : ''"></td>
+                                                <tr style="background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left;">মোট =</td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: 900;" x-text="pair[1] && (batchTuitionFee || batchExamFee || batchOtherFee) ? toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0)) : '................'"></td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -1154,7 +1146,7 @@
                                     </div>
                                     
                                     <!-- Right -->
-                                    <div class="col-span-3 text-right pb-1 font-black text-xs" x-show="printConfig.announcement.phone" x-text="`প্রয়োজনে : ${toBanglaNum(printConfig.announcement.phone)}`"></div>
+                                    <div class="col-span-3 text-right pb-1 font-black text-xs" x-text="`প্রয়োজনে : ${toBanglaNum(printConfig.announcement.phone || '০১৮১৬-২২০৩০০')}`"></div>
                                 </div>
                             </div>
                             
@@ -1321,12 +1313,25 @@
         }
     }
 
+    @php
+        $shift1ClassIds = [];
+        $shift2ClassIds = [];
+        foreach($classes as $c) {
+            $name = strtolower(trim($c->class_name));
+            if (in_array($name, ['play', 'nursery', 'one', 'two', 'three', 'four', '১ম', '২য়', '৩য়', '৪র্থ', 'প্লে', 'নার্সারী', 'প্রথম', 'দ্বিতীয়', 'তৃতীয়', 'চতুর্থ'])) {
+                $shift1ClassIds[] = (string)$c->id;
+            } else {
+                $shift2ClassIds[] = (string)$c->id;
+            }
+        }
+    @endphp
+
     function examRoutinePage() {
         return {
             dropdownOpen: null,
             sessionText: '{{ $sessions->first()->session_name ?? "Select Session" }}',
             examText: '{{ $exams->first()->name ?? "Select Exam" }}',
-            classText: 'Select Class...',
+            classText: '{{ $classes->first()->class_name ?? "Select Class..." }}',
             subjectText: 'Select Subject...',
             
             printExamName: 'Term Examination',
@@ -1358,14 +1363,14 @@
                     classRange: 'প্লে - ৪র্থ',
                     timeLabel: 'সময় : সকাল ৯.০০ থেকে ১১.০০ টা',
                     footnote: '[ প্লে, নার্সারী, প্রথম ও দ্বিতীয় শ্রেণীর S.B.A পরীক্ষা সকাল ১০:৩০ মিনিটে শুরু হবে ]',
-                    classes: []
+                    classes: @json($shift1ClassIds)
                 },
                 shift2: {
                     name: 'দ্বিতীয় শিফট',
                     classRange: '৫ম - ৯ম',
                     timeLabel: 'সময় : দুপুর ১২.০০ থেকে ০২.০০ টা',
                     footnote: '',
-                    classes: []
+                    classes: @json($shift2ClassIds)
                 },
                 announcement: {
                     title: '২য় সাময়িক পরীক্ষা-২০২৬',
@@ -1380,7 +1385,7 @@
             form: {
                 session_year_id: '{{ $sessions->first()->id ?? "" }}',
                 exam_id: '{{ $exams->first()->id ?? "" }}',
-                class_id: '',
+                class_id: '{{ $classes->first()->id ?? "" }}',
                 subject_id: '',
                 exam_date: new Date().toISOString().split('T')[0],
                 room_number: '',
@@ -1394,16 +1399,45 @@
             saving: false,
             
             init() {
-                this.loadRoutine();
+                let defaultShift1 = @json($shift1ClassIds);
+                let defaultShift2 = @json($shift2ClassIds);
+
+                this.printConfig.shift1.classes = defaultShift1;
+                this.printConfig.shift2.classes = defaultShift2;
+
                 let cached = localStorage.getItem('dualShiftPrintConfig');
                 if (cached && !cached.includes('First Shift')) {
                     try {
                         let parsed = JSON.parse(cached);
-                        this.printConfig = { ...this.printConfig, ...parsed };
+                        if (parsed.shift1) {
+                            this.printConfig.shift1.name = parsed.shift1.name || this.printConfig.shift1.name;
+                            this.printConfig.shift1.classRange = parsed.shift1.classRange || this.printConfig.shift1.classRange;
+                            this.printConfig.shift1.timeLabel = parsed.shift1.timeLabel || this.printConfig.shift1.timeLabel;
+                            this.printConfig.shift1.footnote = parsed.shift1.footnote !== undefined ? parsed.shift1.footnote : this.printConfig.shift1.footnote;
+                            if (Array.isArray(parsed.shift1.classes) && parsed.shift1.classes.length > 0) {
+                                let valid = parsed.shift1.classes.filter(id => defaultShift1.concat(defaultShift2).includes(String(id)));
+                                if (valid.length > 0) this.printConfig.shift1.classes = valid;
+                            }
+                        }
+                        if (parsed.shift2) {
+                            this.printConfig.shift2.name = parsed.shift2.name || this.printConfig.shift2.name;
+                            this.printConfig.shift2.classRange = parsed.shift2.classRange || this.printConfig.shift2.classRange;
+                            this.printConfig.shift2.timeLabel = parsed.shift2.timeLabel || this.printConfig.shift2.timeLabel;
+                            this.printConfig.shift2.footnote = parsed.shift2.footnote !== undefined ? parsed.shift2.footnote : this.printConfig.shift2.footnote;
+                            if (Array.isArray(parsed.shift2.classes) && parsed.shift2.classes.length > 0) {
+                                let valid = parsed.shift2.classes.filter(id => defaultShift1.concat(defaultShift2).includes(String(id)));
+                                if (valid.length > 0) this.printConfig.shift2.classes = valid;
+                            }
+                        }
+                        if (parsed.announcement) {
+                            this.printConfig.announcement = { ...this.printConfig.announcement, ...parsed.announcement };
+                        }
                     } catch (e) {
                         console.error(e);
                     }
                 }
+                
+                this.loadRoutine();
                 
                 // Watch modal state to disable/enable page scroll
                 this.$watch('showPrintModal', val => {
