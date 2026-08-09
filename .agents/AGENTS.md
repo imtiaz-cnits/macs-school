@@ -15,6 +15,7 @@ Act as my dedicated project assistant and technical co-pilot for the "MACS Schoo
 - **Tailwind CSS Enforcement**: Avoid custom inline `<style>` blocks or managing separate CSS override sheets (like custom layout CSS rules inside `styles.blade.php`). Strictly utilize utility classes from Tailwind CSS for all layout designs, overrides, and stylings.
 - **Authorization & Control**: You are strictly prohibited from performing any modifying database actions (such as migrations, seeder runs, updates, or deletes) or modifying/replacing source code files without the user's explicit permission and prior review.
 - **Component Consistency & Side-Effects**: If fixing/changing the design of one component affects or breaks another component, both must be fixed immediately. The developer must identify and apply the fix to all related areas across the project to maintain layout consistency.
+- **Class Ordering Consistency**: Whenever class lists or class dropdowns are loaded/displayed, they must always be ordered in the standard academic sequence: **Play, Nursery, One, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten**. To enforce this globally across both Blade views and API responses, use global scope queries on the `Classes` model.
 
 ## UI/UX Design System Consistency Guidelines
 
