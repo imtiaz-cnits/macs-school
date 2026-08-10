@@ -1610,7 +1610,7 @@
                 <div class="print-page flex flex-col justify-between" style="height: 282mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 0; box-sizing: border-box; background-color: #fff !important;">
                     
                     <!-- SHIFT 1 TABLE (TOP HALF) -->
-                    <div style="height: 133mm !important; display: flex !important; flex-direction: column !important; box-sizing: border-box; background-color: #fff !important;">
+                    <div style="display: flex !important; flex-direction: column !important; box-sizing: border-box; background-color: #fff !important;">
                         <!-- Header -->
                         <div class="text-center" style="margin-top: 1mm; margin-bottom: 1.5mm;">
                             <h2 class="text-xl font-black" style="margin: 0 0 2px 0; color: #000; font-size: 22px;">ম্যাকস স্কুল এন্ড কলেজ</h2>
@@ -1656,15 +1656,12 @@
                             </tbody>
                         </table>
 
-                        <!-- Spacer to push footnote to bottom -->
-                        <div style="flex: 1;"></div>
-
                         <!-- Footnote -->
                         <div class="text-center text-[14px] font-bold" x-show="printConfig.shift1.footnote" x-text="printConfig.shift1.footnote" style="margin-top: 2mm; margin-bottom: 1mm;"></div>
                     </div>
 
                     <!-- SHIFT 2 TABLE (BOTTOM HALF) -->
-                    <div style="height: 133mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding-top: 4mm !important; box-sizing: border-box; background-color: #fff !important;">
+                    <div style="display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding-top: 4mm !important; box-sizing: border-box; background-color: #fff !important;">
                         <div>
                             <!-- Header -->
                             <div class="text-center" style="margin-top: 1mm; margin-bottom: 1.5mm;">
@@ -1863,7 +1860,7 @@
                         <div class="print-page flex flex-col justify-between" style="height: 282mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 0; box-sizing: border-box; background-color: #fff !important;">
                             
                             <!-- SHIFT 1 TABLE (TOP HALF) -->
-                            <div style="height: 133mm !important; display: flex !important; flex-direction: column !important; box-sizing: border-box; background-color: #fff !important;">
+                            <div style="display: flex !important; flex-direction: column !important; box-sizing: border-box; background-color: #fff !important;">
                                 <!-- Header -->
                                 <div class="text-center" style="margin-top: 1mm; margin-bottom: 1.5mm;">
                                     <h2 class="text-xl font-black" style="margin: 0 0 2px 0; color: #000; font-size: 22px;">ম্যাকস স্কুল এন্ড কলেজ</h2>
@@ -1909,15 +1906,12 @@
                                     </tbody>
                                 </table>
 
-                                <!-- Spacer to push footnote to bottom -->
-                                <div style="flex: 1;"></div>
-
                                 <!-- Footnote -->
                                 <div class="text-center text-[14px] font-bold" x-show="printConfig.shift1.footnote" x-text="printConfig.shift1.footnote" style="margin-top: 2mm; margin-bottom: 1mm;"></div>
                             </div>
 
                             <!-- SHIFT 2 TABLE (BOTTOM HALF) -->
-                            <div style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding-top: 2mm !important; box-sizing: border-box; background-color: #fff !important;">
+                            <div style="display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding-top: 2mm !important; box-sizing: border-box; background-color: #fff !important;">
                                 <div>
                                     <!-- Header -->
                                     <div class="text-center" style="margin-top: 1mm; margin-bottom: 1.5mm;">
