@@ -135,6 +135,7 @@
             display: block !important;
             height: 0 !important;
             clear: both !important;
+            visibility: hidden !important;
         }
 
         /* Spacing layout for Page 2 Parent Flyers */
@@ -143,6 +144,7 @@
             flex-direction: column !important;
             justify-content: space-between !important;
             height: 282mm !important;
+            page-break-inside: avoid !important;
             box-sizing: border-box !important;
             background-color: #fff !important;
         }
@@ -152,6 +154,7 @@
             flex-direction: column !important;
             justify-content: space-between !important;
             height: 138mm !important;
+            page-break-inside: avoid !important;
             box-sizing: border-box !important;
             background-color: #fff !important;
         }
@@ -162,10 +165,11 @@
         .school-header h3 { font-size: 20px !important; margin: 5px 0 0 0 !important; text-decoration: underline; }
         .school-header p { font-size: 16px !important; margin: 5px 0 0 0 !important; font-weight: bold; }
 
-        /* Exam Table */
-        th, td { border: 1px solid #000 !important; padding: 12px !important; text-align: center; font-size: 16px !important; }
-        th { background-color: #e5e7eb !important; font-weight: bold !important; text-transform: uppercase; }
-        td { font-weight: 600 !important; }
+        /* Exam Table - exclude dual shift print tables */
+        body:not(.print-dual) th,
+        body:not(.print-dual) td { border: 1px solid #000 !important; padding: 12px !important; text-align: center; font-size: 16px !important; }
+        body:not(.print-dual) th { background-color: #e5e7eb !important; font-weight: bold !important; text-transform: uppercase; }
+        body:not(.print-dual) td { font-weight: 600 !important; }
     }
 </style>
 
@@ -467,6 +471,28 @@
                 }
                 return chunks;
             },
+
+            get printRowStyle() {
+                let maxRows = Math.max(this.shift1Rows.length || 0, this.shift2Rows.length || 0);
+                if (maxRows >= 12) return 'padding: 2px 4px; white-space: nowrap;';
+                if (maxRows >= 11) return 'padding: 2.5px 4px; white-space: nowrap;';
+                if (maxRows >= 10) return 'padding: 3px 5px; white-space: nowrap;';
+                if (maxRows >= 9) return 'padding: 4px 5px; white-space: nowrap;';
+                return 'padding: 6px 8px; white-space: nowrap;';
+            },
+
+            get printHeaderStyle() {
+                let maxRows = Math.max(this.shift1Rows.length || 0, this.shift2Rows.length || 0);
+                if (maxRows >= 12) return 'padding: 3px 4px; white-space: nowrap;';
+                if (maxRows >= 11) return 'padding: 3.5px 4px; white-space: nowrap;';
+                if (maxRows >= 10) return 'padding: 4px 5px; white-space: nowrap;';
+                if (maxRows >= 9) return 'padding: 5px 5px; white-space: nowrap;';
+                return 'padding: 6px 8px; white-space: nowrap;';
+            },
+
+            get printTableFontSize() {
+                return '15px';
+            },
             
             selectSession(id, name) {
                 this.form.session_year_id = id;
@@ -591,18 +617,18 @@
 
             getSubjectStyle(rawSub) {
                 let sub = this.translateSubject(rawSub);
-                if (!sub) return 'font-size: 10px; white-space: nowrap;';
+                if (!sub) return 'font-size: 15px; white-space: nowrap;';
                 let len = sub.length;
                 if (len <= 7) {
-                    return 'font-size: 10px; white-space: nowrap;';
+                    return 'font-size: 15px; white-space: nowrap;';
                 } else if (len <= 11) {
-                    return 'font-size: 8.5px; white-space: nowrap; letter-spacing: -0.2px;';
+                    return 'font-size: 14px; white-space: nowrap;';
                 } else if (len <= 15) {
-                    return 'font-size: 7.5px; white-space: nowrap; letter-spacing: -0.3px;';
+                    return 'font-size: 13px; white-space: nowrap;';
                 } else if (len <= 20) {
-                    return 'font-size: 6.8px; white-space: nowrap; letter-spacing: -0.4px;';
+                    return 'font-size: 12px; white-space: nowrap;';
                 } else {
-                    return 'font-size: 6.2px; white-space: nowrap; letter-spacing: -0.5px;';
+                    return 'font-size: 10px; white-space: nowrap;';
                 }
             },
 
@@ -649,23 +675,27 @@
                 } else if (preset === 'shift1_dup') {
                     this.printConfig.shift1.name = 'প্রথম শিফট';
                     this.printConfig.shift1.classRange = 'প্লে - ৪র্থ';
-                    this.printConfig.shift1.timeLabel = 'সময় : সকাল ৯.০০ থেকে ১১.০০ টা';
+                    this.printConfig.shift1.timeLabel = 'সময় : সকাল ৯.০০ থেকে ১১.০০ টা';
                     this.printConfig.shift1.classes = [...defaultShift1];
+                    this.printConfig.shift1.footnote = '';
 
                     this.printConfig.shift2.name = 'প্রথম শিফট';
                     this.printConfig.shift2.classRange = 'প্লে - ৪র্থ';
-                    this.printConfig.shift2.timeLabel = 'সময় : সকাল ৯.০০ থেকে ১১.০০ টা';
+                    this.printConfig.shift2.timeLabel = 'সময় : সকাল ৯.০০ থেকে ১১.০০ টা';
                     this.printConfig.shift2.classes = [...defaultShift1];
+                    this.printConfig.shift2.footnote = '';
                 } else if (preset === 'shift2_dup') {
-                    this.printConfig.shift1.name = 'দ্বিতীয় শিফট';
+                    this.printConfig.shift1.name = 'দ্বিতীয় শিফট';
                     this.printConfig.shift1.classRange = '৫ম - ১০ম';
-                    this.printConfig.shift1.timeLabel = 'সময় : দুপুর ১২.০০ থেকে ০২.০০ টা';
+                    this.printConfig.shift1.timeLabel = 'সময় : দুপুর ১২.০০ থেকে ০২.০০ টা';
                     this.printConfig.shift1.classes = [...defaultShift2];
+                    this.printConfig.shift1.footnote = '';
 
-                    this.printConfig.shift2.name = 'দ্বিতীয় শিফট';
+                    this.printConfig.shift2.name = 'দ্বিতীয় শিফট';
                     this.printConfig.shift2.classRange = '৫ম - ১০ম';
-                    this.printConfig.shift2.timeLabel = 'সময় : দুপুর ১২.০০ থেকে ০২.০০ টা';
+                    this.printConfig.shift2.timeLabel = 'সময় : দুপুর ১২.০০ থেকে ০২.০০ টা';
                     this.printConfig.shift2.classes = [...defaultShift2];
+                    this.printConfig.shift2.footnote = '';
                 }
             },
 
@@ -1603,23 +1633,23 @@
                         </div>
                         
                         <!-- Table -->
-                        <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; line-height: 0.3;">
+                        <table :style="`width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize};`">
                             <thead>
                                 <tr class="routine-header-tr">
-                                    <th class="routine-th" style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; font-size: 10px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
-                                    <th class="routine-th" style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; font-size: 10px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
+                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
+                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
                                     <template x-for="clsName in shift1ClassNames">
-                                        <th class="routine-th" style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; font-size: 10px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
+                                        <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
                                     </template>
                                 </tr>
                             </thead>
                             <tbody>
                                 <template x-for="row in shift1Rows">
                                     <tr>
-                                        <td style="border: 1px solid #000; padding: 0.5px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="formatDateBangla(row.date)"></td>
-                                        <td style="border: 1px solid #000; padding: 0.5px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="getDayBangla(row.date)"></td>
+                                        <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="formatDateBangla(row.date)"></td>
+                                        <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="getDayBangla(row.date)"></td>
                                         <template x-for="clsId in printConfig.shift1.classes">
-                                            <td style="border: 1px solid #000; padding: 0.5px 0px; text-align: center; font-weight: bold;" :style="getSubjectStyle(row.subjects[clsId])" x-text="translateSubject(row.subjects[clsId])"></td>
+                                            <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold;`" :class="getSubjectStyle(row.subjects[clsId])" x-text="translateSubject(row.subjects[clsId])"></td>
                                         </template>
                                     </tr>
                                 </template>
@@ -1658,23 +1688,23 @@
                             </div>
                             
                             <!-- Table -->
-                            <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; line-height: 0.3;">
+                            <table :style="`width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize};`">
                                 <thead>
                                     <tr class="routine-header-tr">
-                                        <th class="routine-th" style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; font-size: 10px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
-                                        <th class="routine-th" style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; font-size: 10px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
+                                        <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
+                                        <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
                                         <template x-for="clsName in shift2ClassNames">
-                                            <th class="routine-th" style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; font-size: 10px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
+                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
                                         </template>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <template x-for="row in shift2Rows">
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="formatDateBangla(row.date)"></td>
-                                            <td style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="getDayBangla(row.date)"></td>
+                                            <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="formatDateBangla(row.date)"></td>
+                                            <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="getDayBangla(row.date)"></td>
                                             <template x-for="clsId in printConfig.shift2.classes">
-                                                <td style="border: 1px solid #000; padding: 0px 0px; text-align: center; font-weight: bold;" :style="getSubjectStyle(row.subjects[clsId])" x-text="translateSubject(row.subjects[clsId])"></td>
+                                                <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold; ${getSubjectStyle(row.subjects[clsId])}`" x-text="translateSubject(row.subjects[clsId])"></td>
                                             </template>
                                         </tr>
                                     </template>
@@ -1692,7 +1722,7 @@
                 <div class="print-page flex flex-col justify-between" style="height: 282mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 1mm 0; box-sizing: border-box; background-color: #fff !important;">
                     
                     <!-- FLYER TOP HALF -->
-                    <div class="flyer-half" style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; border-bottom: 2px dashed #000; padding: 2mm 5mm 6mm 5mm; box-sizing: border-box; background-color: #fff !important;">
+                    <div class="flyer-half" style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 2mm 5mm 4mm 5mm; box-sizing: border-box; background-color: #fff !important;">
                         <div class="text-center" style="margin-bottom: 1.5mm;">
                             <p class="font-extrabold uppercase text-[16px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
                             <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
@@ -1700,8 +1730,8 @@
                         </div>
                         
                         <div class="font-bold" style="padding: 0 5px;">
-                            <p style="margin: 0; font-size: 16px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
-                            <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 16px;" x-text="printConfig.announcement.text"></p>
+                            <p style="margin: 0; font-size: 15px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
+                            <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 15px;" x-text="printConfig.announcement.text"></p>
                         </div>
 
                         <!-- Right Signatures Area -->
@@ -1723,23 +1753,23 @@
                         <div class="grid grid-cols-12 gap-2 items-end" style="padding: 0 5px; margin-top: 2.5mm;">
                             <!-- Left table -->
                             <div class="col-span-5">
-                                <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px; line-height: 0.8;">
+                                <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 14px; line-height: 1.2;">
                                     <tbody>
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; width: 45%; text-align: left; background-color: #fff;">বেতন</td>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; width: 55%; text-align: center; font-weight: bold;" x-text="batchTuitionFee ? toBanglaNum(batchTuitionFee) : ''"></td>
+                                            <td style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 45%; text-align: left; background-color: #fff;">বেতন</td>
+                                            <td style="border: 1px solid #000; padding: 4px; width: 55%; text-align: center; font-weight: bold;" x-text="batchTuitionFee ? toBanglaNum(batchTuitionFee) : ''"></td>
                                         </tr>
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">পরীক্ষা ফি</td>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="batchExamFee ? toBanglaNum(batchExamFee) : ''"></td>
+                                            <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: left; background-color: #fff;">পরীক্ষা ফি</td>
+                                            <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold;" x-text="batchExamFee ? toBanglaNum(batchExamFee) : ''"></td>
                                         </tr>
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">অন্যান্য</td>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="batchOtherFee ? toBanglaNum(batchOtherFee) : ''"></td>
+                                            <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: left; background-color: #fff;">অন্যান্য</td>
+                                            <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold;" x-text="batchOtherFee ? toBanglaNum(batchOtherFee) : ''"></td>
                                         </tr>
                                         <tr style="background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left;">মোট =</td>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: 900;" x-text="(batchTuitionFee || batchExamFee || batchOtherFee) ? toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0)) : ''"></td>
+                                            <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: left;">মোট =</td>
+                                            <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: 900;" x-text="(batchTuitionFee || batchExamFee || batchOtherFee) ? toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0)) : ''"></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -1757,7 +1787,7 @@
                     </div>
 
                     <!-- FLYER BOTTOM HALF -->
-                    <div class="flyer-half" style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 6mm 5mm 4mm 5mm; box-sizing: border-box; background-color: #fff !important;">
+                    <div class="flyer-half" style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 4mm 5mm 4mm 5mm; box-sizing: border-box; background-color: #fff !important;">
                         <div class="text-center" style="margin-bottom: 1.5mm;">
                             <p class="font-extrabold uppercase text-[16px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
                             <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
@@ -1765,8 +1795,8 @@
                         </div>
                         
                         <div class="font-bold" style="padding: 0 5px;">
-                            <p style="margin: 0; font-size: 16px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
-                            <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 16px;" x-text="printConfig.announcement.text"></p>
+                            <p style="margin: 0; font-size: 15px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
+                            <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 15px;" x-text="printConfig.announcement.text"></p>
                         </div>
 
                         <!-- Right Signatures Area -->
@@ -1788,23 +1818,23 @@
                         <div class="grid grid-cols-12 gap-2 items-end" style="padding: 0 5px; margin-top: 2.5mm;">
                             <!-- Left table -->
                             <div class="col-span-5">
-                                <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px; line-height: 0.8;">
+                                <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 14px; line-height: 1.2;">
                                     <tbody>
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; width: 45%; text-align: left; background-color: #fff;">বেতন</td>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; width: 55%; text-align: center; font-weight: bold;" x-text="batchTuitionFee ? toBanglaNum(batchTuitionFee) : ''"></td>
+                                            <td style="border: 1px solid #000; padding: 4px; font-weight: bold; width: 45%; text-align: left; background-color: #fff;">বেতন</td>
+                                            <td style="border: 1px solid #000; padding: 4px; width: 55%; text-align: center; font-weight: bold;" x-text="batchTuitionFee ? toBanglaNum(batchTuitionFee) : ''"></td>
                                         </tr>
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">পরীক্ষা ফি</td>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="batchExamFee ? toBanglaNum(batchExamFee) : ''"></td>
+                                            <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: left; background-color: #fff;">পরীক্ষা ফি</td>
+                                            <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold;" x-text="batchExamFee ? toBanglaNum(batchExamFee) : ''"></td>
                                         </tr>
                                         <tr>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">অন্যান্য</td>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="batchOtherFee ? toBanglaNum(batchOtherFee) : ''"></td>
+                                            <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: left; background-color: #fff;">অন্যান্য</td>
+                                            <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold;" x-text="batchOtherFee ? toBanglaNum(batchOtherFee) : ''"></td>
                                         </tr>
                                         <tr style="background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                            <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left;">মোট =</td>
-                                            <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: 900;" x-text="(batchTuitionFee || batchExamFee || batchOtherFee) ? toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0)) : ''"></td>
+                                            <td style="border: 1px solid #000; padding: 4px; font-weight: bold; text-align: left;">মোট =</td>
+                                            <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: 900;" x-text="(batchTuitionFee || batchExamFee || batchOtherFee) ? toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0)) : ''"></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -1856,23 +1886,23 @@
                                 </div>
                                 
                                 <!-- Table -->
-                                <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; line-height: 0.3;">
+                                <table :style="`width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize};`">
                                     <thead>
                                         <tr class="routine-header-tr">
-                                            <th class="routine-th" style="border: 1px solid #000; padding: 1px 0px; font-weight: bold; font-size: 10px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
-                                            <th class="routine-th" style="border: 1px solid #000; padding: 1px 0px; font-weight: bold; font-size: 10px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
+                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
+                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
                                             <template x-for="clsName in shift1ClassNames">
-                                                <th class="routine-th" style="border: 1px solid #000; padding: 1px 0px; font-weight: bold; font-size: 10px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
+                                                <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
                                             </template>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <template x-for="row in shift1Rows">
                                             <tr>
-                                                <td style="border: 1px solid #000; padding: 0.5px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="formatDateBangla(row.date)"></td>
-                                                <td style="border: 1px solid #000; padding: 0.5px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="getDayBangla(row.date)"></td>
+                                                <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="formatDateBangla(row.date)"></td>
+                                                <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="getDayBangla(row.date)"></td>
                                                 <template x-for="clsId in printConfig.shift1.classes">
-                                                    <td style="border: 1px solid #000; padding: 0.5px 0px; text-align: center; font-weight: bold;" :style="getSubjectStyle(row.subjects[clsId])" x-text="translateSubject(row.subjects[clsId])"></td>
+                                                    <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold; ${getSubjectStyle(row.subjects[clsId])}`" x-text="translateSubject(row.subjects[clsId])"></td>
                                                 </template>
                                             </tr>
                                         </template>
@@ -1887,7 +1917,7 @@
                             </div>
 
                             <!-- SHIFT 2 TABLE (BOTTOM HALF) -->
-                            <div style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; border-top: 1.5px dashed #000; padding-top: 4mm !important; box-sizing: border-box; background-color: #fff !important;">
+                            <div style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding-top: 2mm !important; box-sizing: border-box; background-color: #fff !important;">
                                 <div>
                                     <!-- Header -->
                                     <div class="text-center" style="margin-top: 1mm; margin-bottom: 1.5mm;">
@@ -1911,23 +1941,23 @@
                                     </div>
                                     
                                     <!-- Table -->
-                                    <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; line-height: 0.3;">
+                                    <table :style="`width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize};`">
                                         <thead>
                                             <tr class="routine-header-tr">
-                                                <th class="routine-th" style="border: 1px solid #000; padding: 1px 0px; font-weight: bold; font-size: 10px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
-                                                <th class="routine-th" style="border: 1px solid #000; padding: 1px 0px; font-weight: bold; font-size: 10px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
+                                                <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
+                                                <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
                                                 <template x-for="clsName in shift2ClassNames">
-                                                    <th class="routine-th" style="border: 1px solid #000; padding: 1px 0px; font-weight: bold; font-size: 10px; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" x-text="translateClass(clsName)"></th>
+                                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
                                                 </template>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <template x-for="row in shift2Rows">
                                                 <tr>
-                                                    <td style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="formatDateBangla(row.date)"></td>
-                                                    <td style="border: 1px solid #000; padding: 0px 0px; font-weight: bold; text-align: center; font-size: 9px;" x-text="getDayBangla(row.date)"></td>
+                                                    <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="formatDateBangla(row.date)"></td>
+                                                    <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="getDayBangla(row.date)"></td>
                                                     <template x-for="clsId in printConfig.shift2.classes">
-                                                        <td style="border: 1px solid #000; padding: 0px 0px; text-align: center; font-weight: bold;" :style="getSubjectStyle(row.subjects[clsId])" x-text="translateSubject(row.subjects[clsId])"></td>
+                                                        <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold; ${getSubjectStyle(row.subjects[clsId])}`" x-text="translateSubject(row.subjects[clsId])"></td>
                                                     </template>
                                                 </tr>
                                             </template>
@@ -1947,7 +1977,7 @@
                         <div class="print-page flex flex-col justify-between" style="height: 282mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 1mm 0; box-sizing: border-box; background-color: #fff !important;">
                             
                             <!-- TOP FLYER (Student A) -->
-                            <div class="flyer-half" style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; border-bottom: 2px dashed #000; padding: 2mm 5mm 6mm 5mm; box-sizing: border-box; background-color: #fff !important;">
+                            <div class="flyer-half" style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 2mm 5mm 4mm 5mm; box-sizing: border-box; background-color: #fff !important;">
                                 <div class="text-center" style="margin-bottom: 1.5mm;">
                                     <p class="font-extrabold uppercase text-[16px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
                                     <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
@@ -1983,7 +2013,7 @@
                                 <div class="grid grid-cols-12 gap-2 items-end" style="padding: 0 5px; margin-top: 2.5mm;">
                                     <!-- Left table -->
                                     <div class="col-span-5">
-                                        <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px; line-height: 0.8;">
+                                        <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 14px; line-height: 1.2;">
                                             <tbody>
                                                 <tr>
                                                     <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; width: 45%; text-align: left; background-color: #fff;">বেতন</td>
@@ -2017,7 +2047,7 @@
                             </div>
                             
                             <!-- BOTTOM FLYER (Student B / Empty template if not exists) -->
-                            <div class="flyer-half" style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 6mm 5mm 4mm 5mm; box-sizing: border-box; background-color: #fff !important;">
+                            <div class="flyer-half" style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 4mm 5mm 4mm 5mm; box-sizing: border-box; background-color: #fff !important;">
                                 <div class="text-center" style="margin-bottom: 1.5mm;">
                                     <p class="font-extrabold uppercase text-[16px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
                                     <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
@@ -2050,33 +2080,31 @@
                                         </p>
                                     </template>
                                     <template x-if="!pair[1]">
-                                        <p style="margin: 0;">ছাত্র/ছাত্রীর নাম :.................................................................শ্রেণি :....................শাখা :..............রো�                        </div>
-                    </div>             </div>
-                            </div>
-                            
-                        </div>
-                        
-                        <!-- (Directly Below Student Info) -->
+                                        <p style="margin: 0;">ছাত্র/ছাত্রীর নাম :.................................................................শ্রেণি :....................শাখা :..............রোল :....................</p>
+                                    </template>
+                                </div>
+
+                                <!-- Student Fee Box & Details (Directly Below Student Info) -->
                                 <div class="grid grid-cols-12 gap-2 items-end" style="padding: 0 5px; margin-top: 2.5mm;">
                                     <!-- Left table -->
                                     <div class="col-span-5">
-                                        <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 10px; line-height: 1.2;">
+                                        <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 14px; line-height: 1.2;">
                                             <tbody>
                                                 <tr>
                                                     <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; width: 45%; text-align: left; background-color: #fff;">বেতন</td>
-                                                    <td style="border: 1px solid #000; padding: 2px 4px; width: 55%; text-align: center; font-weight: bold;" x-text="pair[1] && batchTuitionFee ? toBanglaNum(batchTuitionFee) : '................'"></td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; width: 55%; text-align: center; font-weight: bold;" x-text="pair[1] && batchTuitionFee ? toBanglaNum(batchTuitionFee) : ''"></td>
                                                 </tr>
                                                 <tr>
                                                     <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">পরীক্ষা ফি</td>
-                                                    <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="pair[1] && batchExamFee ? toBanglaNum(batchExamFee) : '................'"></td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="pair[1] && batchExamFee ? toBanglaNum(batchExamFee) : ''"></td>
                                                 </tr>
                                                 <tr>
                                                     <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left; background-color: #fff;">অন্যান্য</td>
-                                                    <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="pair[1] && batchOtherFee ? toBanglaNum(batchOtherFee) : '................'"></td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: bold;" x-text="pair[1] && batchOtherFee ? toBanglaNum(batchOtherFee) : ''"></td>
                                                 </tr>
                                                 <tr style="background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
                                                     <td style="border: 1px solid #000; padding: 2px 4px; font-weight: bold; text-align: left;">মোট =</td>
-                                                    <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: 900;" x-text="pair[1] && (batchTuitionFee || batchExamFee || batchOtherFee) ? toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0)) : '................'"></td>
+                                                    <td style="border: 1px solid #000; padding: 2px 4px; text-align: center; font-weight: 900;" x-text="pair[1] && (batchTuitionFee || batchExamFee || batchOtherFee) ? toBanglaNum(Number(batchTuitionFee || 0) + Number(batchExamFee || 0) + Number(batchOtherFee || 0)) : ''"></td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -2085,11 +2113,11 @@
                                     <!-- Middle -->
                                     <div class="col-span-4 text-center pb-1">
                                         <p class="text-xs" style="margin: 0; letter-spacing: 1px;">............................</p>
-                                        <p class="font-bold text-[10px]" style="margin: 1px 0 0 0;">শ্রেণী শিক্ষকের স্বাক্ষর</p>
+                                        <p class="font-bold text-[14px]" style="margin: 1px 0 0 0;">শ্রেণী শিক্ষকের স্বাক্ষর</p>
                                     </div>
                                     
                                     <!-- Right -->
-                                    <div class="col-span-3 text-right pb-1 font-black text-xs" x-text="`প্রয়োজনে : ${toBanglaNum(printConfig.announcement.phone || '০১৮১৬-২২০৩০০')}`"></div>
+                                    <div class="col-span-3 text-right pb-1 font-black text-sm" x-text="`প্রয়োজনে : ${toBanglaNum(printConfig.announcement.phone || '০১৮১৬-২২০৩০০')}`"></div>
                                 </div>
                             </div>
                             
