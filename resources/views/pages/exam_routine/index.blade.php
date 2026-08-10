@@ -1735,7 +1735,7 @@
                         <div class="flex justify-end" style="padding-right: 15px; margin-top: 4mm;">
                             <div class="text-center" style="line-height: 1.2;">
                                 <p class="font-extrabold text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
-                                <div style="height: 5mm;"></div>
+                                <div style="height: 15mm; text-align: center;"><img src="/img/signature.png" alt="signature" style="height: 100%; object-fit: contain; display: block; margin: 0 auto;"></div>
                                 <p class="font-black text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
                                 <p class="font-bold text-[16px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
                             </div>
@@ -1800,7 +1800,7 @@
                         <div class="flex justify-end" style="padding-right: 15px; margin-top: 4mm;">
                             <div class="text-center" style="line-height: 1.2;">
                                 <p class="font-extrabold text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
-                                <div style="height: 5mm;"></div>
+                                <div style="height: 7mm;"><img src="/img/signature.png" alt="signature" style="height: 100%; object-fit: contain;"></div>
                                 <p class="font-black text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
                                 <p class="font-bold text-[16px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
                             </div>
@@ -1987,7 +1987,7 @@
                                 <div class="flex justify-end" style="padding-right: 15px; margin-top: 4mm;">
                                     <div class="text-center" style="line-height: 1.2;">
                                         <p class="font-extrabold text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
-                                        <div style="height: 5mm;"></div>
+                                        <div style="height: 15mm; text-align: center;"><img src="/img/signature.png" alt="signature" style="height: 100%; object-fit: contain; display: block; margin: 0 auto;"></div>
                                         <p class="font-black text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
                                         <p class="font-bold text-[16px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
                                     </div>
@@ -2057,7 +2057,7 @@
                                 <div class="flex justify-end" style="padding-right: 15px; margin-top: 4mm;">
                                     <div class="text-center" style="line-height: 1.2;">
                                         <p class="font-extrabold text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
-                                        <div style="height: 5mm;"></div>
+                                        <div style="height: 15mm; text-align: center;"><img src="/img/signature.png" alt="signature" style="height: 100%; object-fit: contain; display: block; margin: 0 auto;"></div>
                                         <p class="font-black text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
                                         <p class="font-bold text-[16px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
                                     </div>
