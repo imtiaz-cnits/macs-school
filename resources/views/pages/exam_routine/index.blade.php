@@ -587,7 +587,11 @@
 
             translateSubject(sub) {
                 if (!sub) return '×';
-                return this.fixMojibake(sub);
+                sub = this.fixMojibake(sub);
+                let s = sub.trim();
+                if (s.includes('বাংলাদেশ ও বিশ্বপরিচয়')) return 'বাংলাদেশ ও বিশ্বঃ';
+                if (s.includes('নৈতিক শিক্ষা')) return 'ইসলাম ও নৈঃ শিঃ';
+                return s;
             },
 
             getSubjectStyle(rawSub) {
