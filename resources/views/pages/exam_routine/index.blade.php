@@ -589,7 +589,7 @@
                 if (!sub) return '×';
                 sub = this.fixMojibake(sub);
                 let s = sub.trim();
-                if (s.includes('বাংলাদেশ ও বিশ্বপরিচয়')) return 'বাংলাদেশ ও বিশ্বঃ';
+                if (s.includes('বিশ্বপরিচয়')) return 'বাঃ ও বিশ্বঃ';
                 if (s.includes('নৈতিক শিক্ষা')) return 'ইসলাম ও নৈঃ শিঃ';
                 return s;
             },
