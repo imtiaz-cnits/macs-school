@@ -591,6 +591,10 @@
                 let s = sub.trim();
                 if (s.includes('বিশ্বপরিচয়')) return 'বাঃ ও বিশ্বঃ';
                 if (s.includes('নৈতিক শিক্ষা')) return 'ইসলাম ও নৈঃ শিঃ';
+                if (s.includes('সাধারন বিজ্ঞান')) return 'বাঃ ও বিঃ/ সাধাঃ বিঃ';
+                if (s.includes('তথ্য ও যোগাযোগ প্রযুক্তি')) return 'তথ্য ও যোঃ';
+                if (s.includes('জীব বিজ্ঞান')) return 'জীব বিঃ';
+                if (s.includes('উচ্চতর গণিত')) return 'উচ্চঃ গঃ/ কৃষি শিক্ষা';
                 return s;
             },
 
@@ -605,9 +609,9 @@
                 } else if (len <= 15) {
                     return 'font-size: 13px; white-space: nowrap;';
                 } else if (len <= 20) {
-                    return 'font-size: 12px; white-space: nowrap;';
+                    return 'font-size: 13px; white-space: nowrap;';
                 } else {
-                    return 'font-size: 10px; white-space: nowrap;';
+                    return 'font-size: 13px; white-space: nowrap;';
                 }
             },
 
