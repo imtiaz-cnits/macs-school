@@ -587,32 +587,7 @@
 
             translateSubject(sub) {
                 if (!sub) return '×';
-                sub = this.fixMojibake(sub);
-                let s = sub.toLowerCase().trim();
-                if (s.includes('bangla') || s.includes('বাংলা') || s.includes('বাং')) {
-                    if (s.includes('1st') || s.includes('১ম')) return 'বাংলা ১ম পত্র';
-                    if (s.includes('2nd') || s.includes('২য়')) return 'বাংলা ২য় পত্র';
-                    return 'বাংলা';
-                }
-                if (s.includes('english') || s.includes('ইংরেজি') || s.includes('ইঙ্গরেজী') || s.includes('ইংশরেজী')) {
-                    if (s.includes('1st') || s.includes('১ম')) return 'ইংরেজি ১ম পত্র';
-                    if (s.includes('2nd') || s.includes('২য়')) return 'ইংরেজি ২য় পত্র';
-                    return 'ইংরেজি';
-                }
-                if (s.includes('math') || s.includes('গণিত') || s.includes('গণি')) return 'গণিত';
-                if (s.includes('arabic') || s.includes('আরবী') || s.includes('ধর্ম')) return 'আরবী/ধর্মশিক্ষা';
-                if (s.includes('drawing') || s.includes('ড্রইং') || s.includes('অঙ্কন')) return 'ড্রইং';
-                if (s.includes('science') || s.includes('বিজ্ঞান')) return 'বিজ্ঞান';
-                if (s.includes('islam') || s.includes('ইসলাম')) return 'ইসলাম শিক্ষা';
-                if (s.includes('physical') || s.includes('শারীরিক')) return 'শারীরিক শিঃ';
-                if (s.includes('s.b.a') || s.includes('sba')) return 'S.B.A';
-                if (s.includes('gk') || s.includes('general knowledge') || s.includes('সাধারণ')) return 'সাঃ জ্ঞান';
-                if (s.includes('social') || s.includes('সমাজ')) return 'সমাজ';
-                if (s.includes('ict') || s.includes('তথ্য')) return 'তথ্য ও যোগাঃ';
-                if (s.includes('physics') || s.includes('পদার্থ')) return 'পদার্থ/ইতিহাস';
-                if (s.includes('agriculture') || s.includes('কৃষি')) return 'কৃষিশিক্ষা';
-                if (s.includes('bgs') || s.includes('বাংলাদেশ')) return 'বাংলাদেশ ও বিশ্বঃ';
-                return sub;
+                return this.fixMojibake(sub);
             },
 
             getSubjectStyle(rawSub) {
