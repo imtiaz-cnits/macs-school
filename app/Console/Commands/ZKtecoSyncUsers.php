@@ -59,8 +59,20 @@ class ZKtecoSyncUsers extends Command
             $students = Student::all();
             $teachers = Teacher::all();
 
-            $this->info("Uploading " . $students->count() . " students to device...");
+            $this->info("Fetching users from device...");
+            $deviceUsers = $zk->getUser();
+            $deviceUserMap = [];
+            if (is_array($deviceUsers)) {
+                foreach ($deviceUsers as $u) {
+                    if (isset($u['userid'])) {
+                        $deviceUserMap[(int)$u['userid']] = $u;
+                    }
+                }
+            }
+
+            $this->info("Uploading/Syncing " . $students->count() . " students to device...");
             $studentCount = 0;
+            $studentDbUpdates = 0;
             foreach ($students as $student) {
                 $uid = $student->id;
                 $userid = $student->id;
@@ -71,20 +83,45 @@ class ZKtecoSyncUsers extends Command
                     $cleanName = "Student " . $student->id;
                 }
 
-                // Format card number to numeric/integer representation
-                $cardno = $student->card_number ? preg_replace('/[^0-9]/', '', $student->card_number) : 0;
-                if (empty($cardno)) {
-                    $cardno = 0;
+                // Check device for existing card number
+                $deviceCard = null;
+                if (isset($deviceUserMap[$student->id])) {
+                    $cardVal = trim($deviceUserMap[$student->id]['cardno'] ?? '');
+                    if ($cardVal !== '' && $cardVal !== '0' && $cardVal !== '0000000000') {
+                        $deviceCard = $cardVal;
+                    }
+                }
+
+                // Determine correct card number
+                if (!empty($student->card_number)) {
+                    // Recover if DB has User ID as card number (mistake from update_card_numbers.php)
+                    if (((int)$student->card_number === (int)$student->id) && $deviceCard && ((int)$deviceCard !== (int)$student->id)) {
+                        $student->update(['card_number' => $deviceCard]);
+                        $cardno = preg_replace('/[^0-9]/', '', $deviceCard);
+                        $studentDbUpdates++;
+                    } else {
+                        $cardno = preg_replace('/[^0-9]/', '', $student->card_number);
+                    }
+                } else {
+                    if ($deviceCard) {
+                        $student->update(['card_number' => $deviceCard]);
+                        $cardno = preg_replace('/[^0-9]/', '', $deviceCard);
+                        $studentDbUpdates++;
+                        $this->info("Syncing Card {$deviceCard} from Device to DB for: {$student->student_name}");
+                    } else {
+                        $cardno = 0;
+                    }
                 }
 
                 // Upload student
                 $zk->setUser($uid, $userid, $cleanName, '', 0, $cardno);
                 $studentCount++;
             }
-            $this->info("✅ Successfully synced {$studentCount} students to device.");
+            $this->info("✅ Successfully synced {$studentCount} students (Updated {$studentDbUpdates} card numbers in DB).");
 
-            $this->info("Uploading " . $teachers->count() . " teachers/staff to device...");
+            $this->info("Uploading/Syncing " . $teachers->count() . " teachers/staff to device...");
             $teacherCount = 0;
+            $teacherDbUpdates = 0;
             foreach ($teachers as $teacher) {
                 // To avoid overlap with students (ID 1-1000), teachers get uid starting at 10000
                 $uid = 10000 + $teacher->id;
@@ -95,16 +132,34 @@ class ZKtecoSyncUsers extends Command
                     $cleanName = "Staff " . $teacher->id;
                 }
 
-                $cardno = $teacher->card_number ? preg_replace('/[^0-9]/', '', $teacher->card_number) : 0;
-                if (empty($cardno)) {
-                    $cardno = 0;
+                // Check device for existing card number
+                $deviceCard = null;
+                if (isset($deviceUserMap[(int)$userid])) {
+                    $cardVal = trim($deviceUserMap[(int)$userid]['cardno'] ?? '');
+                    if ($cardVal !== '' && $cardVal !== '0' && $cardVal !== '0000000000') {
+                        $deviceCard = $cardVal;
+                    }
+                }
+
+                // Determine correct card number
+                if (!empty($teacher->card_number)) {
+                    $cardno = preg_replace('/[^0-9]/', '', $teacher->card_number);
+                } else {
+                    if ($deviceCard) {
+                        $teacher->update(['card_number' => $deviceCard]);
+                        $cardno = preg_replace('/[^0-9]/', '', $deviceCard);
+                        $teacherDbUpdates++;
+                        $this->info("Syncing Card {$deviceCard} from Device to DB for: {$teacher->name}");
+                    } else {
+                        $cardno = 0;
+                    }
                 }
 
                 // Upload teacher
                 $zk->setUser($uid, $userid, $cleanName, '', 0, $cardno);
                 $teacherCount++;
             }
-            $this->info("✅ Successfully synced {$teacherCount} teachers/staff to device.");
+            $this->info("✅ Successfully synced {$teacherCount} teachers/staff (Updated {$teacherDbUpdates} card numbers in DB).");
 
             $zk->enableDevice();
             $zk->disconnect();

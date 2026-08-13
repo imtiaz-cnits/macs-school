@@ -790,14 +790,13 @@ public function detectStudentInfo(Request $request)
                 }
             }
             
-            if (!$matchedUser || empty($matchedUser['cardno'])) {
+            $cardNo = trim($matchedUser['cardno']);
+            if ($cardNo === '' || $cardNo === '0' || $cardNo === '0000000000') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => "No RFID card mapped for Student ID/Device ID {$student->id} on the biometric machine."
+                    'message' => "No valid RFID card mapped for Student ID/Device ID {$student->id} on the biometric machine."
                 ], 400);
             }
-            
-            $cardNo = trim($matchedUser['cardno']);
             
             $existing = Student::where('card_number', $cardNo)->where('id', '!=', $student->id)->first();
             if ($existing) {
@@ -880,7 +879,10 @@ public function detectStudentInfo(Request $request)
             $userCardMap = [];
             foreach ($users as $user) {
                 if (isset($user['userid']) && !empty($user['cardno'])) {
-                    $userCardMap[(int)$user['userid']] = trim($user['cardno']);
+                    $cardNo = trim($user['cardno']);
+                    if ($cardNo !== '' && $cardNo !== '0' && $cardNo !== '0000000000') {
+                        $userCardMap[(int)$user['userid']] = $cardNo;
+                    }
                 }
             }
             
