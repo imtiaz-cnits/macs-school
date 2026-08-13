@@ -4,12 +4,12 @@
     <meta charset="utf-8" />
     <title>Admit Cards - {{ $schoolClass->class_name }}</title>
     <style>
-        /* Force Figtree as primary, Noto Serif Bengali as fallback for Bangla texts */
-        * { font-family: 'Figtree', 'Helvetica', 'Arial', sans-serif !important; }
+        /* 🚨 Force Default Core Fonts Globally (No external or local font files needed) */
+        * { font-family: 'Helvetica', 'Arial', sans-serif !important; }
 
         /* A4 Page Setup - Tight Margins to fit 3 cards per page */
         @page { size: A4 portrait; margin: 10px 15px; }
-        body { font-family:'Helvetica', sans-serif; margin: 0; padding: 0; color: #000; font-size: 9.5px; }
+        body { margin: 0; padding: 0; color: #000; font-size: 9.5px; }
         
         /* 🚨 3 Cards per page - Height optimized to 330px to fill A4 page beautifully */
         .admit-card-box { 
@@ -17,7 +17,7 @@
             padding: 8px 10px;
             border-radius: 10px; 
             margin-bottom: 12px; 
-            height: 330px; /* 🚨 Increased height to cover page gap */
+            height: 330px; 
             box-sizing: border-box;
             position: relative;
             overflow: hidden;
