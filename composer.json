@@ -55,7 +55,9 @@
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "@php artisan package:discover --ansi",
+            "@php -r \"@mkdir('vendor/jmrashed/zkteco/src/Lib/Helper/logs', 0777, true);\"",
+            "@php -r \"@copy('patches/User.php', 'vendor/jmrashed/zkteco/src/Lib/Helper/User.php');\""
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
