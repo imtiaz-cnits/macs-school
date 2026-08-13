@@ -96,18 +96,30 @@ class ZKtecoSyncUsers extends Command
                 if (!empty($student->card_number)) {
                     // Recover if DB has User ID as card number (mistake from update_card_numbers.php)
                     if (((int)$student->card_number === (int)$student->id) && $deviceCard && ((int)$deviceCard !== (int)$student->id)) {
-                        $student->update(['card_number' => $deviceCard]);
-                        $cardno = preg_replace('/[^0-9]/', '', $deviceCard);
-                        $studentDbUpdates++;
+                        $existing = Student::where('card_number', $deviceCard)->where('id', '!=', $student->id)->exists();
+                        if (!$existing) {
+                            $student->update(['card_number' => $deviceCard]);
+                            $cardno = preg_replace('/[^0-9]/', '', $deviceCard);
+                            $studentDbUpdates++;
+                        } else {
+                            $this->warn("⚠️ Card {$deviceCard} is already assigned to another student in DB. Skipping DB update for {$student->student_name}.");
+                            $cardno = preg_replace('/[^0-9]/', '', $student->card_number);
+                        }
                     } else {
                         $cardno = preg_replace('/[^0-9]/', '', $student->card_number);
                     }
                 } else {
                     if ($deviceCard) {
-                        $student->update(['card_number' => $deviceCard]);
-                        $cardno = preg_replace('/[^0-9]/', '', $deviceCard);
-                        $studentDbUpdates++;
-                        $this->info("Syncing Card {$deviceCard} from Device to DB for: {$student->student_name}");
+                        $existing = Student::where('card_number', $deviceCard)->where('id', '!=', $student->id)->exists();
+                        if (!$existing) {
+                            $student->update(['card_number' => $deviceCard]);
+                            $cardno = preg_replace('/[^0-9]/', '', $deviceCard);
+                            $studentDbUpdates++;
+                            $this->info("Syncing Card {$deviceCard} from Device to DB for: {$student->student_name}");
+                        } else {
+                            $this->warn("⚠️ Card {$deviceCard} is already assigned to another student in DB. Skipping DB update for {$student->student_name}.");
+                            $cardno = 0;
+                        }
                     } else {
                         $cardno = 0;
                     }
@@ -146,10 +158,17 @@ class ZKtecoSyncUsers extends Command
                     $cardno = preg_replace('/[^0-9]/', '', $teacher->card_number);
                 } else {
                     if ($deviceCard) {
-                        $teacher->update(['card_number' => $deviceCard]);
-                        $cardno = preg_replace('/[^0-9]/', '', $deviceCard);
-                        $teacherDbUpdates++;
-                        $this->info("Syncing Card {$deviceCard} from Device to DB for: {$teacher->name}");
+                        $existingTeacher = Teacher::where('card_number', $deviceCard)->where('id', '!=', $teacher->id)->exists();
+                        $existingStudent = Student::where('card_number', $deviceCard)->exists();
+                        if (!$existingTeacher && !$existingStudent) {
+                            $teacher->update(['card_number' => $deviceCard]);
+                            $cardno = preg_replace('/[^0-9]/', '', $deviceCard);
+                            $teacherDbUpdates++;
+                            $this->info("Syncing Card {$deviceCard} from Device to DB for: {$teacher->name}");
+                        } else {
+                            $this->warn("⚠️ Card {$deviceCard} is already assigned to another user in DB. Skipping DB update for {$teacher->name}.");
+                            $cardno = 0;
+                        }
                     } else {
                         $cardno = 0;
                     }
