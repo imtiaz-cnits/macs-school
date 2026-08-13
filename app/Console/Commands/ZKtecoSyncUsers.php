@@ -133,7 +133,6 @@ class ZKtecoSyncUsers extends Command
 
             $this->info("Uploading/Syncing " . $teachers->count() . " teachers/staff to device...");
             $teacherCount = 0;
-            $teacherDbUpdates = 0;
             foreach ($teachers as $teacher) {
                 // To avoid overlap with students (ID 1-1000), teachers get uid starting at 10000
                 $uid = 10000 + $teacher->id;
@@ -144,41 +143,13 @@ class ZKtecoSyncUsers extends Command
                     $cleanName = "Staff " . $teacher->id;
                 }
 
-                // Check device for existing card number
-                $deviceCard = null;
-                if (isset($deviceUserMap[(int)$userid])) {
-                    $cardVal = trim($deviceUserMap[(int)$userid]['cardno'] ?? '');
-                    if ($cardVal !== '' && $cardVal !== '0' && $cardVal !== '0000000000') {
-                        $deviceCard = $cardVal;
-                    }
-                }
-
-                // Determine correct card number
-                if (!empty($teacher->card_number)) {
-                    $cardno = preg_replace('/[^0-9]/', '', $teacher->card_number);
-                } else {
-                    if ($deviceCard) {
-                        $existingTeacher = Teacher::where('card_number', $deviceCard)->where('id', '!=', $teacher->id)->exists();
-                        $existingStudent = Student::where('card_number', $deviceCard)->exists();
-                        if (!$existingTeacher && !$existingStudent) {
-                            $teacher->update(['card_number' => $deviceCard]);
-                            $cardno = preg_replace('/[^0-9]/', '', $deviceCard);
-                            $teacherDbUpdates++;
-                            $this->info("Syncing Card {$deviceCard} from Device to DB for: {$teacher->name}");
-                        } else {
-                            $this->warn("⚠️ Card {$deviceCard} is already assigned to another user in DB. Skipping DB update for {$teacher->name}.");
-                            $cardno = 0;
-                        }
-                    } else {
-                        $cardno = 0;
-                    }
-                }
+                $cardno = 0; // Teachers do not have a card_number column in the database
 
                 // Upload teacher
                 $zk->setUser($uid, $userid, $cleanName, '', 0, $cardno);
                 $teacherCount++;
             }
-            $this->info("✅ Successfully synced {$teacherCount} teachers/staff (Updated {$teacherDbUpdates} card numbers in DB).");
+            $this->info("✅ Successfully synced {$teacherCount} teachers/staff.");
 
             $zk->enableDevice();
             $zk->disconnect();
