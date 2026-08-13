@@ -51,10 +51,36 @@ class Subject extends Model
         return $value;
     }
 
+    // Helper function for Bengali normalization (NFC composition/unification)
+    private function normalizeBengali($str)
+    {
+        if (empty($str)) {
+            return $str;
+        }
+
+        $map = [
+            // Decomposed to Precomposed (Yya, Rra, Rhha)
+            "\xe0\xa6\xaf\xe0\xa7\xbc" => "\xe0\xa7\x9f", // য + ় -> য়
+            "\xe0\xa6\xa1\xe0\xa7\xbc" => "\xe0\xa7\x9c", // ড + ় -> ড়
+            "\xe0\xa6\xa2\xe0\xa7\xbc" => "\xe0\xa7\x9d", // ঢ + ় -> ঢ়
+            
+            // Decomposed to Precomposed Vowels (O, Au)
+            "\xe0\xa7\x87\xe0\xa6\xbe" => "\xe0\xa7\x8b", // ে + া -> ো
+            "\xe0\xa7\x87\xe0\xa7\x97" => "\xe0\xa7\x8c", // ে + ৗ -> ৌ
+        ];
+        return strtr($str, $map);
+    }
+
     // 🚀 Advanced Translation Accessor (Bug Fixed)
     public function getTranslatedNameAttribute()
     {
         $name = trim($this->subject_name);
+        if (empty($name)) {
+            return $name;
+        }
+
+        // Normalize the input subject name to resolve Unicode character code variations
+        $name = $this->normalizeBengali($name);
 
         // একটি সিঙ্গেল মাস্টার ডিকশনারি
         $translations = [
@@ -101,7 +127,23 @@ class Subject extends Model
             'পদার্থ' => 'Physics',
             'ইতিহাস' => 'History',
             
-            // ৪. Symbols & Small Parts
+            // ৪. Individual Words (Safety Net fallback in case compound matching fails)
+            'বাংলাদেশ' => 'Bangladesh',
+            'বিশ্বপরিচয়' => 'Global Studies',
+            'বিশ্বপরিচয়' => 'Global Studies',
+            'সাধারণ' => 'General',
+            'উচ্চতর' => 'Higher',
+            'কৃষি' => 'Agriculture',
+            'শিক্ষা' => 'Education',
+            'নৈতিক' => 'Moral',
+            'ইসলাম' => 'Islam',
+            'হিন্দু' => 'Hindu',
+            'যোগাযোগ' => 'Communication',
+            'প্রযুক্তি' => 'Technology',
+            'ধর্ম' => 'Religion',
+            'জীব' => 'Biology',
+            
+            // ৫. Symbols & Small Parts
             '১ম' => '1st',
             '২য়' => '2nd',
             '/' => ' / ',
@@ -109,9 +151,15 @@ class Subject extends Model
             'SBA' => 'S.B.A',
         ];
 
+        // Normalize keys of the translation array
+        $normalizedTranslations = [];
+        foreach ($translations as $key => $val) {
+            $normalizedTranslations[$this->normalizeBengali($key)] = $val;
+        }
+
         // ১. Exact Match Check (সরাসরি মিলে গেলে রিটার্ন)
-        if (isset($translations[$name])) {
-            return $translations[$name];
+        if (isset($normalizedTranslations[$name])) {
+            return $normalizedTranslations[$name];
         }
 
         // ২. Advanced Partial Match & Replacement
@@ -119,12 +167,12 @@ class Subject extends Model
         
         // 🚨 ম্যাজিক লজিক: অ্যারেটিকে Length অনুযায়ী Descending অর্ডারে সর্ট করা হচ্ছে। 
         // ফলে 'বাংলা' এর আগে 'বাংলাদেশ' রিপ্লেস হবে এবং স্ট্রিং ভাঙবে না।
-        uksort($translations, function($a, $b) {
+        uksort($normalizedTranslations, function($a, $b) {
             return mb_strlen($b) - mb_strlen($a);
         });
 
         // ক্রমানুসারে সেফ রিপ্লেসমেন্ট
-        foreach ($translations as $bn => $en) {
+        foreach ($normalizedTranslations as $bn => $en) {
             $replaced = str_replace($bn, $en, $replaced);
         }
 
