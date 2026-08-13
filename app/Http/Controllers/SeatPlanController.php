@@ -19,11 +19,11 @@ class SeatPlanController extends Controller
     {
         $sessions = SessionYear::orderBy('session_name', 'desc')->get();
         $branches = Branch::all();
-        $exams = Exam::orderBy('id', 'desc')->get();
+        $exams = Exam::orderBy('name', 'asc')->get();
         $classes = Classes::all();
         
         // 🆕 এই দুটি নতুন যুক্ত করা হলো
-        $shifts = Shift::all();     
+        $shifts = Shift::where('type', 'student')->get();     
         $sections = Section::all(); 
         
         // 🆕 compact এর ভেতরে shifts এবং sections পাস করা হলো
@@ -55,7 +55,7 @@ class SeatPlanController extends Controller
             ->where('class_id', $request->class_id)
             ->where('shift_id', $request->shift_id)       // 🆕 যুক্ত করা হয়েছে
             ->where('section_id', $request->section_id)   // 🆕 যুক্ত করা হয়েছে
-            ->orderBy('student_identity', 'asc')          // সিরিয়াল ঠিক রাখার জন্য
+            ->orderByRaw('CAST(roll_number AS UNSIGNED) ASC')          // সিরিয়াল ঠিক রাখার জন্য
             ->get();
 
         if ($students->isEmpty()) {

@@ -16,7 +16,7 @@ class ResultController extends Controller
    // মার্কশিট সার্চ করার পেজ
     public function index()
     {
-        $exams = Exam::orderBy('id', 'desc')->get();
+        $exams = Exam::orderBy('name', 'asc')->get();
         $sessions = \App\Models\SessionYear::orderBy('session_name', 'desc')->get(); // সেশন ডাটা আনা হলো
         
         return view('pages.results.index', compact('exams', 'sessions')); // sessions পাস করা হলো
@@ -97,7 +97,7 @@ class ResultController extends Controller
     {
         $sessions = SessionYear::orderBy('session_name', 'desc')->get();
         $branches = Branch::all();
-        $exams = Exam::orderBy('id', 'desc')->get();
+        $exams = Exam::orderBy('name', 'asc')->get();
         $classes = Classes::all();
         return view('pages.results.tabulation_index', compact('sessions', 'branches', 'exams', 'classes'));
     }

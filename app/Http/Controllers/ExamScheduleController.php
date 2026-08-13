@@ -15,7 +15,7 @@ class ExamScheduleController extends Controller
     {
         // ড্রপডাউনের জন্য ডাটা নিয়ে আসছি
         $branches = Branch::all(); // ব্রাঞ্চের ডাটা
-        $exams = Exam::orderBy('id', 'desc')->get();
+        $exams = Exam::orderBy('name', 'asc')->get();
         $classes = Classes::all(); 
         $subjects = Subject::all();
 

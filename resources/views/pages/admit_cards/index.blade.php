@@ -115,8 +115,12 @@
                     </button>
                     <div x-show="activeDropdown === 'shift'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
                         @foreach($shifts as $shift)
-                            <button type="button" @click="selectShift('{{ $shift->id }}', '{{ $shift->shift_name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.shift_id == '{{ $shift->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
-                                <span>{{ $shift->shift_name }}</span>
+                            @php
+                                $displayName = str_ireplace(' student', '', $shift->shift_name);
+                                $displayName = str_ireplace(' staff', '', $displayName);
+                            @endphp
+                            <button type="button" @click="selectShift('{{ $shift->id }}', '{{ $displayName }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.shift_id == '{{ $shift->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                <span>{{ $displayName }}</span>
                                 <template x-if="form.shift_id == '{{ $shift->id }}'">
                                     <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                 </template>

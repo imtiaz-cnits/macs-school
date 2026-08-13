@@ -159,7 +159,7 @@ class SmsController extends Controller
     public function resultSms()
     {
         $sessions = SessionYear::orderBy('session_name', 'desc')->get();
-        $exams = Exam::orderBy('id', 'desc')->get();
+        $exams = Exam::orderBy('name', 'asc')->get();
         $classes = Classes::all();
         $sections = Section::all();
         

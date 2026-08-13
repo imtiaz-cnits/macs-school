@@ -19,7 +19,7 @@ class MarkController extends Controller
         // ড্রপডাউনের জন্য সব ডাটা নিয়ে আসা হচ্ছে
         $sessions = SessionYear::orderBy('session_name', 'desc')->get();
         $branches = Branch::all();
-        $exams = Exam::orderBy('id', 'desc')->get();
+        $exams = Exam::orderBy('name', 'asc')->get();
         $classes = Classes::all();
         $subjects = Subject::all();
 
