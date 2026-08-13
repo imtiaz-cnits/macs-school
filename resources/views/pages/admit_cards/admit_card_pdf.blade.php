@@ -59,53 +59,6 @@
 <body>
 
     @php
-        // Subject translation helper function
-        if (!function_exists('translateSubject')) {
-            function translateSubject($name) {
-                $translations = [
-                    'বাংলা' => 'Bangla',
-                    'ইংরেজী' => 'English',
-                    'ইংরেজি' => 'English',
-                    'গণিত' => 'Mathematics',
-                    'আরবী / ধর্মশিক্ষা' => 'Arabic & Religion',
-                    'ড্রইং' => 'Drawing',
-                    'সাধারণ জ্ঞান' => 'General Knowledge',
-                    'সমাজ' => 'Social Science',
-                    'বাংলাদেশ ও বিশ্বপরিচয়' => 'Bangladesh & Global Studies',
-                    'বিজ্ঞান' => 'Science',
-                    'ইসলাম / হিন্দু শিক্ষা' => 'Islam & Hinduism Education',
-                    'ইসলাম ও নৈতিক শিক্ষা' => 'Islam & Moral Education',
-                    'বাংলা ১ম পত্র' => 'Bangla 1st Paper',
-                    'বাংলা ২য় পত্র' => 'Bangla 2nd Paper',
-                    'ইংরেজী ১ম পত্র' => 'English 1st Paper',
-                    'ইংরেজী ২য় পত্র' => 'English 2nd Paper',
-                    'ইসলাম শিক্ষা' => 'Islamic Studies',
-                    'তথ্য ও যোগাযোগ প্রযুক্তি' => 'ICT',
-                    'কৃষি শিক্ষা' => 'Agriculture Studies',
-                    'সামাজিক বিজ্ঞান' => 'Social Science',
-                    'সাধারণ গণিত' => 'General Mathematics',
-                    'জীববিজ্ঞান / ভূগোল' => 'Biology / Geography',
-                    'রসায়ন / অর্থনীতি' => 'Chemistry / Economics',
-                    'পদার্থ / ইতিহাস' => 'Physics / History',
-                    'বাংলাদেশ ও বিশ্বপরিচয় / সাধারণ বিজ্ঞান' => 'Bangladesh & Global Studies / General Science',
-                    'উচ্চতর গণিত / কৃষি শিক্ষা' => 'Higher Mathematics / Agriculture Studies',
-                    'S.B.A' => 'S.B.A',
-                    'শারীরিক শিক্ষা' => 'Physical Education',
-                ];
-
-                $cleanName = trim($name);
-                if (isset($translations[$cleanName])) {
-                    return $translations[$cleanName];
-                }
-
-                // Fallback replacement logic for compound strings
-                $replaced = $cleanName;
-                foreach ($translations as $bn => $en) {
-                    $replaced = str_replace($bn, $en, $replaced);
-                }
-                return $replaced;
-            }
-        }
 
         // School Logo Robust Fetching (Checking MACS logo first, falling back to SVG)
         $logoPathJpg = public_path('img/macs_logo.jpeg');
@@ -230,7 +183,7 @@
                                         @foreach($chunks[0] as $routine)
                                         <tr>
                                             <td style="width: 35%;">{{ \Carbon\Carbon::parse($routine->exam_date)->format('d M Y') }}</td>
-                                            <td style="width: 65%; text-align: left; padding-left: 5px;">{{ translateSubject($routine->subject->subject_name) }}</td>
+                                            <td style="width: 65%; text-align: left; padding-left: 5px;">{{ $routine->subject->translated_name }}</td>
                                         </tr>
                                         @endforeach
                                     </tbody>
@@ -245,7 +198,7 @@
                                         @foreach($chunks[1] as $routine)
                                         <tr>
                                             <td style="width: 35%;">{{ \Carbon\Carbon::parse($routine->exam_date)->format('d M Y') }}</td>
-                                            <td style="width: 65%; text-align: left; padding-left: 5px;">{{ translateSubject($routine->subject->subject_name) }}</td>
+                                            <td style="width: 65%; text-align: left; padding-left: 5px;">{{ $routine->subject->translated_name }}</td>
                                         </tr>
                                         @endforeach
                                     </tbody>
@@ -260,7 +213,7 @@
                             @foreach($routines as $routine)
                             <tr>
                                 <td style="width: 30%;">{{ \Carbon\Carbon::parse($routine->exam_date)->format('d M Y') }}</td>
-                                <td style="width: 70%; text-align: left; padding-left: 8px;">{{ translateSubject($routine->subject->subject_name) }}</td>
+                                <td style="width: 70%; text-align: left; padding-left: 8px;">{{ $routine->subject->translated_name }}</td>
                             </tr>
                             @endforeach
                         </tbody>
