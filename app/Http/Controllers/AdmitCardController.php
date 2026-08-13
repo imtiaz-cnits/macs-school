@@ -10,7 +10,7 @@ use App\Models\Exam;
 use App\Models\Shift;
 use App\Models\Section;
 use App\Models\Student;
-use App\Models\ExamSchedule;
+use App\Models\ExamRoutine;
 use PDF; // DomPDF
 
 class AdmitCardController extends Controller
@@ -21,10 +21,10 @@ class AdmitCardController extends Controller
         $sessions = SessionYear::all(); // বা আপনার সিস্টেমে যেভাবে আনা আছে
         $classes  = Classes::all();
         $branches = Branch::all();
-        $exams    = Exam::all();
+        $exams    = Exam::orderBy('name', 'asc')->get();
         
         // 🚨 এই দুটি লাইন আপনার কন্ট্রোলারে মিসিং আছে, এগুলো যোগ করুন 🚨
-        $shifts   = Shift::all();     // Shift মডেল ইম্পোর্ট করতে ভুলবেন না
+        $shifts   = Shift::where('type', 'student')->get();     // Shift মডেল ইম্পোর্ট করতে ভুলবেন না
         $sections = Section::all();   // Section মডেল ইম্পোর্ট করতে ভুলবেন না
 
         // compact এর ভেতরে shifts এবং sections পাঠাতে হবে
@@ -53,7 +53,8 @@ class AdmitCardController extends Controller
         $session     = SessionYear::find($request->session_year_id);
 
         // অ্যাডমিট কার্ডে দেখানোর জন্য ওই ক্লাসের পরীক্ষার রুটিন আনা হচ্ছে
-        $routines = ExamSchedule::with('subject')
+        $routines = ExamRoutine::with('subject')
+            ->where('session_year_id', $session->id)
             ->where('exam_id', $exam->id)
             ->where('class_id', $schoolClass->id)
             ->orderBy('exam_date', 'asc') // তারিখ অনুযায়ী সাজানো
