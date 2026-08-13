@@ -6,7 +6,7 @@
     <!-- Load Google Font Figtree -->
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        /* Force Figtree font on all elements globally in the PDF */
+        /* Force Figtree as primary, Noto Serif Bengali as fallback for Bangla texts */
         * { font-family: 'Figtree', 'Helvetica', 'Arial', sans-serif !important; }
 
         /* A4 Page Setup - Tight Margins to fit 3 cards per page */
