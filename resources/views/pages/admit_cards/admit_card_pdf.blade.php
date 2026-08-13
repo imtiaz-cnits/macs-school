@@ -3,15 +3,13 @@
 <head>
     <meta charset="utf-8" />
     <title>Admit Cards - {{ $schoolClass->class_name }}</title>
-    <!-- Load Google Font Figtree -->
-    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         /* Force Figtree as primary, Noto Serif Bengali as fallback for Bangla texts */
         * { font-family: 'Figtree', 'Helvetica', 'Arial', sans-serif !important; }
 
         /* A4 Page Setup - Tight Margins to fit 3 cards per page */
         @page { size: A4 portrait; margin: 10px 15px; }
-        body { font-family: 'Figtree', 'Helvetica', sans-serif; margin: 0; padding: 0; color: #000; font-size: 9.5px; }
+        body { font-family:'Helvetica', sans-serif; margin: 0; padding: 0; color: #000; font-size: 9.5px; }
         
         /* 🚨 3 Cards per page - Height optimized to 330px to fill A4 page beautifully */
         .admit-card-box { 
