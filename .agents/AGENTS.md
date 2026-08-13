@@ -80,6 +80,7 @@ To avoid ugly browser-native dropdown UI, all key filter and form selects should
   - Container: `absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto`.
   - Item styling: `w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors`.
   - Active/Selected styling: `bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black` (accompanied by a checkmark SVG icon).
+- **Options List Constraints**: Do NOT repeat the placeholder/default label (e.g., "Choose Branch", "Select Class", "Select Session") as an option inside the dropdown menu list. The options list must only contain actual data or selectable items.
 
 ### 8. Global Modal & Popup System (Alerts/Confirms)
 To maintain visual consistency and avoid raw browser-native prompts, developers are strictly prohibited from using standard Javascript `alert()` or `confirm()` dialog windows.
