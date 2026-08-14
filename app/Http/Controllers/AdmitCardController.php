@@ -60,13 +60,13 @@ class AdmitCardController extends Controller
             ->orderBy('exam_date', 'asc') // তারিখ অনুযায়ী সাজানো
             ->get();
 
-        // 🚨 নির্দিষ্ট ক্লাস, সেশন, ব্রাঞ্চ, শিফট ও সেকশনের সব স্টুডেন্ট আনা হচ্ছে
         $students = Student::with(['schoolClass', 'branch', 'section']) 
             ->where('session_year_id', $request->session_year_id)
             ->where('branch_id', $request->branch_id)
             ->where('class_id', $request->class_id)
             ->where('shift_id', $request->shift_id)     // 🆕 শিফট ফিল্টার
             ->where('section_id', $request->section_id) // 🆕 সেকশন ফিল্টার
+            ->orderByRaw('CAST(roll_number AS UNSIGNED) ASC')
             ->get();
 
         if ($students->isEmpty()) {
