@@ -30,7 +30,7 @@
             padding: 12px; 
             background: #ffffff; 
             /* Width left empty to default to auto (fits parent cell perfectly) */
-            height: 170px; /* 198px outer height - 24px padding - 4px border */
+            height: 170px; /* 192px outer height - 24px padding - 4px border */
             overflow: hidden;
         }
         
@@ -59,7 +59,7 @@
             font-weight: 800; 
             font-size: 13px;  
             text-transform: uppercase; 
-            margin-bottom: 12px; 
+            margin-bottom: 10px; 
             letter-spacing: 0.5px;
         }
         .badge-wrapper { text-align: center; margin-bottom: 4px; }
@@ -78,7 +78,7 @@
         
         /* Details Table inside Card (Full Width) */
         .details-table { width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed;}
-        .details-table td { padding: 3.2px 0px; text-align: left; border-bottom: 1px dashed #e2e8f0; vertical-align: top; line-height: 1.25;}
+        .details-table td { padding: 2.8px 0px; text-align: left; border-bottom: 1px dashed #e2e8f0; vertical-align: top; line-height: 1.25;}
         .details-table tr:last-child td { border-bottom: none; padding-bottom: 0; }
         
         .details-table .label { 
@@ -224,7 +224,7 @@
                 @endif
             </tr>
             @if(!$loop->last)
-                <tr><td colspan="3" style="height: 16px; border: none; padding: 0; line-height: 1;"></td></tr>
+                <tr><td colspan="3" style="height: 12px; border: none; padding: 0; line-height: 1;"></td></tr>
             @endif
             @endforeach
         </tbody>
