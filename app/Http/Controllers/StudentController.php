@@ -264,6 +264,15 @@ class StudentController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
+            // Custom Fees History
+            $customFees = \App\Models\StudentCustomFee::with('category')
+                ->where('student_id', $id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // All Active Fee Categories (for the dropdown)
+            $feeCategories = \App\Models\FeeCategory::where('status', 'Active')->get();
+
             return response()->json([
                 'status' => 'success', 
                 'data' => $student,
@@ -275,11 +284,72 @@ class StudentController extends Controller
                     'percentage' => $attendancePercentage
                 ],
                 'marks' => $marks,
-                'invoices' => $invoices
+                'invoices' => $invoices,
+                'customFees' => $customFees,
+                'feeCategories' => $feeCategories
             ], 200);
         } catch (Exception $e) {
             Log::error("Profile View Error: " . $e->getMessage());
             return response()->json(['status' => 'error', 'message' => 'Student not found'], 404);
+        }
+    }
+
+    /**
+     * Get customized fees for a specific student
+     */
+    public function getCustomFees($studentId): JsonResponse
+    {
+        try {
+            $fees = \App\Models\StudentCustomFee::with('category')
+                ->where('student_id', $studentId)
+                ->orderBy('created_at', 'desc')
+                ->get();
+            return response()->json(['status' => 'success', 'data' => $fees], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Create or update customized fee for a student
+     */
+    public function saveCustomFee(Request $request, $studentId): JsonResponse
+    {
+        $request->validate([
+            'fee_category_id' => 'required|exists:fee_categories,id',
+            'amount' => 'required|numeric|min:0'
+        ]);
+
+        try {
+            $customFee = \App\Models\StudentCustomFee::updateOrCreate(
+                [
+                    'student_id' => $studentId,
+                    'fee_category_id' => $request->fee_category_id
+                ],
+                [
+                    'amount' => $request->amount
+                ]
+            );
+
+            $customFee->load('category');
+
+            return response()->json(['status' => 'success', 'data' => $customFee, 'message' => 'Customized fee saved successfully.'], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete a customized fee mapping
+     */
+    public function deleteCustomFee($customFeeId): JsonResponse
+    {
+        try {
+            $customFee = \App\Models\StudentCustomFee::findOrFail($customFeeId);
+            $customFee->delete();
+            return response()->json(['status' => 'success', 'message' => 'Customized fee deleted successfully.'], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
 

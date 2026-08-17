@@ -572,7 +572,7 @@
             
             init() {
                 const currentY = new Date().getFullYear();
-                for (let y = currentY - 2; y <= currentY + 4; y++) {
+                for (let y = 2010; y <= currentY + 4; y++) {
                     this.yearOptions.push(String(y));
                 }
                 

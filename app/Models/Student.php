@@ -52,6 +52,11 @@ class Student extends Model
         return $this->hasMany(StudentAcademicHistory::class); 
     }
 
+    public function customFees()
+    {
+        return $this->hasMany(StudentCustomFee::class);
+    }
+
     /**
      * Photo Accessor: ছবি না থাকলে ডিফল্ট ছবি দেখাবে
      */

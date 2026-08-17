@@ -116,14 +116,27 @@ class FeeInvoiceController extends Controller
                     // নতুন ইনভয়েস নম্বর তৈরি (যেমন: INV-202602-0001)
                     $invoiceNo = $prefix . str_pad($lastSerial, 4, '0', STR_PAD_LEFT);
 
+                    // Check if the student has a customized fee for this category
+                    $customFee = \App\Models\StudentCustomFee::where('student_id', $student->id)
+                                                             ->where('fee_category_id', $feeSetup->fee_category_id)
+                                                             ->first();
+                    
+                    $amount = $feeSetup->amount;
+                    $discount = 0;
+                    
+                    if ($customFee) {
+                        $amount = $customFee->amount;
+                        $discount = max(0, $feeSetup->amount - $customFee->amount);
+                    }
+
                     FeeInvoice::create([
                         'invoice_no' => $invoiceNo,
                         'student_id' => $student->id,
                         'fee_setup_id' => $feeSetup->id,
                         'amount' => $feeSetup->amount,
-                        'discount' => 0,
-                        'net_amount' => $feeSetup->amount,
-                        'due_amount' => $feeSetup->amount,
+                        'discount' => $discount,
+                        'net_amount' => $amount,
+                        'due_amount' => $amount,
                         'status' => 'Unpaid',
                         'due_date' => $request->due_date,
                         'user_id' => Auth::id()

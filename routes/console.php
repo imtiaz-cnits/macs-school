@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('app:resolve-missing-out-punches')->dailyAt('23:59');
+Schedule::command('fees:auto-generate')->monthlyOn(1, '00:00');

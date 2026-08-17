@@ -328,20 +328,34 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <!-- Fees & Invoices History Table -->
+            </div>            <!-- Fees & Invoices History Table -->
             <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300">
                 <h3 class="flex items-center gap-2 text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-2">
                     <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-1.958-.59a2.502 2.502 0 010-3.236c1.117-.837 2.8-.837 3.917 0l.44.33M12 3v3m0 12v3" /></svg>
                     Fees & Invoices History
                 </h3>
+
+                <!-- Summary Panel inside Fees Card -->
+                <div class="grid grid-cols-3 gap-4 mb-4 mt-2">
+                    <div class="p-3 bg-blue-50/15 dark:bg-themeBlue/[0.03] border border-themeBlue/10 rounded-2xl text-center">
+                        <span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-0.5">Total Billed</span>
+                        <span class="text-sm font-black text-gray-900 dark:text-white font-mono" id="summary_total_billed">৳0.00</span>
+                    </div>
+                    <div class="p-3 bg-green-50/15 dark:bg-themeGreen/[0.03] border border-themeGreen/10 rounded-2xl text-center">
+                        <span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-0.5">Total Paid</span>
+                        <span class="text-sm font-black text-themeGreen font-mono" id="summary_total_paid">৳0.00</span>
+                    </div>
+                    <div class="p-3 bg-red-50/15 dark:bg-red-500/[0.03] border border-red-500/10 rounded-2xl text-center">
+                        <span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-0.5">Total Due</span>
+                        <span class="text-sm font-black text-red-500 font-mono" id="summary_total_due">৳0.00</span>
+                    </div>
+                </div>
                 
                 <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
                     <table class="w-full text-left border-collapse table">
                         <thead>
                             <tr class="!bg-transparent">
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Invoice No</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Invoice No</th>
                                 <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Fee Type / Month</th>
                                 <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Net Amt</th>
                                 <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Paid</th>
@@ -358,6 +372,37 @@
                                 <td class="!py-3.5 !px-3 text-right"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
                                 <td class="!py-3.5 !px-3 text-right"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
                                 <td class="!py-3.5 !px-3 text-center"><div class="h-4 w-14 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Student Customized Fees Card -->
+            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300">
+                <div class="flex justify-between items-center border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-2">
+                    <h3 class="flex items-center gap-2 text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider">
+                        <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122A3 3 0 0010.5 21.75h2.9m3.07-5.628a3 3 0 01-1.07 5.628H12.5m2.77-10.874A3 3 0 0012 3m0 0a3 3 0 00-3.27 2.25M12 3v18.75m0-18.75a3 3 0 005.27 2.25M12 21.75a3 3 0 01-3.07-5.628M12 21.75a3 3 0 00-2.9-5.628" /></svg>
+                        Customized Fees Configuration
+                    </h3>
+                    <button type="button" onclick="openCustomFeeModal()" class="h-8 px-3 bg-themeBlue hover:bg-themeBlue/90 text-white text-[10px] font-black rounded-xl uppercase tracking-widest transition-all shadow-sm flex items-center justify-center gap-1 active:scale-95">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                        Set Custom Fee
+                    </button>
+                </div>
+
+                <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
+                    <table class="w-full text-left border-collapse table">
+                        <thead>
+                            <tr class="!bg-transparent">
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Fee Category</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Custom Amount</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center" style="width: 80px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="custom_fees_table_body">
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">No customized fees configured</td>
                             </tr>
                         </tbody>
                     </table>
@@ -381,6 +426,31 @@
 
         </div>
 
+    </div>
+
+    <!-- Customized Fee Modal -->
+    <div id="customFeeModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md hidden no-print">
+        <div class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.08] p-6 w-full max-w-md shadow-2xl relative mx-4">
+            <h3 class="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-4">Set Customized Fee</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black tracking-widest text-gray-550 dark:text-gray-400 uppercase mb-1.5 block">Fee Category</label>
+                    <select id="custom_fee_category_id" class="w-full h-11 px-4 text-sm font-semibold bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-gray-800 dark:text-white">
+                        <option value="">Choose Category</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black tracking-widest text-gray-550 dark:text-gray-400 uppercase mb-1.5 block">Customized Monthly Fee (৳)</label>
+                    <input type="number" id="custom_fee_amount" placeholder="e.g. 800" min="0" step="any" class="w-full h-11 px-4 text-sm font-semibold bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-gray-800 dark:text-white">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6 border-t border-gray-100 dark:border-white/[0.06] pt-4">
+                <button type="button" onclick="closeCustomFeeModal()" class="h-10 px-5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-600 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all">Cancel</button>
+                <button type="button" onclick="saveCustomFee()" class="h-10 px-6 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest active:scale-95">Save Fee</button>
+            </div>
+        </div>
     </div>
 
     <!-- Developer Footer -->
@@ -514,6 +584,10 @@
             let feesBody = document.getElementById('fees_table_body');
             feesBody.innerHTML = ''; // Clear skeleton
 
+            let totalBilled = 0;
+            let totalPaid = 0;
+            let totalDue = 0;
+
             if (invoices.length > 0) {
                 invoices.forEach(inv => {
                     let invoiceNo = inv.invoice_no || 'N/A';
@@ -525,6 +599,10 @@
                     let paidAmt = inv.paid_amount !== null ? parseFloat(inv.paid_amount) : 0;
                     let dueAmt = inv.due_amount !== null ? parseFloat(inv.due_amount) : 0;
                     
+                    totalBilled += netAmt;
+                    totalPaid += paidAmt;
+                    totalDue += dueAmt;
+
                     let status = inv.status || 'Unpaid';
                     let statusClass = 'bg-red-100 text-red-600 dark:bg-red-950/30 dark:text-red-500';
                     if (status === 'Paid') {
@@ -553,6 +631,10 @@
                     </tr>
                 `;
             }
+
+            document.getElementById('summary_total_billed').innerText = '৳' + totalBilled.toFixed(2);
+            document.getElementById('summary_total_paid').innerText = '৳' + totalPaid.toFixed(2);
+            document.getElementById('summary_total_due').innerText = '৳' + totalDue.toFixed(2);
 
             // ==========================================
             // DYNAMIC MARKS & RESULTS PROCESSING
@@ -656,6 +738,21 @@
                 distContainer.innerHTML = `<span class="text-xs font-semibold text-gray-400 dark:text-gray-500">No Subject Distribution Stats Available.</span>`;
             }
 
+            // ==========================================
+            // DYNAMIC CUSTOMIZED FEES PROCESSING
+            // ==========================================
+            let customFees = res.data.customFees || [];
+            let feeCategories = res.data.feeCategories || [];
+            
+            // Populate category select dropdown in modal
+            let categorySelect = document.getElementById('custom_fee_category_id');
+            categorySelect.innerHTML = '<option value="">Choose Category</option>';
+            feeCategories.forEach(cat => {
+                categorySelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+            });
+
+            renderCustomFees(customFees);
+
             // Hide Loading Overlay
             document.getElementById('loadingOverlay').classList.add('opacity-0', 'pointer-events-none');
             setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 300);
@@ -679,6 +776,101 @@
             }
         } catch (err) {
             let errMsg = err.response?.data?.message || "Card sync failed.";
+            await showAlert(errMsg, "Error");
+        } finally {
+            document.getElementById('loadingOverlay').classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 300);
+        }
+    }
+
+    function renderCustomFees(fees) {
+        let customFeesBody = document.getElementById('custom_fees_table_body');
+        customFeesBody.innerHTML = '';
+        if (fees.length > 0) {
+            fees.forEach(f => {
+                let catName = f.category ? f.category.name : 'Unknown';
+                let amount = parseFloat(f.amount);
+                customFeesBody.innerHTML += `
+                    <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                        <td class="py-2.5 px-3 text-sm font-bold text-gray-700 dark:text-gray-300">${catName}</td>
+                        <td class="py-2.5 px-3 text-sm font-bold text-gray-900 dark:text-gray-100 text-right font-mono">৳${amount.toFixed(2)}</td>
+                        <td class="py-2.5 px-3 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button type="button" onclick="deleteCustomFee(${f.id})" class="action-btn text-red-600 hover:text-red-800 hover:border-red-600" title="Delete">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        } else {
+            customFeesBody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center py-4 text-xs font-bold text-gray-400 dark:text-gray-555 uppercase tracking-widest">No customized fees configured</td>
+                </tr>
+            `;
+        }
+    }
+
+    function openCustomFeeModal() {
+        document.getElementById('customFeeModal').classList.remove('hidden');
+        document.getElementById('custom_fee_category_id').value = '';
+        document.getElementById('custom_fee_amount').value = '';
+    }
+
+    function closeCustomFeeModal() {
+        document.getElementById('customFeeModal').classList.add('hidden');
+    }
+
+    async function saveCustomFee() {
+        let catId = document.getElementById('custom_fee_category_id').value;
+        let amount = document.getElementById('custom_fee_amount').value;
+        if (!catId || !amount) {
+            await showAlert("Please select a category and enter an amount.", "Validation Error");
+            return;
+        }
+        
+        try {
+            document.getElementById('loadingOverlay').classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+            closeCustomFeeModal();
+
+            let res = await axios.post(`/ajax/students/${studentId}/custom-fees`, {
+                fee_category_id: catId,
+                amount: amount
+            }, getAuthHeaders());
+
+            if (res.data.status === 'success') {
+                let reloadRes = await axios.get(`/ajax/students/${studentId}/custom-fees`, getAuthHeaders());
+                renderCustomFees(reloadRes.data.data);
+                await showAlert(res.data.message, "Success");
+            }
+        } catch (err) {
+            let errMsg = err.response?.data?.message || "Failed to save customized fee.";
+            await showAlert(errMsg, "Error");
+        } finally {
+            document.getElementById('loadingOverlay').classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 300);
+        }
+    }
+
+    async function deleteCustomFee(feeId) {
+        let confirmDelete = await showConfirm("Delete Custom Fee?", "Are you sure you want to remove this customized fee? The student will be billed standard fees for this category.");
+        if (!confirmDelete) return;
+
+        try {
+            document.getElementById('loadingOverlay').classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+
+            let res = await axios.delete(`/ajax/students/custom-fees/${feeId}`, getAuthHeaders());
+            if (res.data.status === 'success') {
+                let reloadRes = await axios.get(`/ajax/students/${studentId}/custom-fees`, getAuthHeaders());
+                renderCustomFees(reloadRes.data.data);
+                await showAlert(res.data.message, "Success");
+            }
+        } catch (err) {
+            let errMsg = err.response?.data?.message || "Failed to delete customized fee.";
             await showAlert(errMsg, "Error");
         } finally {
             document.getElementById('loadingOverlay').classList.add('opacity-0', 'pointer-events-none');
