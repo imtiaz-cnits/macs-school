@@ -626,7 +626,24 @@
                 invoices.forEach(inv => {
                     let invoiceNo = inv.invoice_no || 'N/A';
                     let categoryName = inv.fee_setup && inv.fee_setup.category ? inv.fee_setup.category.name : 'Fee Payment';
-                    let feeMonth = inv.fee_setup && inv.fee_setup.fee_month ? ` (${inv.fee_setup.fee_month})` : '';
+                    let feeMonth = '';
+                    if (inv.due_date) {
+                        try {
+                            const parts = inv.due_date.split('-');
+                            if (parts.length === 3) {
+                                const monthIndex = parseInt(parts[1], 10) - 1;
+                                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                                if (monthIndex >= 0 && monthIndex < 12) {
+                                    feeMonth = ` (${monthNames[monthIndex]})`;
+                                }
+                            }
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                    if (!feeMonth && inv.fee_setup && inv.fee_setup.fee_month) {
+                        feeMonth = ` (${inv.fee_setup.fee_month})`;
+                    }
                     let feeDetails = categoryName + feeMonth;
 
                     let netAmt = inv.net_amount !== null ? parseFloat(inv.net_amount) : 0;
