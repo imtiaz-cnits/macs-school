@@ -376,6 +376,15 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination Controls -->
+                <div id="fees_pagination_container" class="flex flex-col sm:flex-row items-center justify-between mt-4 gap-3 px-1 no-print hidden">
+                    <span class="text-xs font-semibold text-gray-555 dark:text-gray-400" id="fees_pagination_info">Showing 1 to 10 of 12 entries</span>
+                    <div class="flex gap-2">
+                        <button type="button" id="fees_prev_btn" class="px-3.5 py-1.5 bg-gray-55/70 dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] hover:bg-gray-100 dark:hover:bg-themeDark/45 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
+                        <button type="button" id="fees_next_btn" class="px-3.5 py-1.5 bg-gray-55/70 dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] hover:bg-gray-100 dark:hover:bg-themeDark/45 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Student Customized Fees Card -->
@@ -616,76 +625,121 @@
             // ==========================================
             let invoices = res.data.invoices || [];
             let feesBody = document.getElementById('fees_table_body');
-            feesBody.innerHTML = ''; // Clear skeleton
-
+            
             let totalBilled = 0;
             let totalPaid = 0;
             let totalDue = 0;
 
-            if (invoices.length > 0) {
-                invoices.forEach(inv => {
-                    let invoiceNo = inv.invoice_no || 'N/A';
-                    let categoryName = inv.fee_setup && inv.fee_setup.category ? inv.fee_setup.category.name : 'Fee Payment';
-                    let feeMonth = '';
-                    if (inv.due_date) {
-                        try {
-                            const parts = inv.due_date.split('-');
-                            if (parts.length === 3) {
-                                const monthIndex = parseInt(parts[1], 10) - 1;
-                                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                                if (monthIndex >= 0 && monthIndex < 12) {
-                                    feeMonth = ` (${monthNames[monthIndex]})`;
-                                }
-                            }
-                        } catch (e) {
-                            console.error(e);
-                        }
-                    }
-                    if (!feeMonth && inv.fee_setup && inv.fee_setup.fee_month) {
-                        feeMonth = ` (${inv.fee_setup.fee_month})`;
-                    }
-                    let feeDetails = categoryName + feeMonth;
-
-                    let netAmt = inv.net_amount !== null ? parseFloat(inv.net_amount) : 0;
-                    let paidAmt = inv.paid_amount !== null ? parseFloat(inv.paid_amount) : 0;
-                    let dueAmt = inv.due_amount !== null ? parseFloat(inv.due_amount) : 0;
-                    
-                    totalBilled += netAmt;
-                    totalPaid += paidAmt;
-                    totalDue += dueAmt;
-
-                    let status = inv.status || 'Unpaid';
-                    let statusClass = 'bg-red-100 text-red-600 dark:bg-red-950/30 dark:text-red-500';
-                    if (status === 'Paid') {
-                        statusClass = 'bg-green-100 text-themeGreen dark:bg-green-950/30 dark:text-green-500';
-                    } else if (status === 'Partially Paid') {
-                        statusClass = 'bg-amber-100 text-amber-600 dark:bg-amber-950/30 dark:text-amber-500';
-                    }
-
-                    feesBody.innerHTML += `
-                        <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
-                            <td class="py-2.5 px-3 text-sm font-mono font-black text-gray-900 dark:text-gray-100">${invoiceNo}</td>
-                            <td class="py-2.5 px-3 text-sm font-bold text-gray-600 dark:text-gray-400">${feeDetails}</td>
-                            <td class="py-2.5 px-3 text-sm font-bold text-gray-900 dark:text-gray-100 text-right font-mono">৳${netAmt.toFixed(2)}</td>
-                            <td class="py-2.5 px-3 text-sm font-bold text-themeGreen text-right font-mono">৳${paidAmt.toFixed(2)}</td>
-                            <td class="py-2.5 px-3 text-sm font-bold text-red-500 text-right font-mono">৳${dueAmt.toFixed(2)}</td>
-                            <td class="py-2.5 px-3 text-center">
-                                <span class="inline-block px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg ${statusClass}">${status}</span>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } else {
-                feesBody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="py-8 text-center text-xs font-semibold text-gray-400 dark:text-gray-550">No Fee Invoices Found.</td>
-                    </tr>
-                `;
-            }
+            // Calculate totals across all invoices
+            invoices.forEach(inv => {
+                let netAmt = inv.net_amount !== null ? parseFloat(inv.net_amount) : 0;
+                let paidAmt = inv.paid_amount !== null ? parseFloat(inv.paid_amount) : 0;
+                let dueAmt = inv.due_amount !== null ? parseFloat(inv.due_amount) : 0;
+                totalBilled += netAmt;
+                totalPaid += paidAmt;
+                totalDue += dueAmt;
+            });
 
             document.getElementById('summary_total_billed').innerText = '৳' + totalBilled.toFixed(2);
             document.getElementById('summary_total_paid').innerText = '৳' + totalPaid.toFixed(2);
             document.getElementById('summary_total_due').innerText = '৳' + totalDue.toFixed(2);
+
+            // Client-side pagination state
+            let feesCurrentPage = 1;
+            const feesItemsPerPage = 10;
+
+            function renderFeesPage(page) {
+                feesBody.innerHTML = '';
+
+                if (invoices.length > 0) {
+                    let start = (page - 1) * feesItemsPerPage;
+                    let end = Math.min(start + feesItemsPerPage, invoices.length);
+                    let pageItems = invoices.slice(start, end);
+
+                    pageItems.forEach(inv => {
+                        let invoiceNo = inv.invoice_no || 'N/A';
+                        let categoryName = inv.fee_setup && inv.fee_setup.category ? inv.fee_setup.category.name : 'Fee Payment';
+                        let feeMonth = '';
+                        if (inv.due_date) {
+                            try {
+                                const parts = inv.due_date.split('-');
+                                if (parts.length === 3) {
+                                    const monthIndex = parseInt(parts[1], 10) - 1;
+                                    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                                    if (monthIndex >= 0 && monthIndex < 12) {
+                                        feeMonth = ` (${monthNames[monthIndex]})`;
+                                    }
+                                }
+                            } catch (e) {
+                                console.error(e);
+                            }
+                        }
+                        if (!feeMonth && inv.fee_setup && inv.fee_setup.fee_month) {
+                            feeMonth = ` (${inv.fee_setup.fee_month})`;
+                        }
+                        let feeDetails = categoryName + feeMonth;
+
+                        let netAmt = inv.net_amount !== null ? parseFloat(inv.net_amount) : 0;
+                        let paidAmt = inv.paid_amount !== null ? parseFloat(inv.paid_amount) : 0;
+                        let dueAmt = inv.due_amount !== null ? parseFloat(inv.due_amount) : 0;
+                        
+                        let status = inv.status || 'Unpaid';
+                        let statusClass = 'bg-red-100 text-red-600 dark:bg-red-950/30 dark:text-red-500';
+                        if (status === 'Paid') {
+                            statusClass = 'bg-green-100 text-themeGreen dark:bg-green-950/30 dark:text-green-500';
+                        } else if (status === 'Partially Paid') {
+                            statusClass = 'bg-amber-100 text-amber-600 dark:bg-amber-950/30 dark:text-amber-500';
+                        }
+
+                        feesBody.innerHTML += `
+                            <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                                <td class="py-2.5 px-3 text-sm font-mono font-black text-gray-900 dark:text-gray-100">${invoiceNo}</td>
+                                <td class="py-2.5 px-3 text-sm font-bold text-gray-600 dark:text-gray-400">${feeDetails}</td>
+                                <td class="py-2.5 px-3 text-sm font-bold text-gray-900 dark:text-gray-100 text-right font-mono">৳${netAmt.toFixed(2)}</td>
+                                <td class="py-2.5 px-3 text-sm font-bold text-themeGreen text-right font-mono">৳${paidAmt.toFixed(2)}</td>
+                                <td class="py-2.5 px-3 text-sm font-bold text-red-500 text-right font-mono">৳${dueAmt.toFixed(2)}</td>
+                                <td class="py-2.5 px-3 text-center">
+                                    <span class="inline-block px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg ${statusClass}">${status}</span>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    // Update controls
+                    if (invoices.length > feesItemsPerPage) {
+                        document.getElementById('fees_pagination_container').classList.remove('hidden');
+                        document.getElementById('fees_pagination_info').innerText = `Showing ${start + 1} to ${end} of ${invoices.length} entries`;
+                        document.getElementById('fees_prev_btn').disabled = (page === 1);
+                        document.getElementById('fees_next_btn').disabled = (end >= invoices.length);
+                    } else {
+                        document.getElementById('fees_pagination_container').classList.add('hidden');
+                    }
+                } else {
+                    feesBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-xs font-semibold text-gray-400 dark:text-gray-555">No Fee Invoices Found.</td>
+                        </tr>
+                    `;
+                    document.getElementById('fees_pagination_container').classList.add('hidden');
+                }
+            }
+
+            document.getElementById('fees_prev_btn').onclick = () => {
+                if (feesCurrentPage > 1) {
+                    feesCurrentPage--;
+                    renderFeesPage(feesCurrentPage);
+                }
+            };
+
+            document.getElementById('fees_next_btn').onclick = () => {
+                if (feesCurrentPage * feesItemsPerPage < invoices.length) {
+                    feesCurrentPage++;
+                    renderFeesPage(feesCurrentPage);
+                }
+            };
+
+            // Initial trigger
+            renderFeesPage(feesCurrentPage);
 
             // ==========================================
             // DYNAMIC MARKS & RESULTS PROCESSING
