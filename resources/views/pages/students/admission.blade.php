@@ -279,9 +279,11 @@
 @endsection
 
 @section('back_button')
-<a href="{{ route('students.index') }}" class="h-9 px-4 bg-gray-100 dark:bg-themeNavy/50 text-gray-600 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-1.5 border border-gray-200 dark:border-gray-800/80 shadow-sm">
-    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-    Back
+<a href="{{ route('students.index') }}" class="inline-flex items-center gap-2 text-sm font-extrabold text-themeBlue bg-themeBlue/5 dark:bg-themeBlue/10 hover:bg-themeBlue/10 dark:hover:bg-themeBlue/15 px-3.5 py-1.5 rounded-xl border border-themeBlue/25 transition-all hover:scale-105 active:scale-95 shadow-sm shadow-themeBlue/5">
+    <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+    </svg>
+    Back to Student List
 </a>
 @endsection
 
