@@ -232,6 +232,7 @@
                         label: '-- One Time / Yearly Fee --',
                         items: [
                             { value: '', label: '-- One Time / Yearly Fee --' },
+                            { value: 'Monthly', label: 'Every Month (Tuition/Salary)' },
                             @foreach(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
                                 { value: '{{ $month }}', label: '{{ $month }}' },
                             @endforeach
@@ -558,6 +559,7 @@
             categories: [],
             months: [
                 { value: '', label: '-- One Time / Yearly Fee --' },
+                { value: 'Monthly', label: 'Every Month (Tuition/Salary)' },
                 { value: 'January', label: 'January' },
                 { value: 'February', label: 'February' },
                 { value: 'March', label: 'March' },

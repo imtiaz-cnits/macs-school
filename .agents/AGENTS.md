@@ -87,6 +87,7 @@ To maintain visual consistency and avoid raw browser-native prompts, developers 
 - **Success & Normal Alerts**: Utilize the global helper `showAlert(message, title)` or `showSuccess(message)` instead of `alert()`.
 - **Confirm Actions**: Utilize the global helper `showConfirm(title, message)` or `showDanger(title, message)` instead of `confirm()`.
 - **Usage**: Since these return promises, use `await showAlert(...)` or `await showConfirm(...)` when subsequent execution depends on the user closing the modal.
+- **Z-Index & Sidebar Layering**: All popup modal overlays (containers and backdrops) must use a z-index of `z-[9999]` to guarantee they render completely on top of the fixed sidebar and main header navigation overlays without layout clipping.
 
 ### 9. Standardized Table Directory Layouts (Borderless)
 To ensure layout consistency across all directories and lists, tables must use the borderless, tight padding layout:

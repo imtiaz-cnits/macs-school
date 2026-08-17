@@ -54,14 +54,18 @@ class FeeInvoiceController extends Controller
             'due_date' => 'required|date'
         ]);
 
-        // ১. চেক করা হচ্ছে এই ক্যাটাগরির ফি সেটআপ করা আছে কিনা
+        // ১. চেক করা হচ্ছে এই ক্যাটাগরির ফি সেটআপ করা আছে কিনা (নির্দিষ্ট মাস OR 'Monthly' সেটআপ)
         $feeSetup = FeeSetup::where([
             'branch_id' => $request->branch_id,
             'class_id' => $request->class_id,
             'session_year_id' => $request->session_year_id,
             'fee_category_id' => $request->fee_category_id,
-            'fee_month' => $request->fee_month,
-        ])->first();
+        ])
+        ->where(function ($query) use ($request) {
+            $query->where('fee_month', $request->fee_month)
+                  ->orWhere('fee_month', 'Monthly');
+        })
+        ->first();
 
         if (!$feeSetup) {
             return back()->with('error', 'Error: No Fee Setup found! Please set up the fee amount for this class and month first.');

@@ -429,16 +429,50 @@
     </div>
 
     <!-- Customized Fee Modal -->
-    <div id="customFeeModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md hidden no-print">
-        <div class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.08] p-6 w-full max-w-md shadow-2xl relative mx-4">
+    <div id="customFeeModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-md hidden no-print">
+        <div x-data="{ 
+            open: false, 
+            selectedValue: '', 
+            selectedLabel: 'Choose Category', 
+            options: [],
+            init() {
+                window.addEventListener('populate-categories', (e) => {
+                    this.options = e.detail;
+                });
+                window.addEventListener('reset-category-dropdown', () => {
+                    this.selectedValue = '';
+                    this.selectedLabel = 'Choose Category';
+                    document.getElementById('custom_fee_category_id').value = '';
+                });
+            },
+            select(opt) {
+                this.selectedValue = opt.id;
+                this.selectedLabel = opt.name;
+                this.open = false;
+                document.getElementById('custom_fee_category_id').value = opt.id;
+            }
+        }" class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.08] p-6 w-full max-w-md shadow-2xl relative mx-4">
             <h3 class="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-4">Set Customized Fee</h3>
             
             <div class="space-y-4">
-                <div>
+                <div class="relative">
                     <label class="text-[10px] font-black tracking-widest text-gray-550 dark:text-gray-400 uppercase mb-1.5 block">Fee Category</label>
-                    <select id="custom_fee_category_id" class="w-full h-11 px-4 text-sm font-semibold bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-gray-800 dark:text-white">
-                        <option value="">Choose Category</option>
-                    </select>
+                    <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-4 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span x-text="selectedLabel">Choose Category</span>
+                        <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <input type="hidden" id="custom_fee_category_id" value="">
+                    
+                    <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-[9999] w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                        <template x-for="opt in options" :key="opt.id">
+                            <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                                <span x-text="opt.name"></span>
+                                <template x-if="selectedValue == opt.id">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                        </template>
+                    </div>
                 </div>
                 <div>
                     <label class="text-[10px] font-black tracking-widest text-gray-550 dark:text-gray-400 uppercase mb-1.5 block">Customized Monthly Fee (৳)</label>
@@ -744,12 +778,8 @@
             let customFees = res.data.customFees || [];
             let feeCategories = res.data.feeCategories || [];
             
-            // Populate category select dropdown in modal
-            let categorySelect = document.getElementById('custom_fee_category_id');
-            categorySelect.innerHTML = '<option value="">Choose Category</option>';
-            feeCategories.forEach(cat => {
-                categorySelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
-            });
+            // Populate category dropdown via Alpine.js event
+            window.dispatchEvent(new CustomEvent('populate-categories', { detail: feeCategories }));
 
             renderCustomFees(customFees);
 
@@ -817,7 +847,7 @@
 
     function openCustomFeeModal() {
         document.getElementById('customFeeModal').classList.remove('hidden');
-        document.getElementById('custom_fee_category_id').value = '';
+        window.dispatchEvent(new CustomEvent('reset-category-dropdown'));
         document.getElementById('custom_fee_amount').value = '';
     }
 
