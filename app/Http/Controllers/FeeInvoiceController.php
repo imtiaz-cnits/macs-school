@@ -108,9 +108,10 @@ class FeeInvoiceController extends Controller
         DB::beginTransaction();
         try {
             foreach ($students as $student) {
-                // ৩. চেক করা হচ্ছে এই স্টুডেন্টের নামে অলরেডি এই বিলটি করা আছে কিনা
+                // ৩. চেক করা হচ্ছে এই স্টুডেন্টের নামে অলরেডি এই বিলটি করা আছে কিনা (নির্দিষ্ট মাসের জন্য)
                 $exists = FeeInvoice::where('student_id', $student->id)
                                     ->where('fee_setup_id', $feeSetup->id)
+                                    ->where('invoice_no', 'like', $prefix . '%')
                                     ->exists();
 
                 if (!$exists) {

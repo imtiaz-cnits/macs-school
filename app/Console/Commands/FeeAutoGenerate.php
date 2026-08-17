@@ -107,9 +107,10 @@ class FeeAutoGenerate extends Command
                 try {
                     $generatedCount = 0;
                     foreach ($students as $student) {
-                        // Check if invoice already exists
+                        // Check if invoice already exists for this specific month/year
                         $exists = \App\Models\FeeInvoice::where('student_id', $student->id)
                                                         ->where('fee_setup_id', $feeSetup->id)
+                                                        ->where('invoice_no', 'like', $prefix . '%')
                                                         ->exists();
 
                         if (!$exists) {
