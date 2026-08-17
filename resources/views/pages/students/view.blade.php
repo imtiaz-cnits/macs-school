@@ -36,6 +36,13 @@
 </script>
 @endpush
 
+@section('back_button')
+<a href="{{ route('students.index') }}" class="h-9 px-4 bg-gray-100 dark:bg-themeNavy/50 text-gray-600 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-1.5 border border-gray-200 dark:border-gray-800/80 shadow-sm">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+    Back
+</a>
+@endsection
+
 @section('content')
 <div class="w-full min-h-screen relative text-gray-900 dark:text-gray-100">
     
@@ -60,11 +67,6 @@
         </div>
         
         <div class="flex gap-3 w-full md:w-auto">
-            <a href="{{ route('students.index') }}" class="h-10 px-5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-600 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm whitespace-nowrap">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-                Back
-            </a>
-            
             <a href="/student/edit/{{ $id }}" class="h-10 px-6 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center gap-2 whitespace-nowrap active:scale-95">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
                 Edit Profile
