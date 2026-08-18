@@ -270,6 +270,7 @@
                         <td>
                             <div class="student-name">{{ $student->student_name }}</div>
                             <div class="student-id">ID: {{ $student->student_identity ?? 'N/A' }}</div>
+                            <div class="student-id" style="color: #008ED6; margin-top: 2px; font-weight: 800;">Device ID: {{ $student->id }}</div>
                         </td>
                         <td>
                             <div class="class-badge">Class: {{ $student->schoolClass->class_name ?? 'N/A' }}</div>
