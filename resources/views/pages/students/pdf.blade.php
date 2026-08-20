@@ -133,7 +133,7 @@
         }
 
         .student-id {
-            font-size: 10px;
+            font-size: 11px;
             color: #009A49; /* MACS Green */
             font-weight: 800;
             margin-top: 1px;

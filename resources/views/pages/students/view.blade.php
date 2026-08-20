@@ -69,6 +69,11 @@
         </div>
         
         <div class="flex gap-3 w-full md:w-auto">
+            <button onclick="pushToDevice()" class="h-10 px-5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-xs font-black rounded-xl uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-indigo-200 dark:border-indigo-900/60 shadow-sm whitespace-nowrap active:scale-95">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" /></svg>
+                Push to Machine
+            </button>
+
             <a href="/student/edit/{{ $id }}" class="h-10 px-6 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center gap-2 whitespace-nowrap active:scale-95">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
                 Edit Profile
@@ -977,6 +982,28 @@
         } catch (err) {
             let errMsg = err.response?.data?.message || "Failed to delete customized fee.";
             await showAlert(errMsg, "Error");
+        } finally {
+            document.getElementById('loadingOverlay').classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 300);
+        }
+    }
+
+    async function pushToDevice() {
+        try {
+            let confirmed = await showConfirm("Push Student to Device", "Do you want to push this student's record to the biometric device?");
+            if (!confirmed) return;
+
+            document.getElementById('loadingOverlay').classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+
+            let res = await axios.post(`/ajax/students/${studentId}/push-to-device`, {}, getAuthHeaders());
+            if (res.data.status === 'success') {
+                await showAlert(res.data.message, "Push Success");
+            } else {
+                await showAlert(res.data.message || "Failed to push student to device.", "Error");
+            }
+        } catch (err) {
+            let errMsg = err.response?.data?.message || "Device sync failed.";
+            await showAlert(errMsg, "Push Error");
         } finally {
             document.getElementById('loadingOverlay').classList.add('opacity-0', 'pointer-events-none');
             setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 300);

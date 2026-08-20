@@ -155,6 +155,7 @@ Route::middleware(['auth', 'roles:editor,admin,super-admin'])->group(function ()
     Route::get('/ajax/students/detect', [StudentController::class, 'detectStudentInfo'])->name('students.detect');
     Route::get('/ajax/students/scan-card', [StudentController::class, 'scanRfidCard'])->name('students.scan-card');
     Route::post('/ajax/students/{id}/sync-card', [StudentController::class, 'syncRfidCard'])->name('students.sync-card');
+    Route::post('/ajax/students/{id}/push-to-device', [StudentController::class, 'pushToDevice'])->name('students.push-to-device');
     Route::post('/ajax/students/bulk-sync-cards', [StudentController::class, 'bulkSyncRfidCards'])->name('students.bulk-sync-cards');
     Route::get('/ajax/students/next-serial', [StudentController::class, 'getNextSerial'])->name('students.next-serial');
     Route::post('/ajax/students/promote', [StudentController::class, 'promoteStudents'])->name('students.promote'); // (এটি মিসিং ছিল)

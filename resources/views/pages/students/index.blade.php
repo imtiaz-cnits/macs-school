@@ -514,6 +514,9 @@
                                 <button onclick="syncRfidCardSingle(${item.id})" class="action-btn text-themeGreen hover:text-themeGreen hover:border-themeGreen" title="Sync RFID Card">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                                 </button>
+                                <button onclick="pushToDeviceSingle(${item.id})" class="action-btn text-indigo-500 hover:text-indigo-700 hover:border-indigo-500" title="Push Student to Device">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" /></svg>
+                                </button>
                                 <a href="/student/view/${item.id}" class="action-btn text-themeBlue hover:text-themeBlue hover:border-themeBlue" title="View Details">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 </a>
@@ -667,6 +670,23 @@
             }
         } catch (err) {
             let errMsg = err.response?.data?.message || "RFID sync failed.";
+            await showAlert(errMsg, "Sync Error");
+        }
+    };
+
+    window.pushToDeviceSingle = async function(studentId) {
+        try {
+            let confirmed = await showConfirm("Push Student to Device", "Do you want to push this student record to the biometric device?");
+            if (!confirmed) return;
+
+            let res = await axios.post(`/ajax/students/${studentId}/push-to-device`, {}, getAuthHeaders());
+            if (res.data.status === 'success') {
+                await showAlert(res.data.message, "Sync Success");
+            } else {
+                await showAlert(res.data.message || "Failed to push student to device.", "Error");
+            }
+        } catch (err) {
+            let errMsg = err.response?.data?.message || "Device sync failed.";
             await showAlert(errMsg, "Sync Error");
         }
     };

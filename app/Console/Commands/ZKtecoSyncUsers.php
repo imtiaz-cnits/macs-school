@@ -15,14 +15,14 @@ class ZKtecoSyncUsers extends Command
      *
      * @var string
      */
-    protected $signature = 'zkteco:sync-users';
+    protected $signature = 'zkteco:sync-users {--student-id= : Sync only a specific student ID}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Sync all students and teachers from Laravel database to ZKTeco biometric device';
+    protected $description = 'Sync students and teachers from Laravel database to ZKTeco biometric device';
 
     /**
      * Execute the console command.
@@ -56,8 +56,20 @@ class ZKtecoSyncUsers extends Command
             $zk->disableDevice();
 
             $this->info("Fetching database records...");
-            $students = Student::all();
-            $teachers = Teacher::all();
+            $studentId = $this->option('student-id');
+            if ($studentId) {
+                $students = Student::where('id', $studentId)->get();
+                $teachers = collect(); // empty collection for teachers when syncing single student
+                if ($students->isEmpty()) {
+                    $this->error("❌ Student with ID {$studentId} not found in database.");
+                    $zk->enableDevice();
+                    $zk->disconnect();
+                    return;
+                }
+            } else {
+                $students = Student::all();
+                $teachers = Teacher::all();
+            }
 
             $this->info("Fetching users from device...");
             $deviceUsers = $zk->getUser();

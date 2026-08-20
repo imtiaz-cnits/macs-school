@@ -985,6 +985,68 @@ public function detectStudentInfo(Request $request)
     }
 
     /**
+     * Push a specific student to the biometric device
+     */
+    public function pushToDevice($id): JsonResponse
+    {
+        try {
+            $student = Student::find($id);
+            if (!$student) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Student not found.'
+                ], 404);
+            }
+
+            $zkService = app(\App\Services\ZktecoService::class);
+            if ($zkService->getMode() === 'simulation') {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => "[Simulation] Student {$student->student_name} (Device ID: {$student->id}) pushed to device successfully!"
+                ], 200);
+            }
+
+            $zk = new \Jmrashed\Zkteco\Lib\ZKTeco($zkService->getIp(), $zkService->getPort());
+            if (!$zk->connect()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unable to establish connection with ZKTeco biometric device.'
+                ], 500);
+            }
+
+            $zk->disableDevice();
+            
+            // Clean name for ZKTeco compatibility (alphanumeric only, max 24 chars)
+            $cleanName = substr(preg_replace('/[^A-Za-z0-9\s]/', '', $student->student_name), 0, 24);
+            if (empty($cleanName)) {
+                $cleanName = "Student " . $student->id;
+            }
+
+            $cardno = 0;
+            if (!empty($student->card_number)) {
+                $cardno = preg_replace('/[^0-9]/', '', $student->card_number);
+            }
+
+            // setUser($uid, $userid, $name, $password, $role, $cardno)
+            $zk->setUser($student->id, $student->id, $cleanName, '', 0, $cardno);
+            
+            $zk->enableDevice();
+            $zk->disconnect();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Student {$student->student_name} (Device ID: {$student->id}) successfully pushed to biometric device."
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to push student to device: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get the next serial number for student identity
      */
     public function getNextSerial(): JsonResponse
