@@ -53,12 +53,11 @@
                 <!-- Branch Dropdown -->
                 <div class="relative" @click.away="if(activeDropdown === 'branch') activeDropdown = null">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Select Branch *</label>
-                    <button type="button" @click="activeDropdown = activeDropdown === 'branch' ? null : 'branch'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                    <button type="button" @click="activeDropdown = activeDropdown === 'branch' ? null : 'branch'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="branchText"></span>
                         <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="activeDropdown === 'branch'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
-                        <button type="button" @click="selectBranch('', 'Choose Branch')" class="w-full text-left px-4 py-2 text-xs hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-450 transition-colors">Choose Branch</button>
                         @foreach($branches ?? [] as $branch)
                             <button type="button" @click="selectBranch('{{ $branch->id }}', '{{ $branch->branch_name ?? $branch->name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.branch_id == '{{ $branch->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                                 <span>{{ $branch->branch_name ?? $branch->name }}</span>
@@ -73,12 +72,11 @@
                 <!-- Exam Dropdown -->
                 <div class="relative" @click.away="if(activeDropdown === 'exam') activeDropdown = null">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Select Exam *</label>
-                    <button type="button" @click="activeDropdown = activeDropdown === 'exam' ? null : 'exam'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                    <button type="button" @click="activeDropdown = activeDropdown === 'exam' ? null : 'exam'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="examText"></span>
                         <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="activeDropdown === 'exam'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
-                        <button type="button" @click="selectExam('', 'Choose Exam')" class="w-full text-left px-4 py-2 text-xs hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-455 transition-colors">Choose Exam</button>
                         @foreach($exams as $exam)
                             <button type="button" @click="selectExam('{{ $exam->id }}', '{{ $exam->name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.exam_id == '{{ $exam->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                                 <span>{{ $exam->name }}</span>
@@ -93,12 +91,11 @@
                 <!-- Class Dropdown -->
                 <div class="relative" @click.away="if(activeDropdown === 'class') activeDropdown = null">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Select Class *</label>
-                    <button type="button" @click="activeDropdown = activeDropdown === 'class' ? null : 'class'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                    <button type="button" @click="activeDropdown = activeDropdown === 'class' ? null : 'class'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="classText"></span>
                         <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="activeDropdown === 'class'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
-                        <button type="button" @click="selectClass('', 'Choose Class')" class="w-full text-left px-4 py-2 text-xs hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-455 transition-colors">Choose Class</button>
                         @foreach($classes as $class)
                             <button type="button" @click="selectClass('{{ $class->id }}', '{{ $class->class_name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.class_id == '{{ $class->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                                 <span>{{ $class->class_name }}</span>
@@ -113,12 +110,11 @@
                 <!-- Subject Dropdown -->
                 <div class="relative" @click.away="if(activeDropdown === 'subject') activeDropdown = null">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Select Subject *</label>
-                    <button type="button" @click="activeDropdown = activeDropdown === 'subject' ? null : 'subject'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                    <button type="button" @click="activeDropdown = activeDropdown === 'subject' ? null : 'subject'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="subjectText"></span>
                         <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="activeDropdown === 'subject'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
-                        <button type="button" @click="selectSubject('', 'Choose Subject')" class="w-full text-left px-4 py-2 text-xs hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-455 transition-colors">Choose Subject</button>
                         @foreach($subjects as $subject)
                             <button type="button" @click="selectSubject('{{ $subject->id }}', '{{ $subject->subject_name ?? $subject->name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.subject_id == '{{ $subject->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                                 <span>{{ $subject->subject_name ?? $subject->name }}</span>
@@ -136,27 +132,27 @@
                 <!-- Full Marks -->
                 <div>
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Marks *</label>
-                    <input type="number" step="0.01" name="full_marks" x-model="form.full_marks" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all" required>
+                    <input type="number" step="0.01" name="full_marks" x-model="form.full_marks" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all" required>
                 </div>
                 <!-- Pass Marks -->
                 <div>
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Pass Marks *</label>
-                    <input type="number" step="0.01" name="pass_marks" x-model="form.pass_marks" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all" required>
+                    <input type="number" step="0.01" name="pass_marks" x-model="form.pass_marks" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all" required>
                 </div>
                 <!-- CT Marks -->
                 <div>
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">CT / Tutorial</label>
-                    <input type="number" step="0.01" name="ct_marks" x-model="form.ct_marks" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
+                    <input type="number" step="0.01" name="ct_marks" x-model="form.ct_marks" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
                 </div>
                 <!-- Written Marks -->
                 <div>
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Written Marks</label>
-                    <input type="number" step="0.01" name="written_marks" x-model="form.written_marks" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
+                    <input type="number" step="0.01" name="written_marks" x-model="form.written_marks" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
                 </div>
                 <!-- MCQ Marks -->
                 <div>
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">MCQ Marks</label>
-                    <input type="number" step="0.01" name="mcq_marks" x-model="form.mcq_marks" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
+                    <input type="number" step="0.01" name="mcq_marks" x-model="form.mcq_marks" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
                 </div>
             </div>
 
@@ -165,7 +161,7 @@
                 <!-- Exam Date Picker -->
                 <div class="relative" x-data="datePicker(form.exam_date)" @date-selected="form.exam_date = $event.detail" @click.away="show = false">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Exam Date</label>
-                    <button type="button" @click="show = !show" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                    <button type="button" @click="show = !show" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="formatDisplay(value)"></span>
                         <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     </button>
@@ -185,11 +181,11 @@
                         </div>
                     </div>
                 </div>
-
+ 
                 <!-- Start Time Picker -->
                 <div class="relative" x-data="timePicker(form.start_time)" @time-selected="form.start_time = $event.detail" @click.away="show = false">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Start Time</label>
-                    <button type="button" @click="show = !show" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                    <button type="button" @click="show = !show" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="formatDisplay(value)"></span>
                         <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </button>
@@ -197,19 +193,19 @@
                         <div class="flex gap-2 justify-center items-center">
                             <div class="flex flex-col items-center">
                                 <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">HR</span>
-                                <select :value="hour" @change="selectHour(parseInt($event.target.value))" class="bg-gray-50 dark:bg-themeDark border border-gray-200 dark:border-gray-800 rounded-lg p-1 text-xs font-bold text-gray-750 dark:text-gray-200 focus:outline-none focus:border-themeBlue">
+                                <select :value="hour" @change="selectHour(parseInt($event.target.value))" class="bg-gray-50 dark:bg-themeNavy border border-gray-200 dark:border-gray-800 rounded-lg p-1 text-xs font-bold text-gray-750 dark:text-gray-200 focus:outline-none focus:border-themeBlue">
                                     <template x-for="h in [12,1,2,3,4,5,6,7,8,9,10,11]"><option :value="h" x-text="h"></option></template>
                                 </select>
                             </div>
                             <div class="flex flex-col items-center">
                                 <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">MIN</span>
-                                <select :value="minute" @change="selectMinute(parseInt($event.target.value))" class="bg-gray-50 dark:bg-themeDark border border-gray-200 dark:border-gray-800 rounded-lg p-1 text-xs font-bold text-gray-750 dark:text-gray-200 focus:outline-none focus:border-themeBlue">
+                                <select :value="minute" @change="selectMinute(parseInt($event.target.value))" class="bg-gray-50 dark:bg-themeNavy border border-gray-200 dark:border-gray-800 rounded-lg p-1 text-xs font-bold text-gray-750 dark:text-gray-200 focus:outline-none focus:border-themeBlue">
                                     <template x-for="m in [0,5,10,15,20,25,30,35,40,45,50,55]"><option :value="m" x-text="String(m).padStart(2, '0')"></option></template>
                                 </select>
                             </div>
                             <div class="flex flex-col items-center">
                                 <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">AM/PM</span>
-                                <select :value="period" @change="selectPeriod($event.target.value)" class="bg-gray-50 dark:bg-themeDark border border-gray-200 dark:border-gray-800 rounded-lg p-1 text-xs font-bold text-gray-750 dark:text-gray-200 focus:outline-none focus:border-themeBlue">
+                                <select :value="period" @change="selectPeriod($event.target.value)" class="bg-gray-50 dark:bg-themeNavy border border-gray-200 dark:border-gray-800 rounded-lg p-1 text-xs font-bold text-gray-750 dark:text-gray-200 focus:outline-none focus:border-themeBlue">
                                     <option value="AM">AM</option><option value="PM">PM</option>
                                 </select>
                             </div>
@@ -220,7 +216,7 @@
                 <!-- End Time Picker -->
                 <div class="relative" x-data="timePicker(form.end_time)" @time-selected="form.end_time = $event.detail" @click.away="show = false">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">End Time</label>
-                    <button type="button" @click="show = !show" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                    <button type="button" @click="show = !show" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="formatDisplay(value)"></span>
                         <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </button>
@@ -228,19 +224,19 @@
                         <div class="flex gap-2 justify-center items-center">
                             <div class="flex flex-col items-center">
                                 <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">HR</span>
-                                <select :value="hour" @change="selectHour(parseInt($event.target.value))" class="bg-gray-50 dark:bg-themeDark border border-gray-200 dark:border-gray-800 rounded-lg p-1 text-xs font-bold text-gray-755 dark:text-gray-200 focus:outline-none focus:border-themeBlue">
+                                <select :value="hour" @change="selectHour(parseInt($event.target.value))" class="bg-gray-50 dark:bg-themeNavy border border-gray-200 dark:border-gray-800 rounded-lg p-1 text-xs font-bold text-gray-755 dark:text-gray-200 focus:outline-none focus:border-themeBlue">
                                     <template x-for="h in [12,1,2,3,4,5,6,7,8,9,10,11]"><option :value="h" x-text="h"></option></template>
                                 </select>
                             </div>
                             <div class="flex flex-col items-center">
                                 <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">MIN</span>
-                                <select :value="minute" @change="selectMinute(parseInt($event.target.value))" class="bg-gray-50 dark:bg-themeDark border border-gray-200 dark:border-gray-800 rounded-lg p-1 text-xs font-bold text-gray-755 dark:text-gray-200 focus:outline-none focus:border-themeBlue">
+                                <select :value="minute" @change="selectMinute(parseInt($event.target.value))" class="bg-gray-50 dark:bg-themeNavy border border-gray-200 dark:border-gray-800 rounded-lg p-1 text-xs font-bold text-gray-755 dark:text-gray-200 focus:outline-none focus:border-themeBlue">
                                     <template x-for="m in [0,5,10,15,20,25,30,35,40,45,50,55]"><option :value="m" x-text="String(m).padStart(2, '0')"></option></template>
                                 </select>
                             </div>
                             <div class="flex flex-col items-center">
                                 <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">AM/PM</span>
-                                <select :value="period" @change="selectPeriod($event.target.value)" class="bg-gray-50 dark:bg-themeDark border border-gray-200 dark:border-gray-800 rounded-lg p-1 text-xs font-bold text-gray-755 dark:text-gray-200 focus:outline-none focus:border-themeBlue">
+                                <select :value="period" @change="selectPeriod($event.target.value)" class="bg-gray-50 dark:bg-themeNavy border border-gray-200 dark:border-gray-800 rounded-lg p-1 text-xs font-bold text-gray-755 dark:text-gray-200 focus:outline-none focus:border-themeBlue">
                                     <option value="AM">AM</option><option value="PM">PM</option>
                                 </select>
                             </div>
