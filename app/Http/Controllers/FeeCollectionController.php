@@ -5,6 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\FeeInvoice;
 use App\Models\FeePayment;
+use App\Models\Branch;
+use App\Models\Classes;
+use App\Models\Section;
+use App\Models\SessionYear;
+use App\Models\FeeCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,8 +23,15 @@ class FeeCollectionController extends Controller
         $student = null;
         $invoices = collect();
         $paymentHistory = collect(); // নাম পরিবর্তন করে paymentHistory রাখা হলো
+        
+        // ড্রপডাউনের জন্য ডাটা নিয়ে আসছি
+        $branches = Branch::all();
+        $classes = Classes::all();
+        $sections = Section::all();
+        $sessions = SessionYear::latest()->get();
+        $categories = FeeCategory::where('status', 'Active')->get();
 
-        if ($request->filled('student_identity')) {
+        if ($request->get('mode') !== 'bulk' && $request->filled('student_identity')) {
             $student = Student::with(['schoolClass', 'section', 'branch'])
                               ->where('student_identity', $request->student_identity)
                               ->first();
@@ -49,8 +61,55 @@ class FeeCollectionController extends Controller
             }
         }
 
+        // বাল্ক ইনভয়েস কুয়েরি (Class / Category wise bulk dues)
+        $bulkInvoices = collect();
+        if ($request->get('mode') === 'bulk' && $request->filled(['branch_id', 'session_year_id', 'class_id', 'fee_category_id'])) {
+            $query = FeeInvoice::with(['student.schoolClass', 'student.section', 'feeSetup.category'])
+                ->whereIn('status', ['Unpaid', 'Partial']);
+
+            $query->whereHas('student', function($q) use ($request) {
+                $q->where('branch_id', $request->branch_id)
+                  ->where('class_id', $request->class_id);
+                if ($request->filled('section_id')) {
+                    $q->where('section_id', $request->section_id);
+                }
+            });
+
+            $query->whereHas('feeSetup', function($q) use ($request) {
+                $q->where('session_year_id', $request->session_year_id)
+                  ->where('fee_category_id', $request->fee_category_id);
+            });
+
+            $bulkInvoices = $query->orderBy('invoice_no', 'asc')->get();
+        }
+
+        $dueStudents = collect();
+        if ($request->get('mode') !== 'bulk' && !$request->filled('student_identity')) {
+            $dueStudents = Student::with(['schoolClass', 'section', 'branch'])
+                ->whereHas('invoices', function($q) {
+                    $q->whereIn('status', ['Unpaid', 'Partial']);
+                })
+                ->withSum(['invoices as total_due' => function($q) {
+                    $q->whereIn('status', ['Unpaid', 'Partial']);
+                }], 'due_amount')
+                ->latest('updated_at')
+                ->paginate(10)
+                ->withQueryString();
+        }
+
         // ভিউ ফাইল লোড করা
-        return view('pages.fees.collection', compact('student', 'invoices', 'paymentHistory'));
+        return view('pages.fees.collection', compact(
+            'student', 
+            'invoices', 
+            'paymentHistory', 
+            'branches', 
+            'classes', 
+            'sections', 
+            'sessions', 
+            'categories', 
+            'bulkInvoices',
+            'dueStudents'
+        ));
     }
 
     // ২. সিঙ্গেল টাকা জমা নেওয়ার লজিক
@@ -185,5 +244,81 @@ class FeeCollectionController extends Controller
         $date = $payments->first()->created_at;
 
         return view('pages.fees.pos_bulk_receipt', compact('payments', 'receipt_no', 'student', 'collector', 'date'));
+    }
+
+    // ৫. একসাথে একাধিক স্টুডেন্টের ফি কালেকশন নেওয়ার লজিক (Bulk Collection)
+    public function bulkStudentsStore(Request $request)
+    {
+        $request->validate([
+            'invoice_ids' => 'required|array',
+            'invoice_ids.*' => 'exists:fee_invoices,id',
+            'paying_amounts' => 'required|array',
+            'payment_method' => 'required|string',
+            'transaction_id' => 'nullable|string',
+            'note' => 'nullable|string',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $totalCollected = 0;
+            $count = 0;
+
+            foreach ($request->invoice_ids as $invId) {
+                // Paying amount for this specific invoice
+                $payAmount = floatval($request->paying_amounts[$invId] ?? 0);
+
+                if ($payAmount <= 0) {
+                    continue; // Skip zero/negative payments
+                }
+
+                $invoice = FeeInvoice::with('student')->lockForUpdate()->findOrFail($invId);
+
+                if ($payAmount > $invoice->due_amount) {
+                    return back()->with('error', "Error: Paying amount for student {$invoice->student->student_name} cannot be greater than the Due amount!");
+                }
+
+                // ইউনিক মানি রিসিট নম্বর তৈরি (স্টুডেন্ট আইডি সংযুক্ত করে)
+                $receiptNo = 'REC-' . date('Ymd') . '-' . $invoice->student->id . '-' . rand(100, 999);
+
+                // পেমেন্ট রেকর্ড সেভ করা
+                FeePayment::create([
+                    'receipt_no' => $receiptNo,
+                    'fee_invoice_id' => $invoice->id,
+                    'student_id' => $invoice->student_id,
+                    'paid_amount' => $payAmount,
+                    'payment_date' => date('Y-m-d'),
+                    'payment_method' => $request->payment_method,
+                    'transaction_id' => $request->transaction_id,
+                    'note' => $request->note,
+                    'collected_by' => Auth::id()
+                ]);
+
+                // ইনভয়েসের ব্যালেন্স আপডেট করা
+                $invoice->paid_amount += $payAmount;
+                $invoice->due_amount -= $payAmount;
+                
+                // যদি বকেয়া ০ হয় তবে স্ট্যাটাস Paid, নাহলে Partial
+                $invoice->status = $invoice->due_amount <= 0 ? 'Paid' : 'Partial';
+                $invoice->save();
+
+                $totalCollected += $payAmount;
+                $count++;
+            }
+
+            DB::commit();
+
+            return redirect()->route('fees.collection.index', [
+                'mode' => 'bulk',
+                'branch_id' => $request->branch_id,
+                'session_year_id' => $request->session_year_id,
+                'class_id' => $request->class_id,
+                'section_id' => $request->section_id,
+                'fee_category_id' => $request->fee_category_id,
+            ])->with('success', "Successfully collected payments for {$count} student(s)! Total: ৳" . number_format($totalCollected, 2));
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Bulk Collection failed: ' . $e->getMessage());
+        }
     }
 }

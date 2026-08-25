@@ -397,6 +397,7 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
 
         // Bulk Payment & Master Receipt Routes
         Route::post('/collection/bulk', [FeeCollectionController::class, 'bulkStore'])->name('collection.bulk_store');
+        Route::post('/collection/bulk-students', [FeeCollectionController::class, 'bulkStudentsStore'])->name('collection.bulk_students_store');
         Route::get('/receipt/{receipt_no}/pos-print', [FeeCollectionController::class, 'printBulkPos'])->name('receipt.pos_print');
 
         // Fee Reports
