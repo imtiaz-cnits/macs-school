@@ -78,6 +78,9 @@ class FeeCollectionController extends Controller
             $query->whereHas('feeSetup', function($q) use ($request) {
                 $q->where('session_year_id', $request->session_year_id)
                   ->where('fee_category_id', $request->fee_category_id);
+                if ($request->filled('fee_month')) {
+                    $q->where('fee_month', $request->fee_month);
+                }
             });
 
             $bulkInvoices = $query->orderBy('invoice_no', 'asc')->get();
@@ -314,6 +317,7 @@ class FeeCollectionController extends Controller
                 'class_id' => $request->class_id,
                 'section_id' => $request->section_id,
                 'fee_category_id' => $request->fee_category_id,
+                'fee_month' => $request->fee_month,
             ])->with('success', "Successfully collected payments for {$count} student(s)! Total: ৳" . number_format($totalCollected, 2));
 
         } catch (Exception $e) {

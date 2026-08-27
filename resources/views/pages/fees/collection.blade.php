@@ -365,6 +365,7 @@
                 <input type="hidden" name="class_id" :value="form.class_id">
                 <input type="hidden" name="section_id" :value="form.section_id">
                 <input type="hidden" name="fee_category_id" :value="form.fee_category_id">
+                <input type="hidden" name="fee_month" :value="form.fee_month">
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <!-- Branch Dropdown -->
@@ -425,7 +426,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <!-- Section Dropdown -->
                     <div class="relative" @click.away="if(activeDropdown === 'section') activeDropdown = null">
                         <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Select Section (Optional)</label>
@@ -464,11 +465,33 @@
                         </div>
                     </div>
 
-                    <div>
-                        <button type="submit" class="w-full h-11 bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-[0.15em] text-xs active:scale-95 flex items-center justify-center">
-                            Load Invoices
+                    <!-- Month Dropdown (Optional) -->
+                    <div class="relative" @click.away="if(activeDropdown === 'month') activeDropdown = null">
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Select Month (Optional)</label>
+                        <button type="button" @click="activeDropdown = activeDropdown === 'month' ? null : 'month'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                            <span class="truncate" x-text="monthText"></span>
+                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                         </button>
+                        <div x-show="activeDropdown === 'month'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                            <button type="button" @click="selectMonth('', 'Choose Month')" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors text-gray-700 dark:text-gray-200 font-bold">
+                                <span>Choose Month</span>
+                            </button>
+                            @foreach(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
+                                <button type="button" @click="selectMonth('{{ $month }}', '{{ $month }}')" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-55 dark:hover:bg-themeDark/45 transition-colors" :class="form.fee_month == '{{ $month }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                    <span>{{ $month }}</span>
+                                    <template x-if="form.fee_month == '{{ $month }}'">
+                                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    </template>
+                                </button>
+                            @endforeach
+                        </div>
                     </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="h-11 px-8 bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-[0.15em] text-xs active:scale-95 flex items-center justify-center min-w-[200px]">
+                        Load Invoices
+                    </button>
                 </div>
             </form>
         </div>
@@ -534,6 +557,7 @@
                 <input type="hidden" name="class_id" value="{{ request('class_id') }}">
                 <input type="hidden" name="section_id" value="{{ request('section_id') }}">
                 <input type="hidden" name="fee_category_id" value="{{ request('fee_category_id') }}">
+                <input type="hidden" name="fee_month" value="{{ request('fee_month') }}">
 
                 <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden relative mb-8">
                     <div class="p-6 border-b border-gray-100 dark:border-white/[0.05] flex justify-between items-center">
@@ -851,13 +875,15 @@
             classText: '{{ request('class_id') ? ($classes->firstWhere('id', request('class_id'))->class_name ?? 'Choose Class') : 'Choose Class' }}',
             sectionText: '{{ request('section_id') ? ($sections->firstWhere('id', request('section_id'))->section_name ?? 'Choose Section') : 'Choose Section' }}',
             categoryText: '{{ request('fee_category_id') ? ($categories->firstWhere('id', request('fee_category_id'))->name ?? 'Choose Category') : 'Choose Category' }}',
+            monthText: '{{ request('fee_month') ?: 'Choose Month' }}',
             
             form: {
                 branch_id: '{{ request('branch_id', '') }}',
                 session_year_id: '{{ request('session_year_id', '') }}',
                 class_id: '{{ request('class_id', '') }}',
                 section_id: '{{ request('section_id', '') }}',
-                fee_category_id: '{{ request('fee_category_id', '') }}'
+                fee_category_id: '{{ request('fee_category_id', '') }}',
+                fee_month: '{{ request('fee_month', '') }}'
             },
             
             selectBranch(id, name) {
@@ -883,6 +909,11 @@
             selectCategory(id, name) {
                 this.form.fee_category_id = id;
                 this.categoryText = name;
+                this.activeDropdown = null;
+            },
+            selectMonth(value, name) {
+                this.form.fee_month = value;
+                this.monthText = name;
                 this.activeDropdown = null;
             }
         };
