@@ -3,7 +3,7 @@
 @section('title', 'Fee Collection')
 
 @section('content')
-<div class="w-full min-h-screen">
+<div id="feeCollectionRoot" class="w-full min-h-screen" x-data="{ loading: false }" @trigger-loader.window="loading = true">
     
     <!-- Page Header -->
     <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 no-print">
@@ -48,13 +48,15 @@
     <div class="flex gap-4 border-b border-gray-100 dark:border-white/[0.06] pb-px mb-8 no-print" x-data="{ activeTab: '{{ request('mode', 'single') }}' }">
         <a href="{{ route('fees.collection.index', ['mode' => 'single']) }}" 
            class="px-4 py-2.5 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2"
-           :class="activeTab === 'single' ? 'border-themeBlue text-themeBlue' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'">
+           :class="activeTab === 'single' ? 'border-themeBlue text-themeBlue' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
+           @click="window.dispatchEvent(new CustomEvent('trigger-loader'))">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
             Single Student Collection
         </a>
         <a href="{{ route('fees.collection.index', ['mode' => 'bulk']) }}" 
            class="px-4 py-2.5 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2"
-           :class="activeTab === 'bulk' ? 'border-themeBlue text-themeBlue' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'">
+           :class="activeTab === 'bulk' ? 'border-themeBlue text-themeBlue' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
+           @click="window.dispatchEvent(new CustomEvent('trigger-loader'))">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             Bulk / Class / Category Collection
         </a>
@@ -63,7 +65,7 @@
     <!-- Search System under title/tab area (Rule 2 & 4 compliance) -->
     @if(request('mode', 'single') === 'single')
         <div class="mb-8 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm no-print">
-            <form action="{{ route('fees.collection.index') }}" method="GET" class="w-full flex flex-col sm:flex-row gap-3">
+            <form action="{{ route('fees.collection.index') }}" method="GET" class="w-full flex flex-col sm:flex-row gap-3" @submit="window.dispatchEvent(new CustomEvent('trigger-loader'))">
                 <input type="hidden" name="mode" value="single">
                 <input type="text" name="student_identity" value="{{ request('student_identity') }}" placeholder="Enter Student ID (e.g. PIS-...)" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-mono uppercase text-gray-700 dark:text-gray-250 px-3 placeholder-gray-450" required>
                 <button type="submit" class="h-11 px-8 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center gap-2 whitespace-nowrap active:scale-95">Search Student</button>
@@ -93,8 +95,10 @@
     @if(session('error')) <div class="bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 p-4 rounded-2xl mb-6 font-bold border border-red-200/30">{{ session('error') }}</div> @endif
     @if($errors->any()) <div class="bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 p-4 rounded-2xl mb-6 font-bold border border-red-200/30">{{ $errors->first() }}</div> @endif
 
-    <!-- Single Mode View -->
-    @if(request('mode', 'single') === 'single')
+    <!-- Main Content Panel (Hidden when loading) -->
+    <div x-show="!loading">
+        <!-- Single Mode View -->
+        @if(request('mode', 'single') === 'single')
         @if($student)
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             
@@ -358,7 +362,7 @@
     @if(request('mode') === 'bulk')
         <!-- Filters Card -->
         <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 mb-8" x-data="bulkCollectionSetup()">
-            <form action="{{ route('fees.collection.index') }}" method="GET">
+            <form action="{{ route('fees.collection.index') }}" method="GET" @submit="window.dispatchEvent(new CustomEvent('trigger-loader'))">
                 <input type="hidden" name="mode" value="bulk">
                 <input type="hidden" name="branch_id" :value="form.branch_id">
                 <input type="hidden" name="session_year_id" :value="form.session_year_id">
@@ -488,7 +492,10 @@
                     </div>
                 </div>
 
-                <div class="flex justify-end">
+                <div class="flex justify-end gap-3">
+                    <a href="{{ route('fees.collection.index', ['mode' => 'bulk']) }}" class="h-11 px-6 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-700 dark:text-gray-200 text-xs font-black uppercase tracking-[0.15em] flex items-center justify-center transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 whitespace-nowrap" @click="window.dispatchEvent(new CustomEvent('trigger-loader'))">
+                        Reset Filters
+                    </a>
                     <button type="submit" class="h-11 px-8 bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-[0.15em] text-xs active:scale-95 flex items-center justify-center min-w-[200px]">
                         Load Invoices
                     </button>
@@ -688,6 +695,53 @@
             </form>
         @endif
     @endif
+    </div>
+
+    <!-- Skeleton Loading Block (Shown when loading) -->
+    <div x-show="loading" x-cloak class="space-y-6">
+        <!-- Skeleton Card 1 (Summary/Search State) -->
+        <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm animate-pulse">
+            <div class="h-4 w-1/4 bg-gray-200 dark:bg-gray-700/60 rounded-md mb-4"></div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="h-10 bg-gray-200 dark:bg-gray-700/60 rounded-xl"></div>
+                <div class="h-10 bg-gray-200 dark:bg-gray-700/60 rounded-xl"></div>
+                <div class="h-10 bg-gray-200 dark:bg-gray-700/60 rounded-xl"></div>
+            </div>
+        </div>
+        <!-- Skeleton Card 2 (Table/Invoices State) -->
+        <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl shadow-sm overflow-hidden animate-pulse">
+            <div class="p-6 border-b border-gray-100 dark:border-white/[0.05]">
+                <div class="h-5 w-40 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
+            </div>
+            <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0">
+                <table class="w-full text-left border-collapse table">
+                    <thead>
+                        <tr class="!bg-transparent">
+                            <th class="w-16 border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4"><div class="h-3 w-8 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4"><div class="h-3 w-32 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4"><div class="h-3 w-16 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-right"><div class="h-3 w-20 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-right"><div class="h-3 w-24 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(range(1, 5) as $i)
+                        <tr>
+                            <td class="py-4 px-4"><div class="h-4 w-6 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
+                            <td class="py-4 px-4">
+                                <div class="h-4 w-48 bg-gray-200 dark:bg-gray-700/60 rounded-md mb-2"></div>
+                                <div class="h-3 w-24 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
+                            </td>
+                            <td class="py-4 px-4"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
+                            <td class="py-4 px-4 text-right"><div class="h-4 w-16 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
+                            <td class="py-4 px-4 text-right"><div class="h-5 w-24 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Collect Payment Single Modal -->
@@ -832,6 +886,14 @@
             });
         }
         
+        // Listen for all page transition link clicks (pagination, switcher tabs, action buttons)
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (link && link.href && !link.href.startsWith('#') && link.getAttribute('target') !== '_blank' && !link.href.startsWith('javascript:')) {
+                window.dispatchEvent(new CustomEvent('trigger-loader'));
+            }
+        });
+        
         // Single & Bulk confirm dialogs
         const singleForm = document.getElementById('singlePaymentForm');
         if (singleForm) {
@@ -839,6 +901,7 @@
                 e.preventDefault();
                 const form = e.currentTarget;
                 if (await showConfirm('Confirm Payment', 'Are you sure you want to record this single fee payment?')) {
+                    window.dispatchEvent(new CustomEvent('trigger-loader'));
                     form.submit();
                 }
             };
@@ -850,6 +913,7 @@
                 e.preventDefault();
                 const form = e.currentTarget;
                 if (await showConfirm('Confirm Bulk Payment', 'Are you sure you want to record payment for all selected dues?')) {
+                    window.dispatchEvent(new CustomEvent('trigger-loader'));
                     form.submit();
                 }
             };
@@ -861,6 +925,7 @@
                 e.preventDefault();
                 const form = e.currentTarget;
                 if (await showConfirm('Confirm Bulk Collection', 'Are you sure you want to record payments for all selected student dues?')) {
+                    window.dispatchEvent(new CustomEvent('trigger-loader'));
                     form.submit();
                 }
             };
@@ -919,4 +984,10 @@
         };
     }
 </script>
+@endpush
+
+@push('css')
+<style>
+    [x-cloak] { display: none !important; }
+</style>
 @endpush
