@@ -79,9 +79,25 @@ class FeeCollectionController extends Controller
                 $q->where('session_year_id', $request->session_year_id)
                   ->where('fee_category_id', $request->fee_category_id);
                 if ($request->filled('fee_month')) {
-                    $q->where('fee_month', $request->fee_month);
+                    $q->where(function($sub) use ($request) {
+                        $sub->where('fee_month', $request->fee_month)
+                            ->orWhere('fee_month', 'Monthly')
+                            ->orWhereNull('fee_month')
+                            ->orWhere('fee_month', '');
+                    });
                 }
             });
+
+            if ($request->filled('fee_month')) {
+                $monthIndex = array_search(ucfirst(strtolower($request->fee_month)), [
+                    'January', 'February', 'March', 'April', 'May', 'June', 
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ]);
+                if ($monthIndex !== false) {
+                    $monthNum = $monthIndex + 1;
+                    $query->whereMonth('due_date', $monthNum);
+                }
+            }
 
             $bulkInvoices = $query->orderBy('invoice_no', 'asc')->get();
         }
