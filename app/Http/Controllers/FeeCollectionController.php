@@ -262,7 +262,109 @@ class FeeCollectionController extends Controller
         $collector = $payments->first()->collector;
         $date = $payments->first()->created_at;
 
-        return view('pages.fees.pos_bulk_receipt', compact('payments', 'receipt_no', 'student', 'collector', 'date'));
+        // Check if multiple students are present in this master receipt
+        $isMultipleStudents = $payments->pluck('student_id')->unique()->count() > 1;
+
+        return view('pages.fees.pos_bulk_receipt', compact('payments', 'receipt_no', 'student', 'collector', 'date', 'isMultipleStudents'));
+    }
+
+    // ৫. একসাথে একাধিক স্টুডেন্টের ফি কালেকশন নেওয়ার লজিক (ইন্ডিভিজুয়াল রিসিট একসাথে প্রিন্ট)
+    public function printBulkIndividualPos($receipt_no)
+    {
+        // 'like' ব্যবহার করে এই মাস্টার রিসিটের আন্ডারে যতগুলো পেমেন্ট হয়েছে সব আনা হলো
+        $payments = FeePayment::with(['invoice.student.schoolClass', 'invoice.student.section', 'invoice.feeSetup.category', 'invoice.user'])
+                              ->where('receipt_no', 'like', $receipt_no . '%')
+                              ->get();
+
+        if ($payments->isEmpty()) {
+            abort(404, 'Receipt not found');
+        }
+
+        // Get unique invoices associated with these payments
+        $invoices = $payments->map(function($pay) {
+            return $pay->invoice;
+        })->unique('id');
+
+        return view('pages.fees.pos_invoice_individual_bulk', compact('invoices', 'receipt_no'));
+    }
+
+    // ৫.১. সকল রশিদ/পেমেন্টের তালিকা দেখানোর লজিক
+    public function paymentsIndex(Request $request)
+    {
+        $query = FeePayment::with(['student.schoolClass', 'student.section', 'invoice.feeSetup.category', 'collector'])
+                           ->orderBy('id', 'desc');
+
+        // Apply Branch filter
+        if ($request->filled('branch_id')) {
+            $query->whereHas('student', function($q) use ($request) {
+                $q->where('branch_id', $request->branch_id);
+            });
+        }
+
+        // Apply Class filter
+        if ($request->filled('class_id')) {
+            $query->whereHas('student', function($q) use ($request) {
+                $q->where('class_id', $request->class_id);
+            });
+        }
+
+        // Apply Date Range filters
+        if ($request->filled('date_from')) {
+            $query->whereDate('payment_date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('payment_date', '<=', $request->date_to);
+        }
+
+        // Apply Payment Method filter
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        // Apply General Search Query
+        if ($request->filled('search_query')) {
+            $search = $request->search_query;
+            $query->where(function($q) use ($search) {
+                $q->where('receipt_no', 'like', "%{$search}%")
+                  ->orWhereHas('student', function($sq) use ($search) {
+                      $sq->where('student_name', 'like', "%{$search}%")
+                        ->orWhere('student_identity', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $payments = $query->paginate(15)->withQueryString();
+
+        $branches = Branch::all();
+        $classes = Classes::all();
+
+        return view('pages.fees.payments', compact('payments', 'branches', 'classes'));
+    }
+
+    // ৫.২. একাধিক নির্দিষ্ট রশিদ একসাথে প্রিন্ট করার লজিক
+    public function printSelectedIndividualPos(Request $request)
+    {
+        $paymentIds = $request->input('payment_ids', []);
+        if (empty($paymentIds)) {
+            return back()->with('error', 'Please select at least one receipt to print.');
+        }
+
+        $payments = FeePayment::with(['invoice.student.schoolClass', 'invoice.student.section', 'invoice.feeSetup.category', 'invoice.user'])
+                              ->whereIn('id', $paymentIds)
+                              ->get();
+
+        if ($payments->isEmpty()) {
+            abort(404, 'No receipts found');
+        }
+
+        // Get unique invoices associated with these payments
+        $invoices = $payments->map(function($pay) {
+            return $pay->invoice;
+        })->unique('id');
+
+        $receipt_no = 'SELECTED-' . date('Ymd') . '-' . rand(10, 99);
+
+        return view('pages.fees.pos_invoice_individual_bulk', compact('invoices', 'receipt_no'));
     }
 
     // ৫. একসাথে একাধিক স্টুডেন্টের ফি কালেকশন নেওয়ার লজিক (Bulk Collection)
@@ -281,6 +383,8 @@ class FeeCollectionController extends Controller
         try {
             $totalCollected = 0;
             $count = 0;
+            // Generate a master receipt prefix for the entire bulk collection batch
+            $masterReceiptNo = 'REC-BULK-' . date('Ymd') . '-' . rand(1000, 9999);
 
             foreach ($request->invoice_ids as $invId) {
                 // Paying amount for this specific invoice
@@ -290,14 +394,48 @@ class FeeCollectionController extends Controller
                     continue; // Skip zero/negative payments
                 }
 
-                $invoice = FeeInvoice::with('student')->lockForUpdate()->findOrFail($invId);
+                $invoice = FeeInvoice::with(['student', 'feeSetup'])->lockForUpdate()->findOrFail($invId);
+
+                $feeSetup = $invoice->feeSetup;
+                $feeCategoryId = $feeSetup->fee_category_id;
+                $originalSetupAmount = floatval($feeSetup->amount);
+
+                if ($payAmount != $originalSetupAmount) {
+                    // Update or create the customized fee configuration for this student and category
+                    \App\Models\StudentCustomFee::updateOrCreate(
+                        [
+                            'student_id' => $invoice->student_id,
+                            'fee_category_id' => $feeCategoryId,
+                        ],
+                        [
+                            'amount' => $payAmount
+                        ]
+                    );
+
+                    // Recalculate this invoice's net amount, discount and due amount
+                    $invoice->amount = $originalSetupAmount;
+                    $invoice->discount = max(0, $originalSetupAmount - $payAmount);
+                    $invoice->net_amount = $payAmount;
+                    $invoice->due_amount = max(0, $payAmount - $invoice->paid_amount);
+                } else {
+                    // Revert/Delete the customized fee configuration if it matches standard setup
+                    \App\Models\StudentCustomFee::where('student_id', $invoice->student_id)
+                                                 ->where('fee_category_id', $feeCategoryId)
+                                                 ->delete();
+
+                    // Revert the invoice parameters to standard
+                    $invoice->amount = $originalSetupAmount;
+                    $invoice->discount = 0;
+                    $invoice->net_amount = $originalSetupAmount;
+                    $invoice->due_amount = max(0, $originalSetupAmount - $invoice->paid_amount);
+                }
 
                 if ($payAmount > $invoice->due_amount) {
                     return back()->with('error', "Error: Paying amount for student {$invoice->student->student_name} cannot be greater than the Due amount!");
                 }
 
-                // ইউনিক মানি রিসিট নম্বর তৈরি (স্টুডেন্ট আইডি সংযুক্ত করে)
-                $receiptNo = 'REC-' . date('Ymd') . '-' . $invoice->student->id . '-' . rand(100, 999);
+                // Master receipt number connected to individual invoice ID
+                $receiptNo = $masterReceiptNo . '-' . $invoice->id;
 
                 // পেমেন্ট রেকর্ড সেভ করা
                 FeePayment::create([
@@ -334,7 +472,8 @@ class FeeCollectionController extends Controller
                 'section_id' => $request->section_id,
                 'fee_category_id' => $request->fee_category_id,
                 'fee_month' => $request->fee_month,
-            ])->with('success', "Successfully collected payments for {$count} student(s)! Total: ৳" . number_format($totalCollected, 2));
+            ])->with('success', "Successfully collected payments for {$count} student(s)! Total: ৳" . number_format($totalCollected, 2))
+              ->with('print_receipt_no', $masterReceiptNo);
 
         } catch (Exception $e) {
             DB::rollBack();

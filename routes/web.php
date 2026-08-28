@@ -399,6 +399,9 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
         Route::post('/collection/bulk', [FeeCollectionController::class, 'bulkStore'])->name('collection.bulk_store');
         Route::post('/collection/bulk-students', [FeeCollectionController::class, 'bulkStudentsStore'])->name('collection.bulk_students_store');
         Route::get('/receipt/{receipt_no}/pos-print', [FeeCollectionController::class, 'printBulkPos'])->name('receipt.pos_print');
+        Route::get('/receipt/{receipt_no}/pos-print-individual', [FeeCollectionController::class, 'printBulkIndividualPos'])->name('receipt.pos_print_individual');
+        Route::get('/payments', [FeeCollectionController::class, 'paymentsIndex'])->name('payments.index');
+        Route::post('/payments/print-selected', [FeeCollectionController::class, 'printSelectedIndividualPos'])->name('payments.print_selected');
 
         // Fee Reports
         Route::get('/reports', [FeeReportController::class, 'index'])->name('reports.index');

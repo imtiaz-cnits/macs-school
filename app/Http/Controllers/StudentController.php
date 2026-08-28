@@ -331,6 +331,26 @@ class StudentController extends Controller
                 ]
             );
 
+            // Find all unpaid or partially paid invoices for this student and category and update their balances
+            $unpaidInvoices = \App\Models\FeeInvoice::with('feeSetup')
+                ->where('student_id', $studentId)
+                ->where('status', '!=', 'Paid')
+                ->whereHas('feeSetup', function($q) use ($request) {
+                    $q->where('fee_category_id', $request->fee_category_id);
+                })
+                ->get();
+
+            foreach ($unpaidInvoices as $invoice) {
+                $feeSetupAmount = floatval($invoice->feeSetup->amount);
+                $customAmount = floatval($request->amount);
+
+                $invoice->discount = max(0, $feeSetupAmount - $customAmount);
+                $invoice->net_amount = $customAmount;
+                $invoice->due_amount = max(0, $customAmount - $invoice->paid_amount);
+                $invoice->status = $invoice->due_amount <= 0 ? 'Paid' : ($invoice->paid_amount > 0 ? 'Partial' : 'Unpaid');
+                $invoice->save();
+            }
+
             $customFee->load('category');
 
             return response()->json(['status' => 'success', 'data' => $customFee, 'message' => 'Customized fee saved successfully.'], 200);
@@ -346,7 +366,30 @@ class StudentController extends Controller
     {
         try {
             $customFee = \App\Models\StudentCustomFee::findOrFail($customFeeId);
+            $studentId = $customFee->student_id;
+            $feeCategoryId = $customFee->fee_category_id;
+
             $customFee->delete();
+
+            // Revert all unpaid/partially paid invoices for this student and category to setup standard rates
+            $unpaidInvoices = \App\Models\FeeInvoice::with('feeSetup')
+                ->where('student_id', $studentId)
+                ->where('status', '!=', 'Paid')
+                ->whereHas('feeSetup', function($q) use ($feeCategoryId) {
+                    $q->where('fee_category_id', $feeCategoryId);
+                })
+                ->get();
+
+            foreach ($unpaidInvoices as $invoice) {
+                $feeSetupAmount = floatval($invoice->feeSetup->amount);
+
+                $invoice->discount = 0;
+                $invoice->net_amount = $feeSetupAmount;
+                $invoice->due_amount = max(0, $feeSetupAmount - $invoice->paid_amount);
+                $invoice->status = $invoice->due_amount <= 0 ? 'Paid' : ($invoice->paid_amount > 0 ? 'Partial' : 'Unpaid');
+                $invoice->save();
+            }
+
             return response()->json(['status' => 'success', 'message' => 'Customized fee deleted successfully.'], 200);
         } catch (Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
