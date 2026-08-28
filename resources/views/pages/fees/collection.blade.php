@@ -622,30 +622,30 @@
                     </div>
                 </div>
 
-                <!-- Bulk Collection Summary Card (Bottom Control Panel) -->
+                <!-- Bulk Collection Summary Card (Bottom Sticky Floating Panel) -->
                 @if($bulkInvoices->count() > 0)
-                <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 mb-12 text-gray-900 dark:text-white">
-                    <h4 class="text-xs font-black text-themeBlue uppercase tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-6">Payment Summary & Method</h4>
+                <div class="sticky bottom-4 z-40 bg-white/95 dark:bg-themeNavy/95 backdrop-blur-md border border-gray-155 dark:border-white/[0.08] px-6 py-4 rounded-2xl text-gray-900 dark:text-white no-print mt-8 shadow-[0_8px_30px_rgba(0,0,0,0.08)] flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-fade-in-up">
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <!-- Left: Summary Stats -->
+                    <div class="flex flex-wrap items-center gap-6 divide-x divide-gray-100 dark:divide-white/[0.08]">
                         <div>
-                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-555 block mb-1">Selected Outstanding</span>
-                            <span class="text-xl font-black font-mono text-red-600 dark:text-red-400">৳ <span x-text="totalOutstanding.toFixed(2)">0.00</span></span>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-555 block mb-0.5">Selected Dues</span>
+                            <span class="text-lg font-black font-mono text-red-600 dark:text-red-400">৳ <span x-text="totalOutstanding.toFixed(2)">0.00</span></span>
                         </div>
-                        <div>
-                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-555 block mb-1">Total Collection Amount</span>
-                            <span class="text-xl font-black font-mono text-themeGreen dark:text-themeGreen">৳ <span x-text="totalPaying.toFixed(2)">0.00</span></span>
+                        <div class="pl-6">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-555 block mb-0.5">Paying Amount</span>
+                            <span class="text-lg font-black font-mono text-themeGreen dark:text-themeGreen">৳ <span x-text="totalPaying.toFixed(2)">0.00</span></span>
                         </div>
-                        <div>
-                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-555 block mb-1">Selected Count</span>
-                            <span class="text-xl font-black text-gray-850 dark:text-white"><span x-text="selectedInvoices.length">0</span> Student(s)</span>
+                        <div class="pl-6">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-555 block mb-0.5">Selected Count</span>
+                            <span class="text-sm font-black text-gray-800 dark:text-white"><span x-text="selectedInvoices.length">0</span> Student(s)</span>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 items-end">
+                    <!-- Right: Payment Method & Submit Button -->
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                         <!-- Custom Alpine Dropdown for Bulk Payment Method -->
-                        <div class="relative">
-                            <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Payment Method <span class="text-red-500">*</span></label>
+                        <div class="relative w-full sm:w-48">
                             <div x-data="{ 
                                 open: false, 
                                 value: 'Cash', 
@@ -658,12 +658,12 @@
                                     inp.value = val;
                                 }
                             }" class="relative w-full text-gray-900 dark:text-white" @click.away="open = false">
-                                <button type="button" @click="open = !open" class="w-full h-11 px-3 bg-gray-55/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                                <button type="button" @click="open = !open" class="w-full h-10 px-4 bg-gray-55/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-bold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                                     <span class="truncate" x-text="label"></span>
                                     <svg class="w-4 h-4 text-gray-455 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <input type="hidden" name="payment_method" x-ref="hiddenInput" value="Cash" required>
-                                <div x-show="open" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                                <div x-show="open" x-cloak class="absolute bottom-11 z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
                                     <template x-for="opt in ['Cash', 'bKash', 'Nagad', 'Bank']" :key="opt">
                                         <button type="button" @click="select(opt)" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-55 dark:hover:bg-themeDark/45 transition-colors" :class="value == opt ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                                             <span x-text="opt"></span>
@@ -674,22 +674,12 @@
                             </div>
                         </div>
 
-                        <div>
-                            <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Transaction ID (Optional)</label>
-                            <input type="text" name="transaction_id" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-semibold text-gray-700 dark:text-gray-250 px-3 placeholder-gray-450" placeholder="e.g. TRX-93821">
-                        </div>
-
-                        <div>
-                            <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Note (Optional)</label>
-                            <input type="text" name="note" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-semibold text-gray-700 dark:text-gray-250 px-3 placeholder-gray-450" placeholder="e.g. Monthly Fees Collection">
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end pt-4 border-t border-gray-100 dark:border-white/[0.06]">
-                        <button type="submit" class="bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black py-4 px-12 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all uppercase tracking-widest text-xs active:scale-95">
-                            Collect Selected Fees
+                        <!-- Action Button -->
+                        <button type="submit" class="bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black h-10 px-8 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all uppercase tracking-[0.15em] text-xs active:scale-95 whitespace-nowrap flex items-center justify-center">
+                            Collect Fees
                         </button>
                     </div>
+
                 </div>
                 @endif
             </form>
