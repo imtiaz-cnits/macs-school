@@ -29,11 +29,17 @@ class MarkController extends Controller
         // ৫টি ফিল্ডই ফিলাপ করা থাকলে তবেই স্টুডেন্ট লোড হবে
         if ($request->filled(['session_year_id', 'branch_id', 'exam_id', 'class_id', 'subject_id'])) {
             
-            // ওই নির্দিষ্ট পরীক্ষার শিডিউল চেক করা
-            $exam_schedule = ExamSchedule::where('exam_id', $request->exam_id)
-                ->where('class_id', $request->class_id)
+            // বিষয়টির মার্কস ডিস্ট্রিবিউশন আনা (ব্রাঞ্চ, ক্লাস ও সাবজেক্ট অনুযায়ী)
+            $exam_schedule = ExamSchedule::where('class_id', $request->class_id)
                 ->where('subject_id', $request->subject_id)
+                ->where('branch_id', $request->branch_id)
                 ->first();
+
+            if (!$exam_schedule) {
+                $exam_schedule = ExamSchedule::where('class_id', $request->class_id)
+                    ->where('subject_id', $request->subject_id)
+                    ->first();
+            }
 
             // নির্দিষ্ট সেশন, ব্রাঞ্চ এবং ক্লাসের স্টুডেন্টদের আনা হচ্ছে
             $students = Student::where('session_year_id', $request->session_year_id)

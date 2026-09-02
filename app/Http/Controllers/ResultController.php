@@ -116,14 +116,22 @@ class ResultController extends Controller
         $schoolClass = Classes::find($request->class_id);
         $branch = Branch::find($request->branch_id);
 
-        // ওই ক্লাস এবং এক্সামের জন্য কী কী সাবজেক্ট শিডিউল করা আছে
+        // ওই ক্লাস এবং ব্রাঞ্চের জন্য কী কী সাবজেক্ট সেটআপ করা আছে
         $schedules = ExamSchedule::with('subject')
-            ->where('exam_id', $exam->id)
             ->where('class_id', $schoolClass->id)
+            ->when($branch, function($q) use ($branch) {
+                $q->where('branch_id', $branch->id);
+            })
             ->get();
 
         if ($schedules->isEmpty()) {
-            return back()->withErrors(['error' => 'No subjects found for this class and exam.']);
+            $schedules = ExamSchedule::with('subject')
+                ->where('class_id', $schoolClass->id)
+                ->get();
+        }
+
+        if ($schedules->isEmpty()) {
+            return back()->withErrors(['error' => 'No subjects found for this class in Exam Subject Setup.']);
         }
 
         // নির্দিষ্ট সেশন, ব্রাঞ্চ এবং ক্লাসের সব স্টুডেন্ট

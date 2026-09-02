@@ -158,14 +158,40 @@
     @if(request()->filled(['session_year_id', 'branch_id', 'exam_id', 'class_id', 'subject_id']))
         <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative">
             
-            <div class="flex justify-between items-center mb-6 border-b border-gray-100 dark:border-white/[0.04] pb-4">
-                <h3 class="text-sm font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider ml-1">Enter Marks</h3>
+            @php
+                $selectedClass = $classes->firstWhere('id', request('class_id'));
+                $isClassTen = $selectedClass && (strtolower(trim($selectedClass->class_name)) === 'ten' || strtolower(trim($selectedClass->class_name)) === 'class ten');
+            @endphp
+
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 border-b border-gray-100 dark:border-white/[0.04] pb-4">
+                <div>
+                    <h3 class="text-sm font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider ml-1">Enter Marks</h3>
+                    <p class="text-[11px] font-semibold text-gray-450 mt-0.5 ml-1">
+                        Pattern: <span class="font-bold {{ $isClassTen ? 'text-purple-600 dark:text-purple-400' : 'text-themeGreen' }}">{{ $isClassTen ? 'Class Ten (MCQ | Written CQ | Practical)' : 'Nursery - Nine (CT | MT | Terminal)' }}</span>
+                    </p>
+                </div>
                 @if($exam_schedule)
-                    <div class="text-xs font-bold text-gray-600 bg-gray-50 dark:bg-themeDark px-4 py-2 rounded-xl border border-gray-100 dark:border-gray-800">
-                        Full Marks: <span class="text-themeGreen font-black">{{ $exam_schedule->full_marks }}</span> | Pass: <span class="text-red-500 font-black">{{ $exam_schedule->pass_marks }}</span>
+                    <div class="flex flex-wrap items-center gap-2 text-xs font-bold text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-themeDark px-4 py-2 rounded-xl border border-gray-100 dark:border-gray-800">
+                        <span>Full: <span class="text-themeGreen font-black">{{ $exam_schedule->full_marks }}</span></span>
+                        <span class="text-gray-300">|</span>
+                        <span>Pass: <span class="text-red-500 font-black">{{ $exam_schedule->pass_marks }}</span></span>
+                        <span class="text-gray-300">|</span>
+                        @if($isClassTen)
+                            <span>MCQ: <span class="text-purple-600 dark:text-purple-400 font-black">{{ $exam_schedule->mcq_marks ?? 0 }}</span></span>
+                            <span class="text-gray-300">|</span>
+                            <span>Written: <span class="text-themeBlue font-black">{{ $exam_schedule->written_marks ?? 0 }}</span></span>
+                            <span class="text-gray-300">|</span>
+                            <span>Practical: <span class="text-teal-600 dark:text-teal-400 font-black">{{ $exam_schedule->ct_marks ?? 0 }}</span></span>
+                        @else
+                            <span>CT: <span class="text-themeGreen font-black">{{ $exam_schedule->ct_marks ?? 0 }}</span></span>
+                            <span class="text-gray-300">|</span>
+                            <span>MT: <span class="text-amber-500 font-black">{{ $exam_schedule->mcq_marks ?? 0 }}</span></span>
+                            <span class="text-gray-300">|</span>
+                            <span>Terminal: <span class="text-themeBlue font-black">{{ $exam_schedule->written_marks ?? 0 }}</span></span>
+                        @endif
                     </div>
                 @else
-                    <div class="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-950/20 px-4 py-2 rounded-xl">Subject not scheduled for this class!</div>
+                    <div class="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-950/20 px-4 py-2 rounded-xl border border-red-200 dark:border-red-900/40">Subject marks distribution not setup for this class!</div>
                 @endif
             </div>
 
@@ -175,9 +201,15 @@
                         <tr class="!bg-transparent">
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">ID / Roll</th>
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Student Name</th>
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-themeGreen uppercase tracking-[0.2em] text-center">CT ({{ $exam_schedule->ct_marks ?? 0 }})</th>
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-themeBlue uppercase tracking-[0.2em] text-center">Written ({{ $exam_schedule->written_marks ?? 0 }})</th>
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-purple-500 uppercase tracking-[0.2em] text-center">MCQ ({{ $exam_schedule->mcq_marks ?? 0 }})</th>
+                            @if($isClassTen)
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-[0.2em] text-center">MCQ Marks ({{ $exam_schedule->mcq_marks ?? 0 }})</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-themeBlue uppercase tracking-[0.2em] text-center">Written Marks (CQ) ({{ $exam_schedule->written_marks ?? 0 }})</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-teal-600 dark:text-teal-400 uppercase tracking-[0.2em] text-center">Practical Marks ({{ $exam_schedule->ct_marks ?? 0 }})</th>
+                            @else
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-themeGreen uppercase tracking-[0.2em] text-center">CT ({{ $exam_schedule->ct_marks ?? 0 }})</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] text-center">MT ({{ $exam_schedule->mcq_marks ?? 0 }})</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-themeBlue uppercase tracking-[0.2em] text-center">Terminal ({{ $exam_schedule->written_marks ?? 0 }})</th>
+                            @endif
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-450 dark:text-gray-550 uppercase tracking-[0.2em] text-center">Total</th>
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-450 dark:text-gray-550 uppercase tracking-[0.2em] text-center">Grade</th>
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-450 dark:text-gray-550 uppercase tracking-[0.2em] text-right">Status</th>
@@ -189,15 +221,27 @@
                             <td class="py-3.5 px-4 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm">{{ $student->student_identity ?? $student->id }}</td>
                             <td class="py-3.5 px-4 text-sm font-bold text-gray-900 dark:text-gray-100">{{ $student->student_name ?? 'Unknown' }}</td>
                             
-                            <td class="py-3.5 px-4 text-center">
-                                <input type="number" step="0.5" class="mark-input ct-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->ct_mark ?? '' }}">
-                            </td>
-                            <td class="py-3.5 px-4 text-center">
-                                <input type="number" step="0.5" class="mark-input written-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->written_mark ?? '' }}">
-                            </td>
-                            <td class="py-3.5 px-4 text-center">
-                                <input type="number" step="0.5" class="mark-input mcq-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->mcq_mark ?? '' }}">
-                            </td>
+                            @if($isClassTen)
+                                <td class="py-3.5 px-4 text-center">
+                                    <input type="number" step="0.5" class="mark-input mcq-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->mcq_mark ?? '' }}">
+                                </td>
+                                <td class="py-3.5 px-4 text-center">
+                                    <input type="number" step="0.5" class="mark-input written-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->written_mark ?? '' }}">
+                                </td>
+                                <td class="py-3.5 px-4 text-center">
+                                    <input type="number" step="0.5" class="mark-input ct-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->ct_mark ?? '' }}">
+                                </td>
+                            @else
+                                <td class="py-3.5 px-4 text-center">
+                                    <input type="number" step="0.5" class="mark-input ct-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->ct_mark ?? '' }}">
+                                </td>
+                                <td class="py-3.5 px-4 text-center">
+                                    <input type="number" step="0.5" class="mark-input mcq-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->mcq_mark ?? '' }}">
+                                </td>
+                                <td class="py-3.5 px-4 text-center">
+                                    <input type="number" step="0.5" class="mark-input written-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->written_mark ?? '' }}">
+                                </td>
+                            @endif
                             
                             <td class="py-3.5 px-4 text-center font-black text-gray-800 dark:text-gray-200 text-lg total-display-{{ $student->id }}">
                                 {{ $student->mark->total_mark ?? 0 }}

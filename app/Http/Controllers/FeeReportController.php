@@ -11,25 +11,43 @@ class FeeReportController extends Controller
 {
     public function index(Request $request)
     {
-        // ডিফল্টভাবে আজকের তারিখ সেট করা হচ্ছে
-        $startDate = $request->start_date ?? date('Y-m-d');
+        // ডিফল্টভাবে চলতি মাসের শুরু থেকে আজকের তারিখ সেট করা হচ্ছে
+        $startDate = $request->start_date ?? date('Y-m-01');
         $endDate = $request->end_date ?? date('Y-m-d');
         $classId = $request->class_id;
+        $branchId = $request->branch_id;
 
         // ১. পেমেন্ট বা কালেকশনের কোয়েরি
-        $paymentsQuery = FeePayment::with(['student.schoolClass', 'invoice.feeSetup.category', 'collector'])
+        $paymentsQuery = FeePayment::with(['student.schoolClass', 'student.branch', 'invoice.feeSetup.category', 'collector'])
                                    ->whereBetween('payment_date', [$startDate, $endDate]);
 
         // ২. বকেয়া বা ডিউ এর কোয়েরি
-        $duesQuery = FeeInvoice::with(['student.schoolClass', 'feeSetup.category'])
+        $duesQuery = FeeInvoice::with(['student.schoolClass', 'student.branch', 'feeSetup.category'])
                                ->where('due_amount', '>', 0);
+
+        // যদি নির্দিষ্ট তারিখ রেঞ্জ ফিল্টার করা হয়
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $duesQuery->where(function($q) use ($startDate, $endDate) {
+                $q->whereBetween('due_date', [$startDate, $endDate])
+                  ->orWhereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+            });
+        }
+
+        // যদি নির্দিষ্ট ব্রাঞ্চ ফিল্টার থাকে
+        if ($branchId) {
+            $paymentsQuery->whereHas('student', function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
+            $duesQuery->whereHas('student', function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
+        }
 
         // যদি কোনো নির্দিষ্ট ক্লাস সিলেক্ট করে সার্চ করা হয়
         if ($classId) {
             $paymentsQuery->whereHas('student', function($q) use ($classId) {
                 $q->where('class_id', $classId);
             });
-            
             $duesQuery->whereHas('student', function($q) use ($classId) {
                 $q->where('class_id', $classId);
             });
@@ -39,21 +57,81 @@ class FeeReportController extends Controller
         $payments = $paymentsQuery->orderBy('created_at', 'desc')->get();
         $dues = $duesQuery->orderBy('due_date', 'asc')->get();
 
-        // সামারি ক্যালকুলেশন
-        $totalCollected = $payments->sum('paid_amount');
-        $totalDue = $dues->sum('due_amount');
+        // মাস বের করার স্ট্যান্ডার্ড হেল্পার ফাংশন
+        $resolveMonth = function($inv) {
+            if ($inv->feeSetup && $inv->feeSetup->fee_month && !in_array(strtolower(trim($inv->feeSetup->fee_month)), ['monthly', 'one time', 'one_time', ''])) {
+                return ucfirst(trim($inv->feeSetup->fee_month));
+            }
+            if ($inv->due_date) {
+                return date('F', strtotime($inv->due_date));
+            }
+            if ($inv->created_at) {
+                return date('F', strtotime($inv->created_at));
+            }
+            return 'General';
+        };
 
-        // কোন মেথডে (ক্যাশ/বিকাশ) কত টাকা আসলো তার হিসাব
+        // সামারি ক্যালকুলেশন - কালেকশন
+        $totalCollected = $payments->sum('paid_amount');
+        $totalCollectionCount = $payments->count();
+        $uniquePayingStudentsCount = $payments->pluck('student_id')->unique()->count();
+
+        // কোন মেথডে কত টাকা আসলো তার হিসাব
         $methodBreakdown = $payments->groupBy('payment_method')->map(function ($row) {
             return $row->sum('paid_amount');
         });
 
-        // ড্রপডাউনের জন্য ক্লাসের লিস্ট
-       $classes = Classes::all();
+        // সামারি ক্যালকুলেশন - বকেয়া (Dues)
+        $totalDue = $dues->sum('due_amount');
+        $totalDueInvoicesCount = $dues->count();
+        $uniqueDefaulterStudentsCount = $dues->pluck('student_id')->unique()->count();
+
+        // স্টুডেন্ট অনুযায়ী গ্রুপ করা ডিফল্টার লিস্ট (টোটাল ডিউ মাস ও মাসের নাম সহ)
+        $defaulters = $dues->groupBy('student_id')->map(function($invoices) use ($resolveMonth) {
+            $firstInv = $invoices->first();
+            $student = $firstInv->student;
+
+            $months = $invoices->map(function($inv) use ($resolveMonth) {
+                return $resolveMonth($inv);
+            })->unique()->filter()->values();
+
+            $categories = $invoices->map(function($inv) {
+                return $inv->feeSetup->category->name ?? 'Fee';
+            })->unique()->filter()->values();
+
+            return (object) [
+                'student' => $student,
+                'invoices' => $invoices,
+                'total_due' => $invoices->sum('due_amount'),
+                'total_invoices' => $invoices->count(),
+                'due_months' => $months,
+                'due_months_count' => $months->count(),
+                'categories' => $categories,
+                'latest_due_date' => $invoices->max('due_date')
+            ];
+        })->sortByDesc('total_due')->values();
+
+        // মাস অনুযায়ী মোট ডিউ টাকার সমষ্টি ও হিসাব
+        $dueMonthBreakdown = $dues->groupBy(function($inv) use ($resolveMonth) {
+            return $resolveMonth($inv);
+        })->map(function($group) {
+            return (object) [
+                'amount' => $group->sum('due_amount'),
+                'invoices_count' => $group->count(),
+                'students_count' => $group->pluck('student_id')->unique()->count()
+            ];
+        });
+
+        // ড্রপডাউনের জন্য ব্রাঞ্চ ও ক্লাসের লিস্ট
+        $branches = \App\Models\Branch::all();
+        $classes = Classes::all();
 
         return view('pages.fees.reports', compact(
-            'payments', 'dues', 'totalCollected', 'totalDue', 
-            'methodBreakdown', 'startDate', 'endDate', 'classId', 'classes'
+            'payments', 'dues', 'defaulters', 'totalCollected', 'totalDue', 
+            'totalCollectionCount', 'uniquePayingStudentsCount',
+            'totalDueInvoicesCount', 'uniqueDefaulterStudentsCount',
+            'methodBreakdown', 'dueMonthBreakdown',
+            'startDate', 'endDate', 'classId', 'branchId', 'branches', 'classes'
         ));
     }
 
