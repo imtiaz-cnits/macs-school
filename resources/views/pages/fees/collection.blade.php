@@ -163,12 +163,12 @@
                                             <div class="text-[10px] text-gray-400 dark:text-gray-555 font-mono mt-0.5">{{ $inv->invoice_no }}</div>
                                         </td>
                                         <td class="py-4 px-4">
-                                            <span class="px-2 py-0.5 bg-gray-55 dark:bg-themeDark border border-gray-100 dark:border-white/[0.06] text-gray-655 dark:text-gray-300 text-[9px] font-black uppercase tracking-wider rounded-lg inline-block">{{ $inv->feeSetup->fee_month ?? 'One Time' }}</span>
+                                            <span class="px-2 py-0.5 bg-gray-50 dark:bg-themeDark border border-gray-100 dark:border-white/[0.06] text-themeBlue dark:text-themeBlue text-[9px] font-black uppercase tracking-wider rounded-lg inline-block">{{ $inv->month_name }}</span>
                                         </td>
                                         <td class="py-4 px-4 text-right text-sm font-semibold text-gray-600 dark:text-gray-400">{{ number_format($inv->net_amount, 2) }}</td>
                                         <td class="py-4 px-4 text-right font-black text-red-655 dark:text-red-400 text-lg font-mono">৳ {{ number_format($inv->due_amount, 2) }}</td>
                                         <td class="py-4 px-4 text-right">
-                                            <button type="button" onclick="openPayModal({{ $inv->id }}, '{{ $inv->feeSetup->category->name }}', {{ $inv->due_amount }})" class="h-9 px-4 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-[10px] font-black rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center active:scale-95">Pay Single</button>
+                                            <button type="button" onclick="openPayModal({{ $inv->id }}, '{{ $inv->feeSetup->category->name }} ({{ $inv->month_name }})', {{ $inv->due_amount }})" class="h-9 px-4 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-[10px] font-black rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center active:scale-95">Pay Single</button>
                                         </td>
                                     </tr>
                                     @empty
@@ -259,7 +259,7 @@
                                                 <div class="font-bold text-gray-955 dark:text-gray-100 text-sm flex items-center">
                                                     <svg class="w-4 h-4 text-themeGreen mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
                                                     {{ $p->invoice->feeSetup->category->name }} 
-                                                    <span class="ml-1 px-2 py-0.5 bg-gray-55 dark:bg-themeDark border border-gray-100 dark:border-white/[0.06] text-gray-655 dark:text-gray-300 text-[9px] font-black uppercase tracking-wider rounded-lg inline-block">{{ $p->invoice->feeSetup->fee_month ?? 'One Time' }}</span>
+                                                    <span class="ml-1 px-2 py-0.5 bg-gray-50 dark:bg-themeDark border border-gray-100 dark:border-white/[0.06] text-themeBlue dark:text-themeBlue text-[9px] font-black uppercase tracking-wider rounded-lg inline-block">{{ $p->invoice->month_name ?? 'One Time' }}</span>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -606,7 +606,7 @@
                                     </td>
                                     <td class="py-4 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">
                                         <div>{{ $inv->invoice_no }}</div>
-                                        <div class="text-[10px] text-gray-455 dark:text-gray-500 mt-0.5 uppercase">{{ $inv->feeSetup->fee_month ?? 'One Time' }}</div>
+                                        <div class="text-[10px] text-themeBlue font-black mt-0.5 uppercase">{{ $inv->month_name }}</div>
                                     </td>
                                     <td class="py-4 px-4 text-right font-black text-red-655 dark:text-red-400 text-base font-mono">৳ {{ number_format($inv->due_amount, 2) }}</td>
                                     <td class="py-4 px-4 text-right">

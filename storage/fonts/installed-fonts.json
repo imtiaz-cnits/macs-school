@@ -3,5 +3,11 @@
         "normal": "D:\\Running Works\\04. Clients Back-end Projects - 2025\\PHP - Laravel\\MACS School\\macs-school\\storage\\fonts\/noto_serif_bengali_normal_e5e8ae230715b1d3075d689d1cfbf38c",
         "bold": "D:\\Running Works\\04. Clients Back-end Projects - 2025\\PHP - Laravel\\MACS School\\macs-school\\storage\\fonts\/noto_serif_bengali_bold_224e6626558f2a87a7fc44ed206ed9ad",
         "500": "noto_serif_bengali_500_3a05db9008192299b6e30adcb523254e"
+    },
+    "inter": {
+        "normal": "D:\\Running Works\\04. Clients Back-end Projects - 2025\\PHP - Laravel\\MACS School\\macs-school\\storage\\fonts\/inter_normal_01e6cd9a18c9aa267062b7df19acf8ca",
+        "600": "D:\\Running Works\\04. Clients Back-end Projects - 2025\\PHP - Laravel\\MACS School\\macs-school\\storage\\fonts\/inter_600_20a2fe5c2d5a2c3cae38cf48533b0488",
+        "bold": "D:\\Running Works\\04. Clients Back-end Projects - 2025\\PHP - Laravel\\MACS School\\macs-school\\storage\\fonts\/inter_bold_6b5977222945369f7e953d00eb34944d",
+        "800": "inter_800_56c9c9251fd556e810d9aa8f18528759"
     }
 }

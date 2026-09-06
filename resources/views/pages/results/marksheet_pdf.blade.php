@@ -75,11 +75,24 @@
             <tr>
                 <td style="width: 20%; text-align: center; vertical-align: middle;">
                     @php
-                        $imagePath = public_path('img/logo.svg');
-                        $imageData = base64_encode(file_get_contents($imagePath));
-                        $imageSrc = 'data:image/svg+xml;base64,' . $imageData;
+                        $logoPath = public_path('img/macs_logo.jpeg');
+                        $imageSrc = '';
+                        if (file_exists($logoPath)) {
+                            $imageData = base64_encode(file_get_contents($logoPath));
+                            $imageSrc = 'data:image/jpeg;base64,' . $imageData;
+                        } elseif (file_exists(public_path('img/logo.png'))) {
+                            $imageData = base64_encode(file_get_contents(public_path('img/logo.png')));
+                            $imageSrc = 'data:image/png;base64,' . $imageData;
+                        } elseif (file_exists(public_path('img/logo.svg'))) {
+                            $imageData = base64_encode(file_get_contents(public_path('img/logo.svg')));
+                            $imageSrc = 'data:image/svg+xml;base64,' . $imageData;
+                        }
                     @endphp
-                    <img src="{{ $imageSrc }}" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid #2a5a3b; padding: 2px;" alt="School Logo" />
+                    @if($imageSrc)
+                        <img src="{{ $imageSrc }}" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid #2a5a3b; padding: 2px;" alt="School Logo" />
+                    @else
+                        <div style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid #2a5a3b; line-height: 80px; text-align: center; font-weight: bold; color: #2a5a3b; font-size: 11px; margin: 0 auto;">LOGO</div>
+                    @endif
                 </td>
                 
                 <td style="width: 60%; text-align: center; vertical-align: middle;">
@@ -159,6 +172,7 @@
             </thead>
             <tbody>
                 @foreach($marks as $mark)
+                @if($mark->subject)
                 <tr>
                     <td>{{ $mark->subject->subject_code ?? '101' }}</td>
                     <td class="subject-name">{{ $mark->subject->subject_name }}</td>
@@ -172,6 +186,7 @@
                     <td style="color: {{ ($mark->letter_grade == 'F' || $mark->letter_grade == 'Fail') ? 'red' : 'black' }};">{{ $mark->letter_grade }}</td>
                     <td>{{ number_format($mark->grade_point, 2) }}</td>
                 </tr>
+                @endif
                 @endforeach
                 
                 <tr style="background-color: #f2f2f2;">
