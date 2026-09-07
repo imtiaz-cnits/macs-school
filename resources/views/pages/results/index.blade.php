@@ -30,7 +30,7 @@
         <form action="{{ route('results.generate') }}" method="POST" target="_blank" @submit="
             if(!form.session_year_id) { event.preventDefault(); showAlert('Please select Academic Session!', 'Validation'); return; }
             if(reportType === 'single' && !form.exam_id) { event.preventDefault(); showAlert('Please select Exam!', 'Validation'); return; }
-            if(!form.student_identity) { event.preventDefault(); showAlert('Please enter Student ID or Roll number!', 'Validation'); return; }
+            if(!form.student_identity && !form.class_id) { event.preventDefault(); showAlert('Please enter a Student ID/Roll OR select a Class for bulk marksheet generation!', 'Validation'); return; }
         ">
             @csrf
             
@@ -81,9 +81,9 @@
                     </div>
                 </div>
 
-                <!-- Class Dropdown (Optional Helper for Roll lookup) -->
+                <!-- Class Dropdown (Helper for Roll lookup or Bulk Target) -->
                 <div class="relative" @click.away="if(activeDropdown === 'class') activeDropdown = null">
-                    <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Class (Optional)</label>
+                    <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Class <span class="text-themeBlue font-bold">(Required for Bulk)</span></label>
                     <button type="button" @click="activeDropdown = activeDropdown === 'class' ? null : 'class'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="classText"></span>
                         <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
@@ -132,16 +132,19 @@
 
                 <!-- Student Identity -->
                 <div>
-                    <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Student ID or Roll *</label>
-                    <input type="text" name="student_identity" x-model="form.student_identity" placeholder="Enter ID (e.g. 2423112171) or Roll" class="w-full h-11 px-4 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-250 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all" required>
+                    <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Student ID or Roll <span class="text-gray-400 font-normal lowercase">(optional for bulk)</span></label>
+                    <input type="text" name="student_identity" x-model="form.student_identity" placeholder="Enter ID / Roll (Leave empty for All Class Students)" class="w-full h-11 px-4 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-250 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
                 </div>
             </div>
 
-            <div class="flex justify-center border-t border-gray-100 dark:border-white/[0.06] pt-6">
+            <div class="flex flex-col items-center justify-center border-t border-gray-100 dark:border-white/[0.06] pt-6 gap-2">
                 <button type="submit" class="bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black py-3.5 px-14 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all uppercase tracking-widest text-xs active:scale-95 flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                    Generate Marksheet PDF
+                    <span x-text="!form.student_identity && form.class_id ? 'Generate Bulk Class Marksheets PDF' : 'Generate Marksheet PDF'"></span>
                 </button>
+                <p class="text-[11px] font-semibold text-themeBlue dark:text-blue-400" x-show="!form.student_identity && form.class_id">
+                    * Bulk Mode: Marksheets will be generated for all students in the selected class.
+                </p>
             </div>
         </form>
     </div>

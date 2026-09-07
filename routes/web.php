@@ -187,6 +187,7 @@ Route::middleware(['auth', 'roles:editor,admin,super-admin'])->group(function ()
 
     // ৩. ডাটা সেভ করার AJAX রাউট (API Resource)
     Route::resource('ajax/teachers', TeacherController::class);
+    Route::post('/ajax/teachers/{id}/push-to-device', [TeacherController::class, 'pushToDevice'])->name('teachers.push-to-device');
 
     // Teacher View & Edit Pages
     Route::get('/teacher/view/{id}', function ($id) {

@@ -15,7 +15,7 @@ class ZKtecoSyncUsers extends Command
      *
      * @var string
      */
-    protected $signature = 'zkteco:sync-users {--student-id= : Sync only a specific student ID}';
+    protected $signature = 'zkteco:sync-users {--student-id= : Sync only a specific student ID} {--staff-id= : Sync only a specific teacher/staff ID}';
 
     /**
      * The console command description.
@@ -57,6 +57,8 @@ class ZKtecoSyncUsers extends Command
 
             $this->info("Fetching database records...");
             $studentId = $this->option('student-id');
+            $staffId = $this->option('staff-id');
+
             if ($studentId) {
                 $students = Student::where('id', $studentId)->get();
                 $teachers = collect(); // empty collection for teachers when syncing single student
@@ -66,9 +68,18 @@ class ZKtecoSyncUsers extends Command
                     $zk->disconnect();
                     return;
                 }
+            } elseif ($staffId) {
+                $students = collect(); // empty collection for students when syncing single staff
+                $teachers = Teacher::with('user')->where('id', $staffId)->get();
+                if ($teachers->isEmpty()) {
+                    $this->error("❌ Staff/Teacher with ID {$staffId} not found in database.");
+                    $zk->enableDevice();
+                    $zk->disconnect();
+                    return;
+                }
             } else {
                 $students = Student::all();
-                $teachers = Teacher::all();
+                $teachers = Teacher::with('user')->get();
             }
 
             $this->info("Fetching users from device...");
@@ -147,10 +158,17 @@ class ZKtecoSyncUsers extends Command
             $teacherCount = 0;
             foreach ($teachers as $teacher) {
                 // To avoid overlap with students (ID 1-1000), teachers get uid starting at 10000
-                $uid = 10000 + $teacher->id;
-                $userid = $teacher->biometric_id ? preg_replace('/[^0-9]/', '', $teacher->biometric_id) : (10000 + $teacher->id);
+                $deviceId = $teacher->biometric_id ? (int)preg_replace('/[^0-9]/', '', $teacher->biometric_id) : (10000 + $teacher->id);
+                $uid = $deviceId;
+                $userid = $deviceId;
                 
-                $cleanName = substr(preg_replace('/[^A-Za-z0-9\s]/', '', $teacher->name), 0, 24);
+                // Persist biometric_id if not set
+                if (empty($teacher->biometric_id)) {
+                    $teacher->update(['biometric_id' => (string)$deviceId]);
+                }
+
+                $teacherName = $teacher->user->name ?? $teacher->name ?? ('Staff ' . $teacher->id);
+                $cleanName = substr(preg_replace('/[^A-Za-z0-9\s]/', '', $teacherName), 0, 24);
                 if (empty($cleanName)) {
                     $cleanName = "Staff " . $teacher->id;
                 }
@@ -159,6 +177,7 @@ class ZKtecoSyncUsers extends Command
 
                 // Upload teacher
                 $zk->setUser($uid, $userid, $cleanName, '', 0, $cardno);
+                $this->info("   Synced Staff: {$cleanName} (Device ID: {$deviceId})");
                 $teacherCount++;
             }
             $this->info("✅ Successfully synced {$teacherCount} teachers/staff.");

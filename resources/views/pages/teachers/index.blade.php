@@ -158,6 +158,10 @@
                         </td>
                         <td class="py-4 px-4">
                             <div class="flex items-center justify-end gap-2.5">
+                                <!-- Push to Device Button -->
+                                <button onclick="pushToDeviceSingle(${item.id})" class="action-btn text-indigo-500 hover:text-indigo-700 hover:border-indigo-500" title="Push Staff to Device">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" /></svg>
+                                </button>
                                 <!-- View Button -->
                                 <a href="/teacher/view/${item.id}" class="action-btn text-themeBlue hover:text-themeBlue hover:border-themeBlue" title="View Details">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -178,6 +182,24 @@
         } catch (e) { 
             console.error(e);
             list.innerHTML = `<tr><td colspan="5" class="py-20 text-center text-sm font-black text-red-600 uppercase tracking-widest">System Error: Could not sync with database.</td></tr>`; 
+        }
+    };
+
+    window.pushToDeviceSingle = async function(teacherId) {
+        try {
+            let confirmed = await showConfirm("Push Staff to Device", "Do you want to push this staff member to the biometric attendance machine?");
+            if (!confirmed) return;
+
+            let res = await axios.post(`/ajax/teachers/${teacherId}/push-to-device`, {}, getAuthHeaders());
+            if (res.data.status === 'success') {
+                await showAlert(res.data.message, "Sync Success");
+                window.fetchList();
+            } else {
+                await showAlert(res.data.message || "Failed to push staff to device.", "Error");
+            }
+        } catch (err) {
+            let errMsg = err.response?.data?.message || "Device sync failed.";
+            await showAlert(errMsg, "Sync Error");
         }
     };
 

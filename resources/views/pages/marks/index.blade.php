@@ -160,7 +160,39 @@
             
             @php
                 $selectedClass = $classes->firstWhere('id', request('class_id'));
-                $isClassTen = $selectedClass && (strtolower(trim($selectedClass->class_name)) === 'ten' || strtolower(trim($selectedClass->class_name)) === 'class ten');
+                $classNameLower = $selectedClass ? strtolower(trim($selectedClass->class_name)) : '';
+                $isClassTen = in_array($classNameLower, ['ten', 'class ten', '10', 'class 10']);
+
+                if ($exam_schedule) {
+                    if ($isClassTen) {
+                        $col1Max = (float)($exam_schedule->mcq_marks ?? 0);
+                        $col1Label = 'MCQ';
+                        $col2Max = (float)($exam_schedule->written_marks ?? 0);
+                        $col2Label = 'Written CQ';
+                        $col3Max = (float)($exam_schedule->ct_marks ?? 0);
+                        $col3Label = 'Practical';
+                    } else {
+                        $col1Max = (float)($exam_schedule->ct_marks ?? 0);
+                        $col1Label = 'CT';
+                        $col2Max = (float)($exam_schedule->mcq_marks ?? 0);
+                        $col2Label = 'MT';
+                        $col3Max = (float)($exam_schedule->written_marks ?? 0);
+                        $col3Label = 'Terminal';
+                    }
+                    $col1Disabled = ($col1Max <= 0);
+                    $col2Disabled = ($col2Max <= 0);
+                    $col3Disabled = ($col3Max <= 0);
+                } else {
+                    $col1Max = 100;
+                    $col1Label = $isClassTen ? 'MCQ' : 'CT';
+                    $col2Max = 100;
+                    $col2Label = $isClassTen ? 'Written CQ' : 'MT';
+                    $col3Max = 100;
+                    $col3Label = $isClassTen ? 'Practical' : 'Terminal';
+                    $col1Disabled = false;
+                    $col2Disabled = false;
+                    $col3Disabled = false;
+                }
             @endphp
 
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 border-b border-gray-100 dark:border-white/[0.04] pb-4">
@@ -177,17 +209,17 @@
                         <span>Pass: <span class="text-red-500 font-black">{{ $exam_schedule->pass_marks }}</span></span>
                         <span class="text-gray-300">|</span>
                         @if($isClassTen)
-                            <span>MCQ: <span class="text-purple-600 dark:text-purple-400 font-black">{{ $exam_schedule->mcq_marks ?? 0 }}</span></span>
+                            <span>MCQ: <span class="{{ $col1Disabled ? 'text-gray-400 dark:text-gray-500' : 'text-purple-600 dark:text-purple-400' }} font-black">{{ $col1Disabled ? '0.00 (N/A)' : ($exam_schedule->mcq_marks ?? 0) }}</span></span>
                             <span class="text-gray-300">|</span>
-                            <span>Written: <span class="text-themeBlue font-black">{{ $exam_schedule->written_marks ?? 0 }}</span></span>
+                            <span>Written: <span class="{{ $col2Disabled ? 'text-gray-400 dark:text-gray-500' : 'text-themeBlue' }} font-black">{{ $col2Disabled ? '0.00 (N/A)' : ($exam_schedule->written_marks ?? 0) }}</span></span>
                             <span class="text-gray-300">|</span>
-                            <span>Practical: <span class="text-teal-600 dark:text-teal-400 font-black">{{ $exam_schedule->ct_marks ?? 0 }}</span></span>
+                            <span>Practical: <span class="{{ $col3Disabled ? 'text-gray-400 dark:text-gray-500' : 'text-teal-600 dark:text-teal-400' }} font-black">{{ $col3Disabled ? '0.00 (N/A)' : ($exam_schedule->ct_marks ?? 0) }}</span></span>
                         @else
-                            <span>CT: <span class="text-themeGreen font-black">{{ $exam_schedule->ct_marks ?? 0 }}</span></span>
+                            <span>CT: <span class="{{ $col1Disabled ? 'text-gray-400 dark:text-gray-500' : 'text-themeGreen' }} font-black">{{ $col1Disabled ? '0.00 (N/A)' : ($exam_schedule->ct_marks ?? 0) }}</span></span>
                             <span class="text-gray-300">|</span>
-                            <span>MT: <span class="text-amber-500 font-black">{{ $exam_schedule->mcq_marks ?? 0 }}</span></span>
+                            <span>MT: <span class="{{ $col2Disabled ? 'text-gray-400 dark:text-gray-500' : 'text-amber-500' }} font-black">{{ $col2Disabled ? '0.00 (N/A)' : ($exam_schedule->mcq_marks ?? 0) }}</span></span>
                             <span class="text-gray-300">|</span>
-                            <span>Terminal: <span class="text-themeBlue font-black">{{ $exam_schedule->written_marks ?? 0 }}</span></span>
+                            <span>Terminal: <span class="{{ $col3Disabled ? 'text-gray-400 dark:text-gray-500' : 'text-themeBlue' }} font-black">{{ $col3Disabled ? '0.00 (N/A)' : ($exam_schedule->written_marks ?? 0) }}</span></span>
                         @endif
                     </div>
                 @else
@@ -202,13 +234,25 @@
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">ID / Roll</th>
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Student Name</th>
                             @if($isClassTen)
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-[0.2em] text-center">MCQ Marks ({{ $exam_schedule->mcq_marks ?? 0 }})</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-themeBlue uppercase tracking-[0.2em] text-center">Written Marks (CQ) ({{ $exam_schedule->written_marks ?? 0 }})</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-teal-600 dark:text-teal-400 uppercase tracking-[0.2em] text-center">Practical Marks ({{ $exam_schedule->ct_marks ?? 0 }})</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black {{ $col1Disabled ? 'text-gray-400/70 dark:text-gray-500' : 'text-purple-600 dark:text-purple-400' }} uppercase tracking-[0.2em] text-center">
+                                    MCQ Marks ({{ $col1Disabled ? 'N/A' : $col1Max }})
+                                </th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black {{ $col2Disabled ? 'text-gray-400/70 dark:text-gray-500' : 'text-themeBlue' }} uppercase tracking-[0.2em] text-center">
+                                    Written Marks (CQ) ({{ $col2Disabled ? 'N/A' : $col2Max }})
+                                </th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black {{ $col3Disabled ? 'text-gray-400/70 dark:text-gray-500' : 'text-teal-600 dark:text-teal-400' }} uppercase tracking-[0.2em] text-center">
+                                    Practical Marks ({{ $col3Disabled ? 'N/A' : $col3Max }})
+                                </th>
                             @else
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-themeGreen uppercase tracking-[0.2em] text-center">CT ({{ $exam_schedule->ct_marks ?? 0 }})</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] text-center">MT ({{ $exam_schedule->mcq_marks ?? 0 }})</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-themeBlue uppercase tracking-[0.2em] text-center">Terminal ({{ $exam_schedule->written_marks ?? 0 }})</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black {{ $col1Disabled ? 'text-gray-400/70 dark:text-gray-500' : 'text-themeGreen' }} uppercase tracking-[0.2em] text-center">
+                                    CT ({{ $col1Disabled ? 'N/A' : $col1Max }})
+                                </th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black {{ $col2Disabled ? 'text-gray-400/70 dark:text-gray-500' : 'text-amber-500' }} uppercase tracking-[0.2em] text-center">
+                                    MT ({{ $col2Disabled ? 'N/A' : $col2Max }})
+                                </th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black {{ $col3Disabled ? 'text-gray-400/70 dark:text-gray-500' : 'text-themeBlue' }} uppercase tracking-[0.2em] text-center">
+                                    Terminal ({{ $col3Disabled ? 'N/A' : $col3Max }})
+                                </th>
                             @endif
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-450 dark:text-gray-550 uppercase tracking-[0.2em] text-center">Total</th>
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-450 dark:text-gray-550 uppercase tracking-[0.2em] text-center">Grade</th>
@@ -217,29 +261,53 @@
                     </thead>
                     <tbody>
                         @forelse($students as $student)
-                        <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
+                        <tr data-student-id="{{ $student->id }}" class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
                             <td class="py-3.5 px-4 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm">{{ $student->student_identity ?? $student->id }}</td>
                             <td class="py-3.5 px-4 text-sm font-bold text-gray-900 dark:text-gray-100">{{ $student->student_name ?? 'Unknown' }}</td>
                             
                             @if($isClassTen)
                                 <td class="py-3.5 px-4 text-center">
-                                    <input type="number" step="0.5" class="mark-input mcq-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->mcq_mark ?? '' }}">
+                                    @if($col1Disabled)
+                                        <input type="text" disabled tabindex="-1" value="—" title="MCQ is not configured for this subject" class="mcq-input h-9 text-center font-bold border-2 border-gray-150 dark:border-gray-800/80 rounded-lg bg-gray-150/70 dark:bg-themeDark/60 text-gray-400 dark:text-gray-500 cursor-not-allowed select-none opacity-60 w-20">
+                                    @else
+                                        <input type="number" step="0.5" min="0" max="{{ $col1Max }}" data-max="{{ $col1Max }}" data-label="{{ $col1Label }}" class="mark-input mcq-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->mcq_mark ?? '' }}">
+                                    @endif
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
-                                    <input type="number" step="0.5" class="mark-input written-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->written_mark ?? '' }}">
+                                    @if($col2Disabled)
+                                        <input type="text" disabled tabindex="-1" value="—" title="Written CQ is not configured for this subject" class="written-input h-9 text-center font-bold border-2 border-gray-150 dark:border-gray-800/80 rounded-lg bg-gray-150/70 dark:bg-themeDark/60 text-gray-400 dark:text-gray-500 cursor-not-allowed select-none opacity-60 w-20">
+                                    @else
+                                        <input type="number" step="0.5" min="0" max="{{ $col2Max }}" data-max="{{ $col2Max }}" data-label="{{ $col2Label }}" class="mark-input written-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->written_mark ?? '' }}">
+                                    @endif
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
-                                    <input type="number" step="0.5" class="mark-input ct-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->ct_mark ?? '' }}">
+                                    @if($col3Disabled)
+                                        <input type="text" disabled tabindex="-1" value="—" title="Practical is not configured for this subject" class="ct-input h-9 text-center font-bold border-2 border-gray-150 dark:border-gray-800/80 rounded-lg bg-gray-150/70 dark:bg-themeDark/60 text-gray-400 dark:text-gray-500 cursor-not-allowed select-none opacity-60 w-20">
+                                    @else
+                                        <input type="number" step="0.5" min="0" max="{{ $col3Max }}" data-max="{{ $col3Max }}" data-label="{{ $col3Label }}" class="mark-input ct-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->ct_mark ?? '' }}">
+                                    @endif
                                 </td>
                             @else
                                 <td class="py-3.5 px-4 text-center">
-                                    <input type="number" step="0.5" class="mark-input ct-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->ct_mark ?? '' }}">
+                                    @if($col1Disabled)
+                                        <input type="text" disabled tabindex="-1" value="—" title="CT is not configured for this subject" class="ct-input h-9 text-center font-bold border-2 border-gray-150 dark:border-gray-800/80 rounded-lg bg-gray-150/70 dark:bg-themeDark/60 text-gray-400 dark:text-gray-500 cursor-not-allowed select-none opacity-60 w-20">
+                                    @else
+                                        <input type="number" step="0.5" min="0" max="{{ $col1Max }}" data-max="{{ $col1Max }}" data-label="{{ $col1Label }}" class="mark-input ct-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->ct_mark ?? '' }}">
+                                    @endif
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
-                                    <input type="number" step="0.5" class="mark-input mcq-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->mcq_mark ?? '' }}">
+                                    @if($col2Disabled)
+                                        <input type="text" disabled tabindex="-1" value="—" title="MT is not configured for this subject" class="mcq-input h-9 text-center font-bold border-2 border-gray-150 dark:border-gray-800/80 rounded-lg bg-gray-150/70 dark:bg-themeDark/60 text-gray-400 dark:text-gray-500 cursor-not-allowed select-none opacity-60 w-20">
+                                    @else
+                                        <input type="number" step="0.5" min="0" max="{{ $col2Max }}" data-max="{{ $col2Max }}" data-label="{{ $col2Label }}" class="mark-input mcq-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->mcq_mark ?? '' }}">
+                                    @endif
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
-                                    <input type="number" step="0.5" class="mark-input written-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->written_mark ?? '' }}">
+                                    @if($col3Disabled)
+                                        <input type="text" disabled tabindex="-1" value="—" title="Terminal is not configured for this subject" class="written-input h-9 text-center font-bold border-2 border-gray-150 dark:border-gray-800/80 rounded-lg bg-gray-150/70 dark:bg-themeDark/60 text-gray-400 dark:text-gray-500 cursor-not-allowed select-none opacity-60 w-20">
+                                    @else
+                                        <input type="number" step="0.5" min="0" max="{{ $col3Max }}" data-max="{{ $col3Max }}" data-label="{{ $col3Label }}" class="mark-input written-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->written_mark ?? '' }}">
+                                    @endif
                                 </td>
                             @endif
                             
@@ -247,7 +315,22 @@
                                 {{ $student->mark->total_mark ?? 0 }}
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <span class="grade-display-{{ $student->id }} px-3 py-1 text-xs font-black rounded-full {{ isset($student->mark) && $student->mark->grade_point >= 4 ? 'bg-green-100 text-green-700 dark:bg-green-950/20 dark:text-green-400' : (isset($student->mark) && ($student->mark->letter_grade == 'F' || $student->mark->letter_grade == 'Fail') ? 'bg-red-100 text-red-700 dark:bg-red-950/20 dark:text-red-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300') }}">
+                                @php
+                                    $gradeClass = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+                                    if (isset($student->mark) && $student->mark->letter_grade) {
+                                        $lg = strtoupper(trim($student->mark->letter_grade));
+                                        if (in_array($lg, ['A+', 'A'])) {
+                                            $gradeClass = 'bg-green-100 text-green-700 dark:bg-green-950/20 dark:text-green-400';
+                                        } elseif (in_array($lg, ['A-', 'B'])) {
+                                            $gradeClass = 'bg-blue-100 text-themeBlue dark:bg-blue-950/20 dark:text-blue-400';
+                                        } elseif (in_array($lg, ['C', 'D'])) {
+                                            $gradeClass = 'bg-amber-100 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400';
+                                        } elseif (in_array($lg, ['F', 'FAIL'])) {
+                                            $gradeClass = 'bg-red-100 text-red-700 dark:bg-red-950/20 dark:text-red-400';
+                                        }
+                                    }
+                                @endphp
+                                <span class="grade-display-{{ $student->id }} px-3 py-1 text-xs font-black rounded-full {{ $gradeClass }}">
                                     {{ $student->mark->letter_grade ?? '--' }}
                                 </span>
                             </td>
@@ -334,24 +417,142 @@
         const class_id = "{{ request('class_id') }}";
         const subject_id = "{{ request('subject_id') }}";
 
+        function getGradeBadgeClass(grade) {
+            const g = (grade || '').toUpperCase().trim();
+            if (g === 'A+' || g === 'A') {
+                return 'px-3 py-1 text-xs font-black rounded-full bg-green-100 text-green-700 dark:bg-green-950/20 dark:text-green-400';
+            } else if (g === 'A-' || g === 'B') {
+                return 'px-3 py-1 text-xs font-black rounded-full bg-blue-100 text-themeBlue dark:bg-blue-950/20 dark:text-blue-400';
+            } else if (g === 'C' || g === 'D') {
+                return 'px-3 py-1 text-xs font-black rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400';
+            } else if (g === 'F' || g === 'FAIL') {
+                return 'px-3 py-1 text-xs font-black rounded-full bg-red-100 text-red-700 dark:bg-red-950/20 dark:text-red-400';
+            }
+            return 'px-3 py-1 text-xs font-black rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+        }
+
+        function updateLiveTotal(studentId) {
+            const row = document.querySelector(`tr[data-student-id="${studentId}"]`) || document.querySelector(`.mark-input[data-id="${studentId}"]`)?.closest('tr');
+            if (!row) return;
+            const ctInput = row.querySelector('.ct-input');
+            const mcqInput = row.querySelector('.mcq-input');
+            const writtenInput = row.querySelector('.written-input');
+
+            const ctVal = (ctInput && !ctInput.disabled) ? (parseFloat(ctInput.value) || 0) : 0;
+            const mcqVal = (mcqInput && !mcqInput.disabled) ? (parseFloat(mcqInput.value) || 0) : 0;
+            const writtenVal = (writtenInput && !writtenInput.disabled) ? (parseFloat(writtenInput.value) || 0) : 0;
+
+            const totalEl = row.querySelector(`.total-display-${studentId}`);
+            if (totalEl) {
+                const total = ctVal + mcqVal + writtenVal;
+                totalEl.textContent = total % 1 === 0 ? total : total.toFixed(2);
+            }
+        }
+
         document.querySelectorAll('.mark-input').forEach(input => {
+            // Track previous valid value
+            input.dataset.prevValue = input.value;
+
+            input.addEventListener('focus', function() {
+                this.dataset.prevValue = this.value;
+            });
+
+            input.addEventListener('input', function() {
+                const max = parseFloat(this.dataset.max);
+                const val = parseFloat(this.value);
+                const label = this.dataset.label || 'this component';
+
+                if (!isNaN(max) && !isNaN(val) && val > max) {
+                    showAlert(`Marks entered (${val}) exceeds the base mark of ${max} for ${label}!`, 'Validation Error', { variant: 'danger' });
+                    this.value = this.dataset.prevValue || '';
+                    updateLiveTotal(this.dataset.id);
+                    return;
+                }
+                if (!isNaN(val) && val < 0) {
+                    showAlert('Marks cannot be negative!', 'Validation Error', { variant: 'danger' });
+                    this.value = 0;
+                    updateLiveTotal(this.dataset.id);
+                    return;
+                }
+
+                this.dataset.prevValue = this.value;
+                updateLiveTotal(this.dataset.id);
+            });
+
+            input.addEventListener('change', function() {
+                const max = parseFloat(this.dataset.max);
+                const val = parseFloat(this.value);
+                const label = this.dataset.label || 'this component';
+
+                if (!isNaN(max) && !isNaN(val) && val > max) {
+                    showAlert(`Marks entered (${val}) exceeds the base mark of ${max} for ${label}!`, 'Validation Error', { variant: 'danger' });
+                    this.value = this.dataset.prevValue || '';
+                    updateLiveTotal(this.dataset.id);
+                    return;
+                }
+            });
+
             input.addEventListener('blur', function() {
+                const max = parseFloat(this.dataset.max);
+                const val = parseFloat(this.value);
+                const label = this.dataset.label || 'this component';
+
+                if (!isNaN(max) && !isNaN(val) && val > max) {
+                    showAlert(`Marks entered (${val}) exceeds the base mark of ${max} for ${label}!`, 'Validation Error', { variant: 'danger' });
+                    this.value = this.dataset.prevValue || '';
+                    updateLiveTotal(this.dataset.id);
+                    return;
+                }
+
                 saveMark(this.dataset.id);
             });
+
             input.addEventListener('keypress', function(e) {
-                if(e.key === 'Enter') input.blur(); 
+                if (e.key === 'Enter') input.blur(); 
             });
         });
 
         function saveMark(studentId) {
-            const row = document.querySelector(`.ct-input[data-id="${studentId}"]`).closest('tr');
-            const ctVal = parseFloat(row.querySelector('.ct-input').value) || 0;
-            const writtenVal = parseFloat(row.querySelector('.written-input').value) || 0;
-            const mcqVal = parseFloat(row.querySelector('.mcq-input').value) || 0;
+            const row = document.querySelector(`tr[data-student-id="${studentId}"]`) || document.querySelector(`.mark-input[data-id="${studentId}"]`)?.closest('tr');
+            if (!row) return;
+
+            const ctInput = row.querySelector('.ct-input');
+            const writtenInput = row.querySelector('.written-input');
+            const mcqInput = row.querySelector('.mcq-input');
+
+            // Pre-validation before sending AJAX (skip disabled inputs)
+            const inputsToCheck = [ctInput, mcqInput, writtenInput];
+            for (const inp of inputsToCheck) {
+                if (!inp || inp.disabled) continue;
+                const max = parseFloat(inp.dataset.max);
+                const val = parseFloat(inp.value);
+                const label = inp.dataset.label || 'this component';
+
+                if (!isNaN(max) && !isNaN(val) && val > max) {
+                    showAlert(`Marks entered (${val}) exceeds the base mark of ${max} for ${label}!`, 'Validation Error', { variant: 'danger' });
+                    inp.value = inp.dataset.prevValue || '';
+                    updateLiveTotal(studentId);
+                    inp.focus();
+                    return;
+                }
+                if (!isNaN(val) && val < 0) {
+                    showAlert('Marks cannot be negative!', 'Validation Error', { variant: 'danger' });
+                    inp.value = 0;
+                    updateLiveTotal(studentId);
+                    inp.focus();
+                    return;
+                }
+            }
+
+            const ctVal = (ctInput && !ctInput.disabled) ? (parseFloat(ctInput.value) || 0) : 0;
+            const writtenVal = (writtenInput && !writtenInput.disabled) ? (parseFloat(writtenInput.value) || 0) : 0;
+            const mcqVal = (mcqInput && !mcqInput.disabled) ? (parseFloat(mcqInput.value) || 0) : 0;
 
             const statusLabel = row.querySelector(`.status-${studentId}`);
-            statusLabel.textContent = 'Saving...';
-            statusLabel.className = `status-${studentId} text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 opacity-100`;
+            if (statusLabel) {
+                statusLabel.textContent = 'Saving...';
+                statusLabel.className = `status-${studentId} text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 opacity-100`;
+            }
 
             axios.post("{{ route('marks.store.ajax') }}", {
                 _token: "{{ csrf_token() }}",
@@ -366,29 +567,36 @@
                 mcq_mark: mcqVal
             })
             .then(response => {
-                if(response.data.success) {
-                    row.querySelector(`.total-display-${studentId}`).textContent = response.data.total;
+                if (response.data.success) {
+                    const totalDisplay = row.querySelector(`.total-display-${studentId}`);
+                    if (totalDisplay) {
+                        const t = response.data.total;
+                        totalDisplay.textContent = t % 1 === 0 ? t : parseFloat(t).toFixed(2);
+                    }
                     
                     const gradeSpan = row.querySelector(`.grade-display-${studentId}`);
-                    gradeSpan.textContent = response.data.letter_grade;
-                    
-                    if(response.data.letter_grade === 'F' || response.data.letter_grade === 'Fail') {
-                        gradeSpan.className = `grade-display-${studentId} px-3 py-1 text-xs font-black rounded-full bg-red-100 text-red-700 dark:bg-red-950/20 dark:text-red-400`;
-                    } else {
-                        gradeSpan.className = `grade-display-${studentId} px-3 py-1 text-xs font-black rounded-full bg-green-100 text-green-700 dark:bg-green-950/20 dark:text-green-400`;
+                    if (gradeSpan) {
+                        gradeSpan.textContent = response.data.letter_grade;
+                        gradeSpan.className = `grade-display-${studentId} ${getGradeBadgeClass(response.data.letter_grade)}`;
                     }
 
-                    statusLabel.textContent = 'Saved ✓';
-                    statusLabel.className = `status-${studentId} text-[10px] font-bold px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 opacity-100`;
-                    setTimeout(() => { 
-                        statusLabel.classList.replace('opacity-100', 'opacity-0');
-                    }, 2000);
+                    if (statusLabel) {
+                        statusLabel.textContent = 'Saved ✓';
+                        statusLabel.className = `status-${studentId} text-[10px] font-bold px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 opacity-100`;
+                        setTimeout(() => { 
+                            statusLabel.classList.replace('opacity-100', 'opacity-0');
+                        }, 2000);
+                    }
                 }
             })
             .catch(error => {
                 console.error("Save Error:", error);
-                statusLabel.textContent = 'Failed!';
-                statusLabel.className = `status-${studentId} text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 opacity-100`;
+                const errorMsg = error.response?.data?.message || 'Failed to save marks!';
+                showAlert(errorMsg, 'Save Error', { variant: 'danger' });
+                if (statusLabel) {
+                    statusLabel.textContent = 'Failed!';
+                    statusLabel.className = `status-${studentId} text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 opacity-100`;
+                }
             });
         }
     });

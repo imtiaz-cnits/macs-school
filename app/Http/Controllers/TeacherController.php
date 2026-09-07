@@ -43,6 +43,7 @@ class TeacherController extends Controller
                 'employee_id' => $t->employee_id,
                 'designation' => $t->designation,
                 'department'  => $t->department,
+                'biometric_id'=> $t->biometric_id,
                 'photo'       => $t->photo,
             ];
         });
@@ -124,7 +125,7 @@ class TeacherController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $teacher = Teacher::with(['user', 'creator'])->findOrFail($id);
+            $teacher = Teacher::with(['user', 'creator', 'shift'])->findOrFail($id);
             return response()->json(['status' => 'success', 'data' => $teacher], 200);
         } catch (Exception $e) {
             return response()->json(['status' => 'error', 'message' => 'Teacher not found'], 404);
@@ -219,6 +220,71 @@ class TeacherController extends Controller
             return response()->json(['status' => 'success', 'message' => 'Teacher deleted successfully!'], 200);
         } catch (Exception $e) {
             return response()->json(['status' => 'error', 'message' => 'Delete Failed!'], 500);
+        }
+    }
+
+    /**
+     * Push a specific staff/teacher to the biometric attendance machine
+     */
+    public function pushToDevice($id): JsonResponse
+    {
+        try {
+            $teacher = Teacher::with('user')->find($id);
+            if (!$teacher) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Staff record not found.'
+                ], 404);
+            }
+
+            $zkService = app(\App\Services\ZktecoService::class);
+            $cleanName = substr(preg_replace('/[^A-Za-z0-9\s]/', '', $teacher->user->name ?? 'Staff ' . $teacher->id), 0, 24);
+            if (empty($cleanName)) {
+                $cleanName = "Staff " . $teacher->id;
+            }
+
+            // Determine Device ID: use existing biometric_id or default to 10000 + id
+            $deviceId = $teacher->biometric_id ? (int)preg_replace('/[^0-9]/', '', $teacher->biometric_id) : (10000 + $teacher->id);
+            
+            // Persist biometric_id if not set
+            if (empty($teacher->biometric_id)) {
+                $teacher->update(['biometric_id' => (string)$deviceId]);
+            }
+
+            if ($zkService->getMode() === 'simulation') {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => "[Simulation] Staff {$cleanName} (Device ID: {$deviceId}) pushed to device successfully!"
+                ], 200);
+            }
+
+            $zk = new \Jmrashed\Zkteco\Lib\ZKTeco($zkService->getIp(), $zkService->getPort());
+            if (!$zk->connect()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unable to establish connection with ZKTeco biometric device.'
+                ], 500);
+            }
+
+            $zk->disableDevice();
+
+            $cardno = 0;
+            // setUser($uid, $userid, $name, $password, $role, $cardno)
+            $zk->setUser($deviceId, $deviceId, $cleanName, '', 0, $cardno);
+
+            $zk->enableDevice();
+            $zk->disconnect();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Staff {$cleanName} (Device ID: {$deviceId}) successfully pushed to biometric device."
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to push staff to device: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

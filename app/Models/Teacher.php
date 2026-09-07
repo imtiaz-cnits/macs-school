@@ -22,4 +22,10 @@ class Teacher extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    // শিক্ষকের নির্ধারিত শিফট
+    public function shift()
+    {
+        return $this->belongsTo(Shift::class, 'shift_id');
+    }
 }
