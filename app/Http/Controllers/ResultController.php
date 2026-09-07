@@ -28,6 +28,9 @@ class ResultController extends Controller
     // PDF generation router method: delegates to Single or Combined marksheet
     public function generate(Request $request)
     {
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300');
+
         $reportType = $request->input('report_type', 'single');
 
         if ($reportType === 'combined') {
@@ -597,6 +600,9 @@ class ResultController extends Controller
     // Tabulation sheet PDF generation logic
     public function tabulationGenerate(Request $request)
     {
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300');
+
         $request->validate([
             'session_year_id' => 'required',
             'branch_id'       => 'required',

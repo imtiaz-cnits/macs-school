@@ -310,8 +310,8 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
     // Marksheet & Result Routes
     Route::prefix('results')->name('results.')->group(function () {
         Route::get('/', [ResultController::class, 'index'])->name('index'); // সার্চ করার ফর্ম
+        Route::get('/generate', fn() => redirect()->route('results.index')); // GET রিকোয়েস্ট রিডাইরেক্ট
         Route::post('/generate', [ResultController::class, 'generate'])->name('generate'); // PDF জেনারেট
-        
     });
 
      // Tabulation Sheet Routes
