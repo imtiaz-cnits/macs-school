@@ -143,9 +143,8 @@
             background-color: #F8FAFC;
         }
 
-        /* Student Information Card */
+        /* Student Information Card - Width Auto to Prevent Overflow */
         .student-profile-card {
-            width: 100%;
             background-color: #F8FAFC;
             border: 1px solid #E2E8F0;
             border-radius: 7px;
@@ -165,12 +164,12 @@
             text-transform: uppercase;
             font-size: 7px;
             letter-spacing: 0.3px;
-            width: 14%;
+            width: 15%;
         }
         .info-val {
             font-weight: 700;
             color: #0F1E2C;
-            width: 32%;
+            width: 35%;
             font-size: 8.5px;
         }
         .badge-id {
@@ -382,23 +381,23 @@
         /* Signatures Section */
         .signatures-table {
             width: 100%;
-            margin-top: 14px;
-            margin-bottom: 3px;
+            margin-top: 6px;
+            margin-bottom: 2px;
         }
         .signatures-table td {
             border: none;
             text-align: center;
             vertical-align: bottom;
-            font-size: 7.8px;
+            font-size: 9.5px;
             font-weight: 700;
             color: #334155;
             width: 33.33%;
         }
         .sig-line {
             display: inline-block;
-            width: 130px;
+            width: 150px;
             border-top: 1.2px dashed #94A3B8;
-            padding-top: 2.5px;
+            padding-top: 3px;
         }
 
         /* Footer Info */
@@ -410,7 +409,7 @@
         }
         .footer-table td {
             border: none;
-            font-size: 6.5px;
+            font-size: 7.5px;
             color: #94A3B8;
             font-weight: 500;
         }
@@ -425,8 +424,8 @@
     <!-- Header Section (Logo, School Details, Grading System) -->
     <table class="header-table">
         <tr>
-            <!-- Left: Logo -->
-            <td style="width: 12%; text-align: left;">
+            <!-- Left: Logo (20% for perfect horizontal center alignment of school branding) -->
+            <td style="width: 20%; text-align: left; vertical-align: middle;">
                 @if(!empty($logoSrc))
                     <img src="{{ $logoSrc }}" style="width: 58px; height: 58px; object-fit: contain;" alt="MACS Logo" />
                 @else
@@ -434,8 +433,8 @@
                 @endif
             </td>
 
-            <!-- Center: School Details & Combined Progress Report Title -->
-            <td style="width: 63%; text-align: center;">
+            <!-- Center: School Details & Combined Progress Report Title (60% dead center) -->
+            <td style="width: 60%; text-align: center; vertical-align: middle;">
                 <div class="school-name">MACS School &amp; College</div>
                 <div class="school-address">Jalalpur, Pabna Sadar, Pabna &bull; Bangladesh</div>
                 <div class="school-contact">Hotline: 01896-220299, 01896-220300 &bull; Web: macs.edu.bd</div>
@@ -443,15 +442,15 @@
                 <div class="exam-banner-title">Final Consolidated Evaluation &bull; Academic Session: {{ $sessionYear->session_name }}</div>
             </td>
 
-            <!-- Right: GPA Grading System Card -->
-            <td style="width: 25%; text-align: right;">
-                <table class="grade-legend-table">
+            <!-- Right: GPA Grading System Card (20% to balance left logo) -->
+            <td style="width: 20%; text-align: right; vertical-align: middle;">
+                <table class="grade-legend-table" style="width: 100%;">
                     <thead>
                         <tr>
-                            <th>Marks</th>
-                            <th>LG</th>
-                            <th>GP</th>
-                            <th>Remark</th>
+                            <th style="width: 30%;">Marks</th>
+                            <th style="width: 16%;">LG</th>
+                            <th style="width: 16%;">GP</th>
+                            <th style="width: 38%;">Remark</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -505,37 +504,49 @@
 
     <!-- Student Information Profile Card -->
     <div class="student-profile-card">
-        <table class="student-info-table">
+        <table style="width: 100%; border-collapse: collapse; border: none;">
             <tr>
-                <td class="info-label">Student ID</td>
-                <td class="info-val"><span class="badge-id">{{ $student->student_identity }}</span></td>
-                <td class="info-label">Class &amp; Section</td>
-                <td class="info-val">{{ $student->schoolClass->class_name ?? 'N/A' }} ({{ $student->section->section_name ?? 'A' }})</td>
-                <td rowspan="4" style="width: 10%; text-align: right; vertical-align: middle; padding-left: 6px;">
+                <td style="vertical-align: middle; border: none; padding: 0;">
+                    <table class="student-info-table" style="width: 100%; border-collapse: collapse; border: none;">
+                        <tr>
+                            <td class="info-label">Student ID</td>
+                            <td class="info-val"><span class="badge-id">{{ $student->student_identity }}</span></td>
+                            <td class="info-label">Class &amp; Section</td>
+                            <td class="info-val">{{ $student->schoolClass->class_name ?? 'N/A' }} ({{ $student->section->section_name ?? 'A' }})</td>
+                        </tr>
+                        <tr>
+                            <td class="info-label">Student Name</td>
+                            <td class="info-val" style="color: #008ED6; font-size: 9px; font-weight: 800;">{{ $student->student_name ?: trim(($student->first_name ?? '') . ' ' . ($student->last_name ?? '')) }}</td>
+                            <td class="info-label">Roll Number</td>
+                            <td class="info-val"><span class="badge-roll">{{ $student->roll_number }}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="info-label">Father's Name</td>
+                            <td class="info-val">{{ $student->father_name ?? '-' }}</td>
+                            <td class="info-label">Shift</td>
+                            <td class="info-val">
+                                @php
+                                    $shiftRaw = strtolower($student->shift->shift_name ?? '');
+                                    $shiftText = str_contains($shiftRaw, 'day') ? 'Day' : (str_contains($shiftRaw, 'morning') ? 'Morning' : ($student->shift->shift_name ?? 'Day'));
+                                @endphp
+                                {{ $shiftText }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="info-label">Mother's Name</td>
+                            <td class="info-val">{{ $student->mother_name ?? '-' }}</td>
+                            <td class="info-label">Campus Branch</td>
+                            <td class="info-val">{{ $student->branch->branch_name ?? 'Main Campus' }}</td>
+                        </tr>
+                    </table>
+                </td>
+                <td style="width: 65px; text-align: right; vertical-align: middle; border: none; padding: 0;">
                     @if(!empty($photoSrc))
-                        <img src="{{ $photoSrc }}" style="width: 46px; height: 54px; object-fit: cover; border: 1.5px solid #008ED6; border-radius: 5px; padding: 1px;" alt="Student Photo" />
+                        <img src="{{ $photoSrc }}" style="width: 52px; height: 62px; object-fit: cover; border: 1.5px solid #008ED6; border-radius: 6px; padding: 1px; display: inline-block; vertical-align: middle;" alt="Student Photo" />
                     @else
-                        <div style="width: 46px; height: 54px; border: 1.5px solid #CBD5E1; border-radius: 5px; text-align: center; line-height: 54px; font-size: 7px; color: #94A3B8;">Photo</div>
+                        <div style="width: 52px; height: 62px; border: 1.5px solid #CBD5E1; border-radius: 6px; text-align: center; line-height: 62px; font-size: 8px; color: #94A3B8; display: inline-block; vertical-align: middle;">Photo</div>
                     @endif
                 </td>
-            </tr>
-            <tr>
-                <td class="info-label">Student Name</td>
-                <td class="info-val" style="color: #008ED6; font-size: 9px; font-weight: 800;">{{ $student->first_name }} {{ $student->last_name }}</td>
-                <td class="info-label">Roll Number</td>
-                <td class="info-val"><span class="badge-roll">Roll #{{ $student->roll_number }}</span></td>
-            </tr>
-            <tr>
-                <td class="info-label">Father's Name</td>
-                <td class="info-val">{{ $student->father_name ?? '-' }}</td>
-                <td class="info-label">Shift &amp; Group</td>
-                <td class="info-val">{{ $student->shift->shift_name ?? 'Morning' }} &bull; {{ $student->group->group_name ?? 'General' }}</td>
-            </tr>
-            <tr>
-                <td class="info-label">Mother's Name</td>
-                <td class="info-val">{{ $student->mother_name ?? '-' }}</td>
-                <td class="info-label">Campus Branch</td>
-                <td class="info-val">{{ $student->branch->branch_name ?? 'Main Campus' }}</td>
             </tr>
         </table>
     </div>
@@ -757,10 +768,10 @@
             <td>
                 @if(!empty($signatureSrc))
                     <div style="margin-bottom: 2px;">
-                        <img src="{{ $signatureSrc }}" style="height: 24px; object-fit: contain;" alt="Signature" />
+                        <img src="{{ $signatureSrc }}" style="height: 44px; object-fit: contain;" alt="Signature" />
                     </div>
                 @else
-                    <div style="height: 24px;"></div>
+                    <div style="height: 44px;"></div>
                 @endif
                 <div class="sig-line">Principal's Signature</div>
             </td>

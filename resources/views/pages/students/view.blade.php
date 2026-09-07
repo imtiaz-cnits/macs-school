@@ -762,7 +762,7 @@
 
             if (marks.length > 0) {
                 marks.forEach(m => {
-                    let examName = m.exam ? m.exam.exam_name : 'N/A';
+                    let examName = m.exam ? (m.exam.name || m.exam.exam_name) : 'N/A';
                     let subjectName = m.subject ? m.subject.subject_name : 'N/A';
                     let totalVal = m.total_mark !== null ? parseFloat(m.total_mark) : 0;
                     let letterGrade = m.letter_grade || 'N/A';

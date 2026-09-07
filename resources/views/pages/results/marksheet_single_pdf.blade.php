@@ -171,7 +171,7 @@
         .info-val {
             font-weight: 700;
             color: #0F1E2C;
-            width: 31%;
+            width: 34%;
             font-size: 8.5px;
         }
         .badge-id {
@@ -199,7 +199,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 4px;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             border: 1.2px solid #CBD5E1;
             border-radius: 7px;
             overflow: hidden;
@@ -207,7 +207,7 @@
         .marks-table th {
             background-color: #008ED6;
             color: #ffffff;
-            font-size: 7.8px;
+            font-size: 9px;
             font-weight: 700;
             text-align: center;
             padding: 4px 2px;
@@ -225,7 +225,7 @@
             border: 1px solid #E2E8F0;
             padding: 5px 3px;
             text-align: center;
-            font-size: 8px;
+            font-size: 9px;
             font-weight: 600;
             color: #1E293B;
         }
@@ -369,7 +369,7 @@
             border: 1.2px solid #E2E8F0;
             border-radius: 8px;
             padding: 6px 10px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
         .remarks-title {
             font-size: 7.5px;
@@ -398,20 +398,20 @@
         .signatures-table {
             width: 100%;
             margin-top: 0px;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
         .signatures-table td {
             border: none;
             text-align: center;
             vertical-align: bottom;
-            font-size: 7.8px;
+            font-size: 9.5px;
             font-weight: 700;
             color: #334155;
             width: 33.33%;
         }
         .sig-line {
             display: inline-block;
-            width: 130px;
+            width: 150px;
             border-top: 1.2px dashed #94A3B8;
             padding-top: 3px;
         }
@@ -425,7 +425,7 @@
         }
         .footer-table td {
             border: none;
-            font-size: 6.8px;
+            font-size: 7.8px;
             color: #94A3B8;
             font-weight: 500;
         }
@@ -455,7 +455,13 @@
                 <div class="school-address">Jalalpur, Pabna Sadar, Pabna &bull; Bangladesh</div>
                 <div class="school-contact">Hotline: 01896-220299, 01896-220300 &bull; Web: macs.edu.bd</div>
                 <div class="report-badge">Academic Progress Report</div>
-                <div class="exam-banner-title">{{ $exam->name }} - {{ $sessionYear->session_name }}</div>
+                <div class="exam-banner-title">
+                    @if(str_contains($exam->name, (string)$sessionYear->session_name))
+                        {{ $exam->name }}
+                    @else
+                        {{ $exam->name }} - {{ $sessionYear->session_name }}
+                    @endif
+                </div>
             </td>
 
             <!-- Right: GPA Grading System Card -->
@@ -520,37 +526,49 @@
 
     <!-- Student Information Profile Card -->
     <div class="student-profile-card">
-        <table class="student-info-table">
+        <table style="width: 100%; border-collapse: collapse; border: none;">
             <tr>
-                <td class="info-label">Student ID</td>
-                <td class="info-val"><span class="badge-id">{{ $student->student_identity }}</span></td>
-                <td class="info-label">Class &amp; Section</td>
-                <td class="info-val">{{ $student->schoolClass->class_name ?? 'N/A' }} ({{ $student->section->section_name ?? 'A' }})</td>
-                <td rowspan="4" style="width: 12%; text-align: right; vertical-align: middle; padding-left: 4px;">
+                <td style="vertical-align: middle; border: none; padding: 0;">
+                    <table class="student-info-table" style="width: 100%; border-collapse: collapse; border: none;">
+                        <tr>
+                            <td class="info-label">Student ID</td>
+                            <td class="info-val"><span class="badge-id">{{ $student->student_identity }}</span></td>
+                            <td class="info-label">Class &amp; Section</td>
+                            <td class="info-val">{{ $student->schoolClass->class_name ?? 'N/A' }} ({{ $student->section->section_name ?? 'A' }})</td>
+                        </tr>
+                        <tr>
+                            <td class="info-label">Student Name</td>
+                            <td class="info-val" style="color: #008ED6; font-size: 9.5px; font-weight: 800;">{{ $student->student_name ?: trim(($student->first_name ?? '') . ' ' . ($student->last_name ?? '')) }}</td>
+                            <td class="info-label">Roll Number</td>
+                            <td class="info-val"><span class="badge-roll">{{ $student->roll_number }}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="info-label">Father's Name</td>
+                            <td class="info-val">{{ $student->father_name ?? '-' }}</td>
+                            <td class="info-label">Shift</td>
+                            <td class="info-val">
+                                @php
+                                    $shiftRaw = strtolower($student->shift->shift_name ?? '');
+                                    $shiftText = str_contains($shiftRaw, 'day') ? 'Day' : (str_contains($shiftRaw, 'morning') ? 'Morning' : ($student->shift->shift_name ?? 'Day'));
+                                @endphp
+                                {{ $shiftText }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="info-label">Mother's Name</td>
+                            <td class="info-val">{{ $student->mother_name ?? '-' }}</td>
+                            <td class="info-label">Campus Branch</td>
+                            <td class="info-val">{{ $student->branch->branch_name ?? 'Main Campus' }}</td>
+                        </tr>
+                    </table>
+                </td>
+                <td style="width: 80px; text-align: right; vertical-align: middle; border: none; padding: 0 0 0 10px;">
                     @if(!empty($photoSrc))
-                        <img src="{{ $photoSrc }}" style="width: 48px; height: 56px; object-fit: cover; border: 1.5px solid #008ED6; border-radius: 5px; padding: 1px;" alt="Student Photo" />
+                        <img src="{{ $photoSrc }}" style="width: 58px; height: 70px; object-fit: cover; border: 1.5px solid #008ED6; border-radius: 6px; padding: 1px; display: inline-block; vertical-align: middle;" alt="Student Photo" />
                     @else
-                        <div style="width: 48px; height: 56px; border: 1.5px solid #CBD5E1; border-radius: 5px; text-align: center; line-height: 56px; font-size: 7px; color: #94A3B8;">Photo</div>
+                        <div style="width: 58px; height: 70px; border: 1.5px solid #CBD5E1; border-radius: 6px; text-align: center; line-height: 70px; font-size: 8px; color: #94A3B8; display: inline-block; vertical-align: middle;">Photo</div>
                     @endif
                 </td>
-            </tr>
-            <tr>
-                <td class="info-label">Student Name</td>
-                <td class="info-val" style="color: #008ED6; font-size: 9px; font-weight: 800;">{{ $student->first_name }} {{ $student->last_name }}</td>
-                <td class="info-label">Roll Number</td>
-                <td class="info-val"><span class="badge-roll">Roll #{{ $student->roll_number }}</span></td>
-            </tr>
-            <tr>
-                <td class="info-label">Father's Name</td>
-                <td class="info-val">{{ $student->father_name ?? '-' }}</td>
-                <td class="info-label">Shift &amp; Group</td>
-                <td class="info-val">{{ $student->shift->shift_name ?? 'Morning' }} &bull; {{ $student->group->group_name ?? 'General' }}</td>
-            </tr>
-            <tr>
-                <td class="info-label">Mother's Name</td>
-                <td class="info-val">{{ $student->mother_name ?? '-' }}</td>
-                <td class="info-label">Campus Branch</td>
-                <td class="info-val">{{ $student->branch->branch_name ?? 'Main Campus' }}</td>
             </tr>
         </table>
     </div>
@@ -560,12 +578,12 @@
         <thead>
             <tr>
                 <th rowspan="2" style="width: 4%;">#</th>
-                <th rowspan="2" style="width: 22%; text-align: left; padding-left: 6px;">Subject Name</th>
+                <th rowspan="2" style="width: 26%; text-align: left; padding-left: 6px;">Subject Name</th>
                 <th rowspan="2" style="width: 9%;">Full Marks</th>
                 <th colspan="4" style="width: 37%;">Continuous &amp; Terminal Assessment</th>
                 <th rowspan="2" style="width: 10%;">Class Top</th>
-                <th rowspan="2" style="width: 9%;">Grade</th>
-                <th rowspan="2" style="width: 9%;">Point</th>
+                <th rowspan="2" style="width: 7%;">Grade</th>
+                <th rowspan="2" style="width: 7%;">Point</th>
             </tr>
             <tr>
                 <th class="sub-head" style="width: 9%;">CT (10)</th>
@@ -739,10 +757,10 @@
                 <td>
                     @if(!empty($signatureSrc))
                         <div style="margin-bottom: 2px;">
-                            <img src="{{ $signatureSrc }}" style="height: 26px; object-fit: contain;" alt="Signature" />
+                            <img src="{{ $signatureSrc }}" style="height: 44px; object-fit: contain;" alt="Signature" />
                         </div>
                     @else
-                        <div style="height: 26px;"></div>
+                        <div style="height: 44px;"></div>
                     @endif
                     <div class="sig-line">Principal's Signature</div>
                 </td>
