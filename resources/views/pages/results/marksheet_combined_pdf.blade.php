@@ -89,7 +89,7 @@
             border: none;
         }
         .school-name {
-            font-size: 17px;
+            font-size: 24px;
             font-weight: 800;
             color: #0F1E2C;
             letter-spacing: -0.3px;
@@ -97,13 +97,13 @@
             line-height: 1.1;
         }
         .school-address {
-            font-size: 8px;
+            font-size: 9px;
             font-weight: 600;
             color: #475569;
-            margin-top: 1px;
+            margin-top: 0.8px;
         }
         .school-contact {
-            font-size: 7.5px;
+            font-size: 9px;
             font-weight: 500;
             color: #64748B;
         }
@@ -872,9 +872,6 @@
         <!-- Subtle Footer Information with CodeNext IT Branding -->
         <table class="footer-table">
             <tr>
-                <td style="text-align: left;">
-                    Developed by <strong style="color: #64748B;">CodeNext IT</strong> | codenextit.com
-                </td>
                 <td style="text-align: right;">
                     Date of Issue: {{ date('d M, Y') }}
                 </td>
