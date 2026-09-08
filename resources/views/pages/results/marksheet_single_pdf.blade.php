@@ -349,6 +349,7 @@
             padding-bottom: 2.5px;
             border-bottom: 1.5px solid #F1F5F9;
             margin-bottom: 4px;
+            text-align: center;
         }
         .eval-card-header.header-blue {
             color: #008ED6;
@@ -772,15 +773,21 @@
                                 </td>
 
                                 <!-- Result Status & Remarks -->
-                                <td style="width: 38%; padding-left: 5px;">
-                                    <div style="font-size: 7.8px; font-weight: 700; color: #64748B; text-transform: uppercase;">Status:</div>
-                                    <div style="font-size: 11px; font-weight: 800; color: {{ $finalGrade === 'F' ? '#DC2626' : '#009A49' }}; line-height: 1.1;">
-                                        {{ $finalGrade === 'F' ? 'FAILED' : 'PASSED' }}
-                                    </div>
-                                    <div style="font-size: 7.8px; font-weight: 700; color: #64748B; margin-top: 2px; text-transform: uppercase;">Remarks:</div>
-                                    <div style="font-size: 9px; font-weight: 700; color: #0F1E2C;">
-                                        {{ $remark }}
-                                    </div>
+                                <td style="width: 38%; padding-left: 6px;">
+                                    <table style="border-collapse: collapse; width: 100%;">
+                                        <tr>
+                                            <td style="border: none; padding: 1.5px 4px 1.5px 0; font-size: 8px; font-weight: 700; color: #64748B; text-transform: uppercase; white-space: nowrap; width: 1%; vertical-align: middle;">Status:</td>
+                                            <td style="border: none; padding: 1.5px 0; font-size: 11px; font-weight: 800; color: {{ $finalGrade === 'F' ? '#DC2626' : '#009A49' }}; white-space: nowrap; vertical-align: middle;">
+                                                {{ $finalGrade === 'F' ? 'FAILED' : 'PASSED' }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: none; padding: 1.5px 4px 1.5px 0; font-size: 8px; font-weight: 700; color: #64748B; text-transform: uppercase; white-space: nowrap; width: 1%; vertical-align: middle;">Remarks:</td>
+                                            <td style="border: none; padding: 1.5px 0; font-size: 9.5px; font-weight: 700; color: #0F1E2C; white-space: nowrap; vertical-align: middle;">
+                                                {{ $remark }}
+                                            </td>
+                                        </tr>
+                                    </table>
                                 </td>
                             </tr>
                         </table>
