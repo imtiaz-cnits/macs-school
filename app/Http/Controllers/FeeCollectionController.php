@@ -31,10 +31,71 @@ class FeeCollectionController extends Controller
         $sessions = SessionYear::latest()->get();
         $categories = FeeCategory::where('status', 'Active')->get();
 
-        if ($request->get('mode') !== 'bulk' && $request->filled('student_identity')) {
+        $search = trim($request->get('search', $request->get('student_identity', '')));
+
+        if ($request->get('mode') !== 'bulk' && !empty($search)) {
+            // ১. স্টুডেন্ট আইডি দিয়ে সরাসরি চেক
             $student = Student::with(['schoolClass', 'section', 'branch'])
-                              ->where('student_identity', $request->student_identity)
+                              ->where('student_identity', $search)
                               ->first();
+
+            // ২. আইডি না মিললে রোল নম্বর দিয়ে ফিল্টার চেক
+            if (!$student && is_numeric($search) && strlen($search) <= 5) {
+                $rollQuery = Student::with(['schoolClass', 'section', 'branch']);
+
+                if ($request->filled('branch_id')) {
+                    $rollQuery->where('branch_id', $request->branch_id);
+                }
+                if ($request->filled('session_year_id')) {
+                    $rollQuery->where('session_year_id', $request->session_year_id);
+                }
+                if ($request->filled('class_id')) {
+                    $rollQuery->where('class_id', $request->class_id);
+                }
+                if ($request->filled('section_id')) {
+                    $rollQuery->where('section_id', $request->section_id);
+                }
+
+                $rollQuery->where(function($q) use ($search) {
+                    $q->where('roll_number', $search)
+                      ->orWhere('roll_number', (string)(int)$search)
+                      ->orWhere('roll_number', sprintf('%02d', (int)$search));
+                });
+
+                $matchedRollStudents = $rollQuery->get();
+                if ($matchedRollStudents->count() === 1) {
+                    $student = $matchedRollStudents->first();
+                } elseif ($matchedRollStudents->count() > 1) {
+                    // একাধিক সেকশন থাকলে যে শিক্ষার্থীর বকেয়া আছে তাকে প্রাধান্য দেওয়া
+                    $withDues = $matchedRollStudents->filter(function($st) {
+                        return $st->invoices()->whereIn('status', ['Unpaid', 'Partial'])->exists();
+                    });
+                    if ($withDues->count() === 1) {
+                        $student = $withDues->first();
+                    }
+                }
+            }
+
+            // ৩. পূর্ণ মোবাইল নম্বর দিয়ে চেক
+            if (!$student && is_numeric($search) && strlen($search) >= 10) {
+                $mobileQuery = Student::with(['schoolClass', 'section', 'branch'])
+                    ->where('father_mobile', $search);
+                if ($mobileQuery->count() === 1) {
+                    $student = $mobileQuery->first();
+                }
+            }
+
+            // ৪. পূর্ণ নাম দিয়ে চেক
+            if (!$student && !is_numeric($search)) {
+                $nameQuery = Student::with(['schoolClass', 'section', 'branch'])
+                    ->where('student_name', $search);
+                if ($request->filled('class_id')) {
+                    $nameQuery->where('class_id', $request->class_id);
+                }
+                if ($nameQuery->count() === 1) {
+                    $student = $nameQuery->first();
+                }
+            }
 
             if ($student) {
                 // ১. স্টুডেন্টের আনপেইড বা আংশিক পেইড ইনভয়েসগুলো (বকেয়া)
@@ -56,8 +117,6 @@ class FeeCollectionController extends Controller
                     $parts = explode('-', $item->receipt_no);
                     return $parts[0] . '-' . $parts[1] . '-' . $parts[2]; // e.g. REC-20260405-9352
                 });
-            } else {
-                return redirect()->route('fees.collection.index')->with('error', 'No student found with this ID!');
             }
         }
 
@@ -103,17 +162,59 @@ class FeeCollectionController extends Controller
         }
 
         $dueStudents = collect();
-        if ($request->get('mode') !== 'bulk' && !$request->filled('student_identity')) {
-            $dueStudents = Student::with(['schoolClass', 'section', 'branch'])
+        if ($request->get('mode') !== 'bulk' && !$student) {
+            $query = Student::with(['schoolClass', 'section', 'branch'])
                 ->whereHas('invoices', function($q) {
                     $q->whereIn('status', ['Unpaid', 'Partial']);
                 })
                 ->withSum(['invoices as total_due' => function($q) {
                     $q->whereIn('status', ['Unpaid', 'Partial']);
-                }], 'due_amount')
-                ->latest('updated_at')
+                }], 'due_amount');
+
+            if ($request->filled('branch_id')) {
+                $query->where('branch_id', $request->branch_id);
+            }
+            if ($request->filled('session_year_id')) {
+                $query->where('session_year_id', $request->session_year_id);
+            }
+            if ($request->filled('class_id')) {
+                $query->where('class_id', $request->class_id);
+            }
+            if ($request->filled('section_id')) {
+                $query->where('section_id', $request->section_id);
+            }
+            if (!empty($search)) {
+                $isNumeric = is_numeric($search);
+                if ($isNumeric && strlen($search) <= 5) {
+                    // রোল নম্বর দিয়ে সার্চ করলে শুধু স্পেসিফিক রোল নম্বরটি ফিল্টার হবে
+                    $query->where(function($q) use ($search) {
+                        $q->where('roll_number', $search)
+                          ->orWhere('roll_number', (string)(int)$search)
+                          ->orWhere('roll_number', sprintf('%02d', (int)$search));
+                    });
+                } elseif ($isNumeric && strlen($search) >= 10) {
+                    // মোবাইল অথবা পূর্ণ আইডি
+                    $query->where(function($q) use ($search) {
+                        $q->where('student_identity', $search)
+                          ->orWhere('father_mobile', $search);
+                    });
+                } else {
+                    // টেক্সট অথবা আংশিক সার্চ
+                    $query->where(function($q) use ($search) {
+                        $q->where('student_identity', 'like', "%{$search}%")
+                          ->orWhere('student_name', 'like', "%{$search}%")
+                          ->orWhere('father_mobile', 'like', "%{$search}%");
+                    });
+                }
+            }
+
+            $dueStudents = $query->latest('updated_at')
                 ->paginate(10)
                 ->withQueryString();
+
+            if (!empty($search) && $dueStudents->total() === 0) {
+                session()->now('error', 'No student with outstanding dues found matching "' . $search . '"!');
+            }
         }
 
         // ভিউ ফাইল লোড করা

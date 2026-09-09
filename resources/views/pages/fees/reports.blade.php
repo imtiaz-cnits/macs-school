@@ -14,6 +14,167 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; animation: fadeIn 0.25s ease-in-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .print-only { display: none !important; }
+
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 8mm 10mm 8mm 10mm;
+        }
+        html, body {
+            background: #ffffff !important;
+            color: #0F1E2C !important;
+            font-family: 'Figtree', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 100% !important;
+        }
+        body * {
+            visibility: hidden;
+        }
+        #printableReportArea, #printableReportArea * {
+            visibility: visible;
+        }
+        #printableReportArea {
+            position: relative !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            min-height: calc(297mm - 16mm) !important;
+            display: block !important;
+            box-sizing: border-box !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: #ffffff !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .no-print, nav, aside, header, footer, .sidebar, .sidebar-container, .topbar, .admin-bar, .sidebar-overlay, #globalModal {
+            display: none !important;
+        }
+        .dashboard-layout, .main-content, .page-content {
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block !important;
+            width: 100% !important;
+            min-height: auto !important;
+            background: transparent !important;
+            border: none !important;
+        }
+        .print-only {
+            display: block !important;
+        }
+        .print-flex {
+            display: flex !important;
+        }
+        .tab-content {
+            display: none !important;
+        }
+        .tab-content.active {
+            display: block !important;
+        }
+        .print-top-section {
+            flex: 1 0 auto !important;
+            width: 100% !important;
+        }
+        /* Deep Table Border */
+        #printableReportArea table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            page-break-inside: auto !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            border: 1px solid #475569 !important;
+            border-radius: 0 !important;
+        }
+        #printableReportArea .table-container {
+            overflow: visible !important;
+            border: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        #printableReportArea .table-card-wrapper {
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+        }
+        /* Point 4: school er branding just 1st page e hobe porer page gulate table er header diye shuru hobe just */
+        #printableReportArea thead {
+            display: table-header-group !important;
+        }
+        #printableReportArea tbody {
+            display: table-row-group !important;
+        }
+        #printableReportArea tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        #printableReportArea th {
+            background-color: #008ED6 !important;
+            color: #ffffff !important;
+            font-size: 8.5px !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.3px !important;
+            padding: 5px 6px !important;
+            border: 1px solid #0072ad !important;
+            border-bottom: 1.5px solid #005a8c !important;
+            border-radius: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        #printableReportArea td {
+            border: 1px solid #475569 !important;
+            padding: 4.5px 6px !important;
+            font-size: 8.5px !important;
+            line-height: 1.25 !important;
+            color: #0F1E2C !important;
+        }
+        #printableReportArea tbody tr:nth-child(even) td {
+            background-color: #F8FAFC !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        #printableReportArea tbody tr:nth-child(odd) td {
+            background-color: #FFFFFF !important;
+        }
+        #printableReportArea tfoot {
+            display: table-row-group !important;
+            page-break-inside: avoid !important;
+        }
+        #printableReportArea tfoot tr {
+            background-color: #F1F5F9 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            font-weight: 800 !important;
+        }
+        #printableReportArea tfoot td {
+            padding: 5px 6px !important;
+            font-size: 8.5px !important;
+            border: 1px solid #475569 !important;
+        }
+        /* Point 2: signature area ta pager ekdom niche hobe, page er height always full hobe */
+        #printSigSpacer {
+            display: block !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        .print-signatures {
+            display: block !important;
+            width: 100% !important;
+            padding-top: 14px !important;
+            padding-bottom: 2px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+    }
 </style>
 @endpush
 
@@ -34,6 +195,18 @@
         </div>
 
         <div class="flex flex-wrap gap-3 w-full md:w-auto justify-start md:justify-end">
+            <!-- Export CSV Button -->
+            <button type="button" onclick="exportCurrentReport()" class="h-11 px-4 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-700 dark:text-gray-200 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95">
+                <svg class="w-4 h-4 text-themeGreen" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Export CSV
+            </button>
+
+            <!-- Print Report Button -->
+            <button type="button" onclick="window.print()" class="h-11 px-5 rounded-xl bg-gradient-to-r from-themeBlue to-themeGreen hover:opacity-95 text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Print Report
+            </button>
+
             <a href="{{ route('fees.payments.index') }}" class="h-11 px-4 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-700 dark:text-gray-200 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow-md">
                 <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 Receipts List
@@ -51,6 +224,9 @@
 
         $selectedClass = $classes->firstWhere('id', request('class_id'));
         $selectedClassName = $selectedClass ? $selectedClass->class_name : 'All Classes';
+
+        $macsLogoPath = public_path('img/macs_logo.jpeg');
+        $macsLogoSrc = file_exists($macsLogoPath) ? asset('img/macs_logo.jpeg') : (file_exists(public_path('img/logo.png')) ? asset('img/logo.png') : '');
     @endphp
 
     <!-- Filter Card (Rule 7 Dropdowns & Rule 10 DatePickers) -->
@@ -242,7 +418,7 @@
     </div>
 
     <!-- Aggregate Stats Dashboard Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 no-print">
         
         <!-- Total Collection Card -->
         <div class="bg-gradient-to-br from-themeGreen to-green-900 rounded-3xl p-6 shadow-lg text-white relative overflow-hidden flex flex-col justify-between">
@@ -305,7 +481,7 @@
 
     </div>
 
-    <!-- Segmented Tab Switcher -->
+    <!-- Segmented Tab Switcher & Quick Actions -->
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6 no-print">
         <div class="flex gap-2 p-1.5 bg-gray-50/70 dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-2xl w-fit">
             <button @click="activeTab = 'collection'" class="h-10 px-5 text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2" :class="activeTab === 'collection' ? 'bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black shadow-sm' : 'text-gray-500 dark:text-gray-450 font-bold hover:text-gray-900 dark:hover:text-white'">
@@ -318,21 +494,108 @@
             </button>
         </div>
 
-        <div class="text-xs font-bold text-gray-500 dark:text-gray-400 bg-white dark:bg-themeNavy px-4 py-2.5 rounded-2xl border border-gray-100 dark:border-white/[0.06] shadow-sm">
-            Filtered: <span class="text-themeBlue font-black">{{ $selectedClassName }}</span> • <span class="text-gray-700 dark:text-gray-200 font-black">{{ date('d M Y', strtotime($startDate)) }} to {{ date('d M Y', strtotime($endDate)) }}</span>
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="text-xs font-bold text-gray-500 dark:text-gray-400 bg-white dark:bg-themeNavy px-4 py-2.5 rounded-2xl border border-gray-100 dark:border-white/[0.06] shadow-sm">
+                Filtered: <span class="text-themeBlue font-black">{{ $selectedClassName }}</span> • <span class="text-gray-700 dark:text-gray-200 font-black">{{ date('d M Y', strtotime($startDate)) }} to {{ date('d M Y', strtotime($endDate)) }}</span>
+            </div>
+
+            <!-- Quick Table Action Buttons -->
+            <button type="button" onclick="exportCurrentReport()" title="Export active table to CSV" class="h-10 px-3 bg-white dark:bg-themeNavy hover:bg-gray-50 dark:hover:bg-themeDark/45 border border-gray-200 dark:border-white/[0.08] rounded-xl text-gray-700 dark:text-gray-200 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95">
+                <svg class="w-3.5 h-3.5 text-themeGreen" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Export
+            </button>
+            <button type="button" onclick="prepareAndPrint()" title="Print active report" class="h-10 px-3 bg-white dark:bg-themeNavy hover:bg-gray-50 dark:hover:bg-themeDark/45 border border-gray-200 dark:border-white/[0.08] rounded-xl text-gray-700 dark:text-gray-200 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95">
+                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Print
+            </button>
         </div>
     </div>
 
-    <!-- Data Tables Card -->
-    <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden mb-12">
-        
-        <!-- Collection History Tab -->
-        <div id="tab-collection" class="tab-content" :class="{ 'active': activeTab === 'collection' }">
-            <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-                <table class="w-full text-left border-collapse table">
-                    <thead>
-                        <tr class="!bg-transparent">
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] w-14 text-center">#</th>
+    <!-- Official Printable Report Area -->
+    <div id="printableReportArea">
+        <div class="print-top-section">
+            <!-- Official Printable Report Header (Point 4: 1st page only, Point 3: minimized gaps) -->
+            <div class="print-only mb-1.5">
+                <!-- Top Brand Accent Strip -->
+                <div style="height: 3px; background: linear-gradient(90deg, #008ED6, #009A49); border-radius: 2px; margin-bottom: 4px; -webkit-print-color-adjust: exact; print-color-adjust: exact;"></div>
+
+                <!-- Header: Logo (Left), School Info & Title (Center), Print Date (Right) -->
+                <table style="width: 100%; border-collapse: collapse; border: none !important; margin-bottom: 2px;">
+                    <tr style="border: none !important;">
+                        <!-- Left: MACS Logo -->
+                        <td style="width: 14%; text-align: left; vertical-align: middle; border: none !important; padding: 0 !important;">
+                            @if($macsLogoSrc)
+                                <img src="{{ $macsLogoSrc }}" style="width: 52px; height: 52px; object-fit: contain; border-radius: 50%; border: 1.5px solid #008ED6; padding: 2px;" alt="MACS Logo">
+                            @else
+                                <div style="width: 50px; height: 50px; border: 1.5px solid #008ED6; border-radius: 50%; text-align: center; line-height: 50px; font-weight: 900; color: #008ED6; font-size: 11px;">MACS</div>
+                            @endif
+                        </td>
+
+                        <!-- Center: School Details & Report Badge -->
+                        <td style="width: 72%; text-align: center; vertical-align: middle; border: none !important; padding: 0 !important;">
+                            <div style="font-size: 20px; font-weight: 900; color: #0F1E2C; letter-spacing: -0.3px; text-transform: uppercase; line-height: 1.1;">
+                                MACS School &amp; College
+                            </div>
+                            <div style="font-size: 8.5px; font-weight: 600; color: #475569; margin-top: 1px;">
+                                Jalalpur, Pabna Sadar, Pabna &bull; Bangladesh
+                            </div>
+                            <div style="font-size: 8px; font-weight: 500; color: #64748B; margin-top: 0.5px;">
+                                Hotline: 01896-220299, 01896-220300 &bull; Web: macs.edu.bd
+                            </div>
+                            <div style="margin-top: 3px;">
+                                <span style="display: inline-block; background-color: #008ED6; color: #ffffff; font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; padding: 2px 14px; border-radius: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact;" x-text="activeTab === 'collection' ? 'FEE COLLECTION HISTORY REPORT' : 'STUDENT DEFAULTERS & PENDING DUES REPORT'">
+                                    FEE COLLECTION HISTORY REPORT
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- Right: Print Metadata -->
+                        <td style="width: 14%; text-align: right; vertical-align: middle; border: none !important; padding: 0 !important;">
+                            <div style="font-size: 7.5px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.4px;">Date of Issue</div>
+                            <div style="font-size: 9.5px; font-weight: 800; font-family: monospace; color: #0F1E2C; margin-top: 1px;">{{ date('d M, Y') }}</div>
+                            <div style="font-size: 7.5px; font-weight: 600; color: #94A3B8;">{{ date('h:i A') }}</div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Filter Meta & Summary Highlights Card (Point 3: Gap minimized) -->
+                <div style="background-color: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 6px; padding: 3.5px 8px; margin-top: 2px; margin-bottom: 2px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #CBD5E1; padding-bottom: 2px; margin-bottom: 2px; font-size: 8px; font-weight: 700; color: #334155;">
+                        <div>
+                            Branch: <strong style="color: #008ED6;">{{ $selectedBranchName }}</strong>
+                            &nbsp;&bull;&nbsp; Class: <strong style="color: #008ED6;">{{ $selectedClassName }}</strong>
+                        </div>
+                        <div>
+                            Period: <strong style="color: #0F1E2C;">{{ date('d M Y', strtotime($startDate)) }} to {{ date('d M Y', strtotime($endDate)) }}</strong>
+                        </div>
+                    </div>
+
+                    <!-- Collection Stats -->
+                    <div x-show="activeTab === 'collection'" style="display: flex; justify-content: space-between; align-items: center; font-size: 8px; font-weight: 700; color: #334155;">
+                        <div>Total Receipts: <strong style="color: #0F1E2C; font-size: 9px;">{{ $totalCollectionCount }}</strong></div>
+                        <div>Paying Students: <strong style="color: #0F1E2C; font-size: 9px;">{{ $uniquePayingStudentsCount }}</strong></div>
+                        <div>Grand Total Collected: <strong style="color: #009A49; font-size: 10px; font-family: monospace; font-weight: 900;">৳ {{ number_format($totalCollected, 2) }}</strong></div>
+                    </div>
+
+                    <!-- Defaulters Stats -->
+                    <div x-show="activeTab === 'dues'" style="display: flex; justify-content: space-between; align-items: center; font-size: 8px; font-weight: 700; color: #334155;">
+                        <div>Defaulter Students: <strong style="color: #DC2626; font-size: 9px;">{{ $uniqueDefaulterStudentsCount }}</strong></div>
+                        <div>Unpaid Invoices: <strong style="color: #0F1E2C; font-size: 9px;">{{ $totalDueInvoicesCount }}</strong></div>
+                        <div>Grand Total Due: <strong style="color: #DC2626; font-size: 10px; font-family: monospace; font-weight: 900;">৳ {{ number_format($totalDue, 2) }}</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Tables Card (Point 3: Gap minimized, print:!mt-0 print:!mb-0) -->
+            <div class="table-card-wrapper bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden mb-12 print:!border-none print:!shadow-none print:!rounded-none print:!overflow-visible print:!bg-transparent print:!mb-0 print:!mt-0 print:!p-0">
+            
+            <!-- Collection History Tab -->
+            <div id="tab-collection" class="tab-content active" :class="{ 'active': activeTab === 'collection' }">
+                <div class="table-container bg-transparent !border-none !shadow-none print:!mt-0 !mt-2 !mb-0 overflow-x-auto">
+                    <table class="w-full text-left border-collapse table">
+                        <thead>
+                            <tr class="!bg-transparent">
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] w-14 text-center">#</th>
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Receipt & Date</th>
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Student Info</th>
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Class & Roll</th>
@@ -405,7 +668,7 @@
 
         <!-- Defaulters List Tab (Student-Wise with Total Due Months & Month Names) -->
         <div id="tab-dues" class="tab-content" :class="{ 'active': activeTab === 'dues' }">
-            <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
+            <div class="table-container bg-transparent !border-none !shadow-none print:!mt-0 !mt-2 !mb-0 overflow-x-auto">
                 <table class="w-full text-left border-collapse table">
                     <thead>
                         <tr class="!bg-transparent">
@@ -479,6 +742,40 @@
             </div>
         </div>
 
+    </div>
+    </div><!-- End .print-top-section -->
+
+        <!-- Dynamic spacer to push signatures to the absolute bottom of the final page -->
+        <div id="printSigSpacer" class="print-only" style="width: 100%; height: 0px;"></div>
+
+        <!-- Official Printable Signatures (Point 2: Pinned to bottom of full-height page) -->
+        <div class="print-only print-signatures">
+            <table style="width: 100%; border-collapse: collapse; border: none !important; margin-bottom: 2px;">
+                <tr style="border: none !important;">
+                    <td style="width: 33.33%; text-align: center; vertical-align: bottom; border: none !important; padding: 0 !important;">
+                        <span style="display: inline-block; width: 140px; border-top: 1.2px dashed #94A3B8; padding-top: 4px; font-size: 8.5px; font-weight: 700; color: #334155;">
+                            Prepared By
+                        </span>
+                    </td>
+                    <td style="width: 33.33%; text-align: center; vertical-align: bottom; border: none !important; padding: 0 !important;">
+                        <span style="display: inline-block; width: 140px; border-top: 1.2px dashed #94A3B8; padding-top: 4px; font-size: 8.5px; font-weight: 700; color: #334155;">
+                            Accounts Officer
+                        </span>
+                    </td>
+                    <td style="width: 33.33%; text-align: center; vertical-align: bottom; border: none !important; padding: 0 !important;">
+                        <span style="display: inline-block; width: 140px; border-top: 1.2px dashed #94A3B8; padding-top: 4px; font-size: 8.5px; font-weight: 700; color: #334155;">
+                            Principal / Head of School
+                        </span>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Subtle Brand Footer Line -->
+            <div style="margin-top: 6px; border-top: 1px solid #E2E8F0; padding-top: 3px; font-size: 7.5px; color: #94A3B8; display: flex; justify-content: space-between; align-items: center;">
+                <span>MACS School Management System &bull; Financial Reports</span>
+                <span>Generated: {{ date('d M, Y h:i A') }}</span>
+            </div>
+        </div>
     </div>
 </div>
 @endsection
@@ -588,5 +885,294 @@
             }
         };
     }
+
+    @php
+        $collectionExportData = $payments->map(function($pay, $index) {
+            $mName = 'One Time';
+            if ($pay->invoice && $pay->invoice->feeSetup) {
+                if ($pay->invoice->feeSetup->fee_month && !in_array(strtolower($pay->invoice->feeSetup->fee_month), ['monthly', 'one time', 'one_time'])) {
+                    $mName = $pay->invoice->feeSetup->fee_month;
+                } elseif ($pay->invoice->due_date) {
+                    $mName = date('F', strtotime($pay->invoice->due_date));
+                }
+            }
+            return [
+                'sl' => $index + 1,
+                'receipt_no' => $pay->receipt_no ?? 'N/A',
+                'date' => date('d M Y, h:i A', strtotime($pay->payment_date ?? $pay->created_at)),
+                'student_name' => $pay->student->student_name ?? 'N/A',
+                'student_id' => $pay->student->student_identity ?? 'N/A',
+                'class' => $pay->student->schoolClass->class_name ?? 'N/A',
+                'roll' => $pay->student->roll_number ?? 'N/A',
+                'category' => $pay->invoice->feeSetup->category->name ?? 'Fee',
+                'month' => $mName,
+                'method' => $pay->payment_method ?? 'Cash',
+                'amount' => (float)$pay->paid_amount,
+            ];
+        });
+
+        $defaultersExportData = $defaulters->map(function($def, $index) {
+            return [
+                'sl' => $index + 1,
+                'student_name' => $def->student->student_name ?? 'N/A',
+                'student_id' => $def->student->student_identity ?? 'N/A',
+                'phone' => $def->student->phone ?? 'N/A',
+                'class' => $def->student->schoolClass->class_name ?? 'N/A',
+                'roll' => $def->student->roll_number ?? 'N/A',
+                'due_months_count' => $def->due_months_count,
+                'due_months' => $def->due_months->join(', '),
+                'categories' => $def->categories->join(', '),
+                'total_invoices' => $def->total_invoices,
+                'total_due' => (float)$def->total_due,
+            ];
+        });
+    @endphp
+
+    // Financial Reports CSV Export Handler
+    function exportCurrentReport() {
+        const tabCollection = document.getElementById('tab-collection');
+        const activeTab = (tabCollection && tabCollection.classList.contains('active')) ? 'collection' : 'dues';
+        const branchName = '{{ addslashes($selectedBranchName) }}';
+        const className = '{{ addslashes($selectedClassName) }}';
+        const startDate = '{{ $startDate }}';
+        const endDate = '{{ $endDate }}';
+
+        let csvRows = [];
+
+        if (activeTab === 'collection') {
+            const data = @json($collectionExportData);
+            
+            // Header comments / meta
+            csvRows.push(['MACS SCHOOL - FEE COLLECTION HISTORY REPORT']);
+            csvRows.push([`Branch: ${branchName}`, `Class: ${className}`, `Date Range: ${startDate} to ${endDate}`, `Generated: ${new Date().toLocaleString()}`]);
+            csvRows.push([]); // blank line
+
+            // Table headers
+            csvRows.push(['#', 'Receipt No', 'Payment Date', 'Student Name', 'Student ID', 'Class', 'Roll', 'Fee Category', 'Fee Month', 'Payment Method', 'Paid Amount (BDT)']);
+
+            // Data rows
+            data.forEach(item => {
+                csvRows.push([
+                    item.sl,
+                    item.receipt_no,
+                    item.date,
+                    item.student_name,
+                    item.student_id,
+                    item.class,
+                    item.roll,
+                    item.category,
+                    item.month,
+                    item.method,
+                    item.amount.toFixed(2)
+                ]);
+            });
+
+            // Summary row
+            csvRows.push([]);
+            csvRows.push(['', '', '', '', '', '', '', '', 'Total Collection Summary:', '{{ $totalCollectionCount }} Receipts, {{ $uniquePayingStudentsCount }} Students', '{{ number_format($totalCollected, 2, '.', '') }}']);
+
+            downloadCSV(csvRows, `Fee_Collection_Report_${className.replace(/\s+/g, '_')}_${startDate}_to_${endDate}.csv`);
+        } else {
+            const data = @json($defaultersExportData);
+
+            // Header comments / meta
+            csvRows.push(['MACS SCHOOL - STUDENT DEFAULTERS & PENDING DUES REPORT']);
+            csvRows.push([`Branch: ${branchName}`, `Class: ${className}`, `Date Range: ${startDate} to ${endDate}`, `Generated: ${new Date().toLocaleString()}`]);
+            csvRows.push([]); // blank line
+
+            // Table headers
+            csvRows.push(['#', 'Student Name', 'Student ID', 'Phone', 'Class', 'Roll', 'Due Months Count', 'Due Months', 'Fee Categories', 'Unpaid Invoices', 'Total Due (BDT)']);
+
+            // Data rows
+            data.forEach(item => {
+                csvRows.push([
+                    item.sl,
+                    item.student_name,
+                    item.student_id,
+                    item.phone,
+                    item.class,
+                    item.roll,
+                    item.due_months_count,
+                    item.due_months,
+                    item.categories,
+                    item.total_invoices,
+                    item.total_due.toFixed(2)
+                ]);
+            });
+
+            // Summary row
+            csvRows.push([]);
+            csvRows.push(['', '', '', '', '', '', '', '', 'Grand Total Due:', '{{ $uniqueDefaulterStudentsCount }} Students, {{ $totalDueInvoicesCount }} Invoices', '{{ number_format($totalDue, 2, '.', '') }}']);
+
+            downloadCSV(csvRows, `Fee_Defaulters_Report_${className.replace(/\s+/g, '_')}_${startDate}_to_${endDate}.csv`);
+        }
+    }
+
+    function downloadCSV(rows, filename) {
+        const csvContent = '\uFEFF' + rows.map(e => e.map(val => {
+            if (val === null || val === undefined) return '""';
+            let str = String(val).replace(/"/g, '""');
+            return `"${str}"`;
+        }).join(',')).join('\r\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        if (navigator.msSaveBlob) {
+            navigator.msSaveBlob(blob, filename);
+        } else {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+    }
+
+    // Dynamic spacer calculation to guarantee signatures sit at the very bottom of the final page
+    function adjustPrintSignatures() {
+        const printable = document.getElementById('printableReportArea');
+        if (!printable) return;
+
+        // 1. Create a measurement sandbox with exact print styling and 190mm A4 printable width
+        const sandbox = document.createElement('div');
+        sandbox.id = 'print-measure-sandbox';
+        sandbox.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 190mm; visibility: hidden; pointer-events: none; background: #fff; font-family: Figtree, Inter, sans-serif;';
+
+        const style = document.createElement('style');
+        style.textContent = `
+            #print-measure-sandbox * { box-sizing: border-box; }
+            #print-measure-sandbox table { width: 100% !important; border-collapse: collapse !important; border: 1px solid #475569 !important; }
+            #print-measure-sandbox th { background-color: #008ED6 !important; color: #fff !important; font-size: 8.5px !important; font-weight: 800 !important; text-transform: uppercase !important; padding: 5px 6px !important; border: 1px solid #0072ad !important; }
+            #print-measure-sandbox td { border: 1px solid #475569 !important; padding: 4.5px 6px !important; font-size: 8.5px !important; line-height: 1.25 !important; color: #0F1E2C !important; }
+            #print-measure-sandbox tfoot td { padding: 5px 6px !important; font-size: 8.5px !important; font-weight: 800 !important; }
+            #print-measure-sandbox .print-signatures { width: 100% !important; padding-top: 14px !important; padding-bottom: 2px !important; }
+            #print-measure-sandbox .print-only { display: block !important; }
+        `;
+        sandbox.appendChild(style);
+
+        // Printable A4 page height (297mm - 16mm margin = 281mm = 1062px)
+        const pageH = Math.round(281 * (96 / 25.4));
+
+        // Header branding (Page 1 only)
+        const headerBrand = printable.querySelector('.print-top-section > div.print-only');
+        let headerH = 0;
+        if (headerBrand) {
+            const headerClone = headerBrand.cloneNode(true);
+            headerClone.style.display = 'block';
+            sandbox.appendChild(headerClone);
+            document.body.appendChild(sandbox);
+            headerH = headerClone.offsetHeight;
+            sandbox.removeChild(headerClone);
+        }
+
+        // Determine active tab table
+        let activeTabName = 'collection';
+        const alpineEl = document.querySelector('[x-data]');
+        if (window.Alpine && alpineEl && Alpine.$data(alpineEl)) {
+            activeTabName = Alpine.$data(alpineEl).activeTab;
+        } else {
+            const tabDues = document.getElementById('tab-dues');
+            if (tabDues && (tabDues.classList.contains('active') || tabDues.offsetParent !== null)) {
+                activeTabName = 'dues';
+            }
+        }
+        const activeTable = document.querySelector(`#tab-${activeTabName} table`) || printable.querySelector('table');
+        if (!activeTable) {
+            if (sandbox.parentNode) document.body.removeChild(sandbox);
+            return;
+        }
+
+        // Clone active table into sandbox to measure rows accurately at 190mm width
+        const tableClone = activeTable.cloneNode(true);
+        sandbox.appendChild(tableClone);
+        if (!sandbox.parentNode) document.body.appendChild(sandbox);
+
+        const theadClone = tableClone.querySelector('thead');
+        const theadH = theadClone ? theadClone.offsetHeight : 25;
+
+        const tfootClone = tableClone.querySelector('tfoot');
+        const tfootH = tfootClone ? tfootClone.offsetHeight : 0;
+
+        // Measure signature block
+        const sigElem = printable.querySelector('.print-signatures');
+        let sigH = 75;
+        if (sigElem) {
+            const sigClone = sigElem.cloneNode(true);
+            sigClone.style.display = 'block';
+            sandbox.appendChild(sigClone);
+            sigH = sigClone.offsetHeight;
+            sandbox.removeChild(sigClone);
+        }
+
+        // Simulate page breaks
+        let curPage = 1;
+        let curH = headerH + theadH;
+
+        const rows = tableClone.querySelectorAll('tbody tr');
+        rows.forEach((row) => {
+            const rH = row.offsetHeight;
+            if (curH + rH > pageH) {
+                curPage++;
+                curH = theadH + rH; // Page 2+ repeats thead!
+            } else {
+                curH += rH;
+            }
+        });
+
+        if (tfootH > 0) {
+            if (curH + tfootH > pageH) {
+                curPage++;
+                curH = theadH + tfootH;
+            } else {
+                curH += tfootH;
+            }
+        }
+
+        // Clean up sandbox
+        if (sandbox.parentNode) document.body.removeChild(sandbox);
+
+        // Calculate remaining space on the last page
+        let spacerH = 0;
+        let breakBefore = false;
+        const safetyBuffer = 20;
+
+        if (curH + sigH + safetyBuffer <= pageH) {
+            spacerH = pageH - curH - sigH - safetyBuffer;
+        } else {
+            // Signatures overflow to next page, pin to bottom of that new page
+            breakBefore = true;
+            curPage++;
+            spacerH = pageH - sigH - safetyBuffer;
+        }
+
+        const spacer = document.getElementById('printSigSpacer');
+        if (spacer) {
+            spacer.style.height = Math.max(0, Math.floor(spacerH)) + 'px';
+            if (breakBefore) {
+                spacer.style.breakBefore = 'page';
+                spacer.style.pageBreakBefore = 'always';
+            } else {
+                spacer.style.breakBefore = 'auto';
+                spacer.style.pageBreakBefore = 'auto';
+            }
+        }
+    }
+
+    function prepareAndPrint() {
+        adjustPrintSignatures();
+        window.print();
+    }
+
+    window.addEventListener('beforeprint', adjustPrintSignatures);
+    window.addEventListener('afterprint', () => {
+        const spacer = document.getElementById('printSigSpacer');
+        if (spacer) {
+            spacer.style.height = '0px';
+            spacer.style.breakBefore = 'auto';
+            spacer.style.pageBreakBefore = 'auto';
+        }
+    });
 </script>
 @endpush

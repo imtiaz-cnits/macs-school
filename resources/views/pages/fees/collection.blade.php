@@ -62,13 +62,138 @@
         </a>
     </div>
 
-    <!-- Search System under title/tab area (Rule 2 & 4 compliance) -->
+    <!-- Filter Criteria & Student Search (Single Collection) -->
     @if(request('mode', 'single') === 'single')
-        <div class="mb-8 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm no-print">
-            <form action="{{ route('fees.collection.index') }}" method="GET" class="w-full flex flex-col sm:flex-row gap-3" @submit="window.dispatchEvent(new CustomEvent('trigger-loader'))">
+        <div class="mb-8 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 no-print" x-data="singleCollectionFilter()">
+            <form action="{{ route('fees.collection.index') }}" method="GET" @submit="window.dispatchEvent(new CustomEvent('trigger-loader'))">
                 <input type="hidden" name="mode" value="single">
-                <input type="text" name="student_identity" value="{{ request('student_identity') }}" placeholder="Enter Student ID (e.g. PIS-...)" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-mono uppercase text-gray-700 dark:text-gray-250 px-3 placeholder-gray-450" required>
-                <button type="submit" class="h-11 px-8 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center gap-2 whitespace-nowrap active:scale-95">Search Student</button>
+                <input type="hidden" name="branch_id" :value="form.branch_id">
+                <input type="hidden" name="session_year_id" :value="form.session_year_id">
+                <input type="hidden" name="class_id" :value="form.class_id">
+                <input type="hidden" name="section_id" :value="form.section_id">
+
+                <!-- Row 1: Dropdown Filters -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <!-- Branch Dropdown -->
+                    <div class="relative" @click.away="if(activeDropdown === 'branch') activeDropdown = null">
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Branch</label>
+                        <button type="button" @click="activeDropdown = activeDropdown === 'branch' ? null : 'branch'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                            <span class="truncate" x-text="branchText"></span>
+                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="activeDropdown === 'branch'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                            <button type="button" @click="selectBranch('', 'All Branches')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.branch_id === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                <span>All Branches</span>
+                                <template x-if="form.branch_id === ''">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                            @foreach($branches as $branch)
+                                <button type="button" @click="selectBranch('{{ $branch->id }}', '{{ $branch->branch_name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.branch_id == '{{ $branch->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                    <span>{{ $branch->branch_name }}</span>
+                                    <template x-if="form.branch_id == '{{ $branch->id }}'">
+                                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    </template>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Session Dropdown -->
+                    <div class="relative" @click.away="if(activeDropdown === 'session') activeDropdown = null">
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Academic Session</label>
+                        <button type="button" @click="activeDropdown = activeDropdown === 'session' ? null : 'session'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                            <span class="truncate" x-text="sessionText"></span>
+                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="activeDropdown === 'session'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                            <button type="button" @click="selectSession('', 'All Sessions')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.session_year_id === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                <span>All Sessions</span>
+                                <template x-if="form.session_year_id === ''">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                            @foreach($sessions as $session)
+                                <button type="button" @click="selectSession('{{ $session->id }}', '{{ $session->session_name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.session_year_id == '{{ $session->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                    <span>{{ $session->session_name }}</span>
+                                    <template x-if="form.session_year_id == '{{ $session->id }}'">
+                                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    </template>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Class Dropdown -->
+                    <div class="relative" @click.away="if(activeDropdown === 'class') activeDropdown = null">
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Class</label>
+                        <button type="button" @click="activeDropdown = activeDropdown === 'class' ? null : 'class'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                            <span class="truncate" x-text="classText"></span>
+                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="activeDropdown === 'class'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                            <button type="button" @click="selectClass('', 'All Classes')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.class_id === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                <span>All Classes</span>
+                                <template x-if="form.class_id === ''">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                            @foreach($classes as $class)
+                                <button type="button" @click="selectClass('{{ $class->id }}', '{{ $class->class_name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.class_id == '{{ $class->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                    <span>{{ $class->class_name }}</span>
+                                    <template x-if="form.class_id == '{{ $class->id }}'">
+                                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    </template>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Section Dropdown -->
+                    <div class="relative" @click.away="if(activeDropdown === 'section') activeDropdown = null">
+                        <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Section</label>
+                        <button type="button" @click="activeDropdown = activeDropdown === 'section' ? null : 'section'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                            <span class="truncate" x-text="sectionText"></span>
+                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="activeDropdown === 'section'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                            <button type="button" @click="selectSection('', 'All Sections')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.section_id === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                <span>All Sections</span>
+                                <template x-if="form.section_id === ''">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                            @foreach($sections as $sec)
+                                <button type="button" @click="selectSection('{{ $sec->id }}', '{{ $sec->section_name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.section_id == '{{ $sec->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                    <span>{{ $sec->section_name }}</span>
+                                    <template x-if="form.section_id == '{{ $sec->id }}'">
+                                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    </template>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Search Input & Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-3 items-center">
+                    <div class="relative w-full flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                        <input type="text" name="student_identity" value="{{ request('student_identity', request('search', '')) }}" placeholder="Enter Student ID (e.g. PIS-...) or Search by Name / Roll / Mobile..." class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-xs font-semibold text-gray-700 dark:text-gray-250 pl-10 pr-3 placeholder-gray-400">
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button type="submit" class="flex-1 sm:flex-none h-11 px-7 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center gap-2 whitespace-nowrap active:scale-95">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <span>Search / Filter</span>
+                        </button>
+                        <a href="{{ route('fees.collection.index', ['mode' => 'single']) }}" class="flex-1 sm:flex-none h-11 px-5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-600 dark:text-gray-300 text-xs font-black rounded-xl transition-all uppercase tracking-wider active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span>Reset</span>
+                        </a>
+                    </div>
+                </div>
             </form>
         </div>
     @endif
@@ -104,6 +229,13 @@
         <!-- Single Mode View -->
         @if(request('mode', 'single') === 'single')
         @if($student)
+        <div class="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <a href="{{ route('fees.collection.index', array_merge(request()->except(['student_identity', 'search']), ['mode' => 'single'])) }}" class="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-themeBlue hover:text-themeGreen active:scale-95 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Back to Outstanding Dues Directory</span>
+            </a>
+            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Active Student: <strong class="text-gray-900 dark:text-white font-black">{{ $student->student_name }}</strong> ({{ $student->student_identity }})</span>
+        </div>
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             
             <!-- Student Info Sidebar Panel -->
@@ -131,11 +263,60 @@
                 <form action="{{ route('fees.collection.bulk_store') }}" method="POST" id="bulkPaymentForm">
                     @csrf
                     <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden relative">
-                        <div class="p-6 border-b border-gray-100 dark:border-white/[0.05]">
+                        <div class="p-6 border-b border-gray-100 dark:border-white/[0.05] flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                             <h3 class="text-sm font-black text-red-655 dark:text-red-400 uppercase tracking-wider flex items-center">
                                 <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 Pending Dues
                             </h3>
+                            
+                            <!-- Important Financial Summary Badges -->
+                            <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                                @php
+                                    $pendingInvoicesCount = $invoices->count();
+                                    $totalNetBill = $invoices->sum('net_amount');
+                                    $totalDueAmount = $invoices->sum('due_amount');
+                                    $totalDiscount = $invoices->sum('discount');
+                                    $totalLifetimePaid = $paymentHistory->flatten()->sum('paid_amount');
+                                @endphp
+
+                                <!-- Dynamic Selected Amount (shown when checkboxes are checked) -->
+                                <div id="headerSelectedPill" class="hidden px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-themeBlue to-indigo-600 text-white shadow-md shadow-themeBlue/20 text-xs font-black flex items-center gap-1.5 transition-all">
+                                    <span class="text-[10px] font-black uppercase tracking-wider opacity-90">Selected:</span>
+                                    <span class="font-mono text-xs font-black">৳ <span id="headerSelectedDisplay">0.00</span></span>
+                                </div>
+
+                                <!-- Invoices Count -->
+                                <div class="px-3 py-1.5 rounded-xl bg-gray-50/80 dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+                                    <span class="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">Invoices:</span>
+                                    <span class="font-black text-gray-800 dark:text-gray-200">{{ $pendingInvoicesCount }}</span>
+                                </div>
+
+                                <!-- Total Bill -->
+                                <div class="px-3 py-1.5 rounded-xl bg-gray-50/80 dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+                                    <span class="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">Total Bill:</span>
+                                    <span class="font-black font-mono text-gray-900 dark:text-white">৳ {{ number_format($totalNetBill, 2) }}</span>
+                                </div>
+
+                                @if($totalDiscount > 0)
+                                <!-- Total Discount -->
+                                <div class="px-3 py-1.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 text-xs font-semibold flex items-center gap-1.5 shadow-sm text-amber-700 dark:text-amber-400">
+                                    <span class="text-[10px] font-black uppercase tracking-wider opacity-80">Discount:</span>
+                                    <span class="font-black font-mono">৳ {{ number_format($totalDiscount, 2) }}</span>
+                                </div>
+                                @endif
+
+                                <!-- Total Paid (Lifetime) -->
+                                <div class="px-3 py-1.5 rounded-xl bg-green-50/70 dark:bg-themeGreen/10 border border-green-200/60 dark:border-green-800/40 text-xs font-semibold flex items-center gap-1.5 shadow-sm text-themeGreen">
+                                    <span class="text-[10px] font-black uppercase tracking-wider opacity-80">Total Paid:</span>
+                                    <span class="font-black font-mono">৳ {{ number_format($totalLifetimePaid, 2) }}</span>
+                                </div>
+
+                                <!-- Total Pending Due (Prominent Red Badge) -->
+                                <div class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-500/20 text-xs font-black flex items-center gap-1.5">
+                                    <span class="uppercase tracking-wider text-[10px] opacity-90">Total Due:</span>
+                                    <span class="font-mono text-xs sm:text-sm font-black tracking-tight">৳ {{ number_format($totalDueAmount, 2) }}</span>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
@@ -295,19 +476,13 @@
                 </div>
 
             </div>
-        </div>
-        @elseif(request()->filled('student_identity'))
-            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl py-20 text-center shadow-sm">
-                <svg class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                <h3 class="text-sm font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Student not found matching ID: "{{ request('student_identity') }}"</h3>
-            </div>
         @else
             <!-- Directory of Outstanding Dues Students (instead of blank screen) -->
             <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden relative">
                 <div class="p-6 border-b border-gray-100 dark:border-white/[0.05] flex justify-between items-center">
                     <h3 class="text-sm font-black text-themeBlue uppercase tracking-wider flex items-center">
                         <svg class="w-5 h-5 mr-2 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        Outstanding Dues Student Directory (বকেয়া ফি শিক্ষার্থী তালিকা)
+                        Outstanding Dues Student Directory
                     </h3>
                     <div class="text-xs font-bold text-gray-550 bg-gray-50 dark:bg-themeDark px-4 py-2 rounded-xl border border-gray-100 dark:border-gray-800">
                         Total Due Students: <span class="text-themeBlue font-black">{{ $dueStudents->total() }}</span>
@@ -840,6 +1015,8 @@
         const selectAll = document.getElementById('selectAllDues');
         const bulkBar = document.getElementById('bulkPaymentBar');
         const bulkTotal = document.getElementById('bulkTotalDisplay');
+        const headerSelectedPill = document.getElementById('headerSelectedPill');
+        const headerSelectedDisplay = document.getElementById('headerSelectedDisplay');
 
         function calculateTotal() {
             let total = 0;
@@ -855,12 +1032,24 @@
             if (bulkTotal) {
                 bulkTotal.innerText = total.toFixed(2);
             }
+
+            if (headerSelectedDisplay) {
+                headerSelectedDisplay.innerText = total.toFixed(2);
+            }
             
             if(bulkBar) {
                 if(checkedCount > 0) {
                     bulkBar.classList.remove('hidden');
                 } else {
                     bulkBar.classList.add('hidden');
+                }
+            }
+
+            if (headerSelectedPill) {
+                if (checkedCount > 0) {
+                    headerSelectedPill.classList.remove('hidden');
+                } else {
+                    headerSelectedPill.classList.add('hidden');
                 }
             }
             
@@ -925,6 +1114,44 @@
             };
         }
     });
+
+    function singleCollectionFilter() {
+        return {
+            activeDropdown: null,
+            branchText: '{{ request('branch_id') ? ($branches->firstWhere('id', request('branch_id'))->branch_name ?? 'All Branches') : 'All Branches' }}',
+            sessionText: '{{ request('session_year_id') ? ($sessions->firstWhere('id', request('session_year_id'))->session_name ?? 'All Sessions') : 'All Sessions' }}',
+            classText: '{{ request('class_id') ? ($classes->firstWhere('id', request('class_id'))->class_name ?? 'All Classes') : 'All Classes' }}',
+            sectionText: '{{ request('section_id') ? ($sections->firstWhere('id', request('section_id'))->section_name ?? 'All Sections') : 'All Sections' }}',
+            
+            form: {
+                branch_id: '{{ request('branch_id', '') }}',
+                session_year_id: '{{ request('session_year_id', '') }}',
+                class_id: '{{ request('class_id', '') }}',
+                section_id: '{{ request('section_id', '') }}'
+            },
+            
+            selectBranch(id, name) {
+                this.form.branch_id = id;
+                this.branchText = name;
+                this.activeDropdown = null;
+            },
+            selectSession(id, name) {
+                this.form.session_year_id = id;
+                this.sessionText = name;
+                this.activeDropdown = null;
+            },
+            selectClass(id, name) {
+                this.form.class_id = id;
+                this.classText = name;
+                this.activeDropdown = null;
+            },
+            selectSection(id, name) {
+                this.form.section_id = id;
+                this.sectionText = name;
+                this.activeDropdown = null;
+            }
+        };
+    }
 
     function bulkCollectionSetup() {
         return {
