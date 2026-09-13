@@ -279,6 +279,7 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
 
     // সার্টিফিকেট ম্যানেজমেন্ট রাউটস
     Route::get('/certificates', [App\Http\Controllers\CertificateController::class, 'index'])->name('certificates.index');
+    Route::get('/ajax/certificates/students', [App\Http\Controllers\CertificateController::class, 'getStudents'])->name('certificates.students');
     Route::post('/certificates/generate', [App\Http\Controllers\CertificateController::class, 'generate'])->name('certificates.generate');
 
     // Exam Routes
