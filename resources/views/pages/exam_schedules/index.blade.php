@@ -9,6 +9,19 @@
     .table th, .table td {
         padding: 0.875rem 1rem !important;
     }
+    /* Dynamic table row counter that adjusts when rows are hidden by x-show */
+    .schedule-table-body {
+        counter-reset: schedule-counter;
+    }
+    .schedule-table-row {
+        counter-increment: schedule-counter;
+    }
+    .schedule-table-row[style*="display: none"] {
+        counter-increment: none;
+    }
+    .schedule-index::before {
+        content: counter(schedule-counter);
+    }
 </style>
 @endpush
 
@@ -173,7 +186,52 @@
 
     <!-- List Section -->
     <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm">
-        <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-4 mb-6">Configured Subjects List</h3>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-white/[0.06] pb-4 mb-6">
+            <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-widest">Configured Subjects List</h3>
+            
+            <!-- Small Class Filter Dropdown -->
+            <div class="relative w-48 sm:w-52" @click.away="if(activeDropdown === 'list_class_filter') activeDropdown = null">
+                <button type="button" 
+                        @click="activeDropdown = activeDropdown === 'list_class_filter' ? null : 'list_class_filter'" 
+                        class="w-full h-10 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                    <span class="flex items-center gap-2 truncate">
+                        <svg class="w-3.5 h-3.5 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                        </svg>
+                        <span class="truncate" x-text="filterClassId === 'all' ? 'All Classes' : 'Class: ' + filterClassText"></span>
+                    </span>
+                    <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-transform duration-200" :class="activeDropdown === 'list_class_filter' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
+                <div x-show="activeDropdown === 'list_class_filter'" 
+                     x-cloak 
+                     class="absolute right-0 z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" 
+                     x-transition>
+                    <button type="button" 
+                            @click="selectFilterClass('all', 'All Classes')" 
+                            class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" 
+                            :class="filterClassId === 'all' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                        <span>All Classes</span>
+                        <template x-if="filterClassId === 'all'">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                    @foreach($classes as $class)
+                        <button type="button" 
+                                @click="selectFilterClass('{{ $class->id }}', '{{ $class->class_name }}')" 
+                                class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" 
+                                :class="filterClassId == '{{ $class->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>{{ $class->class_name }}</span>
+                            <template x-if="filterClassId == '{{ $class->id }}'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+        </div>
         
         <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
             <table class="w-full text-left border-collapse table">
@@ -187,13 +245,16 @@
                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-24">Action</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06]">
+                <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06] schedule-table-body">
                     @forelse($schedules as $index => $schedule)
                     @php
                         $isTen = $schedule->classes && strtolower($schedule->classes->class_name) === 'ten';
                     @endphp
-                    <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
-                        <td class="py-0 px-0 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm">{{ $index + 1 }}</td>
+                    <tr x-show="filterClassId === 'all' || filterClassId == '{{ $schedule->class_id }}'"
+                        class="schedule-table-row hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                        <td class="py-0 px-0 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm">
+                            <span class="schedule-index"></span>
+                        </td>
                         <td class="py-0 px-0">
                             <div class="text-sm font-bold text-gray-900 dark:text-gray-100">Class: {{ $schedule->classes->class_name ?? 'N/A' }}</div>
                             @if($schedule->branch)
@@ -242,6 +303,14 @@
                         <td colspan="6" class="py-12 text-center text-gray-400 font-bold uppercase tracking-wider">No configured subjects found. Set up one above!</td>
                     </tr>
                     @endforelse
+
+                    @if($schedules->isNotEmpty())
+                    <tr x-show="!hasFilteredSchedules" x-cloak>
+                        <td colspan="6" class="py-12 text-center text-gray-400 font-bold uppercase tracking-wider text-xs">
+                            No configured subjects found for <span x-text="filterClassText" class="text-themeBlue"></span>.
+                        </td>
+                    </tr>
+                    @endif
                 </tbody>
             </table>
         </div>
@@ -257,6 +326,8 @@
             branchText: 'Choose Branch',
             classText: 'Choose Class',
             subjectText: 'Choose Subject',
+            filterClassId: 'all',
+            filterClassText: 'All Classes',
             
             form: {
                 branch_id: '',
@@ -270,6 +341,18 @@
             },
 
             allSubjects: @json($subjects),
+
+            get hasFilteredSchedules() {
+                if (this.filterClassId === 'all') return {{ count($schedules) }} > 0;
+                const scheduleClassIds = @json($schedules->pluck('class_id'));
+                return scheduleClassIds.some(id => id == this.filterClassId);
+            },
+
+            selectFilterClass(id, name) {
+                this.filterClassId = id;
+                this.filterClassText = name;
+                this.activeDropdown = null;
+            },
 
             get isClassTen() {
                 const name = this.classText.trim().toLowerCase();

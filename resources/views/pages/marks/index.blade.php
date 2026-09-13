@@ -31,6 +31,7 @@
             if(!form.branch_id) { event.preventDefault(); showAlert('Please select Branch!', 'Validation'); return; }
             if(!form.exam_id) { event.preventDefault(); showAlert('Please select Exam!', 'Validation'); return; }
             if(!form.class_id) { event.preventDefault(); showAlert('Please select Class!', 'Validation'); return; }
+            if(hasMultipleSections && !form.section_id) { event.preventDefault(); showAlert('Please select Section!', 'Validation'); return; }
             if(!form.subject_id) { event.preventDefault(); showAlert('Please select Subject!', 'Validation'); return; }
         ">
             
@@ -38,9 +39,10 @@
             <input type="hidden" name="branch_id" :value="form.branch_id">
             <input type="hidden" name="exam_id" :value="form.exam_id">
             <input type="hidden" name="class_id" :value="form.class_id">
+            <input type="hidden" name="section_id" :value="form.section_id">
             <input type="hidden" name="subject_id" :value="form.subject_id">
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 transition-all duration-300" :class="hasMultipleSections ? 'lg:grid-cols-4' : 'lg:grid-cols-3'">
                 <!-- Branch Dropdown -->
                 <div class="relative" @click.away="if(activeDropdown === 'branch') activeDropdown = null">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Select Branch *</label>
@@ -95,6 +97,25 @@
                                 </template>
                             </button>
                         @endforeach
+                    </div>
+                </div>
+
+                <!-- Section Dropdown (Auto-appears when class has multiple sections) -->
+                <div x-show="hasMultipleSections" x-cloak x-transition class="relative" @click.away="if(activeDropdown === 'section') activeDropdown = null">
+                    <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Select Section *</label>
+                    <button type="button" @click="activeDropdown = activeDropdown === 'section' ? null : 'section'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span class="truncate" x-text="sectionText"></span>
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="activeDropdown === 'section'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                        <template x-for="sec in availableSections" :key="sec.id">
+                            <button type="button" @click="selectSection(sec.id, sec.section_name)" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.section_id == sec.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                <span x-text="sec.section_name"></span>
+                                <template x-if="form.section_id == sec.id">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -231,7 +252,8 @@
                 <table class="w-full text-left border-collapse table">
                     <thead>
                         <tr class="!bg-transparent">
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">ID / Roll</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center w-16">Roll</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center">Student ID</th>
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Student Name</th>
                             @if($isClassTen)
                                 <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black {{ $col1Disabled ? 'text-gray-400/70 dark:text-gray-500' : 'text-purple-600 dark:text-purple-400' }} uppercase tracking-[0.2em] text-center">
@@ -262,6 +284,7 @@
                     <tbody>
                         @forelse($students as $student)
                         <tr data-student-id="{{ $student->id }}" class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
+                            <td class="py-3.5 px-4 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm">{{ $student->roll_number ?? '—' }}</td>
                             <td class="py-3.5 px-4 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm">{{ $student->student_identity ?? $student->id }}</td>
                             <td class="py-3.5 px-4 text-sm font-bold text-gray-900 dark:text-gray-100">{{ $student->student_name ?? 'Unknown' }}</td>
                             
@@ -340,7 +363,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="p-8 text-center text-sm font-bold text-gray-400">No students found for this specific Branch & Session.</td>
+                            <td colspan="9" class="p-8 text-center text-sm font-bold text-gray-400">No students found for this specific Branch & Session.</td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -361,6 +384,7 @@
             branchText: '{{ $branches->firstWhere("id", request("branch_id"))->branch_name ?? "Select Branch" }}',
             examText: '{{ $exams->firstWhere("id", request("exam_id"))->name ?? "Select Exam" }}',
             classText: '{{ $classes->firstWhere("id", request("class_id"))->class_name ?? "Select Class" }}',
+            sectionText: '{{ request("section_id") && $sections->firstWhere("id", request("section_id")) ? $sections->firstWhere("id", request("section_id"))->section_name : "Select Section" }}',
             subjectText: '{{ $subjects->firstWhere("id", request("subject_id"))->subject_name ?? "Select Subject" }}',
             
             form: {
@@ -368,11 +392,21 @@
                 branch_id: '{{ request("branch_id") }}',
                 exam_id: '{{ request("exam_id") }}',
                 class_id: '{{ request("class_id") }}',
+                section_id: '{{ request("section_id") }}',
                 subject_id: '{{ request("subject_id") }}'
             },
 
-            // লারাভেল থেকে সব সাবজেক্ট JS Object হিসেবে নেওয়া হলো
             allSubjects: @json($subjects),
+            classSections: @json($classSections),
+
+            get availableSections() {
+                if (!this.form.class_id || !this.classSections[this.form.class_id]) return [];
+                return this.classSections[this.form.class_id];
+            },
+
+            get hasMultipleSections() {
+                return this.availableSections.length > 1;
+            },
             
             // Alpine Getter: ক্লাস সিলেক্ট করলে শুধুমাত্র ওই ক্লাসের সাবজেক্ট রিটার্ন করবে
             get filteredSubjects() {
@@ -401,6 +435,24 @@
                 this.activeDropdown = null;
                 this.form.subject_id = '';
                 this.subjectText = 'Select Subject';
+
+                // একাধিক সেকশন থাকলে সেকশন রিসেট করবে, আর একটাই সেকশন থাকলে স্বয়ংক্রিয়ভাবে সেট করবে
+                const secs = this.classSections[id] || [];
+                if (secs.length > 1) {
+                    this.form.section_id = '';
+                    this.sectionText = 'Select Section';
+                } else if (secs.length === 1) {
+                    this.form.section_id = secs[0].id;
+                    this.sectionText = secs[0].section_name;
+                } else {
+                    this.form.section_id = '';
+                    this.sectionText = 'Select Section';
+                }
+            },
+            selectSection(id, name) {
+                this.form.section_id = id;
+                this.sectionText = name;
+                this.activeDropdown = null;
             },
             selectSubject(id, name) {
                 this.form.subject_id = id;

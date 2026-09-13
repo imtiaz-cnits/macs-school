@@ -10,6 +10,7 @@ use App\Models\Grade;
 use App\Models\ExamSchedule;
 use App\Models\Branch;        
 use App\Models\SessionYear;   
+use App\Models\Section;
 use Illuminate\Http\Request;
 
 class MarkController extends Controller
@@ -22,6 +23,24 @@ class MarkController extends Controller
         $exams = Exam::orderBy('name', 'asc')->get();
         $classes = Classes::all();
         $subjects = Subject::all();
+        $sections = Section::all();
+
+        // প্রতিটি ক্লাসের স্টুডেন্টদের যেসকল সেকশনে পাওয়া যায় তার ম্যাপিং
+        $studentSectionPairs = Student::select('class_id', 'section_id')
+            ->whereNotNull('section_id')
+            ->distinct()
+            ->with('section')
+            ->get();
+
+        $classSections = [];
+        foreach ($studentSectionPairs as $pair) {
+            if ($pair->section) {
+                $classSections[$pair->class_id][] = [
+                    'id'           => $pair->section->id,
+                    'section_name' => $pair->section->section_name,
+                ];
+            }
+        }
 
         $students = [];
         $exam_schedule = null;
@@ -37,10 +56,17 @@ class MarkController extends Controller
                 $request->exam_id
             );
 
-            // নির্দিষ্ট সেশন, ব্রাঞ্চ এবং ক্লাসের স্টুডেন্টদের আনা হচ্ছে
-            $students = Student::where('session_year_id', $request->session_year_id)
+            // নির্দিষ্ট সেশন, ব্রাঞ্চ এবং ক্লাসের স্টুডেন্টদের আনা হচ্ছে (রোল অনুযায়ী সিরিয়াল)
+            $studentQuery = Student::where('session_year_id', $request->session_year_id)
                 ->where('branch_id', $request->branch_id)
-                ->where('class_id', $request->class_id)
+                ->where('class_id', $request->class_id);
+
+            // সেকশন ফিল্টার থাকলে নির্দিষ্ট সেকশনের স্টুডেন্ট লোড হবে
+            if ($request->filled('section_id')) {
+                $studentQuery->where('section_id', $request->section_id);
+            }
+
+            $students = $studentQuery->orderByRaw('CAST(roll_number AS UNSIGNED) ASC, roll_number ASC')
                 ->get()
                 ->map(function ($student) use ($request, $exam_schedule) {
                     $mark = Mark::where('session_year_id', $request->session_year_id)
@@ -68,7 +94,7 @@ class MarkController extends Controller
                 });
         }
 
-        return view('pages.marks.index', compact('sessions', 'branches', 'exams', 'classes', 'subjects', 'students', 'exam_schedule'));
+        return view('pages.marks.index', compact('sessions', 'branches', 'exams', 'classes', 'subjects', 'sections', 'classSections', 'students', 'exam_schedule'));
     }
 
     // AJAX এর মাধ্যমে রিয়েল-টাইম ডাটা সেভ করার ফাংশন

@@ -492,13 +492,7 @@
                         <div class="sig-line">Exam Controller's Signature</div>
                     </td>
                     <td>
-                        @if(!empty($signatureSrc))
-                            <div style="margin-bottom: 2px;">
-                                <img src="{{ $signatureSrc }}" style="height: 32px; object-fit: contain;" alt="Signature" />
-                            </div>
-                        @else
-                            <div style="height: 32px;"></div>
-                        @endif
+                        <div style="height: 32px;"></div>
                         <div class="sig-line">Principal's Signature</div>
                     </td>
                 </tr>
