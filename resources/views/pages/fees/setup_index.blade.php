@@ -279,7 +279,7 @@
     </div>
 
     <!-- Data Logs List Card -->
-    <div id="printableTableArea" class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+    <div id="printableTableArea" x-data="feeTableFilter()" class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
         
         <div class="print-header hidden">
             School Fee Setup Details
@@ -289,12 +289,56 @@
         <div class="p-6 border-b border-gray-100 dark:border-white/[0.05] flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/30 dark:bg-themeDark/30">
             <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-wider">Current Fee Assignments</h3>
             
-            <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto no-print">
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto no-print">
+                <!-- Category Filter Dropdown -->
+                <div class="relative w-full sm:w-56" @click.away="filterDropdownOpen = false">
+                    <button type="button" 
+                            @click="filterDropdownOpen = !filterDropdownOpen" 
+                            class="w-full h-11 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span class="flex items-center gap-2 truncate">
+                            <svg class="w-3.5 h-3.5 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                            </svg>
+                            <span class="truncate" x-text="filterCategoryId === 'all' ? 'All Categories' : filterCategoryName"></span>
+                        </span>
+                        <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-transform duration-200" :class="filterDropdownOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+
+                    <div x-show="filterDropdownOpen" 
+                         x-cloak 
+                         class="absolute left-0 z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" 
+                         x-transition>
+                        <button type="button" 
+                                @click="selectCategory('all', 'All Categories')" 
+                                class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" 
+                                :class="filterCategoryId === 'all' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>All Categories</span>
+                            <template x-if="filterCategoryId === 'all'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                        @foreach($categories as $category)
+                            <button type="button" 
+                                    @click="selectCategory('{{ $category->id }}', '{{ addslashes($category->name) }}')" 
+                                    class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" 
+                                    :class="filterCategoryId == '{{ $category->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                <span>{{ $category->name }}</span>
+                                <template x-if="filterCategoryId == '{{ $category->id }}'">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                <!-- Search Input -->
                 <div class="relative flex-1 sm:w-64">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
-                    <input type="text" id="searchTableInput" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-semibold text-gray-700 dark:text-gray-250 pl-10 pr-3 placeholder-gray-400" placeholder="Search Branch, Class, Fee...">
+                    <input type="text" id="searchTableInput" x-model="searchQuery" @input="applyFilter()" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-semibold text-gray-700 dark:text-gray-250 pl-10 pr-3 placeholder-gray-400" placeholder="Search Branch, Class, Fee...">
                 </div>
                 
                 <button onclick="window.print()" class="inline-flex items-center justify-center bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white text-xs font-black rounded-xl px-4 h-11 uppercase tracking-widest transition-all hover:-translate-y-0.5 active:scale-95 shadow-sm">
@@ -304,7 +348,7 @@
             </div>
         </div>
 
-        <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto" x-data="{}">
+        <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
             <table class="w-full text-left border-collapse table">
                 <thead>
                     <tr class="!bg-transparent">
@@ -319,7 +363,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700" id="feeSetupTableBody">
                     @forelse($setups as $setup)
-                    <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
+                    <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]" data-category-id="{{ $setup->fee_category_id }}">
                         <td class="py-4 px-4 font-bold text-gray-600 dark:text-gray-450 text-sm">{{ $setup->branch->branch_name ?? 'N/A' }}</td>
                         <td class="py-4 px-4 font-bold text-gray-600 dark:text-gray-450 text-sm">{{ $setup->sessionYear->session_name ?? 'N/A' }}</td>
                         <td class="py-4 px-4 font-bold text-gray-900 dark:text-gray-100 text-sm">{{ $setup->schoolClass->class_name ?? 'N/A' }}</td>
@@ -520,27 +564,58 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script>
-    // Live Search Functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('searchTableInput');
-        const tableBody = document.getElementById('feeSetupTableBody');
-        const rows = tableBody.querySelectorAll('tr:not(#emptyRow)');
+    function feeTableFilter() {
+        return {
+            filterCategoryId: 'all',
+            filterCategoryName: 'All Categories',
+            filterDropdownOpen: false,
+            searchQuery: '',
 
-        if(searchInput) {
-            searchInput.addEventListener('keyup', function() {
-                let filter = searchInput.value.toLowerCase();
+            selectCategory(id, name) {
+                this.filterCategoryId = id;
+                this.filterCategoryName = name;
+                this.filterDropdownOpen = false;
+                this.applyFilter();
+            },
 
+            applyFilter() {
+                const tableBody = document.getElementById('feeSetupTableBody');
+                if (!tableBody) return;
+                const rows = tableBody.querySelectorAll('tr:not(#emptyRow):not(#noMatchRow)');
+                const query = this.searchQuery ? this.searchQuery.toLowerCase().trim() : '';
+                const catId = this.filterCategoryId;
+
+                let visibleCount = 0;
                 rows.forEach(row => {
-                    let rowText = row.innerText.toLowerCase();
-                    if(rowText.includes(filter)) {
+                    const rowCatId = row.getAttribute('data-category-id');
+                    const rowText = row.innerText.toLowerCase();
+
+                    const matchesCat = (catId === 'all' || rowCatId == catId);
+                    const matchesSearch = (!query || rowText.includes(query));
+
+                    if (matchesCat && matchesSearch) {
                         row.style.display = '';
+                        visibleCount++;
                     } else {
                         row.style.display = 'none';
                     }
                 });
-            });
-        }
-    });
+
+                let noMatchRow = document.getElementById('noMatchRow');
+                if (visibleCount === 0 && rows.length > 0) {
+                    if (!noMatchRow) {
+                        noMatchRow = document.createElement('tr');
+                        noMatchRow.id = 'noMatchRow';
+                        noMatchRow.innerHTML = `<td colspan="7" class="py-12 text-center text-gray-400 font-bold uppercase tracking-wider text-xs">No fee assignments match the selected category or search query.</td>`;
+                        tableBody.appendChild(noMatchRow);
+                    }
+                    noMatchRow.style.display = '';
+                } else if (noMatchRow) {
+                    noMatchRow.style.display = 'none';
+                }
+            }
+        };
+    }
 
     async function confirmDelete(event) {
         event.preventDefault();
