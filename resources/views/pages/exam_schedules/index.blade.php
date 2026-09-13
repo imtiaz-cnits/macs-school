@@ -127,7 +127,7 @@
                     Marks Distribution
                 </h4>
                 <div class="text-[11px] font-bold px-3 py-1 rounded-lg border" :class="isClassTen ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-300' : 'bg-green-50 text-themeGreen border-green-200 dark:bg-green-950/30 dark:text-green-400'">
-                    Pattern: <span x-text="isClassTen ? 'Class Ten (MCQ | Written | Practical)' : 'Nursery - Nine (CT | MT | Terminal)'"></span>
+                    Pattern: <span x-text="isClassTen ? 'Class Nine - Ten (MCQ | Written | Practical)' : 'Play - Eight (CT | MT | Terminal)'"></span>
                 </div>
             </div>
 
@@ -272,7 +272,8 @@
             allSubjects: @json($subjects),
 
             get isClassTen() {
-                return this.classText.trim().toLowerCase() === 'ten' || this.classText.trim().toLowerCase() === 'class ten';
+                const name = this.classText.trim().toLowerCase();
+                return ['nine', 'class nine', '9', 'class 9', 'ten', 'class ten', '10', 'class 10'].includes(name);
             },
 
             get filteredSubjects() {

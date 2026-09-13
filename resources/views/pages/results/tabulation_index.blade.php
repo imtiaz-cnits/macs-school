@@ -31,6 +31,7 @@
             if(!form.branch_id) { event.preventDefault(); showAlert('Please select Branch!', 'Validation'); return; }
             if(!form.exam_id) { event.preventDefault(); showAlert('Please select Exam!', 'Validation'); return; }
             if(!form.class_id) { event.preventDefault(); showAlert('Please select Class!', 'Validation'); return; }
+            if(!form.sort_by) { event.preventDefault(); showAlert('Please select Sort Order!', 'Validation'); return; }
         ">
             @csrf
             
@@ -38,8 +39,9 @@
             <input type="hidden" name="branch_id" :value="form.branch_id">
             <input type="hidden" name="exam_id" :value="form.exam_id">
             <input type="hidden" name="class_id" :value="form.class_id">
+            <input type="hidden" name="sort_by" :value="form.sort_by">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                 <!-- Session Dropdown -->
                 <div class="relative" @click.away="if(activeDropdown === 'session') activeDropdown = null">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Session *</label>
@@ -67,7 +69,6 @@
                         <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="activeDropdown === 'branch'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
-
                         @foreach($branches as $branch)
                             <button type="button" @click="selectBranch('{{ $branch->id }}', '{{ $branch->branch_name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.branch_id == '{{ $branch->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                                 <span>{{ $branch->branch_name }}</span>
@@ -87,7 +88,6 @@
                         <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="activeDropdown === 'exam'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
-
                         @foreach($exams as $exam)
                             <button type="button" @click="selectExam('{{ $exam->id }}', '{{ $exam->name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.exam_id == '{{ $exam->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                                 <span>{{ $exam->name }}</span>
@@ -107,7 +107,6 @@
                         <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="activeDropdown === 'class'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
-
                         @foreach($classes as $class)
                             <button type="button" @click="selectClass('{{ $class->id }}', '{{ $class->class_name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.class_id == '{{ $class->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                                 <span>{{ $class->class_name }}</span>
@@ -116,6 +115,29 @@
                                 </template>
                             </button>
                         @endforeach
+                    </div>
+                </div>
+
+                <!-- Sort By Dropdown -->
+                <div class="relative" @click.away="if(activeDropdown === 'sort') activeDropdown = null">
+                    <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Sort By *</label>
+                    <button type="button" @click="activeDropdown = activeDropdown === 'sort' ? null : 'sort'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span class="truncate" x-text="sortText"></span>
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="activeDropdown === 'sort'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                        <button type="button" @click="selectSort('roll', 'Roll Wise')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.sort_by === 'roll' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>Roll Wise</span>
+                            <template x-if="form.sort_by === 'roll'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                        <button type="button" @click="selectSort('merit', 'Merit Wise')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.sort_by === 'merit' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>Merit Wise</span>
+                            <template x-if="form.sort_by === 'merit'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -139,12 +161,14 @@
             branchText: 'Choose Branch',
             examText: 'Choose Exam',
             classText: 'Choose Class',
+            sortText: 'Roll Wise',
             
             form: {
                 session_year_id: '',
                 branch_id: '',
                 exam_id: '',
-                class_id: ''
+                class_id: '',
+                sort_by: 'roll'
             },
             
             selectSession(id, name) {
@@ -165,6 +189,11 @@
             selectClass(id, name) {
                 this.form.class_id = id;
                 this.classText = name;
+                this.activeDropdown = null;
+            },
+            selectSort(val, name) {
+                this.form.sort_by = val;
+                this.sortText = name;
                 this.activeDropdown = null;
             }
         };

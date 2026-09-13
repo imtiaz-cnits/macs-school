@@ -161,7 +161,7 @@
             @php
                 $selectedClass = $classes->firstWhere('id', request('class_id'));
                 $classNameLower = $selectedClass ? strtolower(trim($selectedClass->class_name)) : '';
-                $isClassTen = in_array($classNameLower, ['ten', 'class ten', '10', 'class 10']);
+                $isClassTen = in_array($classNameLower, ['nine', 'class nine', '9', 'class 9', 'ten', 'class ten', '10', 'class 10']);
 
                 if ($exam_schedule) {
                     if ($isClassTen) {
@@ -199,7 +199,7 @@
                 <div>
                     <h3 class="text-sm font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider ml-1">Enter Marks</h3>
                     <p class="text-[11px] font-semibold text-gray-450 mt-0.5 ml-1">
-                        Pattern: <span class="font-bold {{ $isClassTen ? 'text-purple-600 dark:text-purple-400' : 'text-themeGreen' }}">{{ $isClassTen ? 'Class Ten (MCQ | Written CQ | Practical)' : 'Nursery - Nine (CT | MT | Terminal)' }}</span>
+                        Pattern: <span class="font-bold {{ $isClassTen ? 'text-purple-600 dark:text-purple-400' : 'text-themeGreen' }}">{{ $isClassTen ? 'Class Nine - Ten (MCQ | Written CQ | Practical)' : 'Play - Eight (CT | MT | Terminal)' }}</span>
                     </p>
                 </div>
                 @if($exam_schedule)

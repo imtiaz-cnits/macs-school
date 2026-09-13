@@ -30,9 +30,25 @@ class CertificateController extends Controller
         $leaving_reason = $request->leaving_reason ?? 'To study in another institution';
         $last_exam_result = $request->last_exam_result ?? 'Passed Successfully';
 
+        // Assets and metadata for certificate
+        $logoPath = public_path('img/macs_logo.jpeg');
+        $logoSrc = file_exists($logoPath) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($logoPath)) : '';
+
+        $signaturePath = public_path('img/signature.png');
+        $signatureSrc = file_exists($signaturePath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($signaturePath)) : '';
+
+        $prefix = match($type) {
+            'tc' => 'TC',
+            'testimonial' => 'TEST',
+            default => 'GC',
+        };
+        $sessionName = $student->sessionYear->session_name ?? date('Y');
+        $certNo = 'MACS/' . $prefix . '/' . $sessionName . '/' . str_pad($student->id, 4, '0', STR_PAD_LEFT);
+
         // ডাটাগুলো ভিউতে পাস করা হলো
-        $pdf = Pdf::loadView("pages.templates.certificates.{$type}", compact('student', 'date', 'leaving_reason', 'last_exam_result'))
-                  ->setPaper('a4', 'landscape');
+        $pdf = Pdf::loadView("pages.templates.certificates.{$type}", compact(
+            'student', 'date', 'leaving_reason', 'last_exam_result', 'logoSrc', 'signatureSrc', 'certNo'
+        ))->setPaper('a4', 'landscape');
 
         return $pdf->stream("{$type}_{$student->student_name}.pdf");
     }

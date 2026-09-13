@@ -320,6 +320,11 @@
             color: #DC2626;
             border: none;
         }
+        .grade-neutral {
+            background: transparent;
+            color: #64748B;
+            border: none;
+        }
 
         /* Bottom Evaluation Cards (2 Columns) - Centered with 10px Margins */
         .eval-wrapper {
@@ -667,23 +672,24 @@
                         'B'  => 'grade-b',
                         'C'  => 'grade-c',
                         'D'  => 'grade-d',
-                        default => 'grade-f',
+                        'F'  => 'grade-f',
+                        default => 'grade-neutral',
                     };
                 @endphp
                 <tr>
                     <td style="color: #64748B; font-weight: 700;">{{ $index + 1 }}</td>
                     <td class="sub-name-cell">{{ $res['subject_name'] }}</td>
                     <td style="font-weight: 700;">{{ $res['full_marks'] }}</td>
-                    <td>{{ number_format($res['ct_mark'], 2) }}</td>
-                    <td>{{ number_format($res['mcq_mark'], 2) }}</td>
-                    <td>{{ number_format($res['written_mark'], 2) }}</td>
-                    <td style="font-weight: 800; color: #008ED6;">{{ number_format($res['total_mark'], 2) }}</td>
-                    <td style="color: #0284C7; font-weight: 700;">{{ number_format($res['top_mark'], 2) }}</td>
+                    <td>{{ $res['letter_grade'] === '-' && $res['ct_mark'] == 0 ? '-' : number_format($res['ct_mark'], 2) }}</td>
+                    <td>{{ $res['letter_grade'] === '-' && $res['mcq_mark'] == 0 ? '-' : number_format($res['mcq_mark'], 2) }}</td>
+                    <td>{{ $res['letter_grade'] === '-' && $res['written_mark'] == 0 ? '-' : number_format($res['written_mark'], 2) }}</td>
+                    <td style="font-weight: 800; color: #008ED6;">{{ $res['letter_grade'] === '-' && $res['total_mark'] == 0 ? '-' : number_format($res['total_mark'], 2) }}</td>
+                    <td style="color: #0284C7; font-weight: 700;">{{ $res['top_mark'] > 0 ? number_format($res['top_mark'], 2) : '-' }}</td>
                     <td>
                         <span class="grade-pill {{ $gradeClass }}">{{ $lg }}</span>
                     </td>
                     <td style="font-weight: 800; {{ $lg === 'F' ? 'color: #DC2626;' : 'color: #0F1E2C;' }}">
-                        {{ number_format($res['grade_point'], 2) }}
+                        {{ $res['letter_grade'] === '-' ? '-' : number_format($res['grade_point'], 2) }}
                     </td>
                 </tr>
             @endforeach

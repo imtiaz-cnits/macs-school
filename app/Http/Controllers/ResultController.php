@@ -198,7 +198,44 @@ class ResultController extends Controller
             $totalGradePoints += $gradeInfo['point'];
         }
 
-        $subjectCount = count($subjectResults);
+        // Ensure S.B.A is present in the report if not already entered in student's marks
+        $existingSubIds = $marks->pluck('subject_id')->toArray();
+        $sbaSubject = null;
+        $sbaSchedule = null;
+        if (isset($schedules)) {
+            foreach ($schedules as $sSubId => $sch) {
+                $schSub = $sch->subject ?? \App\Models\Subject::find($sSubId);
+                if ($schSub && stripos($schSub->subject_name, 'S.B.A') !== false) {
+                    $sbaSubject = $schSub;
+                    $sbaSchedule = $sch;
+                    break;
+                }
+            }
+        }
+        if (!$sbaSubject) {
+            $sbaSubject = \App\Models\Subject::where('class_id', $student->class_id)
+                ->where('subject_name', 'like', '%S.B.A%')
+                ->first();
+        }
+
+        if ($sbaSubject && !in_array($sbaSubject->id, $existingSubIds)) {
+            $fullMarks = $sbaSchedule && $sbaSchedule->full_marks > 0 ? (float)$sbaSchedule->full_marks : 100.00;
+            $subjectResults[] = [
+                'subject_name'  => self::formatSubjectName($sbaSubject->subject_name),
+                'subject_code'  => $sbaSubject->subject_code ?? '',
+                'full_marks'    => (int)$fullMarks,
+                'ct_mark'       => 0.0,
+                'mcq_mark'      => 0.0,
+                'written_mark'  => 0.0,
+                'total_mark'    => 0.0,
+                'letter_grade'  => '-',
+                'grade_point'   => 0.0,
+                'top_mark'      => (float)($topMarks[$sbaSubject->id] ?? 0.0),
+            ];
+        }
+
+        $gradedSubjects = array_filter($subjectResults, fn($r) => $r['letter_grade'] !== '-');
+        $subjectCount = count($gradedSubjects);
         $cgpa = (!$hasFailed && $subjectCount > 0) ? round($totalGradePoints / $subjectCount, 2) : 0.00;
         $finalGrade = $hasFailed ? 'F' : $this->getFinalGrade($cgpa);
         $remark = $this->getRemark($cgpa, $hasFailed);
@@ -399,6 +436,17 @@ class ResultController extends Controller
         $marks3 = $allStudentMarks->where('exam_id', $exam3Id)->keyBy('subject_id');
 
         $subjectIds = $allStudentMarks->pluck('subject_id')->unique();
+        // Also ensure S.B.A is present in subjects list if scheduled for class
+        if (isset($schedules)) {
+            foreach ($schedules as $sSubId => $sch) {
+                $schSub = $sch->subject ?? \App\Models\Subject::find($sSubId);
+                if ($schSub && stripos($schSub->subject_name, 'S.B.A') !== false) {
+                    if (!$subjectIds->contains($sSubId)) {
+                        $subjectIds->push($sSubId);
+                    }
+                }
+            }
+        }
         $subjects = \App\Models\Subject::whereIn('id', $subjectIds)->get()->keyBy('id');
 
         $combinedSubjectResults = [];
@@ -424,7 +472,8 @@ class ResultController extends Controller
             $finalFullMarks = $fullMark * 3;
             $finalGradeInfo = $this->getGradeAndPoint($finalTotal, $finalFullMarks);
 
-            if ($finalGradeInfo['grade'] === 'F') {
+            $hasAnyMarks = ($m1 !== null || $m2 !== null || $m3 !== null);
+            if ($hasAnyMarks && $finalGradeInfo['grade'] === 'F') {
                 $hasFailed = true;
             }
 
@@ -813,6 +862,7 @@ class ResultController extends Controller
             'branch_id'       => 'required',
             'exam_id'         => 'required',
             'class_id'        => 'required',
+            'sort_by'         => 'nullable|in:roll,merit',
         ]);
 
         $exam = Exam::find($request->exam_id);
@@ -822,12 +872,51 @@ class ResultController extends Controller
         $schedules = ExamSchedule::with('subject')
             ->where('class_id', $schoolClass->id)
             ->when($branch, fn($q) => $q->where('branch_id', $branch->id))
-            ->get();
+            ->where('exam_id', $exam->id)
+            ->get()
+            ->unique('subject_id')
+            ->values();
 
         if ($schedules->isEmpty()) {
             $schedules = ExamSchedule::with('subject')
                 ->where('class_id', $schoolClass->id)
-                ->get();
+                ->get()
+                ->unique('subject_id')
+                ->values();
+        }
+
+        $allMarks = Mark::where('session_year_id', $request->session_year_id)
+            ->where('branch_id', $branch->id)
+            ->where('exam_id', $exam->id)
+            ->where('class_id', $schoolClass->id)
+            ->get();
+
+        // Check if any subjects with marks are missing from schedules
+        $markSubjectIds = $allMarks->pluck('subject_id')->unique();
+        $existingSubjectIds = $schedules->pluck('subject_id')->toArray();
+        $missingSubjectIds = $markSubjectIds->diff($existingSubjectIds);
+
+        if ($missingSubjectIds->isNotEmpty()) {
+            $extraSubjects = \App\Models\Subject::whereIn('id', $missingSubjectIds)->get();
+            foreach ($extraSubjects as $extraSub) {
+                $schedules->push((object)[
+                    'subject_id' => $extraSub->id,
+                    'subject'    => $extraSub,
+                    'full_marks' => 100,
+                ]);
+            }
+        }
+
+        // Ensure S.B.A subject is always present for classes having S.B.A
+        $sbaSubject = \App\Models\Subject::where('class_id', $schoolClass->id)
+            ->where('subject_name', 'like', '%S.B.A%')
+            ->first();
+        if ($sbaSubject && !in_array($sbaSubject->id, $schedules->pluck('subject_id')->toArray())) {
+            $schedules->push((object)[
+                'subject_id' => $sbaSubject->id,
+                'subject'    => $sbaSubject,
+                'full_marks' => 100,
+            ]);
         }
 
         if ($schedules->isEmpty()) {
@@ -836,12 +925,6 @@ class ResultController extends Controller
 
         $students = Student::where('session_year_id', $request->session_year_id)
             ->where('branch_id', $branch->id)
-            ->where('class_id', $schoolClass->id)
-            ->get();
-
-        $allMarks = Mark::where('session_year_id', $request->session_year_id)
-            ->where('branch_id', $branch->id)
-            ->where('exam_id', $exam->id)
             ->where('class_id', $schoolClass->id)
             ->get();
 
@@ -872,23 +955,75 @@ class ResultController extends Controller
             ];
         }
 
+        // Sort by merit first to establish accurate merit positions
         usort($studentData, function($a, $b) {
+            $aFail = ($a->final_grade === 'F' || $a->final_grade === 'Fail');
+            $bFail = ($b->final_grade === 'F' || $b->final_grade === 'Fail');
+            if ($aFail !== $bFail) {
+                return $aFail ? 1 : -1;
+            }
             if ($a->cgpa == $b->cgpa) {
                 return $b->grand_total <=> $a->grand_total;
             }
             return $b->cgpa <=> $a->cgpa;
         });
 
-        $data = [
-            'exam'        => $exam,
-            'schoolClass' => $schoolClass,
-            'branch'      => $branch,
-            'schedules'   => $schedules,
-            'studentData' => $studentData
-        ];
+        // Assign merit position/rank to each student
+        foreach ($studentData as $rankIndex => $item) {
+            $item->merit_rank = $rankIndex + 1;
+        }
 
-        $pdf = PDF::loadView('pages.results.tabulation_pdf', $data)->setPaper('legal', 'landscape');
-        return $pdf->stream('Tabulation_Sheet_'.$schoolClass->class_name.'.pdf');
+        // Apply roll wise or merit wise sorting based on filter
+        $sortBy = $request->input('sort_by', 'roll');
+        if ($sortBy === 'roll') {
+            usort($studentData, function($a, $b) {
+                $rollA = (string)($a->student->roll_number ?? $a->student->student_identity ?? '');
+                $rollB = (string)($b->student->roll_number ?? $b->student->student_identity ?? '');
+                $cmp = strnatcmp($rollA, $rollB);
+                if ($cmp === 0) {
+                    return ($a->merit_rank ?? 0) <=> ($b->merit_rank ?? 0);
+                }
+                return $cmp;
+            });
+        }
+
+        $sessionYear = SessionYear::find($request->session_year_id);
+        $logoSrc = $this->getLogoBase64();
+        $signatureSrc = $this->getSignatureBase64();
+
+        // Format subject names for each schedule (using short abbreviations for compact table headers)
+        foreach ($schedules as $schedule) {
+            $schedule->formatted_subject_name = self::formatSubjectName($schedule->subject->subject_name ?? '', true);
+        }
+
+        // Dynamically compute subject chunks for multi-page layout (optimized for compact 4 columns per subject)
+        $totalSubjects = $schedules->count();
+        if ($totalSubjects <= 8) {
+            $subjectChunks = collect([$schedules]);
+        } elseif ($totalSubjects <= 14) {
+            $chunkSize = (int)ceil($totalSubjects / 2);
+            $subjectChunks = $schedules->chunk($chunkSize)->values();
+        } else {
+            $chunkSize = (int)ceil($totalSubjects / 3);
+            $subjectChunks = $schedules->chunk($chunkSize)->values();
+        }
+
+        $data = array_merge([
+            'exam'          => $exam,
+            'schoolClass'   => $schoolClass,
+            'branch'        => $branch,
+            'sessionYear'   => $sessionYear,
+            'schedules'     => $schedules,
+            'subjectChunks' => $subjectChunks,
+            'totalSubjects' => $totalSubjects,
+            'studentData'   => $studentData,
+            'sortBy'        => $sortBy,
+            'logoSrc'       => $logoSrc,
+            'signatureSrc'  => $signatureSrc,
+        ], self::getFontPaths());
+
+        $pdf = PDF::loadView('pages.results.tabulation_pdf', $data)->setPaper('a4', 'landscape');
+        return $pdf->stream('Tabulation_Sheet_'.str_replace(' ', '_', $schoolClass->class_name).'.pdf');
     }
 
     /**
@@ -901,15 +1036,81 @@ class ResultController extends Controller
             'fontInterSemiBold'  => str_replace('\\', '/', public_path('fonts/Inter-SemiBold.ttf')),
             'fontInterBold'      => str_replace('\\', '/', public_path('fonts/Inter-Bold.ttf')),
             'fontInterExtraBold' => str_replace('\\', '/', public_path('fonts/Inter-ExtraBold.ttf')),
+            'fontNotoRegular'    => str_replace('\\', '/', public_path('fonts/NotoSerifBengali-Regular.ttf')),
+            'fontNotoBold'       => str_replace('\\', '/', public_path('fonts/NotoSerifBengali-Bold.ttf')),
         ];
     }
 
     /**
-     * Map database Bengali subject names to clean English titles for marksheet rendering
+     * Map database Bengali subject names to clean English titles for marksheet and tabulation rendering
      */
-    public static function formatSubjectName(?string $name): string
+    public static function formatSubjectName(?string $name, bool $short = false): string
     {
         if (empty($name)) return '';
+
+        if ($short) {
+            $shortMap = [
+                'বাংলা' => 'Bangla',
+                'বাংলা ১ম পত্র' => 'Bangla 1st Paper',
+                'বাংলা ২য় পত্র' => 'Bangla 2nd Paper',
+                'বাংলা ২য় পত্র' => 'Bangla 2nd Paper',
+                'ইংরেজি' => 'English',
+                'ইংরেজী' => 'English',
+                'ইংরেজি ১ম পত্র' => 'English 1st Paper',
+                'ইংরেজী ১ম পত্র' => 'English 1st Paper',
+                'ইংরেজি ২য় পত্র' => 'English 2nd Paper',
+                'ইংরেজী ২য় পত্র' => 'English 2nd Paper',
+                'গণিত' => 'Mathematics',
+                'সাধারণ গণিত' => 'Mathematics',
+                'আরবী / ধর্মশিক্ষা' => 'Arabic / Islamic',
+                'আরবি / ধর্মশিক্ষা' => 'Arabic / Islamic',
+                'আরবী' => 'Arabic',
+                'আরবি' => 'Arabic',
+                'ধর্মশিক্ষা' => 'Religious Studies',
+                'ধর্ম ও নৈতিক শিক্ষা' => 'Religious Studies',
+                'ইসলাম ও নৈতিক শিক্ষা' => 'Islamic Studies',
+                'ইসলাম শিক্ষা' => 'Islamic Studies',
+                'হিন্দু ধর্ম ও নৈতিক শিক্ষা' => 'Hindu Studies',
+                'হিন্দু ধর্ম' => 'Hindu Studies',
+                'হিন্দু শিক্ষা' => 'Hindu Studies',
+                'ইসলাম / হিন্দু শিক্ষা' => 'Islamic / Hindu',
+                'ড্রইং' => 'Drawing',
+                'সাধারণ জ্ঞান' => 'General Knowledge',
+                'সমাজ' => 'Social Studies',
+                'সামাজিক বিজ্ঞান' => 'Social Science',
+                'বিজ্ঞান' => 'General Science',
+                'সাধারণ বিজ্ঞান' => 'General Science',
+                'বাংলাদেশ ও বিশ্বপরিচয়' => 'BGS',
+                'বাংলাদেশ ও বিশ্বপরিচয়' => 'BGS',
+                'বাংলাদেশ ও বিশ্বপরিচয় / সাধারণ বিজ্ঞান' => 'BGS / Science',
+                'বাংলাদেশ ও বিশ্বপরিচয় / সাধারণ বিজ্ঞান' => 'BGS / Science',
+                'শারীরিক শিক্ষা ও স্বাস্থ্য' => 'Physical Ed.',
+                'শারীরিক শিক্ষা' => 'Physical Ed.',
+                'চারু ও কারুকলা' => 'Arts & Crafts',
+                'কর্ম ও জীবনমুখী শিক্ষা' => 'Work & Life',
+                'গার্হস্থ্য বিজ্ঞান' => 'Home Science',
+                'তথ্য ও যোগাযোগ প্রযুক্তি' => 'ICT',
+                'কৃষি শিক্ষা' => 'Agriculture',
+                'জীববিজ্ঞান / ভূগোল' => 'Biology / Geog',
+                'রসায়ন / অর্থনীতি' => 'Chemistry / Econ',
+                'রসায়ন / অর্থনীতি' => 'Chemistry / Econ',
+                'পদার্থ / ইতিহাস' => 'Physics / History',
+                'উচ্চতর গণিত / কৃষি শিক্ষা' => 'Higher Math / Agri',
+                'উচ্চতর গণিত' => 'Higher Math',
+                'S.B.A' => 'S.B.A',
+            ];
+
+            $trimmed = trim($name);
+            if (isset($shortMap[$trimmed])) {
+                return $shortMap[$trimmed];
+            }
+
+            foreach ($shortMap as $bn => $en) {
+                if (mb_strpos($trimmed, $bn) !== false) {
+                    return $en;
+                }
+            }
+        }
 
         $map = [
             'বাংলা' => 'Bangla',
@@ -926,19 +1127,31 @@ class ResultController extends Controller
             'সাধারণ গণিত' => 'Mathematics',
             'আরবী / ধর্মশিক্ষা' => 'Arabic & Islamic Studies',
             'আরবি / ধর্মশিক্ষা' => 'Arabic & Islamic Studies',
+            'আরবী' => 'Arabic',
+            'আরবি' => 'Arabic',
+            'ধর্মশিক্ষা' => 'Religious Studies',
+            'ধর্ম ও নৈতিক শিক্ষা' => 'Religious & Moral Studies',
+            'ইসলাম ও নৈতিক শিক্ষা' => 'Islamic & Moral Studies',
+            'ইসলাম শিক্ষা' => 'Islamic Studies',
+            'হিন্দু ধর্ম ও নৈতিক শিক্ষা' => 'Hindu & Moral Studies',
+            'হিন্দু ধর্ম' => 'Hindu Studies',
+            'হিন্দু শিক্ষা' => 'Hindu Studies',
+            'ইসলাম / হিন্দু শিক্ষা' => 'Islamic / Hindu Studies',
             'ড্রইং' => 'Drawing',
             'সাধারণ জ্ঞান' => 'General Knowledge',
             'সমাজ' => 'Social Studies',
             'সামাজিক বিজ্ঞান' => 'Social Science',
             'বিজ্ঞান' => 'General Science',
+            'সাধারণ বিজ্ঞান' => 'General Science',
             'বাংলাদেশ ও বিশ্বপরিচয়' => 'Bangladesh & Global Studies',
             'বাংলাদেশ ও বিশ্বপরিচয়' => 'Bangladesh & Global Studies',
             'বাংলাদেশ ও বিশ্বপরিচয় / সাধারণ বিজ্ঞান' => 'Bangladesh & Global Studies',
             'বাংলাদেশ ও বিশ্বপরিচয় / সাধারণ বিজ্ঞান' => 'Bangladesh & Global Studies',
-            'ইসলাম / হিন্দু শিক্ষা' => 'Islamic / Hindu Studies',
-            'ইসলাম ও নৈতিক শিক্ষা' => 'Islamic & Moral Studies',
-            'ইসলাম শিক্ষা' => 'Islamic Studies',
+            'শারীরিক শিক্ষা ও স্বাস্থ্য' => 'Physical Education & Health',
             'শারীরিক শিক্ষা' => 'Physical Education',
+            'চারু ও কারুকলা' => 'Arts & Crafts',
+            'কর্ম ও জীবনমুখী শিক্ষা' => 'Work & Life Studies',
+            'গার্হস্থ্য বিজ্ঞান' => 'Home Science',
             'তথ্য ও যোগাযোগ প্রযুক্তি' => 'Information & Communication Tech (ICT)',
             'কৃষি শিক্ষা' => 'Agriculture Studies',
             'জীববিজ্ঞান / ভূগোল' => 'Biology / Geography',

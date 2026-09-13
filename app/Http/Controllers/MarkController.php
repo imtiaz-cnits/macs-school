@@ -228,14 +228,14 @@ class MarkController extends Controller
     }
 
     /**
-     * Check if class is Class Ten
+     * Check if class is Class Nine or Ten (High School criteria: MCQ, Written, Practical)
      */
     protected function isClassTen($classId)
     {
         $class = Classes::find($classId);
         if (!$class) return false;
         $name = strtolower(trim($class->class_name));
-        return in_array($name, ['ten', 'class ten', '10', 'class 10']);
+        return in_array($name, ['nine', 'class nine', '9', 'class 9', 'ten', 'class ten', '10', 'class 10']);
     }
 
     /**
