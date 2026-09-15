@@ -466,7 +466,7 @@
                             {{ number_format((float)$data->cgpa, 2) }}
                         </td>
                         <td class="td-summary">
-                            <span class="rank-badge">{{ $data->merit_rank ?? ($index + 1) }}</span>
+                            <span class="rank-badge">{{ $data->merit_rank ?? '-' }}</span>
                         </td>
                     @endif
                 </tr>

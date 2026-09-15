@@ -1051,10 +1051,10 @@ class ResultController extends Controller
             if ($aFail !== $bFail) {
                 return $aFail ? 1 : -1;
             }
-            if ($a->cgpa == $b->cgpa) {
-                return $b->grand_total <=> $a->grand_total;
+            if ((float)$a->cgpa == (float)$b->cgpa) {
+                return (float)$b->grand_total <=> (float)$a->grand_total;
             }
-            return $b->cgpa <=> $a->cgpa;
+            return (float)$b->cgpa <=> (float)$a->cgpa;
         });
 
         // Assign dense merit position/rank to each student (ties get same rank: 1, 1, 2, 3...)
