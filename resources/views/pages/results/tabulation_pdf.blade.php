@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Tabulation Sheet - {{ $schoolClass->class_name }}</title>
+    <title>Tabulation Sheet - {{ $schoolClass->class_name }}{{ !empty($section) ? ' - ' . $section->section_name : '' }}</title>
     <style>
         @page {
             size: a4 landscape;
@@ -377,7 +377,7 @@
                             @endif
                         </div>
                         <div class="exam-banner-title">
-                            {{ $exam->name }} &bull; Class: {{ $schoolClass->class_name }} &bull; Session: {{ $sessionYear->session_name ?? date('Y') }}
+                            {{ $exam->name }} &bull; Class: {{ $schoolClass->class_name }}@if(!empty($section)) &bull; Section: {{ $section->section_name }}@endif &bull; Session: {{ $sessionYear->session_name ?? date('Y') }}
                         </div>
                     </td>
 

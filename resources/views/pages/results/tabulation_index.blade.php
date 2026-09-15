@@ -3,7 +3,7 @@
 @section('title', 'Generate Tabulation Sheet')
 
 @section('content')
-<div x-data="tabulationGenerator()" class="w-full min-h-screen">
+<div x-data="tabulationGenerator({{ json_encode($classSections ?? []) }})" class="w-full min-h-screen">
     
     <!-- Header Section -->
     <div class="mb-8 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
@@ -31,6 +31,7 @@
             if(!form.branch_id) { event.preventDefault(); showAlert('Please select Branch!', 'Validation'); return; }
             if(!form.exam_id) { event.preventDefault(); showAlert('Please select Exam!', 'Validation'); return; }
             if(!form.class_id) { event.preventDefault(); showAlert('Please select Class!', 'Validation'); return; }
+            if(hasSections && !form.section_id) { event.preventDefault(); showAlert('Please select Section!', 'Validation'); return; }
             if(!form.sort_by) { event.preventDefault(); showAlert('Please select Sort Order!', 'Validation'); return; }
         ">
             @csrf
@@ -39,9 +40,10 @@
             <input type="hidden" name="branch_id" :value="form.branch_id">
             <input type="hidden" name="exam_id" :value="form.exam_id">
             <input type="hidden" name="class_id" :value="form.class_id">
+            <input type="hidden" name="section_id" :value="form.section_id">
             <input type="hidden" name="sort_by" :value="form.sort_by">
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            <div :class="hasSections ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8'">
                 <!-- Session Dropdown -->
                 <div class="relative" @click.away="if(activeDropdown === 'session') activeDropdown = null">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Session *</label>
@@ -118,6 +120,31 @@
                     </div>
                 </div>
 
+                <!-- Section Dropdown (Conditionally displayed when class has multiple sections) -->
+                <div x-show="hasSections" x-cloak class="relative" @click.away="if(activeDropdown === 'section') activeDropdown = null" x-transition>
+                    <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Section *</label>
+                    <button type="button" @click="activeDropdown = activeDropdown === 'section' ? null : 'section'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span class="truncate" x-text="sectionText"></span>
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="activeDropdown === 'section'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                        <button type="button" @click="selectSection('all', 'All Sections')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.section_id === 'all' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>All Sections</span>
+                            <template x-if="form.section_id === 'all'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                        <template x-for="sec in availableSections" :key="sec.id">
+                            <button type="button" @click="selectSection(sec.id, sec.section_name)" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.section_id == sec.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                <span x-text="sec.section_name"></span>
+                                <template x-if="form.section_id == sec.id">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
                 <!-- Sort By Dropdown -->
                 <div class="relative" @click.away="if(activeDropdown === 'sort') activeDropdown = null">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Sort By *</label>
@@ -154,13 +181,17 @@
 
 @push('scripts')
 <script>
-    function tabulationGenerator() {
+    function tabulationGenerator(classSectionsData = {}) {
         return {
+            classSections: classSectionsData,
+            availableSections: [],
+            hasSections: false,
             activeDropdown: null,
             sessionText: 'Choose Session',
             branchText: 'Choose Branch',
             examText: 'Choose Exam',
             classText: 'Choose Class',
+            sectionText: 'Choose Section',
             sortText: 'Roll Wise',
             
             form: {
@@ -168,6 +199,7 @@
                 branch_id: '',
                 exam_id: '',
                 class_id: '',
+                section_id: '',
                 sort_by: 'roll'
             },
             
@@ -189,6 +221,24 @@
             selectClass(id, name) {
                 this.form.class_id = id;
                 this.classText = name;
+                this.activeDropdown = null;
+
+                const sections = this.classSections[id] || [];
+                if (sections.length > 1) {
+                    this.availableSections = sections;
+                    this.hasSections = true;
+                    this.form.section_id = '';
+                    this.sectionText = 'Choose Section';
+                } else {
+                    this.availableSections = [];
+                    this.hasSections = false;
+                    this.form.section_id = '';
+                    this.sectionText = 'Choose Section';
+                }
+            },
+            selectSection(id, name) {
+                this.form.section_id = id;
+                this.sectionText = name;
                 this.activeDropdown = null;
             },
             selectSort(val, name) {

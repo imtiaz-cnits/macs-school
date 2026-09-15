@@ -741,9 +741,9 @@
                                     <td style="font-weight: 800; color: #008ED6; font-size: 9.5px;">{{ $meritPosition['section_wise'] }}</td>
                                     <td style="font-weight: 800; color: #008ED6; font-size: 9.5px;">{{ $meritPosition['shift_wise'] }}</td>
                                     <td style="font-weight: 800; color: #008ED6; font-size: 9.5px;">{{ $meritPosition['class_wise'] }}</td>
-                                    <td style="font-size: 9px; font-weight: 700;">{{ $attendance['working_days'] }}</td>
-                                    <td style="color: #009A49; font-weight: 800; font-size: 9px;">{{ $attendance['present'] }}</td>
-                                    <td style="color: #DC2626; font-weight: 800; font-size: 9px;">{{ $attendance['absent'] }}</td>
+                                    <td style="font-size: 9px; font-weight: 700;">{!! !empty($attendance['working_days']) ? $attendance['working_days'] : '&nbsp;' !!}</td>
+                                    <td style="color: #009A49; font-weight: 800; font-size: 9px;">{!! !empty($attendance['present']) ? $attendance['present'] : '&nbsp;' !!}</td>
+                                    <td style="color: #DC2626; font-weight: 800; font-size: 9px;">{!! !empty($attendance['absent']) ? $attendance['absent'] : '&nbsp;' !!}</td>
                                 </tr>
                             </tbody>
                         </table>

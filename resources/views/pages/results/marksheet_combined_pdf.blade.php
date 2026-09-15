@@ -781,9 +781,9 @@
                                         <td style="font-weight: 800; color: #008ED6; font-size: 9px;">{{ $em['section_wise'] }}</td>
                                         <td style="font-weight: 800; color: #008ED6; font-size: 9px;">{{ $em['shift_wise'] }}</td>
                                         <td style="font-weight: 800; color: #008ED6; font-size: 9px;">{{ $em['class_wise'] }}</td>
-                                        <td style="font-size: 8.5px; font-weight: 700;">{{ $em['working_days'] ?: '-' }}</td>
-                                        <td style="color: #009A49; font-weight: 800; font-size: 8.5px;">{{ $em['present'] ?: '-' }}</td>
-                                        <td style="color: #DC2626; font-weight: 800; font-size: 8.5px;">{{ $em['absent'] ?: '-' }}</td>
+                                        <td style="font-size: 8.5px; font-weight: 700;">{!! !empty($em['working_days']) ? $em['working_days'] : '&nbsp;' !!}</td>
+                                        <td style="color: #009A49; font-weight: 800; font-size: 8.5px;">{!! !empty($em['present']) ? $em['present'] : '&nbsp;' !!}</td>
+                                        <td style="color: #DC2626; font-weight: 800; font-size: 8.5px;">{!! !empty($em['absent']) ? $em['absent'] : '&nbsp;' !!}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

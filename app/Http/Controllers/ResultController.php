@@ -7,6 +7,7 @@ use App\Models\Mark;
 use App\Models\Branch;
 use App\Models\SessionYear;
 use App\Models\Classes;
+use App\Models\Section;
 use App\Models\ExamSchedule;
 use App\Models\Attendance;
 use Illuminate\Http\Request;
@@ -764,25 +765,14 @@ class ResultController extends Controller
     }
 
     /**
-     * Fetch Attendance counts for student
+     * Fetch Attendance counts for student (Temporarily kept blank as attendance is not fully maintained)
      */
     protected function getAttendanceForStudent($studentId, $sessionYearId)
     {
-        $records = Attendance::where('student_id', $studentId)
-            ->where('session_year_id', $sessionYearId)
-            ->get();
-
-        if ($records->isEmpty()) {
-            return ['working_days' => '-', 'present' => '-', 'absent' => '-'];
-        }
-
-        $present = $records->whereIn('status', ['Present', 'present', '1', 1])->count();
-        $absent = $records->whereIn('status', ['Absent', 'absent', '0', 0])->count();
-
         return [
-            'working_days' => $records->count(),
-            'present'      => $present,
-            'absent'       => $absent,
+            'working_days' => '',
+            'present'      => '',
+            'absent'       => '',
         ];
     }
 
@@ -848,7 +838,19 @@ class ResultController extends Controller
         $branches = Branch::all();
         $exams = Exam::orderBy('name', 'asc')->get();
         $classes = Classes::all();
-        return view('pages.results.tabulation_index', compact('sessions', 'branches', 'exams', 'classes'));
+
+        // Get sections mapped per class where students exist
+        $classSections = Student::select('class_id', 'section_id')
+            ->whereNotNull('section_id')
+            ->distinct()
+            ->with('section:id,section_name')
+            ->get()
+            ->groupBy('class_id')
+            ->map(function ($items) {
+                return $items->pluck('section')->filter()->unique('id')->values();
+            });
+
+        return view('pages.results.tabulation_index', compact('sessions', 'branches', 'exams', 'classes', 'classSections'));
     }
 
     // Tabulation sheet PDF generation logic
@@ -862,6 +864,7 @@ class ResultController extends Controller
             'branch_id'       => 'required',
             'exam_id'         => 'required',
             'class_id'        => 'required',
+            'section_id'      => 'nullable',
             'sort_by'         => 'nullable|in:roll,merit',
         ]);
 
@@ -923,10 +926,27 @@ class ResultController extends Controller
             return back()->withErrors(['error' => 'No subjects found for this class in Exam Subject Setup.']);
         }
 
-        $students = Student::where('session_year_id', $request->session_year_id)
+        $selectedSection = null;
+        if ($request->filled('section_id') && $request->section_id !== 'all') {
+            $selectedSection = Section::find($request->section_id);
+        }
+
+        $studentsQuery = Student::where('session_year_id', $request->session_year_id)
             ->where('branch_id', $branch->id)
-            ->where('class_id', $schoolClass->id)
-            ->get();
+            ->where('class_id', $schoolClass->id);
+
+        if ($selectedSection) {
+            $studentsQuery->where('section_id', $selectedSection->id);
+        }
+
+        $students = $studentsQuery->get();
+
+        if ($students->isEmpty()) {
+            $msg = $selectedSection
+                ? 'No students found for this class and ' . $selectedSection->section_name . '.'
+                : 'No students found for this class in the selected session and branch.';
+            return back()->withErrors(['error' => $msg]);
+        }
 
         $studentData = [];
 
@@ -1011,6 +1031,7 @@ class ResultController extends Controller
         $data = array_merge([
             'exam'          => $exam,
             'schoolClass'   => $schoolClass,
+            'section'       => $selectedSection,
             'branch'        => $branch,
             'sessionYear'   => $sessionYear,
             'schedules'     => $schedules,
@@ -1023,7 +1044,8 @@ class ResultController extends Controller
         ], self::getFontPaths());
 
         $pdf = PDF::loadView('pages.results.tabulation_pdf', $data)->setPaper('a4', 'landscape');
-        return $pdf->stream('Tabulation_Sheet_'.str_replace(' ', '_', $schoolClass->class_name).'.pdf');
+        $sectionSuffix = !empty($selectedSection) ? '_' . str_replace(' ', '_', $selectedSection->section_name) : '';
+        return $pdf->stream('Tabulation_Sheet_' . str_replace(' ', '_', $schoolClass->class_name) . $sectionSuffix . '.pdf');
     }
 
     /**
