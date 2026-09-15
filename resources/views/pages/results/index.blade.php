@@ -3,7 +3,7 @@
 @section('title', 'Generate Marksheet')
 
 @section('content')
-<div x-data="marksheetGenerator()" class="w-full min-h-screen">
+<div x-data="marksheetGenerator({{ json_encode($classSections ?? []) }})" class="w-full min-h-screen">
     
     <!-- Header Section -->
     <div class="mb-8 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
@@ -38,6 +38,7 @@
             <input type="hidden" name="session_year_id" :value="form.session_year_id">
             <input type="hidden" name="exam_id" :value="form.exam_id">
             <input type="hidden" name="class_id" :value="form.class_id">
+            <input type="hidden" name="section_id" :value="form.section_id">
 
             <!-- Report Type Switcher Tabs -->
             <div class="mb-8 p-1.5 bg-gray-50 dark:bg-themeDark/60 border border-gray-100 dark:border-white/[0.06] rounded-2xl flex flex-col sm:flex-row gap-2 max-w-xl mx-auto">
@@ -61,7 +62,7 @@
                 </div>
             </template>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div :class="hasSections ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'">
                 <!-- Session Dropdown -->
                 <div class="relative" @click.away="if(activeDropdown === 'session') activeDropdown = null">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Academic Session *</label>
@@ -103,6 +104,31 @@
                     </div>
                 </div>
 
+                <!-- Section Dropdown (Conditionally displayed when class has multiple sections) -->
+                <div x-show="hasSections" x-cloak class="relative" @click.away="if(activeDropdown === 'section') activeDropdown = null" x-transition>
+                    <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Section <span class="text-gray-400 font-normal lowercase">(optional for all)</span></label>
+                    <button type="button" @click="activeDropdown = activeDropdown === 'section' ? null : 'section'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span class="truncate" x-text="sectionText"></span>
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="activeDropdown === 'section'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                        <button type="button" @click="selectSection('', 'All Sections')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="!form.section_id || form.section_id === 'all' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>All Sections</span>
+                            <template x-if="!form.section_id || form.section_id === 'all'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                        <template x-for="sec in availableSections" :key="sec.id">
+                            <button type="button" @click="selectSection(sec.id, sec.section_name)" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.section_id == sec.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                <span x-text="sec.section_name"></span>
+                                <template x-if="form.section_id == sec.id">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
                 <!-- Exam Dropdown (Visible only for Single Exam) -->
                 <div class="relative" x-show="reportType === 'single'" @click.away="if(activeDropdown === 'exam') activeDropdown = null">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Select Exam *</label>
@@ -132,7 +158,7 @@
 
                 <!-- Student Identity -->
                 <div>
-                    <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Student ID or Roll <span class="text-gray-400 font-normal lowercase">(optional for bulk)</span></label>
+                    <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Student ID or Roll</label>
                     <input type="text" name="student_identity" x-model="form.student_identity" placeholder="Enter ID / Roll (Leave empty for All Class Students)" class="w-full h-11 px-4 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-250 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
                 </div>
             </div>
@@ -153,18 +179,23 @@
 
 @push('scripts')
 <script>
-    function marksheetGenerator() {
+    function marksheetGenerator(classSectionsData = {}) {
         return {
+            classSections: classSectionsData,
+            availableSections: [],
+            hasSections: false,
             reportType: 'single',
             activeDropdown: null,
             sessionText: 'Select Session',
             examText: 'Select Exam',
             classText: 'All Classes',
+            sectionText: 'All Sections',
             
             form: {
                 session_year_id: '{{ $sessions->first()->id ?? "" }}',
                 exam_id: '{{ $exams->first()->id ?? "" }}',
                 class_id: '',
+                section_id: '',
                 student_identity: ''
             },
 
@@ -190,6 +221,24 @@
             selectClass(id, name) {
                 this.form.class_id = id;
                 this.classText = name;
+                this.activeDropdown = null;
+
+                const sections = this.classSections[id] || [];
+                if (sections.length > 1) {
+                    this.availableSections = sections;
+                    this.hasSections = true;
+                    this.form.section_id = '';
+                    this.sectionText = 'All Sections';
+                } else {
+                    this.availableSections = [];
+                    this.hasSections = false;
+                    this.form.section_id = '';
+                    this.sectionText = 'All Sections';
+                }
+            },
+            selectSection(id, name) {
+                this.form.section_id = id;
+                this.sectionText = name;
                 this.activeDropdown = null;
             }
         };

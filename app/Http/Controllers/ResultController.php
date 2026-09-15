@@ -22,8 +22,18 @@ class ResultController extends Controller
         $sessions = SessionYear::orderBy('session_name', 'desc')->get();
         $classes = Classes::all();
         $branches = Branch::all();
-        
-        return view('pages.results.index', compact('exams', 'sessions', 'classes', 'branches'));
+        // Get sections mapped per class where students exist
+        $classSections = Student::select('class_id', 'section_id')
+            ->whereNotNull('section_id')
+            ->distinct()
+            ->with('section:id,section_name')
+            ->get()
+            ->groupBy('class_id')
+            ->map(function ($items) {
+                return $items->pluck('section')->filter()->unique('id')->values();
+            });
+
+        return view('pages.results.index', compact('exams', 'sessions', 'classes', 'branches', 'classSections'));
     }
 
     // PDF generation router method: delegates to Single or Combined marksheet
@@ -99,16 +109,23 @@ class ResultController extends Controller
             // BULK CLASS MODE
             $class = Classes::findOrFail($request->class_id);
 
+            $selectedSection = null;
+            if ($request->filled('section_id') && $request->section_id !== 'all') {
+                $selectedSection = Section::find($request->section_id);
+            }
+
             $students = Student::with(['schoolClass', 'branch', 'section', 'shift', 'sessionYear'])
                 ->where('class_id', $class->id)
                 ->where('session_year_id', $request->session_year_id)
                 ->when($request->filled('branch_id'), fn($q) => $q->where('branch_id', $request->branch_id))
+                ->when($selectedSection, fn($q) => $q->where('section_id', $selectedSection->id))
                 ->orderByRaw('CAST(roll_number AS UNSIGNED) ASC')
                 ->orderBy('student_identity', 'asc')
                 ->get();
 
             if ($students->isEmpty()) {
-                return back()->withErrors(['error' => "No students found in {$class->class_name} for this academic session."]);
+                $sectionName = $selectedSection ? " ({$selectedSection->section_name})" : "";
+                return back()->withErrors(['error' => "No students found in {$class->class_name}{$sectionName} for this academic session."]);
             }
 
             $firstBranchId = $students->first()->branch_id ?? null;
@@ -145,7 +162,8 @@ class ResultController extends Controller
 
             $pdf = PDF::setPaper('a4', 'portrait')
                 ->loadView('pages.results.marksheet_single_pdf', $data);
-            return $pdf->stream('Bulk_Progress_Reports_' . str_replace(' ', '_', $class->class_name) . '_' . str_replace(' ', '_', $exam->name) . '.pdf');
+            $sectionSuffix = !empty($selectedSection) ? '_' . str_replace(' ', '_', $selectedSection->section_name) : '';
+            return $pdf->stream('Bulk_Progress_Reports_' . str_replace(' ', '_', $class->class_name) . $sectionSuffix . '_' . str_replace(' ', '_', $exam->name) . '.pdf');
         }
     }
 
@@ -355,16 +373,23 @@ class ResultController extends Controller
             // BULK CLASS MODE
             $class = Classes::findOrFail($request->class_id);
 
+            $selectedSection = null;
+            if ($request->filled('section_id') && $request->section_id !== 'all') {
+                $selectedSection = Section::find($request->section_id);
+            }
+
             $students = Student::with(['schoolClass', 'branch', 'section', 'shift', 'sessionYear'])
                 ->where('class_id', $class->id)
                 ->where('session_year_id', $request->session_year_id)
                 ->when($request->filled('branch_id'), fn($q) => $q->where('branch_id', $request->branch_id))
+                ->when($selectedSection, fn($q) => $q->where('section_id', $selectedSection->id))
                 ->orderByRaw('CAST(roll_number AS UNSIGNED) ASC')
                 ->orderBy('student_identity', 'asc')
                 ->get();
 
             if ($students->isEmpty()) {
-                return back()->withErrors(['error' => "No students found in {$class->class_name} for this academic session."]);
+                $sectionName = $selectedSection ? " ({$selectedSection->section_name})" : "";
+                return back()->withErrors(['error' => "No students found in {$class->class_name}{$sectionName} for this academic session."]);
             }
 
             $firstBranchId = $students->first()->branch_id ?? null;
@@ -409,7 +434,8 @@ class ResultController extends Controller
             ], self::getFontPaths());
 
             $pdf = PDF::loadView('pages.results.marksheet_combined_pdf', $data)->setPaper('a4', 'landscape');
-            return $pdf->stream('Bulk_Combined_Reports_' . str_replace(' ', '_', $class->class_name) . '_' . str_replace(' ', '_', $sessionYear->session_name) . '.pdf');
+            $sectionSuffix = !empty($selectedSection) ? '_' . str_replace(' ', '_', $selectedSection->section_name) : '';
+            return $pdf->stream('Bulk_Combined_Reports_' . str_replace(' ', '_', $class->class_name) . $sectionSuffix . '_' . str_replace(' ', '_', $sessionYear->session_name) . '.pdf');
         }
     }
 
@@ -591,6 +617,7 @@ class ResultController extends Controller
         return Mark::where('session_year_id', $sessionYearId)
             ->where('class_id', $classId)
             ->where('exam_id', $examId)
+            ->whereHas('subject')
             ->groupBy('subject_id')
             ->selectRaw('subject_id, MAX(total_mark) as top_mark')
             ->pluck('top_mark', 'subject_id');
@@ -601,6 +628,7 @@ class ResultController extends Controller
         return Mark::where('session_year_id', $sessionYearId)
             ->where('class_id', $classId)
             ->whereIn('exam_id', array_filter($examIds))
+            ->whereHas('subject')
             ->groupBy('student_id', 'subject_id')
             ->selectRaw('subject_id, SUM(total_mark) as sum_total')
             ->get()
@@ -627,6 +655,7 @@ class ResultController extends Controller
                 if ($request->filled('class_id')) {
                     $q->orWhere(function($sub) use ($request) {
                         $sub->where('class_id', $request->class_id)
+                            ->when($request->filled('section_id') && $request->section_id !== 'all', fn($sq) => $sq->where('section_id', $request->section_id))
                             ->where('roll_number', (string)$request->student_identity);
                     });
                 }
@@ -691,6 +720,7 @@ class ResultController extends Controller
         $allMarks = Mark::where('session_year_id', $sessionYearId)
             ->where('class_id', $classId)
             ->where('exam_id', $examId)
+            ->whereHas('subject')
             ->get();
 
         if ($allMarks->isEmpty()) {
@@ -717,13 +747,19 @@ class ResultController extends Controller
                 'student_id' => $st->id,
                 'section_id' => $st->section_id,
                 'shift_id'   => $st->shift_id,
+                'failed'     => $failed,
                 'gpa'        => $gpa,
                 'total'      => $total,
             ];
         }
 
-        // Sort descending: GPA first, then Total marks
+        // Sort descending: Passed first, then GPA first, then Total marks
         usort($scores, function($a, $b) {
+            $aFail = ($a['failed'] ?? false);
+            $bFail = ($b['failed'] ?? false);
+            if ($aFail !== $bFail) {
+                return $aFail ? 1 : -1;
+            }
             if ($a['gpa'] == $b['gpa']) {
                 return $b['total'] <=> $a['total'];
             }
@@ -731,20 +767,48 @@ class ResultController extends Controller
         });
 
         $merits = [];
-        $secCounts = [];
-        $shiftCounts = [];
+        $currentClassRank = 0;
+        $prevClassScore = null;
 
-        foreach ($scores as $idx => $s) {
+        $secRanks = [];
+        $prevSecScores = [];
+
+        $shiftRanks = [];
+        $prevShiftScores = [];
+
+        foreach ($scores as $s) {
             $secId = $s['section_id'] ?? 0;
             $shId = $s['shift_id'] ?? 0;
+            $scoreKey = ($s['failed'] ? 'FAIL_' : 'PASS_') . ((float)$s['gpa']) . '_' . ((float)$s['total']);
 
-            $secCounts[$secId] = ($secCounts[$secId] ?? 0) + 1;
-            $shiftCounts[$shId] = ($shiftCounts[$shId] ?? 0) + 1;
+            // Class-wise Dense Rank
+            if ($scoreKey !== $prevClassScore) {
+                $currentClassRank++;
+                $prevClassScore = $scoreKey;
+            }
+
+            // Section-wise Dense Rank
+            if (!isset($secRanks[$secId])) {
+                $secRanks[$secId] = 1;
+                $prevSecScores[$secId] = $scoreKey;
+            } elseif ($scoreKey !== $prevSecScores[$secId]) {
+                $secRanks[$secId]++;
+                $prevSecScores[$secId] = $scoreKey;
+            }
+
+            // Shift-wise Dense Rank
+            if (!isset($shiftRanks[$shId])) {
+                $shiftRanks[$shId] = 1;
+                $prevShiftScores[$shId] = $scoreKey;
+            } elseif ($scoreKey !== $prevShiftScores[$shId]) {
+                $shiftRanks[$shId]++;
+                $prevShiftScores[$shId] = $scoreKey;
+            }
 
             $merits[$s['student_id']] = [
-                'class_wise'   => $idx + 1,
-                'section_wise' => $secCounts[$secId],
-                'shift_wise'   => $shiftCounts[$shId],
+                'class_wise'   => $currentClassRank,
+                'section_wise' => $secRanks[$secId],
+                'shift_wise'   => $shiftRanks[$shId],
             ];
         }
 
@@ -892,6 +956,7 @@ class ResultController extends Controller
             ->where('branch_id', $branch->id)
             ->where('exam_id', $exam->id)
             ->where('class_id', $schoolClass->id)
+            ->whereHas('subject')
             ->get();
 
         // Check if any subjects with marks are missing from schedules
@@ -925,6 +990,10 @@ class ResultController extends Controller
         if ($schedules->isEmpty()) {
             return back()->withErrors(['error' => 'No subjects found for this class in Exam Subject Setup.']);
         }
+
+        // Filter marks strictly to subjects present in schedules/sheet
+        $validSubjectIds = $schedules->pluck('subject_id')->filter()->toArray();
+        $allMarks = $allMarks->whereIn('subject_id', $validSubjectIds);
 
         $selectedSection = null;
         if ($request->filled('section_id') && $request->section_id !== 'all') {
@@ -988,9 +1057,20 @@ class ResultController extends Controller
             return $b->cgpa <=> $a->cgpa;
         });
 
-        // Assign merit position/rank to each student
-        foreach ($studentData as $rankIndex => $item) {
-            $item->merit_rank = $rankIndex + 1;
+        // Assign dense merit position/rank to each student (ties get same rank: 1, 1, 2, 3...)
+        $currentRank = 0;
+        $prevScoreKey = null;
+
+        foreach ($studentData as $item) {
+            $isFailed = ($item->final_grade === 'F' || $item->final_grade === 'Fail');
+            $scoreKey = ($isFailed ? 'FAIL_' : 'PASS_') . ((float)$item->cgpa) . '_' . ((float)$item->grand_total);
+
+            if ($scoreKey !== $prevScoreKey) {
+                $currentRank++;
+                $prevScoreKey = $scoreKey;
+            }
+
+            $item->merit_rank = $currentRank;
         }
 
         // Apply roll wise or merit wise sorting based on filter
@@ -1004,6 +1084,16 @@ class ResultController extends Controller
                     return ($a->merit_rank ?? 0) <=> ($b->merit_rank ?? 0);
                 }
                 return $cmp;
+            });
+        } else {
+            // When sorting by merit, tied students are ordered by roll number ascending
+            usort($studentData, function($a, $b) {
+                if ($a->merit_rank != $b->merit_rank) {
+                    return $a->merit_rank <=> $b->merit_rank;
+                }
+                $rollA = (string)($a->student->roll_number ?? $a->student->student_identity ?? '');
+                $rollB = (string)($b->student->roll_number ?? $b->student->student_identity ?? '');
+                return strnatcmp($rollA, $rollB);
             });
         }
 
