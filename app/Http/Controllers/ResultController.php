@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Exam;
@@ -83,13 +84,13 @@ class ResultController extends Controller
             $meritMap = $this->getClassMeritMap($request->session_year_id, $student->class_id, $exam->id);
 
             $report = $this->buildSingleReportData(
-                $student, 
-                $exam, 
-                $sessionYear, 
-                $schedules, 
-                $topMarks, 
-                $totalClassStudents, 
-                $logoSrc, 
+                $student,
+                $exam,
+                $sessionYear,
+                $schedules,
+                $topMarks,
+                $totalClassStudents,
+                $logoSrc,
                 $signatureSrc,
                 $meritMap
             );
@@ -137,13 +138,13 @@ class ResultController extends Controller
             $reports = [];
             foreach ($students as $student) {
                 $report = $this->buildSingleReportData(
-                    $student, 
-                    $exam, 
-                    $sessionYear, 
-                    $schedules, 
-                    $topMarks, 
-                    $totalClassStudents, 
-                    $logoSrc, 
+                    $student,
+                    $exam,
+                    $sessionYear,
+                    $schedules,
+                    $topMarks,
+                    $totalClassStudents,
+                    $logoSrc,
                     $signatureSrc,
                     $meritMap
                 );
@@ -309,11 +310,11 @@ class ResultController extends Controller
         // Find the 3 terminal exams
         $allExams = Exam::all();
         $exam1 = $allExams->first(fn($e) => stripos($e->name, '1st') !== false && stripos($e->name, 'term') !== false)
-                 ?? $allExams->first(fn($e) => stripos($e->name, '1st') !== false);
+            ?? $allExams->first(fn($e) => stripos($e->name, '1st') !== false);
         $exam2 = $allExams->first(fn($e) => stripos($e->name, '2nd') !== false && stripos($e->name, 'term') !== false)
-                 ?? $allExams->first(fn($e) => stripos($e->name, '2nd') !== false);
+            ?? $allExams->first(fn($e) => stripos($e->name, '2nd') !== false);
         $exam3 = $allExams->first(fn($e) => stripos($e->name, 'annual') !== false || stripos($e->name, '3rd') !== false)
-                 ?? $allExams->first(fn($e) => stripos($e->name, 'final') !== false);
+            ?? $allExams->first(fn($e) => stripos($e->name, 'final') !== false);
 
         if (!$exam1) $exam1 = $allExams->get(0);
         if (!$exam2) $exam2 = $allExams->get(1);
@@ -649,11 +650,11 @@ class ResultController extends Controller
     protected function findStudent(Request $request)
     {
         return Student::with(['schoolClass', 'branch', 'section', 'shift', 'sessionYear'])
-            ->where(function($q) use ($request) {
+            ->where(function ($q) use ($request) {
                 $q->where('student_identity', $request->student_identity)
-                  ->orWhere('id', $request->student_identity);
+                    ->orWhere('id', $request->student_identity);
                 if ($request->filled('class_id')) {
-                    $q->orWhere(function($sub) use ($request) {
+                    $q->orWhere(function ($sub) use ($request) {
                         $sub->where('class_id', $request->class_id)
                             ->when($request->filled('section_id') && $request->section_id !== 'all', fn($sq) => $sq->where('section_id', $request->section_id))
                             ->where('roll_number', (string)$request->student_identity);
@@ -754,7 +755,7 @@ class ResultController extends Controller
         }
 
         // Sort descending: Passed first, then GPA first, then Total marks
-        usort($scores, function($a, $b) {
+        usort($scores, function ($a, $b) {
             $aFail = ($a['failed'] ?? false);
             $bFail = ($b['failed'] ?? false);
             if ($aFail !== $bFail) {
@@ -1045,7 +1046,7 @@ class ResultController extends Controller
         }
 
         // Sort by merit first to establish accurate merit positions
-        usort($studentData, function($a, $b) {
+        usort($studentData, function ($a, $b) {
             $aFail = ($a->final_grade === 'F' || $a->final_grade === 'Fail');
             $bFail = ($b->final_grade === 'F' || $b->final_grade === 'Fail');
             if ($aFail !== $bFail) {
@@ -1076,7 +1077,7 @@ class ResultController extends Controller
         // Apply roll wise or merit wise sorting based on filter
         $sortBy = $request->input('sort_by', 'roll');
         if ($sortBy === 'roll') {
-            usort($studentData, function($a, $b) {
+            usort($studentData, function ($a, $b) {
                 $rollA = (string)($a->student->roll_number ?? $a->student->student_identity ?? '');
                 $rollB = (string)($b->student->roll_number ?? $b->student->student_identity ?? '');
                 $cmp = strnatcmp($rollA, $rollB);
@@ -1087,7 +1088,7 @@ class ResultController extends Controller
             });
         } else {
             // When sorting by merit, tied students are ordered by roll number ascending
-            usort($studentData, function($a, $b) {
+            usort($studentData, function ($a, $b) {
                 if ($a->merit_rank != $b->merit_rank) {
                     return $a->merit_rank <=> $b->merit_rank;
                 }
@@ -1160,6 +1161,17 @@ class ResultController extends Controller
     {
         if (empty($name)) return '';
 
+        // Normalize spaces and Unicode
+        $trimmed = trim(preg_replace('/\s+/u', ' ', str_replace("\xc2\xa0", ' ', $name)));
+        // Decomposed to precomposed Bengali characters (য + ় -> য়, ড + ় -> ড়, ঢ + ় -> ঢ়)
+        $trimmed = strtr($trimmed, [
+            "\xe0\xa6\xaf\xe0\xa7\xbc" => "\xe0\xa7\x9f",
+            "\xe0\xa6\xa1\xe0\xa7\xbc" => "\xe0\xa7\x9c",
+            "\xe0\xa6\xa2\xe0\xa7\xbc" => "\xe0\xa7\x9d",
+            "\xe0\xa7\x87\xe0\xa6\xbe" => "\xe0\xa7\x8b",
+            "\xe0\xa7\x87\xe0\xa7\x97" => "\xe0\xa7\x8c",
+        ]);
+
         if ($short) {
             $shortMap = [
                 'বাংলা' => 'Bangla',
@@ -1203,7 +1215,11 @@ class ResultController extends Controller
                 'গার্হস্থ্য বিজ্ঞান' => 'Home Science',
                 'তথ্য ও যোগাযোগ প্রযুক্তি' => 'ICT',
                 'কৃষি শিক্ষা' => 'Agriculture',
-                'জীববিজ্ঞান / ভূগোল' => 'Biology / Geog',
+                'জীববিজ্ঞান / ভূগোল' => 'Biology / Geography',
+                'জীব বিজ্ঞান / ভূগোল' => 'Biology / Geography',
+                'জীববিজ্ঞান' => 'Biology',
+                'জীব বিজ্ঞান' => 'Biology',
+                'ভূগোল' => 'Geography',
                 'রসায়ন / অর্থনীতি' => 'Chemistry / Econ',
                 'রসায়ন / অর্থনীতি' => 'Chemistry / Econ',
                 'পদার্থ / ইতিহাস' => 'Physics / History',
@@ -1212,16 +1228,20 @@ class ResultController extends Controller
                 'S.B.A' => 'S.B.A',
             ];
 
-            $trimmed = trim($name);
             if (isset($shortMap[$trimmed])) {
                 return $shortMap[$trimmed];
             }
+
+            // Sort keys by string length descending to match longer compound phrases before substrings
+            uksort($shortMap, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
 
             foreach ($shortMap as $bn => $en) {
                 if (mb_strpos($trimmed, $bn) !== false) {
                     return $en;
                 }
             }
+
+            return $trimmed;
         }
 
         $map = [
@@ -1267,6 +1287,10 @@ class ResultController extends Controller
             'তথ্য ও যোগাযোগ প্রযুক্তি' => 'Information & Communication Tech (ICT)',
             'কৃষি শিক্ষা' => 'Agriculture Studies',
             'জীববিজ্ঞান / ভূগোল' => 'Biology / Geography',
+            'জীব বিজ্ঞান / ভূগোল' => 'Biology / Geography',
+            'জীববিজ্ঞান' => 'Biology',
+            'জীব বিজ্ঞান' => 'Biology',
+            'ভূগোল' => 'Geography',
             'রসায়ন / অর্থনীতি' => 'Chemistry / Economics',
             'রসায়ন / অর্থনীতি' => 'Chemistry / Economics',
             'পদার্থ / ইতিহাস' => 'Physics / History',
@@ -1275,10 +1299,12 @@ class ResultController extends Controller
             'S.B.A' => 'S.B.A',
         ];
 
-        $trimmed = trim($name);
         if (isset($map[$trimmed])) {
             return $map[$trimmed];
         }
+
+        // Sort keys by string length descending to match longer compound phrases before substrings
+        uksort($map, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
 
         // Partial match check
         foreach ($map as $bn => $en) {

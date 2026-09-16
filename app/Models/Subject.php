@@ -36,10 +36,21 @@ class Subject extends Model
                     $bytes .= chr($code);
                 } else {
                     $map = [
-                        8218 => 0x82, 8482 => 0x99, 8250 => 0x9B, 8364 => 0x80,
-                        8226 => 0x95, 8211 => 0x96, 8212 => 0x97, 8224 => 0x86,
-                        8225 => 0x87, 8240 => 0x89, 8254 => 0x9E,
-                        353  => 0x9A, 339  => 0x9C, 382  => 0x9E, 376  => 0x9F
+                        8218 => 0x82,
+                        8482 => 0x99,
+                        8250 => 0x9B,
+                        8364 => 0x80,
+                        8226 => 0x95,
+                        8211 => 0x96,
+                        8212 => 0x97,
+                        8224 => 0x86,
+                        8225 => 0x87,
+                        8240 => 0x89,
+                        8254 => 0x9E,
+                        353  => 0x9A,
+                        339  => 0x9C,
+                        382  => 0x9E,
+                        376  => 0x9F
                     ];
                     $bytes .= chr($map[$code] ?? 0x3F);
                 }
@@ -63,7 +74,7 @@ class Subject extends Model
             "\xe0\xa6\xaf\xe0\xa7\xbc" => "\xe0\xa7\x9f", // য + ় -> য়
             "\xe0\xa6\xa1\xe0\xa7\xbc" => "\xe0\xa7\x9c", // ড + ় -> ড়
             "\xe0\xa6\xa2\xe0\xa7\xbc" => "\xe0\xa7\x9d", // ঢ + ় -> ঢ়
-            
+
             // Decomposed to Precomposed Vowels (O, Au)
             "\xe0\xa7\x87\xe0\xa6\xbe" => "\xe0\xa7\x8b", // ে + া -> ো
             "\xe0\xa7\x87\xe0\xa7\x97" => "\xe0\xa7\x8c", // ে + ৗ -> ৌ
@@ -86,13 +97,16 @@ class Subject extends Model
         $translations = [
             // ১. Combined/Compound Subjects (এগুলো আগে ম্যাচ করানো সেফ)
             'বাংলাদেশ ও বিশ্বপরিচয় / সাধারণ বিজ্ঞান' => 'Bangladesh & Global Studies / General Science',
+            'বাংলাদেশ ও বিশ্বপরিচয় / সাধারণ বিজ্ঞান' => 'Bangladesh & Global Studies / General Science',
             'উচ্চতর গণিত / কৃষি শিক্ষা' => 'Higher Mathematics / Agriculture Studies',
             'জীববিজ্ঞান / ভূগোল' => 'Biology / Geography',
+            'জীব বিজ্ঞান / ভূগোল' => 'Biology / Geography',
             'রসায়ন / অর্থনীতি' => 'Chemistry / Economics',
+            'রসায়ন / অর্থনীতি' => 'Chemistry / Economics',
             'পদার্থ / ইতিহাস' => 'Physics / History',
             'ইসলাম / হিন্দু শিক্ষা' => 'Islam & Hinduism Education',
             'আরবী / ধর্মশিক্ষা' => 'Arabic & Religion',
-            
+
             // ২. Full Subject Names
             'বাংলাদেশ ও বিশ্বপরিচয়' => 'Bangladesh & Global Studies',
             'বাংলাদেশ ও বিশ্বপরিচয়' => 'Bangladesh & Global Studies',
@@ -108,9 +122,10 @@ class Subject extends Model
             'শারীরিক শিক্ষা' => 'Physical Education',
             'ধর্মশিক্ষা' => 'Religion',
             'জীববিজ্ঞান' => 'Biology',
+            'জীব বিজ্ঞান' => 'Biology',
             '১ম পত্র' => '1st Paper',
             '২য় পত্র' => '2nd Paper',
-            
+
             // ৩. Root/Short Words
             'বাংলা' => 'Bangla',
             'ইংরেজী' => 'English',
@@ -126,7 +141,7 @@ class Subject extends Model
             'অর্থনীতি' => 'Economics',
             'পদার্থ' => 'Physics',
             'ইতিহাস' => 'History',
-            
+
             // ৪. Individual Words (Safety Net fallback in case compound matching fails)
             'বাংলাদেশ' => 'Bangladesh',
             'বিশ্বপরিচয়' => 'Global Studies',
@@ -142,7 +157,7 @@ class Subject extends Model
             'প্রযুক্তি' => 'Technology',
             'ধর্ম' => 'Religion',
             'জীব' => 'Biology',
-            
+
             // ৫. Symbols & Small Parts
             '১ম' => '1st',
             '২য়' => '2nd',
@@ -164,10 +179,10 @@ class Subject extends Model
 
         // ২. Advanced Partial Match & Replacement
         $replaced = $name;
-        
+
         // 🚨 ম্যাজিক লজিক: অ্যারেটিকে Length অনুযায়ী Descending অর্ডারে সর্ট করা হচ্ছে। 
         // ফলে 'বাংলা' এর আগে 'বাংলাদেশ' রিপ্লেস হবে এবং স্ট্রিং ভাঙবে না।
-        uksort($normalizedTranslations, function($a, $b) {
+        uksort($normalizedTranslations, function ($a, $b) {
             return mb_strlen($b) - mb_strlen($a);
         });
 
