@@ -340,7 +340,7 @@
     $chunks = $subjectChunks ?? collect([$schedules]);
     $isMultiPart = $chunks->count() > 1;
     $className = strtolower(trim($schoolClass->class_name ?? ''));
-    $isHighSchool = in_array($className, ['nine', 'class nine', '9', 'class 9', 'ten', 'class ten', '10', 'class 10']);
+    $isHighSchool = in_array($className, ['ten', 'class ten', '10', 'class 10']);
 @endphp
 
 @foreach($chunks as $chunkIndex => $chunkSchedules)
