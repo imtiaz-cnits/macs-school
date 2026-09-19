@@ -98,11 +98,12 @@ class FeeCollectionController extends Controller
             }
 
             if ($student) {
-                // ১. স্টুডেন্টের আনপেইড বা আংশিক পেইড ইনভয়েসগুলো (বকেয়া)
+                // ১. স্টুডেন্টের আনপেইড বা আংশিক পেইড ইনভয়েসগুলো (বকেয়া - লেটেস্ট মাস সবার উপরে)
                 $invoices = FeeInvoice::with('feeSetup.category')
                                       ->where('student_id', $student->id)
                                       ->whereIn('status', ['Unpaid', 'Partial'])
-                                      ->orderBy('due_date', 'asc')
+                                      ->orderBy('due_date', 'desc')
+                                      ->orderBy('id', 'desc')
                                       ->get();
 
                 // ২. স্টুডেন্টের পেমেন্ট হিস্ট্রি (পেমেন্ট টেবিল থেকে এনে গ্রুপ করা হচ্ছে)
