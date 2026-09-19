@@ -86,10 +86,18 @@ class FeeInvoiceController extends Controller
         $generatedCount = 0;
 
         // ==========================================
-        // সিরিয়াল ইনভয়েস নম্বর তৈরি করার স্মার্ট লজিক
+        // সিরিয়াল ইনভয়েস নম্বর তৈরি করার স্মার্ট লজিক (INV-YYYYMM-XXXX)
         // ==========================================
-        $branchCode = str_pad($request->branch_id, 2, "0", STR_PAD_LEFT);
-        $prefix = 'INV-' . date('Y') . $branchCode . '-'; // যেমন: INV-202602-
+        $monthsMap = [
+            'january' => '01', 'february' => '02', 'march' => '03',
+            'april' => '04', 'may' => '05', 'june' => '06',
+            'july' => '07', 'august' => '08', 'september' => '09',
+            'october' => '10', 'november' => '11', 'december' => '12'
+        ];
+        $selectedMonthKey = strtolower(trim($request->fee_month ?? ''));
+        $paddedMonth = $monthsMap[$selectedMonthKey] ?? date('m', strtotime($request->due_date));
+        $targetYear = date('Y', strtotime($request->due_date));
+        $prefix = "INV-{$targetYear}{$paddedMonth}-";
 
         // ডাটাবেস থেকে এই প্রিফিক্সের সর্বশেষ ইনভয়েসটি বের করা
         $lastInvoice = FeeInvoice::where('invoice_no', 'like', $prefix . '%')
@@ -103,22 +111,30 @@ class FeeInvoiceController extends Controller
         }
         // ==========================================
 
+        $isMonthlyRecurring = strtolower(trim($feeSetup->fee_month ?? '')) === 'monthly';
 
         // ডাটাবেস ট্রানজেকশন
         DB::beginTransaction();
         try {
             foreach ($students as $student) {
-                // ৩. চেক করা হচ্ছে এই স্টুডেন্টের নামে অলরেডি এই বিলটি করা আছে কিনা (নির্দিষ্ট মাসের জন্য)
-                $exists = FeeInvoice::where('student_id', $student->id)
-                                    ->where('fee_setup_id', $feeSetup->id)
-                                    ->where('invoice_no', 'like', $prefix . '%')
-                                    ->exists();
+                // ৩. চেক করা হচ্ছে এই স্টুডেন্টের নামে অলরেডি এই বিলটি করা আছে কিনা
+                if ($isMonthlyRecurring) {
+                    $exists = FeeInvoice::where('student_id', $student->id)
+                                        ->where('fee_setup_id', $feeSetup->id)
+                                        ->where('invoice_no', 'like', $prefix . '%')
+                                        ->exists();
+                } else {
+                    // নির্দিষ্ট মাসের ফি সেটআপের জন্য শিক্ষার্থীর শুধুমাত্র ১টি ইনভয়েস থাকবে
+                    $exists = FeeInvoice::where('student_id', $student->id)
+                                        ->where('fee_setup_id', $feeSetup->id)
+                                        ->exists();
+                }
 
                 if (!$exists) {
                     
                     // ৪. প্রতিবার নতুন ইনভয়েসের জন্য সিরিয়াল ১ করে বাড়ানো হচ্ছে
                     $lastSerial++;
-                    // নতুন ইনভয়েস নম্বর তৈরি (যেমন: INV-202602-0001)
+                    // নতুন ইনভয়েস নম্বর তৈরি (যেমন: INV-202603-0001)
                     $invoiceNo = $prefix . str_pad($lastSerial, 4, '0', STR_PAD_LEFT);
 
                     // Check if the student has a customized fee for this category

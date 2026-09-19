@@ -54,9 +54,9 @@ class FeeAutoGenerate extends Command
             $this->info("Processing Month: {$currentMonth} | Year: {$targetYear}");
             $this->info("--------------------------------------------------");
 
-            // Find all active fee setups for the target month (specific month OR marked as 'Monthly')
+            // Find all active fee setups for the target month (strictly matching specific month OR marked as 'Monthly')
             $feeSetups = \App\Models\FeeSetup::where(function ($query) use ($currentMonth) {
-                $query->where('fee_month', $currentMonth)
+                $query->whereRaw('LOWER(TRIM(fee_month)) = ?', [strtolower($currentMonth)])
                       ->orWhere('fee_month', 'Monthly');
             })
             ->where('status', 'Active')
@@ -103,15 +103,25 @@ class FeeAutoGenerate extends Command
                 // Set due date to 10th of that month and year
                 $dueDate = \Carbon\Carbon::parse("10 {$currentMonth} {$targetYear}")->toDateString();
 
+                $isMonthlyRecurring = strtolower(trim($feeSetup->fee_month ?? '')) === 'monthly';
+
                 \DB::beginTransaction();
                 try {
                     $generatedCount = 0;
                     foreach ($students as $student) {
-                        // Check if invoice already exists for this specific month/year
-                        $exists = \App\Models\FeeInvoice::where('student_id', $student->id)
-                                                        ->where('fee_setup_id', $feeSetup->id)
-                                                        ->where('invoice_no', 'like', $prefix . '%')
-                                                        ->exists();
+                        // Check if invoice already exists
+                        if ($isMonthlyRecurring) {
+                            // Monthly recurring fee: 1 invoice per month prefix
+                            $exists = \App\Models\FeeInvoice::where('student_id', $student->id)
+                                                            ->where('fee_setup_id', $feeSetup->id)
+                                                            ->where('invoice_no', 'like', $prefix . '%')
+                                                            ->exists();
+                        } else {
+                            // Specific month fee (e.g. March / July / October Exam Fee): strictly 1 invoice for this setup
+                            $exists = \App\Models\FeeInvoice::where('student_id', $student->id)
+                                                            ->where('fee_setup_id', $feeSetup->id)
+                                                            ->exists();
+                        }
 
                         if (!$exists) {
                             $lastSerial++;
