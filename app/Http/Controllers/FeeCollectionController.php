@@ -582,4 +582,105 @@ class FeeCollectionController extends Controller
             return back()->with('error', 'Bulk Collection failed: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Single Collection: Update custom fee amount inline and sync all unpaid invoices for this student & category.
+     */
+    public function updateCustomFeeAjax(Request $request)
+    {
+        $request->validate([
+            'invoice_id' => 'required|exists:fee_invoices,id',
+            'amount' => 'required|numeric|min:0',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $invoice = FeeInvoice::with(['student', 'feeSetup'])->lockForUpdate()->findOrFail($request->invoice_id);
+
+            $studentId = $invoice->student_id;
+            $feeSetup = $invoice->feeSetup;
+            $feeCategoryId = $feeSetup->fee_category_id;
+            $originalSetupAmount = floatval($feeSetup->amount);
+            $newAmount = floatval($request->amount);
+
+            if ($newAmount != $originalSetupAmount) {
+                // Update or create custom fee for this student and category
+                \App\Models\StudentCustomFee::updateOrCreate(
+                    [
+                        'student_id' => $studentId,
+                        'fee_category_id' => $feeCategoryId,
+                    ],
+                    [
+                        'amount' => $newAmount
+                    ]
+                );
+            } else {
+                // Revert to standard if it matches setup amount
+                \App\Models\StudentCustomFee::where('student_id', $studentId)
+                    ->where('fee_category_id', $feeCategoryId)
+                    ->delete();
+            }
+
+            // Find all unpaid or partially paid invoices for this student and category
+            $affectedInvoices = FeeInvoice::with('feeSetup')
+                ->where('student_id', $studentId)
+                ->whereIn('status', ['Unpaid', 'Partial'])
+                ->whereHas('feeSetup', function($q) use ($feeCategoryId) {
+                    $q->where('fee_category_id', $feeCategoryId);
+                })
+                ->lockForUpdate()
+                ->get();
+
+            $updatedInvoicesData = [];
+
+            foreach ($affectedInvoices as $inv) {
+                $setupAmount = floatval($inv->feeSetup->amount);
+                $inv->amount = $setupAmount;
+                $inv->discount = max(0, $setupAmount - $newAmount);
+                $inv->net_amount = $newAmount;
+                $inv->due_amount = max(0, $newAmount - $inv->paid_amount);
+                $inv->status = $inv->due_amount <= 0 ? 'Paid' : ($inv->paid_amount > 0 ? 'Partial' : 'Unpaid');
+                $inv->save();
+
+                $updatedInvoicesData[] = [
+                    'id' => $inv->id,
+                    'net_amount' => number_format($inv->net_amount, 2, '.', ''),
+                    'due_amount' => number_format($inv->due_amount, 2, '.', ''),
+                    'discount' => number_format($inv->discount, 2, '.', ''),
+                    'paid_amount' => number_format($inv->paid_amount, 2, '.', ''),
+                    'status' => $inv->status,
+                ];
+            }
+
+            DB::commit();
+
+            // Calculate updated summary totals for all pending invoices of this student
+            $allPendingInvoices = FeeInvoice::where('student_id', $studentId)
+                ->whereIn('status', ['Unpaid', 'Partial'])
+                ->get();
+
+            $summary = [
+                'invoices_count' => $allPendingInvoices->count(),
+                'total_bill' => number_format($allPendingInvoices->sum('net_amount'), 2),
+                'total_due' => number_format($allPendingInvoices->sum('due_amount'), 2),
+                'total_discount' => number_format($allPendingInvoices->sum('discount'), 2),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Custom fee updated successfully across all matching invoices.',
+                'category_id' => $feeCategoryId,
+                'new_amount' => number_format($newAmount, 2, '.', ''),
+                'updated_invoices' => $updatedInvoicesData,
+                'summary' => $summary,
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update custom fee: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

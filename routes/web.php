@@ -388,7 +388,7 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
         // Fee Collection (নতুন)
         Route::get('/collection', [FeeCollectionController::class, 'index'])->name('collection.index');
         Route::post('/collection', [FeeCollectionController::class, 'store'])->name('collection.store');
-       
+        Route::post('/custom-fee/update-inline', [FeeCollectionController::class, 'updateCustomFeeAjax'])->name('custom_fee.update_inline');
 
         // Generate Invoices Routes
         Route::get('/invoice/generate', [FeeInvoiceController::class, 'index'])->name('invoice.generate');

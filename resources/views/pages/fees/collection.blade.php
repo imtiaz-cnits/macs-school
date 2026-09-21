@@ -283,27 +283,23 @@
                                 <div id="headerSelectedPill" class="hidden px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-themeBlue to-indigo-600 text-white shadow-md shadow-themeBlue/20 text-xs font-black flex items-center gap-1.5 transition-all">
                                     <span class="text-[10px] font-black uppercase tracking-wider opacity-90">Selected:</span>
                                     <span class="font-mono text-xs font-black">৳ <span id="headerSelectedDisplay">0.00</span></span>
-                                </div>
-
-                                <!-- Invoices Count -->
+                                </div>                                <!-- Invoices Count -->
                                 <div class="px-3 py-1.5 rounded-xl bg-gray-50/80 dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] text-xs font-semibold flex items-center gap-1.5 shadow-sm">
                                     <span class="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">Invoices:</span>
-                                    <span class="font-black text-gray-800 dark:text-gray-200">{{ $pendingInvoicesCount }}</span>
+                                    <span id="summaryInvoicesCount" class="font-black text-gray-800 dark:text-gray-200">{{ $pendingInvoicesCount }}</span>
                                 </div>
 
                                 <!-- Total Bill -->
                                 <div class="px-3 py-1.5 rounded-xl bg-gray-50/80 dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] text-xs font-semibold flex items-center gap-1.5 shadow-sm">
                                     <span class="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">Total Bill:</span>
-                                    <span class="font-black font-mono text-gray-900 dark:text-white">৳ {{ number_format($totalNetBill, 2) }}</span>
+                                    <span id="summaryTotalBill" class="font-black font-mono text-gray-900 dark:text-white">৳ {{ number_format($totalNetBill, 2) }}</span>
                                 </div>
 
-                                @if($totalDiscount > 0)
                                 <!-- Total Discount -->
-                                <div class="px-3 py-1.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 text-xs font-semibold flex items-center gap-1.5 shadow-sm text-amber-700 dark:text-amber-400">
+                                <div id="summaryDiscountWrapper" class="{{ $totalDiscount > 0 ? '' : 'hidden' }} px-3 py-1.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 text-xs font-semibold flex items-center gap-1.5 shadow-sm text-amber-700 dark:text-amber-400">
                                     <span class="text-[10px] font-black uppercase tracking-wider opacity-80">Discount:</span>
-                                    <span class="font-black font-mono">৳ {{ number_format($totalDiscount, 2) }}</span>
+                                    <span id="summaryDiscount" class="font-black font-mono">৳ {{ number_format($totalDiscount, 2) }}</span>
                                 </div>
-                                @endif
 
                                 <!-- Total Paid (Lifetime) -->
                                 <div class="px-3 py-1.5 rounded-xl bg-green-50/70 dark:bg-themeGreen/10 border border-green-200/60 dark:border-green-800/40 text-xs font-semibold flex items-center gap-1.5 shadow-sm text-themeGreen">
@@ -314,7 +310,7 @@
                                 <!-- Total Pending Due (Prominent Red Badge) -->
                                 <div class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-500/20 text-xs font-black flex items-center gap-1.5">
                                     <span class="uppercase tracking-wider text-[10px] opacity-90">Total Due:</span>
-                                    <span class="font-mono text-xs sm:text-sm font-black tracking-tight">৳ {{ number_format($totalDueAmount, 2) }}</span>
+                                    <span id="summaryTotalDue" class="font-mono text-xs sm:text-sm font-black tracking-tight">৳ {{ number_format($totalDueAmount, 2) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -329,15 +325,15 @@
                                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-2 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Fee Description</th>
                                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Month</th>
                                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Net Bill</th>
-                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-red-500 dark:text-red-400 uppercase tracking-[0.2em] text-right">Due Amt</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-themeGreen dark:text-themeGreen uppercase tracking-[0.2em] text-right w-44">Due Amt (৳)</th>
                                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-36">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                                     @forelse($invoices as $inv)
-                                    <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
+                                    <tr id="inv-row-{{ $inv->id }}" data-category-id="{{ $inv->feeSetup->fee_category_id }}" class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
                                         <td class="py-4 px-4 text-center">
-                                            <input type="checkbox" name="invoice_ids[]" value="{{ $inv->id }}" data-amount="{{ $inv->due_amount }}" class="due-checkbox w-4 h-4 text-themeGreen rounded border-gray-200 dark:border-gray-800 focus:ring-themeGreen cursor-pointer">
+                                            <input type="checkbox" id="checkbox-{{ $inv->id }}" name="invoice_ids[]" value="{{ $inv->id }}" data-amount="{{ $inv->due_amount }}" class="due-checkbox w-4 h-4 text-themeGreen rounded border-gray-200 dark:border-gray-800 focus:ring-themeGreen cursor-pointer">
                                         </td>
                                         <td class="py-4 px-2">
                                             <div class="font-bold text-gray-900 dark:text-gray-100 text-sm">{{ $inv->feeSetup->category->name }}</div>
@@ -346,10 +342,30 @@
                                         <td class="py-4 px-4">
                                             <span class="px-2 py-0.5 bg-gray-50 dark:bg-themeDark border border-gray-100 dark:border-white/[0.06] text-themeBlue dark:text-themeBlue text-[9px] font-black uppercase tracking-wider rounded-lg inline-block">{{ $inv->month_name }}</span>
                                         </td>
-                                        <td class="py-4 px-4 text-right text-sm font-semibold text-gray-600 dark:text-gray-400">{{ number_format($inv->net_amount, 2) }}</td>
-                                        <td class="py-4 px-4 text-right font-black text-red-655 dark:text-red-400 text-lg font-mono">৳ {{ number_format($inv->due_amount, 2) }}</td>
+                                        <td id="net-bill-{{ $inv->id }}" class="py-4 px-4 text-right text-sm font-semibold text-gray-600 dark:text-gray-400 font-mono">{{ number_format($inv->net_amount, 2) }}</td>
+                                        <td class="py-3 px-4 text-right">
+                                            <div class="inline-flex items-center justify-end relative">
+                                                <span class="text-xs font-black font-mono text-gray-400 dark:text-gray-500 mr-1.5">৳</span>
+                                                <input type="number" 
+                                                       step="0.01" 
+                                                       min="0"
+                                                       name="custom_due_amounts[{{ $inv->id }}]"
+                                                       value="{{ number_format($inv->due_amount, 2, '.', '') }}" 
+                                                       data-invoice-id="{{ $inv->id }}"
+                                                       data-category-id="{{ $inv->feeSetup->fee_category_id }}"
+                                                       data-prev-value="{{ number_format($inv->due_amount, 2, '.', '') }}"
+                                                       class="single-due-input w-28 sm:w-32 h-9 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-bold font-mono text-themeGreen dark:text-themeGreen px-2.5 text-right shadow-sm"
+                                                       onchange="updateSingleFeeAmount(this)">
+                                                <span id="spinner-{{ $inv->id }}" class="hidden ml-1.5">
+                                                    <svg class="animate-spin h-3.5 w-3.5 text-themeBlue" fill="none" viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                        </td>
                                         <td class="py-4 px-4 text-right">
-                                            <button type="button" onclick="openPayModal({{ $inv->id }}, '{{ $inv->feeSetup->category->name }} ({{ $inv->month_name }})', {{ $inv->due_amount }})" class="h-9 px-4 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-[10px] font-black rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center active:scale-95">Pay Single</button>
+                                            <button type="button" id="pay-btn-{{ $inv->id }}" data-fee-name="{{ $inv->feeSetup->category->name }} ({{ $inv->month_name }})" onclick="openPayModal({{ $inv->id }}, '{{ $inv->feeSetup->category->name }} ({{ $inv->month_name }})', {{ $inv->due_amount }})" class="h-9 px-4 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-[10px] font-black rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center active:scale-95">Pay Single</button>
                                         </td>
                                     </tr>
                                     @empty
@@ -992,6 +1008,12 @@
 @push('scripts')
 <script>
     function openPayModal(invoiceId, feeName, dueAmount) {
+        // If the row's input was edited, use its current value
+        const rowInput = document.querySelector(`.single-due-input[data-invoice-id="${invoiceId}"]`);
+        if (rowInput && parseFloat(rowInput.value) >= 0) {
+            dueAmount = parseFloat(rowInput.value);
+        }
+
         document.getElementById('modalInvoiceId').value = invoiceId;
         document.getElementById('modalFeeName').innerText = feeName;
         document.getElementById('modalDueAmountText').innerText = parseFloat(dueAmount).toFixed(2);
@@ -1009,6 +1031,118 @@
         modal.classList.remove('modal-active');
         modal.classList.add('hidden');
     }
+
+    async function updateSingleFeeAmount(input) {
+        const invoiceId = input.dataset.invoiceId;
+        const categoryId = input.dataset.categoryId;
+        const newAmount = parseFloat(input.value);
+        const prevValue = input.dataset.prevValue;
+        const spinner = document.getElementById('spinner-' + invoiceId);
+
+        if (isNaN(newAmount) || newAmount < 0) {
+            showDanger('Invalid Amount', 'Please enter a valid non-negative fee amount.');
+            input.value = prevValue;
+            return;
+        }
+
+        if (spinner) spinner.classList.remove('hidden');
+        input.classList.add('opacity-60');
+
+        try {
+            const response = await fetch("{{ route('fees.custom_fee.update_inline') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    invoice_id: invoiceId,
+                    amount: newAmount
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                // Update all invoices returned in data.updated_invoices
+                if (data.updated_invoices && data.updated_invoices.length > 0) {
+                    data.updated_invoices.forEach(invData => {
+                        // Update input in table
+                        const rowInput = document.querySelector(`.single-due-input[data-invoice-id="${invData.id}"]`);
+                        if (rowInput) {
+                            rowInput.value = parseFloat(invData.due_amount).toFixed(2);
+                            rowInput.dataset.prevValue = rowInput.value;
+                        }
+
+                        // Update net bill column
+                        const netCell = document.getElementById(`net-bill-${invData.id}`);
+                        if (netCell) {
+                            netCell.innerText = parseFloat(invData.net_amount).toFixed(2);
+                        }
+
+                        // Update checkbox data-amount
+                        const chk = document.getElementById(`checkbox-${invData.id}`);
+                        if (chk) {
+                            chk.dataset.amount = invData.due_amount;
+                        }
+
+                        // Update pay single button onclick
+                        const payBtn = document.getElementById(`pay-btn-${invData.id}`);
+                        if (payBtn) {
+                            const feeName = payBtn.dataset.feeName;
+                            payBtn.setAttribute('onclick', `openPayModal(${invData.id}, '${feeName}', ${invData.due_amount})`);
+                        }
+                    });
+                }
+
+                // Update summary badges
+                if (data.summary) {
+                    const billEl = document.getElementById('summaryTotalBill');
+                    if (billEl) billEl.innerText = '৳ ' + data.summary.total_bill;
+
+                    const dueEl = document.getElementById('summaryTotalDue');
+                    if (dueEl) dueEl.innerText = '৳ ' + data.summary.total_due;
+
+                    const discWrap = document.getElementById('summaryDiscountWrapper');
+                    const discEl = document.getElementById('summaryDiscount');
+                    const discountVal = parseFloat(String(data.summary.total_discount).replace(/,/g, ''));
+                    if (discountVal > 0) {
+                        if (discWrap) discWrap.classList.remove('hidden');
+                        if (discEl) discEl.innerText = '৳ ' + data.summary.total_discount;
+                    } else if (discWrap) {
+                        discWrap.classList.add('hidden');
+                    }
+                }
+
+                // Recalculate selected total if any checked
+                if (typeof window.calculateSingleTotal === 'function') {
+                    window.calculateSingleTotal();
+                }
+
+                // Visual highlight pulse on all inputs of this category
+                document.querySelectorAll(`.single-due-input[data-category-id="${categoryId}"]`).forEach(inp => {
+                    inp.classList.add('!border-themeGreen', '!bg-green-50/50', 'dark:!bg-green-950/30');
+                    setTimeout(() => {
+                        inp.classList.remove('!border-themeGreen', '!bg-green-50/50', 'dark:!bg-green-950/30');
+                    }, 1500);
+                });
+
+                showSuccess(data.message || 'Custom fee updated successfully.');
+            } else {
+                showDanger('Update Failed', data.message || 'Failed to update fee.');
+                input.value = prevValue;
+            }
+        } catch (err) {
+            console.error(err);
+            showDanger('Error', 'An error occurred while updating the fee.');
+            input.value = prevValue;
+        } finally {
+            if (spinner) spinner.classList.add('hidden');
+            input.classList.remove('opacity-60');
+        }
+    }
+
 
     document.addEventListener('DOMContentLoaded', function() {
         const checkboxes = document.querySelectorAll('.due-checkbox');
@@ -1057,6 +1191,8 @@
                 selectAll.checked = (checkedCount === checkboxes.length && checkboxes.length > 0);
             }
         }
+
+        window.calculateSingleTotal = calculateTotal;
 
         checkboxes.forEach(box => {
             box.addEventListener('change', calculateTotal);
