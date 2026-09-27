@@ -116,6 +116,7 @@ class ResultController extends Controller
             }
 
             $students = Student::with(['schoolClass', 'branch', 'section', 'shift', 'sessionYear'])
+                ->where('status', 'Active')
                 ->where('class_id', $class->id)
                 ->where('session_year_id', $request->session_year_id)
                 ->when($request->filled('branch_id'), fn($q) => $q->where('branch_id', $request->branch_id))
@@ -380,6 +381,7 @@ class ResultController extends Controller
             }
 
             $students = Student::with(['schoolClass', 'branch', 'section', 'shift', 'sessionYear'])
+                ->where('status', 'Active')
                 ->where('class_id', $class->id)
                 ->where('session_year_id', $request->session_year_id)
                 ->when($request->filled('branch_id'), fn($q) => $q->where('branch_id', $request->branch_id))
@@ -639,7 +641,8 @@ class ResultController extends Controller
 
     protected function getTotalClassStudents($classId, $sessionYearId)
     {
-        return Student::where('class_id', $classId)
+        return Student::where('status', 'Active')
+            ->where('class_id', $classId)
             ->where('session_year_id', $sessionYearId)
             ->count();
     }
@@ -728,7 +731,8 @@ class ResultController extends Controller
             return [];
         }
 
-        $students = Student::where('class_id', $classId)
+        $students = Student::where('status', 'Active')
+            ->where('class_id', $classId)
             ->where('session_year_id', $sessionYearId)
             ->get();
 
@@ -1001,7 +1005,8 @@ class ResultController extends Controller
             $selectedSection = Section::find($request->section_id);
         }
 
-        $studentsQuery = Student::where('session_year_id', $request->session_year_id)
+        $studentsQuery = Student::where('status', 'Active')
+            ->where('session_year_id', $request->session_year_id)
             ->where('branch_id', $branch->id)
             ->where('class_id', $schoolClass->id);
 

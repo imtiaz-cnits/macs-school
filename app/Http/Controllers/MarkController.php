@@ -56,8 +56,9 @@ class MarkController extends Controller
                 $request->exam_id
             );
 
-            // নির্দিষ্ট সেশন, ব্রাঞ্চ এবং ক্লাসের স্টুডেন্টদের আনা হচ্ছে (রোল অনুযায়ী সিরিয়াল)
-            $studentQuery = Student::where('session_year_id', $request->session_year_id)
+            // নির্দিষ্ট সেশন, ব্রাঞ্চ এবং ক্লাসের 'Active' স্টুডেন্টদের আনা হচ্ছে (রোল অনুযায়ী সিরিয়াল)
+            $studentQuery = Student::where('status', 'Active')
+                ->where('session_year_id', $request->session_year_id)
                 ->where('branch_id', $request->branch_id)
                 ->where('class_id', $request->class_id);
 

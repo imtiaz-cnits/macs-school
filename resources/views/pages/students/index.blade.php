@@ -133,7 +133,7 @@
 
 <!-- Filters Section (Placed borderless directly below title with reduced margins) -->
 <div class="mb-2 pb-4 border-b border-gray-150 dark:border-white/[0.08]">
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4 items-end">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-4 items-end">
         <!-- Search Student -->
         <div>
             <label class="block text-[10px] font-black tracking-widest text-themeBlue uppercase mb-1.5">Search Student</label>
@@ -320,6 +320,55 @@
                 </button>
             </div>
         </div>
+
+        <!-- Status -->
+        <div x-data="{
+            open: false,
+            selectedValue: '',
+            selectedLabel: 'All Status',
+            select(label, val) {
+                this.selectedLabel = label;
+                this.selectedValue = val;
+                this.open = false;
+                let input = document.getElementById('filter_status');
+                if (input) {
+                    input.value = val;
+                    input.dispatchEvent(new Event('change'));
+                }
+            }
+        }" class="relative">
+            <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Status</label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span x-text="selectedLabel">All Status</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="filter_status" value="">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <button type="button" @click="select('All Status', '')" :class="selectedValue === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                    <span>All Status</span>
+                    <template x-if="selectedValue === ''">
+                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </template>
+                </button>
+                <button type="button" @click="select('Active', 'Active')" :class="selectedValue === 'Active' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active
+                    </span>
+                    <template x-if="selectedValue === 'Active'">
+                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </template>
+                </button>
+                <button type="button" @click="select('Inactive', 'Inactive')" :class="selectedValue === 'Inactive' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> Inactive
+                    </span>
+                    <template x-if="selectedValue === 'Inactive'">
+                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </template>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -401,6 +450,7 @@
         let session_id = document.getElementById('filter_session').value;
         let shift_id = document.getElementById('filter_shift').value; 
         let gender = document.getElementById('filter_gender').value;
+        let status = document.getElementById('filter_status') ? document.getElementById('filter_status').value : '';
 
         let queryParams = new URLSearchParams({
             search: search_text,
@@ -410,6 +460,7 @@
             session_year_id: session_id,
             shift_id: shift_id,
             gender: gender,
+            status: status,
             page: page
         }).toString();
 
@@ -484,6 +535,14 @@
                     formattedShift = shiftName.replace(/\s*student/i, '').trim();
                 }
 
+                let statusBadge = item.status === 'Inactive'
+                    ? `<button type="button" onclick="toggleStudentStatus(${item.id}, 'Active')" title="Click to reactivate" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-450 border border-rose-200 dark:border-rose-500/20 hover:scale-105 transition-all cursor-pointer">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive
+                       </button>`
+                    : `<button type="button" onclick="toggleStudentStatus(${item.id}, 'Inactive')" title="Click to deactivate" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-450 border border-emerald-200 dark:border-emerald-500/20 hover:scale-105 transition-all cursor-pointer">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Active
+                       </button>`;
+
                 let row = `
                     <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
                         <td class="py-0 px-0 text-sm font-bold text-gray-555 dark:text-gray-400">${startingSl + index + 1}</td>
@@ -491,7 +550,10 @@
                             <img src="${photoUrl}" alt="Photo" class="w-12 h-12 rounded-2xl object-cover border border-gray-100 dark:border-white/[0.08] shadow-sm">
                         </td>
                         <td class="py-0 px-0">
-                            <div class="text-sm font-bold text-gray-900 dark:text-gray-100">${item.student_name}</div>
+                            <div class="flex items-center gap-2">
+                                <div class="text-sm font-bold text-gray-900 dark:text-gray-100">${item.student_name}</div>
+                                ${statusBadge}
+                            </div>
                             <div class="text-xs font-semibold text-gray-400 dark:text-gray-550 mt-1">
                                 ID: <span class="text-gray-700 dark:text-gray-300 font-bold">${item.student_identity || 'N/A'}</span>
                                 <span class="mx-1 text-gray-300 dark:text-gray-700">|</span> Device ID: <span class="text-themeBlue font-bold">${item.id}</span>
@@ -605,6 +667,7 @@
         let session_id = document.getElementById('filter_session').value;
         let shift_id = document.getElementById('filter_shift').value; 
         let gender = document.getElementById('filter_gender').value;
+        let status = document.getElementById('filter_status') ? document.getElementById('filter_status').value : '';
 
         let queryParams = new URLSearchParams({
             search: search_text,
@@ -613,7 +676,8 @@
             section_id: section_id,
             session_year_id: session_id,
             shift_id: shift_id,
-            gender: gender
+            gender: gender,
+            status: status
         }).toString();
 
         window.location.href = `/ajax/students/export-excel?${queryParams}`;
@@ -627,6 +691,7 @@
         let session_id = document.getElementById('filter_session').value;
         let shift_id = document.getElementById('filter_shift').value; 
         let gender = document.getElementById('filter_gender').value;
+        let status = document.getElementById('filter_status') ? document.getElementById('filter_status').value : '';
 
         let queryParams = new URLSearchParams({
             search: search_text,
@@ -635,7 +700,8 @@
             section_id: section_id,
             session_year_id: session_id,
             shift_id: shift_id,
-            gender: gender
+            gender: gender,
+            status: status
         }).toString();
 
         window.open(`/ajax/students/export-pdf?${queryParams}`, '_blank');
@@ -648,9 +714,40 @@
         typingTimer = setTimeout(function () { window.fetchList(1); }, 400); 
     });
 
-    ['filter_branch', 'filter_class', 'filter_section', 'filter_session', 'filter_shift', 'filter_gender'].forEach(id => {
-        document.getElementById(id).addEventListener('change', function() { window.fetchList(1); });
+    ['filter_branch', 'filter_class', 'filter_section', 'filter_session', 'filter_shift', 'filter_gender', 'filter_status'].forEach(id => {
+        let el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', function() { window.fetchList(1); });
+        }
     });
+
+    window.toggleStudentStatus = async function(studentId, targetStatus) {
+        let isDeactivating = targetStatus === 'Inactive';
+        let title = isDeactivating ? "Deactivate Student?" : "Reactivate Student?";
+        let msg = isDeactivating
+            ? "Are you sure you want to deactivate this student? They will be excluded from all invoice generation, marks entry, and exam results."
+            : "Are you sure you want to reactivate this student?";
+
+        let confirmed = await showConfirm(title, msg);
+        if (!confirmed) return;
+
+        try {
+            let res = await axios.post(`/ajax/students/${studentId}/toggle-status`, {}, getAuthHeaders());
+            if (res.data.status === 'success') {
+                if (typeof showSuccess === 'function') {
+                    await showSuccess(res.data.message);
+                } else {
+                    await showAlert(res.data.message, "Success");
+                }
+                window.fetchList();
+            } else {
+                await showAlert(res.data.message || "Failed to update status.", "Error");
+            }
+        } catch (err) {
+            let errMsg = err.response?.data?.message || "Status update failed.";
+            await showAlert(errMsg, "Error");
+        }
+    };
 
     window.syncRfidCardSingle = async function(studentId) {
         try {

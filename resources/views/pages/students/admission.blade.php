@@ -363,7 +363,7 @@
         <h3 class="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider font-secondary">Academic Details</h3>
     </div>
     
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 mb-10 p-6 bg-gray-50/50 dark:bg-themeDark/30 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 mb-10 p-6 bg-gray-50/50 dark:bg-themeDark/30 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
         <!-- Branch -->
         <div x-data="dropdownState('branch_id', 'Select Branch', '/ajax/branches', 'branchData', 'branch_name', 'id')" class="relative">
             <label class="form-label text-themeBlue">Branch <span class="required-star">*</span></label>
@@ -459,6 +459,45 @@
                 <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
             </button>
             <input type="hidden" id="session_year_id" value="">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <template x-for="opt in options" :key="opt.id">
+                    <button type="button" @click="select(opt)" :class="selectedValue == opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                        <span x-text="opt.name"></span>
+                        <template x-if="selectedValue == opt.id">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <!-- Student Status -->
+        <div x-data="{
+            open: false,
+            selectedValue: 'Active',
+            selectedLabel: 'Active',
+            options: [
+                { id: 'Active', name: 'Active' },
+                { id: 'Inactive', name: 'Inactive' }
+            ],
+            select(opt) {
+                this.selectedLabel = opt.name;
+                this.selectedValue = opt.id;
+                this.open = false;
+                let input = document.getElementById('status');
+                if (input) {
+                    input.value = this.selectedValue;
+                    input.dispatchEvent(new Event('change'));
+                }
+            }
+        }" class="relative">
+            <label class="form-label text-themeBlue">Status <span class="required-star">*</span></label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-11 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span x-text="selectedLabel" class="font-bold">Active</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="status" value="Active">
             
             <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
                 <template x-for="opt in options" :key="opt.id">
@@ -1122,7 +1161,7 @@
             'mother_name', 'mother_name_bn', 'mother_nid', 'mother_mobile', 'mother_occupation',
             'present_village', 'present_post_office', 'present_post_code', 'present_district', 'present_division',
             'permanent_village', 'permanent_post_office', 'permanent_post_code', 'permanent_district', 'permanent_division',
-            'guardian_name', 'guardian_occupation', 'guardian_mobile', 'sms_status', 'branch_id', 'class_id', 'section_id', 
+            'guardian_name', 'guardian_occupation', 'guardian_mobile', 'status', 'sms_status', 'branch_id', 'class_id', 'section_id', 
             'shift_id', 'session_year_id', 'birth_certificate'
         ];
 

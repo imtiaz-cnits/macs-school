@@ -50,6 +50,7 @@ class SeatPlanController extends Controller
 
         // 🚨 ২. একদম স্ট্রং ফিল্টারিং (যা সিলেক্ট করবেন, শুধু তারাই আসবে)
         $students = Student::with(['schoolClass', 'branch', 'section', 'shift']) // 🆕 shift রিলেশন যুক্ত করা হলো
+            ->where('status', 'Active')
             ->where('session_year_id', $request->session_year_id)
             ->where('branch_id', $request->branch_id)
             ->where('class_id', $request->class_id)

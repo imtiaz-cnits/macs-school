@@ -683,4 +683,150 @@ class FeeCollectionController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Single Collection: Adjust invoice fee amount (increase, decrease, or set exact)
+     * either for this specific invoice (single month) or continuous across all upcoming invoices.
+     */
+    public function adjustInvoiceFee(Request $request)
+    {
+        $request->validate([
+            'invoice_id' => 'required|exists:fee_invoices,id',
+            'mode' => 'required|in:increase,decrease,set_amount',
+            'amount' => 'required|numeric|min:0',
+            'scope' => 'required|in:single,continuous',
+            'note' => 'nullable|string|max:255',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $invoice = FeeInvoice::with(['student', 'feeSetup'])->lockForUpdate()->findOrFail($request->invoice_id);
+
+            $studentId = $invoice->student_id;
+            $feeSetup = $invoice->feeSetup;
+            $feeCategoryId = $feeSetup->fee_category_id;
+            $setupAmount = floatval($feeSetup->amount);
+            $inputAmount = floatval($request->amount);
+            $mode = $request->mode;
+            $scope = $request->scope;
+
+            $currentNet = floatval($invoice->net_amount);
+            $paidAmount = floatval($invoice->paid_amount);
+
+            if ($mode === 'increase') {
+                $newNetAmount = $currentNet + $inputAmount;
+            } elseif ($mode === 'decrease') {
+                $newNetAmount = max($paidAmount, $currentNet - $inputAmount);
+            } else { // set_amount
+                $newNetAmount = max($paidAmount, $inputAmount);
+            }
+
+            if ($scope === 'continuous') {
+                // Update or create custom fee profile for this student and category
+                if ($newNetAmount != $setupAmount) {
+                    \App\Models\StudentCustomFee::updateOrCreate(
+                        [
+                            'student_id' => $studentId,
+                            'fee_category_id' => $feeCategoryId,
+                        ],
+                        [
+                            'amount' => $newNetAmount
+                        ]
+                    );
+                } else {
+                    \App\Models\StudentCustomFee::where('student_id', $studentId)
+                        ->where('fee_category_id', $feeCategoryId)
+                        ->delete();
+                }
+
+                // Sync all unpaid or partially paid invoices for this student and category
+                $affectedInvoices = FeeInvoice::with('feeSetup')
+                    ->where('student_id', $studentId)
+                    ->whereIn('status', ['Unpaid', 'Partial'])
+                    ->whereHas('feeSetup', function($q) use ($feeCategoryId) {
+                        $q->where('fee_category_id', $feeCategoryId);
+                    })
+                    ->lockForUpdate()
+                    ->get();
+
+                $updatedInvoicesData = [];
+                foreach ($affectedInvoices as $inv) {
+                    $invSetupAmount = floatval($inv->feeSetup->amount);
+                    if ($newNetAmount > $invSetupAmount) {
+                        $inv->amount = $newNetAmount;
+                        $inv->discount = 0;
+                    } else {
+                        $inv->amount = $invSetupAmount;
+                        $inv->discount = max(0, $invSetupAmount - $newNetAmount);
+                    }
+                    $inv->net_amount = $newNetAmount;
+                    $inv->due_amount = max(0, $newNetAmount - $inv->paid_amount);
+                    $inv->status = $inv->due_amount <= 0 ? 'Paid' : ($inv->paid_amount > 0 ? 'Partial' : 'Unpaid');
+                    $inv->save();
+
+                    $updatedInvoicesData[] = [
+                        'id' => $inv->id,
+                        'net_amount' => number_format($inv->net_amount, 2, '.', ''),
+                        'due_amount' => number_format($inv->due_amount, 2, '.', ''),
+                        'discount' => number_format($inv->discount, 2, '.', ''),
+                        'paid_amount' => number_format($inv->paid_amount, 2, '.', ''),
+                        'status' => $inv->status,
+                    ];
+                }
+            } else {
+                // Single month adjustment strictly for this invoice
+                if ($newNetAmount > $setupAmount) {
+                    $invoice->amount = $newNetAmount;
+                    $invoice->discount = 0;
+                } else {
+                    $invoice->amount = $setupAmount;
+                    $invoice->discount = max(0, $setupAmount - $newNetAmount);
+                }
+                $invoice->net_amount = $newNetAmount;
+                $invoice->due_amount = max(0, $newNetAmount - $paidAmount);
+                $invoice->status = $invoice->due_amount <= 0 ? 'Paid' : ($paidAmount > 0 ? 'Partial' : 'Unpaid');
+                $invoice->save();
+
+                $updatedInvoicesData = [[
+                    'id' => $invoice->id,
+                    'net_amount' => number_format($invoice->net_amount, 2, '.', ''),
+                    'due_amount' => number_format($invoice->due_amount, 2, '.', ''),
+                    'discount' => number_format($invoice->discount, 2, '.', ''),
+                    'paid_amount' => number_format($invoice->paid_amount, 2, '.', ''),
+                    'status' => $invoice->status,
+                ]];
+            }
+
+            DB::commit();
+
+            // Calculate updated summary totals for all pending invoices of this student
+            $allPendingInvoices = FeeInvoice::where('student_id', $studentId)
+                ->whereIn('status', ['Unpaid', 'Partial'])
+                ->get();
+
+            $summary = [
+                'invoices_count' => $allPendingInvoices->count(),
+                'total_bill' => number_format($allPendingInvoices->sum('net_amount'), 2),
+                'total_due' => number_format($allPendingInvoices->sum('due_amount'), 2),
+                'total_discount' => number_format($allPendingInvoices->sum('discount'), 2),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => $scope === 'continuous' 
+                    ? 'Continuous fee updated successfully across all invoices.' 
+                    : "Fee for {$invoice->month_name} adjusted successfully.",
+                'scope' => $scope,
+                'updated_invoices' => $updatedInvoicesData,
+                'summary' => $summary,
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Adjustment failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

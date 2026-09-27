@@ -59,6 +59,11 @@ class StudentController extends Controller
                 $query->where('gender', $request->gender);
             }
 
+            // 🔍 ৪. স্ট্যাটাস ফিল্টার (Active / Inactive)
+            if ($request->filled('status') && $request->status !== 'All') {
+                $query->where('status', $request->status);
+            }
+
             // পেজিনেশন
             $students = $query->paginate(15);
             
@@ -218,6 +223,7 @@ class StudentController extends Controller
                 'permanent_division'    => $request->permanent_division,
                 'permanent_post_code'   => $request->permanent_post_code,
                 
+                'status'                => $request->status ?? 'Active',
                 'sms_status'            => $request->sms_status ?? 'Active',
                 'photo'                 => $photoPath,
                 'document_file'         => $documentPath,
@@ -485,6 +491,31 @@ class StudentController extends Controller
             return response()->json(['status' => 'success', 'message' => 'Student deleted successfully!'], 200);
         } catch (Exception $e) {
             return response()->json(['status' => 'error', 'message' => 'Delete Failed!'], 500);
+        }
+    }
+
+    /**
+     * স্টুডেন্ট স্ট্যাটাস টগল (Active <-> Inactive)
+     */
+    public function toggleStatus($id): JsonResponse
+    {
+        try {
+            $student = Student::findOrFail($id);
+            $newStatus = ($student->status === 'Inactive') ? 'Active' : 'Inactive';
+            $student->status = $newStatus;
+            $student->save();
+
+            return response()->json([
+                'status' => 'success',
+                'new_status' => $newStatus,
+                'message' => "Student status successfully changed to {$newStatus}."
+            ], 200);
+        } catch (Exception $e) {
+            Log::error("Toggle Status Error: " . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update student status: ' . $e->getMessage()
+            ], 500);
         }
     }
 

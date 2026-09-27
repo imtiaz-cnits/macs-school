@@ -76,7 +76,7 @@ class FeeInvoiceController extends Controller
             'branch_id' => $request->branch_id,
             'class_id' => $request->class_id,
             'session_year_id' => $request->session_year_id,
-            'sms_status' => 'Active' // শুধু অ্যাক্টিভ স্টুডেন্টদের বিল হবে
+            'status' => 'Active' // শুধু অ্যাক্টিভ স্টুডেন্টদের বিল হবে
         ])->get();
 
         if ($students->isEmpty()) {

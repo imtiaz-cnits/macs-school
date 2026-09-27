@@ -25,7 +25,7 @@ class AttendanceController extends Controller
         ]);
 
         try {
-            $query = Student::query();
+            $query = Student::where('students.status', 'Active');
 
             if ($request->filled('branch_id')) $query->where('students.branch_id', $request->branch_id);
             if ($request->filled('session_year_id')) $query->where('students.session_year_id', $request->session_year_id);
@@ -121,8 +121,8 @@ class AttendanceController extends Controller
             $zkService = app(\App\Services\ZktecoService::class);
             $cardSwipes = $zkService->getRawLogsByCard($date);
 
-            // 2. Fetch all students in this class/section
-            $studentQuery = Student::query();
+            // 2. Fetch all active students in this class/section
+            $studentQuery = Student::where('status', 'Active');
             if ($classId) $studentQuery->where('class_id', $classId);
             if ($sectionId) $studentQuery->where('section_id', $sectionId);
             if ($branchId) $studentQuery->where('branch_id', $branchId);

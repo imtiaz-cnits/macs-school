@@ -75,4 +75,25 @@ class Student extends Model
             }
             return $value;
         }
+
+    /**
+     * Query Scopes for Student Status
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'Active');
+    }
+
+    public function scopeInactive($query)
+    {
+        return $query->where('status', 'Inactive');
+    }
+
+    /**
+     * Check if student is active
+     */
+    public function isActive(): bool
+    {
+        return ($this->status ?? 'Active') === 'Active';
+    }
 }

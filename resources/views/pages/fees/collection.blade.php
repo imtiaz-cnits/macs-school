@@ -234,21 +234,51 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span>Back to Outstanding Dues Directory</span>
             </a>
-            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Active Student: <strong class="text-gray-900 dark:text-white font-black">{{ $student->student_name }}</strong> ({{ $student->student_identity }})</span>
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Selected Student: <strong class="text-gray-900 dark:text-white font-black">{{ $student->student_name }}</strong> ({{ $student->student_identity }})</span>
+                @if(($student->status ?? 'Active') === 'Inactive')
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-450 border border-rose-200 dark:border-rose-500/20 shadow-sm">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive
+                    </span>
+                @else
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-450 border border-emerald-200 dark:border-emerald-500/20 shadow-sm">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Active
+                    </span>
+                @endif
+            </div>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             
             <!-- Student Info Sidebar Panel -->
             <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 lg:col-span-1 h-fit shadow-sm hover:shadow-md transition-all duration-300">
                 <div class="text-center mb-6">
-                    <div class="w-24 h-24 mx-auto bg-gray-55 dark:bg-themeDark rounded-full border-4 border-gray-100 dark:border-gray-800 shadow-md mb-3 flex items-center justify-center overflow-hidden">
+                    <div class="w-24 h-24 mx-auto bg-gray-55 dark:bg-themeDark rounded-full border-4 border-gray-100 dark:border-gray-800 shadow-md mb-3 flex items-center justify-center overflow-hidden relative">
                         <img src="https://ui-avatars.com/api/?name={{ $student->student_name }}&background=008ED6&color=fff" class="w-full h-full object-cover">
                     </div>
                     <h3 class="text-lg font-black text-gray-900 dark:text-white leading-tight">{{ $student->student_name }}</h3>
                     <p class="text-themeBlue font-mono font-black text-sm mt-1.5 uppercase tracking-wider">{{ $student->student_identity }}</p>
+                    
+                    <!-- Dynamic Student Status Badge -->
+                    <div class="mt-3 flex justify-center">
+                        @if(($student->status ?? 'Active') === 'Inactive')
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-450 border border-rose-200 dark:border-rose-500/20 shadow-sm">
+                                <span class="w-2 h-2 rounded-full bg-rose-500"></span> Inactive Student
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-450 border border-emerald-200 dark:border-emerald-500/20 shadow-sm">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Active Student
+                            </span>
+                        @endif
+                    </div>
                 </div>
                 
                 <div class="space-y-4 pt-4 border-t border-gray-100 dark:border-white/[0.05] text-xs">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-gray-400 dark:text-gray-555 uppercase tracking-wider">Status:</span> 
+                        <span class="font-black {{ ($student->status ?? 'Active') === 'Inactive' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
+                            {{ $student->status ?? 'Active' }}
+                        </span>
+                    </div>
                     <div class="flex justify-between items-center"><span class="font-bold text-gray-400 dark:text-gray-555 uppercase tracking-wider">Class:</span> <span class="font-bold text-gray-800 dark:text-gray-200">{{ $student->schoolClass->class_name ?? 'N/A' }}</span></div>
                     <div class="flex justify-between items-center"><span class="font-bold text-gray-400 dark:text-gray-555 uppercase tracking-wider">Section:</span> <span class="font-bold text-gray-800 dark:text-gray-200">{{ $student->section->section_name ?? 'N/A' }}</span></div>
                     <div class="flex justify-between items-center"><span class="font-bold text-gray-400 dark:text-gray-555 uppercase tracking-wider">Roll No:</span> <span class="font-mono font-black text-gray-800 dark:text-gray-200">{{ $student->roll_number }}</span></div>
@@ -258,6 +288,22 @@
 
             <!-- Dues & Payments Area -->
             <div class="lg:col-span-3 space-y-8">
+                
+                @if(($student->status ?? 'Active') === 'Inactive')
+                <!-- Inactive Student Account Notice Banner -->
+                <div class="p-4 rounded-2xl bg-rose-50/90 dark:bg-rose-950/25 border-2 border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-300 flex items-center gap-3.5 shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/60 flex items-center justify-center shrink-0 text-rose-600 dark:text-rose-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div>
+                        <div class="font-black text-xs uppercase tracking-wider text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                            <span>Inactive Student Account</span>
+                            <span class="px-2 py-0.5 text-[9px] font-black rounded-md bg-rose-200/70 dark:bg-rose-900/70 text-rose-900 dark:text-rose-100">School Leaver</span>
+                        </div>
+                        <p class="font-medium text-xs text-rose-700 dark:text-rose-300/90 mt-0.5">This student has been marked as <strong>Inactive</strong>. You can collect previous pending dues below, but no new monthly or exam fee invoices will be generated for them.</p>
+                    </div>
+                </div>
+                @endif
                 
                 <!-- Pending Dues Table -->
                 <form action="{{ route('fees.collection.bulk_store') }}" method="POST" id="bulkPaymentForm">
@@ -326,7 +372,7 @@
                                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Month</th>
                                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Net Bill</th>
                                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-themeGreen dark:text-themeGreen uppercase tracking-[0.2em] text-right w-44">Due Amt (৳)</th>
-                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-36">Action</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-44">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -365,7 +411,24 @@
                                             </div>
                                         </td>
                                         <td class="py-4 px-4 text-right">
-                                            <button type="button" id="pay-btn-{{ $inv->id }}" data-fee-name="{{ $inv->feeSetup->category->name }} ({{ $inv->month_name }})" onclick="openPayModal({{ $inv->id }}, '{{ $inv->feeSetup->category->name }} ({{ $inv->month_name }})', {{ $inv->due_amount }})" class="h-9 px-4 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-[10px] font-black rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center active:scale-95">Pay Single</button>
+                                            <div class="flex items-center justify-end gap-2">
+                                                <button type="button" 
+                                                        id="adjust-btn-{{ $inv->id }}"
+                                                        data-fee-name="{{ $inv->feeSetup->category->name }}"
+                                                        data-month-name="{{ $inv->month_name }}"
+                                                        data-setup-amount="{{ $inv->feeSetup->amount }}"
+                                                        data-net-amount="{{ $inv->net_amount }}"
+                                                        data-paid-amount="{{ $inv->paid_amount }}"
+                                                        data-due-amount="{{ $inv->due_amount }}"
+                                                        onclick="openAdjustModal({{ $inv->id }})" 
+                                                        title="Adjust Fee (+ / -) for {{ $inv->month_name }}" 
+                                                        class="h-9 w-9 rounded-xl border-2 border-themeBlue/30 hover:border-themeBlue bg-indigo-50/70 hover:bg-themeBlue dark:bg-themeBlue/10 dark:hover:bg-themeBlue text-themeBlue hover:text-white flex items-center justify-center transition-all shadow-sm hover:shadow-md active:scale-95 flex-shrink-0 group">
+                                                    <svg class="w-4 h-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                                    </svg>
+                                                </button>
+                                                <button type="button" id="pay-btn-{{ $inv->id }}" data-fee-name="{{ $inv->feeSetup->category->name }} ({{ $inv->month_name }})" onclick="openPayModal({{ $inv->id }}, '{{ $inv->feeSetup->category->name }} ({{ $inv->month_name }})', {{ $inv->due_amount }})" class="h-9 px-4 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-[10px] font-black rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center active:scale-95 whitespace-nowrap">Pay Single</button>
+                                            </div>
                                         </td>
                                     </tr>
                                     @empty
@@ -520,7 +583,16 @@
                             @forelse($dueStudents as $ds)
                             <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
                                 <td class="py-4 px-4 font-mono font-black text-themeBlue text-sm uppercase">{{ $ds->student_identity }}</td>
-                                <td class="py-4 px-4 font-bold text-gray-900 dark:text-gray-100 text-sm">{{ $ds->student_name }}</td>
+                                <td class="py-4 px-4 font-bold text-gray-900 dark:text-gray-100 text-sm">
+                                    <div class="flex items-center gap-2">
+                                        <span>{{ $ds->student_name }}</span>
+                                        @if(($ds->status ?? 'Active') === 'Inactive')
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-450 border border-rose-200 dark:border-rose-500/20">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive
+                                            </span>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td class="py-4 px-4 font-bold text-gray-655 dark:text-gray-400 text-sm">
                                     {{ $ds->schoolClass->class_name ?? 'N/A' }} 
                                     @if($ds->section)
@@ -792,7 +864,14 @@
                                         <input type="checkbox" name="invoice_ids[]" value="{{ $inv->id }}" :checked="selectedInvoices.includes('{{ $inv->id }}')" @click="toggleInvoice('{{ $inv->id }}')" class="w-4 h-4 text-themeGreen rounded border-gray-200 dark:border-gray-800 focus:ring-themeGreen cursor-pointer">
                                     </td>
                                     <td class="py-4 px-2">
-                                        <div class="font-bold text-gray-900 dark:text-gray-100 text-sm">{{ $inv->student->student_name }}</div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-gray-900 dark:text-gray-100 text-sm">{{ $inv->student->student_name }}</span>
+                                            @if(($inv->student->status ?? 'Active') === 'Inactive')
+                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-450 border border-rose-200 dark:border-rose-500/20">
+                                                    <span class="w-1 h-1 rounded-full bg-rose-500"></span> Inactive
+                                                </span>
+                                            @endif
+                                        </div>
                                         <div class="text-[10px] text-themeBlue font-mono font-black mt-0.5">{{ $inv->student->student_identity }}</div>
                                     </td>
                                     <td class="py-4 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">
@@ -1003,10 +1082,358 @@
     </div>
 </div>
 
+<!-- Adjust Monthly Fee Modal (Single Month or Continuous) -->
+<div id="adjustFeeModal" 
+     x-data="adjustFeeComponent()" 
+     x-show="isOpen" 
+     x-cloak 
+     @open-adjust-modal.window="initModal($event.detail)"
+     @keydown.escape.window="closeModal()"
+     class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-md p-4 transition-opacity">
+    <div class="bg-white dark:bg-themeNavy w-full max-w-lg rounded-3xl shadow-2xl border border-gray-150 dark:border-white/[0.08] overflow-hidden relative" @click.away="closeModal()">
+        
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex justify-between items-center bg-gray-50/50 dark:bg-themeDark/40">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-2xl bg-themeBlue/10 text-themeBlue flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+                        Adjust Fee Amount
+                    </h3>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
+                        <span x-text="feeName" class="text-themeBlue"></span> &bull; <span x-text="monthName" class="font-bold"></span>
+                    </p>
+                </div>
+            </div>
+            <button @click="closeModal()" type="button" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-themeDark transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <!-- Modal Content Form -->
+        <div class="p-6 text-gray-900 dark:text-white">
+            
+            <!-- Summary Stats Strip -->
+            <div class="grid grid-cols-3 gap-2.5 p-3 rounded-2xl bg-gray-50 dark:bg-themeDark/60 border border-gray-100 dark:border-white/[0.04] mb-5">
+                <div class="text-center">
+                    <span class="text-[9px] font-black uppercase tracking-wider text-gray-400 block">Current Bill</span>
+                    <span class="text-xs sm:text-sm font-black font-mono text-gray-700 dark:text-gray-300">৳ <span x-text="netAmount.toFixed(2)"></span></span>
+                </div>
+                <div class="text-center border-x border-gray-200 dark:border-white/[0.08]">
+                    <span class="text-[9px] font-black uppercase tracking-wider text-gray-400 block">Already Paid</span>
+                    <span class="text-xs sm:text-sm font-black font-mono text-themeGreen">৳ <span x-text="paidAmount.toFixed(2)"></span></span>
+                </div>
+                <div class="text-center">
+                    <span class="text-[9px] font-black uppercase tracking-wider text-gray-400 block">Current Due</span>
+                    <span class="text-xs sm:text-sm font-black font-mono text-red-500">৳ <span x-text="currentDue.toFixed(2)"></span></span>
+                </div>
+            </div>
+
+            <!-- Mode Selector Tabs -->
+            <div class="mb-5">
+                <label class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-2 block">Select Adjustment Mode</label>
+                <div class="grid grid-cols-3 gap-2 p-1 bg-gray-100 dark:bg-themeDark rounded-2xl border border-gray-200/60 dark:border-white/[0.04]">
+                    <button type="button" 
+                            @click="mode = 'increase'" 
+                            :class="mode === 'increase' ? 'bg-white dark:bg-themeNavy text-themeBlue shadow-sm font-black' : 'text-gray-500 dark:text-gray-400 font-semibold hover:text-gray-900'"
+                            class="py-2 px-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all">
+                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                        Increase (+)
+                    </button>
+                    <button type="button" 
+                            @click="mode = 'decrease'" 
+                            :class="mode === 'decrease' ? 'bg-white dark:bg-themeNavy text-rose-500 shadow-sm font-black' : 'text-gray-500 dark:text-gray-400 font-semibold hover:text-gray-900'"
+                            class="py-2 px-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all">
+                        <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15"/></svg>
+                        Decrease (-)
+                    </button>
+                    <button type="button" 
+                            @click="mode = 'set_amount'" 
+                            :class="mode === 'set_amount' ? 'bg-white dark:bg-themeNavy text-themeGreen shadow-sm font-black' : 'text-gray-500 dark:text-gray-400 font-semibold hover:text-gray-900'"
+                            class="py-2 px-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all">
+                        <svg class="w-3.5 h-3.5 text-themeGreen" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                        Set Exact (=)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Amount Input Field -->
+            <div class="mb-5">
+                <label class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-2 block">
+                    <span x-show="mode === 'increase'">Extra / Increase Amount (৳)</span>
+                    <span x-show="mode === 'decrease'">Discount / Reduction Amount (৳)</span>
+                    <span x-show="mode === 'set_amount'">New Net Bill Amount (৳)</span>
+                    <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 font-mono font-bold text-sm">৳</span>
+                    <input type="number" 
+                           step="0.01" 
+                           min="0"
+                           id="adjustAmountInput"
+                           x-model="adjustAmount" 
+                           placeholder="0.00" 
+                           class="w-full h-11 pl-9 pr-4 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-base font-bold font-mono text-gray-900 dark:text-white shadow-sm"
+                           required>
+                </div>
+            </div>
+
+            <!-- Live Preview Calculation Box -->
+            <div class="mb-5 p-3.5 rounded-2xl border transition-all" 
+                 :class="mode === 'increase' ? 'bg-blue-50/50 dark:bg-themeBlue/10 border-blue-200/60 dark:border-blue-900/40' : (mode === 'decrease' ? 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-900/40' : 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/40')">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-bold text-gray-600 dark:text-gray-400">Resulting Due Amount:</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-400 line-through font-mono">৳ <span x-text="currentDue.toFixed(2)"></span></span>
+                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                        <span class="text-base font-black font-mono text-themeGreen dark:text-themeGreen">৳ <span x-text="previewDueAmount.toFixed(2)"></span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Scope Choice Cards -->
+            <div class="mb-5">
+                <label class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-2 block">Application Scope</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div @click="scope = 'single'" 
+                         :class="scope === 'single' ? 'border-themeBlue bg-indigo-50/40 dark:bg-themeBlue/10 text-themeBlue ring-2 ring-themeBlue/20' : 'border-gray-200 dark:border-white/[0.06] hover:bg-gray-50 dark:hover:bg-themeDark/40 text-gray-700 dark:text-gray-300'"
+                         class="p-3 border-2 rounded-2xl cursor-pointer transition-all flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-black uppercase tracking-wider">This Month Only</span>
+                            <span :class="scope === 'single' ? 'bg-themeBlue text-white' : 'border border-gray-300 dark:border-gray-600'" class="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold">
+                                <span x-show="scope === 'single'">✓</span>
+                            </span>
+                        </div>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1 leading-tight">One-time change for <span x-text="monthName" class="font-bold"></span>. Future months stay unchanged.</p>
+                    </div>
+
+                    <div @click="scope = 'continuous'" 
+                         :class="scope === 'continuous' ? 'border-themeBlue bg-indigo-50/40 dark:bg-themeBlue/10 text-themeBlue ring-2 ring-themeBlue/20' : 'border-gray-200 dark:border-white/[0.06] hover:bg-gray-50 dark:hover:bg-themeDark/40 text-gray-700 dark:text-gray-300'"
+                         class="p-3 border-2 rounded-2xl cursor-pointer transition-all flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-black uppercase tracking-wider">Continuous Fee</span>
+                            <span :class="scope === 'continuous' ? 'bg-themeBlue text-white' : 'border border-gray-300 dark:border-gray-600'" class="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold">
+                                <span x-show="scope === 'continuous'">✓</span>
+                            </span>
+                        </div>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1 leading-tight">Updates student's monthly fee profile for all unpaid months.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-3 pt-2">
+                <button type="button" 
+                        @click="closeModal()" 
+                        :disabled="submitting"
+                        class="flex-1 h-11 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-600 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all">
+                    Cancel
+                </button>
+                <button type="button" 
+                        @click="submitAdjustment()" 
+                        :disabled="submitting"
+                        class="flex-1 h-11 px-4 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50">
+                    <span x-show="!submitting">Apply Adjustment</span>
+                    <span x-show="submitting" class="flex items-center gap-2">
+                        <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                        Saving...
+                    </span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script>
+    function openAdjustModal(invoiceId) {
+        const btn = document.getElementById(`adjust-btn-${invoiceId}`);
+        if (!btn) return;
+
+        window.dispatchEvent(new CustomEvent('open-adjust-modal', {
+            detail: {
+                id: invoiceId,
+                feeName: btn.dataset.feeName,
+                monthName: btn.dataset.monthName,
+                setupAmount: parseFloat(btn.dataset.setupAmount) || 0,
+                netAmount: parseFloat(btn.dataset.netAmount) || 0,
+                paidAmount: parseFloat(btn.dataset.paidAmount) || 0,
+                dueAmount: parseFloat(btn.dataset.dueAmount) || 0
+            }
+        }));
+    }
+
+    function adjustFeeComponent() {
+        return {
+            isOpen: false,
+            submitting: false,
+            invoiceId: null,
+            feeName: '',
+            monthName: '',
+            setupAmount: 0,
+            netAmount: 0,
+            paidAmount: 0,
+            currentDue: 0,
+            mode: 'increase',
+            adjustAmount: '',
+            scope: 'single',
+
+            initModal(data) {
+                this.invoiceId = data.id;
+                this.feeName = data.feeName;
+                this.monthName = data.monthName;
+                this.setupAmount = parseFloat(data.setupAmount) || 0;
+                this.netAmount = parseFloat(data.netAmount) || 0;
+                this.paidAmount = parseFloat(data.paidAmount) || 0;
+                this.currentDue = parseFloat(data.dueAmount) || 0;
+                this.mode = 'increase';
+                this.adjustAmount = '';
+                this.scope = 'single';
+                this.submitting = false;
+                this.isOpen = true;
+                this.$nextTick(() => {
+                    const inp = document.getElementById('adjustAmountInput');
+                    if (inp) inp.focus();
+                });
+            },
+
+            closeModal() {
+                if (this.submitting) return;
+                this.isOpen = false;
+            },
+
+            get previewNetAmount() {
+                let val = parseFloat(this.adjustAmount) || 0;
+                if (this.mode === 'increase') {
+                    return this.netAmount + val;
+                } else if (this.mode === 'decrease') {
+                    return Math.max(this.paidAmount, this.netAmount - val);
+                } else {
+                    return Math.max(this.paidAmount, val);
+                }
+            },
+
+            get previewDueAmount() {
+                return Math.max(0, this.previewNetAmount - this.paidAmount);
+            },
+
+            async submitAdjustment() {
+                if (!this.invoiceId) return;
+                let val = parseFloat(this.adjustAmount);
+                if (isNaN(val) || val < 0) {
+                    showDanger('Invalid Amount', 'Please enter a valid non-negative amount.');
+                    return;
+                }
+
+                if (this.mode === 'decrease' && val > (this.netAmount - this.paidAmount)) {
+                    showDanger('Exceeds Limit', 'Decrease amount cannot exceed current unpaid balance.');
+                    return;
+                }
+
+                this.submitting = true;
+
+                try {
+                    const response = await fetch("{{ route('fees.invoice.adjust') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            invoice_id: this.invoiceId,
+                            mode: this.mode,
+                            amount: val,
+                            scope: this.scope
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        if (data.updated_invoices && data.updated_invoices.length > 0) {
+                            data.updated_invoices.forEach(invData => {
+                                // Update input
+                                const rowInput = document.querySelector(`.single-due-input[data-invoice-id="${invData.id}"]`);
+                                if (rowInput) {
+                                    rowInput.value = parseFloat(invData.due_amount).toFixed(2);
+                                    rowInput.dataset.prevValue = rowInput.value;
+                                }
+
+                                // Update net bill
+                                const netCell = document.getElementById(`net-bill-${invData.id}`);
+                                if (netCell) {
+                                    netCell.innerText = parseFloat(invData.net_amount).toFixed(2);
+                                }
+
+                                // Update checkbox
+                                const chk = document.getElementById(`checkbox-${invData.id}`);
+                                if (chk) {
+                                    chk.dataset.amount = invData.due_amount;
+                                }
+
+                                // Update Pay Single button onclick
+                                const payBtn = document.getElementById(`pay-btn-${invData.id}`);
+                                if (payBtn) {
+                                    const feeName = payBtn.dataset.feeName;
+                                    payBtn.setAttribute('onclick', `openPayModal(${invData.id}, '${feeName}', ${invData.due_amount})`);
+                                }
+
+                                // Update Adjust button data attributes
+                                const adjBtn = document.getElementById(`adjust-btn-${invData.id}`);
+                                if (adjBtn) {
+                                    adjBtn.dataset.netAmount = invData.net_amount;
+                                    adjBtn.dataset.dueAmount = invData.due_amount;
+                                    adjBtn.dataset.paidAmount = invData.paid_amount;
+                                }
+                            });
+                        }
+
+                        // Update summary badges
+                        if (data.summary) {
+                            const billEl = document.getElementById('summaryTotalBill');
+                            if (billEl) billEl.innerText = '৳ ' + data.summary.total_bill;
+
+                            const dueEl = document.getElementById('summaryTotalDue');
+                            if (dueEl) dueEl.innerText = '৳ ' + data.summary.total_due;
+
+                            const discWrap = document.getElementById('summaryDiscountWrapper');
+                            const discEl = document.getElementById('summaryDiscount');
+                            const discountVal = parseFloat(String(data.summary.total_discount).replace(/,/g, ''));
+                            if (discountVal > 0) {
+                                if (discWrap) discWrap.classList.remove('hidden');
+                                if (discEl) discEl.innerText = '৳ ' + data.summary.total_discount;
+                            } else if (discWrap) {
+                                discWrap.classList.add('hidden');
+                            }
+                        }
+
+                        if (typeof window.calculateSingleTotal === 'function') {
+                            window.calculateSingleTotal();
+                        }
+
+                        this.isOpen = false;
+                        showSuccess(data.message || 'Fee adjusted successfully.');
+                    } else {
+                        showDanger('Adjustment Failed', data.message || 'Unable to adjust fee.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showDanger('Error', 'An error occurred while saving the adjustment.');
+                } finally {
+                    this.submitting = false;
+                }
+            }
+        };
+    }
+
     function openPayModal(invoiceId, feeName, dueAmount) {
         // If the row's input was edited, use its current value
         const rowInput = document.querySelector(`.single-due-input[data-invoice-id="${invoiceId}"]`);

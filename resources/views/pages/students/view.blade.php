@@ -94,7 +94,7 @@
                 <div class="flex items-center gap-4 relative z-10">
                     <div class="relative shrink-0">
                         <img id="profile_photo" src="" alt="Student" class="w-20 h-20 rounded-2xl object-cover border-2 border-gray-100 dark:border-themeDark shadow-sm bg-gray-50">
-                        <div class="absolute -bottom-1 -right-1 px-2 py-0.5 bg-themeGreen text-white text-[8px] font-black rounded-full border border-white dark:border-themeNavy uppercase tracking-wider">Active</div>
+                        <div id="view_status_badge" class="absolute -bottom-1 -right-1 px-2 py-0.5 bg-themeGreen text-white text-[8px] font-black rounded-full border border-white dark:border-themeNavy uppercase tracking-wider">Active</div>
                     </div>
                     <div class="min-w-0">
                         <h2 id="view_student_name" class="text-lg font-black text-gray-900 dark:text-white truncate">Student Name</h2>
@@ -133,6 +133,10 @@
                     <div>
                         <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Shift</span>
                         <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="view_shift">...</span>
+                    </div>
+                    <div>
+                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Status</span>
+                        <span class="text-xs font-bold" id="view_status_text">...</span>
                     </div>
                     
                     <div class="col-span-2 h-[1px] bg-gray-100 dark:bg-white/[0.05] my-1"></div>
@@ -558,6 +562,31 @@
             document.getElementById('view_session').innerText = s.session_year ? s.session_year.session_name : 'N/A';
             document.getElementById('view_section').innerText = s.section ? s.section.section_name : 'N/A';
             document.getElementById('view_shift').innerText = s.shift ? s.shift.shift_name : 'N/A';
+
+            // Student Status
+            let statusBadge = document.getElementById('view_status_badge');
+            let statusText = document.getElementById('view_status_text');
+            let isStudentActive = (s.status ?? 'Active') === 'Active';
+
+            if (statusBadge) {
+                if (isStudentActive) {
+                    statusBadge.innerText = 'Active';
+                    statusBadge.className = 'absolute -bottom-1 -right-1 px-2 py-0.5 bg-themeGreen text-white text-[8px] font-black rounded-full border border-white dark:border-themeNavy uppercase tracking-wider';
+                } else {
+                    statusBadge.innerText = 'Inactive';
+                    statusBadge.className = 'absolute -bottom-1 -right-1 px-2 py-0.5 bg-rose-500 text-white text-[8px] font-black rounded-full border border-white dark:border-themeNavy uppercase tracking-wider';
+                }
+            }
+
+            if (statusText) {
+                if (isStudentActive) {
+                    statusText.innerText = 'Active';
+                    statusText.className = 'text-xs font-black text-themeGreen';
+                } else {
+                    statusText.innerText = 'Inactive';
+                    statusText.className = 'text-xs font-black text-rose-500';
+                }
+            }
 
             // Personal info
             document.getElementById('view_dob').innerText = s.dob || 'N/A';

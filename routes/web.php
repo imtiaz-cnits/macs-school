@@ -164,6 +164,7 @@ Route::middleware(['auth', 'roles:editor,admin,super-admin'])->group(function ()
     Route::get('/ajax/students/{id}/custom-fees', [StudentController::class, 'getCustomFees'])->name('students.custom-fees.index');
     Route::post('/ajax/students/{id}/custom-fees', [StudentController::class, 'saveCustomFee'])->name('students.custom-fees.store');
     Route::delete('/ajax/students/custom-fees/{customFeeId}', [StudentController::class, 'deleteCustomFee'])->name('students.custom-fees.destroy');
+    Route::post('/ajax/students/{id}/toggle-status', [StudentController::class, 'toggleStatus'])->name('students.toggle-status');
 
     // ৫. ডাটা সেভ, আপডেট, ডিলিট এবং রিড করার জন্য AJAX রাউট (API Resource)
     Route::resource('ajax/students', StudentController::class);
@@ -389,6 +390,7 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
         Route::get('/collection', [FeeCollectionController::class, 'index'])->name('collection.index');
         Route::post('/collection', [FeeCollectionController::class, 'store'])->name('collection.store');
         Route::post('/custom-fee/update-inline', [FeeCollectionController::class, 'updateCustomFeeAjax'])->name('custom_fee.update_inline');
+        Route::post('/invoice/adjust', [FeeCollectionController::class, 'adjustInvoiceFee'])->name('invoice.adjust');
 
         // Generate Invoices Routes
         Route::get('/invoice/generate', [FeeInvoiceController::class, 'index'])->name('invoice.generate');

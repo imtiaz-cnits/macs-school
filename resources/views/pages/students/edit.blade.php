@@ -191,7 +191,7 @@
                 <h3 class="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider font-secondary">Academic Details</h3>
             </div>
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 mb-10 p-6 bg-gray-50/50 dark:bg-themeDark/30 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 mb-10 p-6 bg-gray-50/50 dark:bg-themeDark/30 rounded-3xl border border-gray-100 dark:border-white/[0.06]">
                 <div>
                     <label class="form-label text-themeBlue">Branch <span class="required-star">*</span></label>
                     <select id="branch_id" class="form-input" required></select>
@@ -211,6 +211,13 @@
                 <div>
                     <label class="form-label text-themeBlue">Session <span class="required-star">*</span></label>
                     <select id="session_year_id" class="form-input" required></select>
+                </div>
+                <div>
+                    <label class="form-label text-themeBlue">Student Status <span class="required-star">*</span></label>
+                    <select id="status" class="form-input" required>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
                 </div>
             </div>
 
@@ -740,7 +747,7 @@
             
             const fields = [
                 'roll_number', 'student_name', 'name_in_bangla', 'birth_certificate', 
-                'blood_group', 'religion', 'dob', 'gender', 'email', 'sms_status',
+                'blood_group', 'religion', 'dob', 'gender', 'email', 'status', 'sms_status',
                 'father_name', 'father_name_bn', 'father_nid', 'father_mobile', 'father_occupation', 
                 'mother_name', 'mother_name_bn', 'mother_nid', 'mother_mobile', 'mother_occupation', 
                 'guardian_name', 'guardian_mobile', 'guardian_occupation',
@@ -868,7 +875,7 @@
 
         const fields = [
             'roll_number', 'student_name', 'name_in_bangla', 'birth_certificate', 'student_identity',
-            'blood_group', 'religion', 'dob', 'gender', 'email', 'sms_status', 'card_number',
+            'blood_group', 'religion', 'dob', 'gender', 'email', 'status', 'sms_status', 'card_number',
             'father_name', 'father_name_bn', 'father_nid', 'father_mobile', 'father_occupation', 
             'mother_name', 'mother_name_bn', 'mother_nid', 'mother_mobile', 'mother_occupation', 
             'guardian_name', 'guardian_mobile', 'guardian_occupation',

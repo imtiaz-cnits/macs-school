@@ -61,6 +61,7 @@ class AdmitCardController extends Controller
             ->get();
 
         $students = Student::with(['schoolClass', 'branch', 'section']) 
+            ->where('status', 'Active')
             ->where('session_year_id', $request->session_year_id)
             ->where('branch_id', $request->branch_id)
             ->where('class_id', $request->class_id)

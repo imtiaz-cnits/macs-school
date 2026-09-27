@@ -77,7 +77,7 @@ class FeeAutoGenerate extends Command
                     'branch_id' => $feeSetup->branch_id,
                     'class_id' => $feeSetup->class_id,
                     'session_year_id' => $feeSetup->session_year_id,
-                    'sms_status' => 'Active'
+                    'status' => 'Active'
                 ])->get();
 
                 if ($students->isEmpty()) {
