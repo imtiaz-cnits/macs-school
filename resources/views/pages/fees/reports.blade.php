@@ -189,6 +189,7 @@
             font-size: 8.5px !important;
             line-height: 1.2 !important;
             color: #0F1E2C !important;
+            vertical-align: top !important;
         }
 
         #printableReportArea th:first-child,
@@ -280,6 +281,55 @@
             font-weight: 700 !important;
             line-height: 1.25 !important;
             padding: 0 !important;
+        }
+
+        #printableReportArea td.col-fee-details {
+            vertical-align: top !important;
+            padding: 3px 4px !important;
+        }
+
+        #printableReportArea .col-fee-details-list {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 1.5px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        #printableReportArea .col-fee-details-list > * {
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+        }
+
+        #printableReportArea .fee-detail-line {
+            font-size: 10.5px !important;
+            line-height: 1.25 !important;
+            color: #0F1E2C !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        #printableReportArea .fee-detail-line span {
+            font-size: 10.5px !important;
+            line-height: 1.25 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        #printableReportArea .fee-cat-name {
+            font-weight: 800 !important;
+            color: #0F1E2C !important;
+        }
+
+        #printableReportArea .fee-sep {
+            font-weight: 700 !important;
+            color: #475569 !important;
+            margin: 0 2.5px !important;
+        }
+
+        #printableReportArea .fee-months {
+            font-weight: 600 !important;
+            color: #0F1E2C !important;
         }
 
         #printableReportArea tbody tr:nth-child(even) td {
@@ -830,11 +880,23 @@
                                         </div>
                                     </td>
                                     <td class="py-0 px-0 text-sm font-semibold text-gray-700 dark:text-gray-300 col-fee-details">
-                                        <div class="font-bold text-gray-900 dark:text-gray-100 text-xs">{{ $col->categories_summary ?: 'Fee' }}</div>
-                                        <div class="flex items-center gap-1 flex-wrap mt-0.5">
-                                            @foreach($col->months as $mName)
-                                            <span class="px-1.5 py-0.5 bg-gray-50 dark:bg-themeDark border border-gray-150 dark:border-white/[0.06] text-themeBlue dark:text-themeBlue text-[9px] font-black uppercase tracking-wider rounded-md inline-block">{{ $mName }}</span>
-                                            @endforeach
+                                        <div class="col-fee-details-list space-y-0.5">
+                                            @if(isset($col->category_months) && count($col->category_months) > 0)
+                                                @foreach($col->category_months as $catName => $catMonths)
+                                                    @php
+                                                        $filteredMonths = collect($catMonths)->filter(function($m) {
+                                                            return !empty($m) && !in_array(strtolower(trim($m)), ['one time', 'one_time', 'general', '']);
+                                                        });
+                                                    @endphp
+                                                    <div class="fee-detail-line text-xs leading-tight">
+                                                        <span class="fee-cat-name font-bold text-gray-900 dark:text-gray-100">{{ $catName }}</span>@if($filteredMonths->isNotEmpty())<span class="fee-sep font-bold text-gray-500 dark:text-gray-400 mx-1">-</span><span class="fee-months font-semibold text-gray-800 dark:text-gray-200">{{ $filteredMonths->join(', ') }}</span>@elseif(collect($catMonths)->isNotEmpty() && strtolower(trim(collect($catMonths)->first())) === 'one time')<span class="fee-sep font-bold text-gray-500 dark:text-gray-400 mx-1">-</span><span class="fee-months font-semibold text-gray-800 dark:text-gray-200">One Time</span>@endif
+                                                    </div>
+                                                @endforeach
+                                            @else
+                                                <div class="fee-detail-line text-xs leading-tight">
+                                                    <span class="fee-cat-name font-bold text-gray-900 dark:text-gray-100">{{ $col->categories_summary ?: 'Fee' }}</span>@if(!empty($col->months))<span class="fee-sep font-bold text-gray-500 dark:text-gray-400 mx-1">-</span><span class="fee-months font-semibold text-gray-800 dark:text-gray-200">{{ collect($col->months)->join(', ') }}</span>@endif
+                                                </div>
+                                            @endif
                                         </div>
                                         @if($col->items_count > 1)
                                         <div class="no-print mt-1">
@@ -847,14 +909,7 @@
                                             <div x-show="expanded" x-cloak class="mt-1.5 p-2 bg-gray-50/90 dark:bg-themeDark/80 rounded-xl border border-gray-200/70 dark:border-white/[0.08] text-[10px] space-y-1">
                                                 @foreach($col->items as $it)
                                                 @php
-                                                $itMonth = 'One Time';
-                                                if ($it->invoice && $it->invoice->feeSetup) {
-                                                if ($it->invoice->feeSetup->fee_month && !in_array(strtolower($it->invoice->feeSetup->fee_month), ['monthly', 'one time', 'one_time'])) {
-                                                $itMonth = $it->invoice->feeSetup->fee_month;
-                                                } elseif ($it->invoice->due_date) {
-                                                $itMonth = date('F', strtotime($it->invoice->due_date));
-                                                }
-                                                }
+                                                $itMonth = $it->invoice->month_name ?? 'One Time';
                                                 @endphp
                                                 <div class="flex justify-between items-center text-gray-600 dark:text-gray-300">
                                                     <span>{{ $it->invoice->feeSetup->category->name ?? 'Fee' }} ({{ $itMonth }})</span>
@@ -1266,7 +1321,12 @@
                 #print-measure-sandbox * { box-sizing: border-box; }
                 #print-measure-sandbox table { width: 100% !important; border-collapse: collapse !important; border: 1px solid #475569 !important; }
                 #print-measure-sandbox th { background-color: #008ED6 !important; color: #fff !important; font-size: 10px !important; font-weight: 900 !important; text-transform: uppercase !important; padding: 5px 6px !important; border: 1px solid #0072ad !important; }
-                #print-measure-sandbox td { border: 1px solid #475569 !important; padding: 3px 4px !important; font-size: 8.5px !important; line-height: 1.2 !important; color: #0F1E2C !important; }
+                #print-measure-sandbox td { border: 1px solid #475569 !important; padding: 3px 4px !important; font-size: 8.5px !important; line-height: 1.2 !important; color: #0F1E2C !important; vertical-align: top !important; }
+                #print-measure-sandbox .col-fee-details-list { display: flex !important; flex-direction: column !important; gap: 1.5px !important; margin: 0 !important; padding: 0 !important; }
+                #print-measure-sandbox .col-fee-details-list > * { margin-top: 0 !important; margin-bottom: 0 !important; }
+                #print-measure-sandbox .fee-detail-line { font-size: 10.5px !important; line-height: 1.25 !important; margin: 0 !important; padding: 0 !important; }
+                #print-measure-sandbox .fee-detail-line span { font-size: 10.5px !important; line-height: 1.25 !important; padding: 0 !important; margin: 0 !important; }
+                #print-measure-sandbox .student-meta, #print-measure-sandbox .student-meta span { font-size: 10.5px !important; line-height: 1.25 !important; padding: 0 !important; }
                 #print-measure-sandbox th:first-child, #print-measure-sandbox td:first-child { width: 24px !important; min-width: 24px !important; max-width: 28px !important; text-align: center !important; padding: 3px 2px !important; }
                 #print-measure-sandbox tfoot td { padding: 4px 4px !important; font-size: 8.5px !important; font-weight: 800 !important; }
                 #print-measure-sandbox .print-signatures { width: 100% !important; padding-top: 14px !important; padding-bottom: 2px !important; }

@@ -86,11 +86,17 @@ class FeeReportController extends Controller
             return $receiptNo;
         };
 
+        $monthOrderMap = [
+            'january' => 1, 'february' => 2, 'march' => 3, 'april' => 4,
+            'may' => 5, 'june' => 6, 'july' => 7, 'august' => 8,
+            'september' => 9, 'october' => 10, 'november' => 11, 'december' => 12
+        ];
+
         // কালেকশনগুলোকে স্টুডেন্ট ও মাস্টার রিসিট অনুযায়ী গ্রুপ করা হচ্ছে (Single Transaction / Bulk Collection Consolidated)
         $collections = $payments->groupBy(function ($item) use ($resolveMasterReceipt) {
             $masterReceipt = $resolveMasterReceipt($item->receipt_no);
             return $item->student_id . '_' . $masterReceipt;
-        })->map(function ($items) use ($resolveMasterReceipt, $resolveMonth) {
+        })->map(function ($items) use ($resolveMasterReceipt, $resolveMonth, $monthOrderMap) {
             $first = $items->first();
             $masterReceipt = $resolveMasterReceipt($first->receipt_no);
             $totalAmount = $items->sum('paid_amount');
@@ -102,6 +108,30 @@ class FeeReportController extends Controller
             $months = $items->map(function ($i) use ($resolveMonth) {
                 return $resolveMonth($i->invoice);
             })->unique()->filter()->values();
+
+            // Group payments by category and sort months chronologically (Jan to Dec)
+            $categoryMonths = $items->groupBy(function ($i) {
+                return $i->invoice->feeSetup->category->name ?? 'Fee';
+            })->map(function ($group) use ($resolveMonth, $monthOrderMap) {
+                $mList = $group->map(function ($i) use ($resolveMonth) {
+                    return $resolveMonth($i->invoice);
+                })->unique()->filter()->values();
+
+                return $mList->sortBy(function ($m) use ($monthOrderMap) {
+                    return $monthOrderMap[strtolower(trim($m))] ?? 99;
+                })->values();
+            });
+
+            // Formatted string summary for export (e.g. Monthly Fee - Jan, Feb; Term Exam Fee - Apr)
+            $feeDetailsSummary = $categoryMonths->map(function ($catMonths, $catName) {
+                $validMonths = $catMonths->filter(function ($m) {
+                    return !empty($m) && !in_array(strtolower(trim($m)), ['one time', 'one_time', 'general', '']);
+                });
+                if ($validMonths->isNotEmpty()) {
+                    return $catName . ' - ' . $validMonths->join(', ');
+                }
+                return $catName;
+            })->join('; ');
 
             $methods = $items->map(function ($i) {
                 return $i->payment_method ?? 'Cash';
@@ -116,6 +146,8 @@ class FeeReportController extends Controller
                 'categories_summary' => $categories->join(', '),
                 'months' => $months,
                 'months_summary' => $months->join(', '),
+                'category_months' => $categoryMonths,
+                'fee_details_summary' => $feeDetailsSummary,
                 'items_count' => $items->count(),
                 'payment_method' => $methods->join(', '),
                 'paid_amount' => $totalAmount,
@@ -189,7 +221,7 @@ class FeeReportController extends Controller
                 'student_id' => $col->student->student_identity ?? 'N/A',
                 'class' => $col->student->schoolClass->class_name ?? 'N/A',
                 'roll' => $col->student->roll_number ?? 'N/A',
-                'category' => $col->categories_summary ?: 'Fee',
+                'category' => $col->fee_details_summary ?: ($col->categories_summary ?: 'Fee'),
                 'month' => $col->months_summary ?: 'General',
                 'items_count' => $col->items_count,
                 'method' => $col->payment_method ?? 'Cash',
