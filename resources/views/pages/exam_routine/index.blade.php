@@ -138,7 +138,7 @@
             visibility: hidden !important;
         }
 
-        /* Spacing layout for Page 2 Parent Flyers */
+        /* Spacing layout for Page 1 Routines and Page 2 Parent Flyers */
         body.print-dual #dualShiftPrintLayout .print-page {
             display: flex !important;
             flex-direction: column !important;
@@ -149,14 +149,32 @@
             background-color: #fff !important;
         }
 
+        body.print-dual #dualShiftPrintLayout .routine-half {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+            height: 138mm !important;
+            max-height: 138mm !important;
+            page-break-inside: avoid !important;
+            box-sizing: border-box !important;
+            background-color: #fff !important;
+            padding: 2mm 1mm 2mm 1mm !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow: hidden !important;
+        }
+
         body.print-dual #dualShiftPrintLayout .flyer-half {
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
             height: 138mm !important;
+            max-height: 138mm !important;
             page-break-inside: avoid !important;
             box-sizing: border-box !important;
             background-color: #fff !important;
+            padding: 2mm 5mm 3mm 5mm !important;
+            overflow: hidden !important;
         }
 
         /* Print Header - Formal School Style */
@@ -459,6 +477,14 @@
                         document.body.classList.remove('overflow-hidden');
                     }
                 });
+
+                // Sync announcement title when printExamId changes
+                this.$watch('printExamId', val => {
+                    let bName = this.getPrintExamNameBengali();
+                    if (bName) {
+                        this.printConfig.announcement.title = bName;
+                    }
+                });
             },
 
             get chunkedBatchStudents() {
@@ -474,24 +500,22 @@
 
             get printRowStyle() {
                 let maxRows = Math.max(this.shift1Rows.length || 0, this.shift2Rows.length || 0);
-                if (maxRows >= 12) return 'padding: 2px 4px; white-space: nowrap;';
-                if (maxRows >= 11) return 'padding: 2.5px 4px; white-space: nowrap;';
-                if (maxRows >= 10) return 'padding: 3px 5px; white-space: nowrap;';
-                if (maxRows >= 9) return 'padding: 4px 5px; white-space: nowrap;';
-                return 'padding: 6px 8px; white-space: nowrap;';
+                if (maxRows >= 12) return 'padding: 2px 2px;';
+                if (maxRows >= 10) return 'padding: 2.5px 2px;';
+                if (maxRows >= 8)  return 'padding: 3px 2px;';
+                return 'padding: 3.5px 2px;';
             },
 
             get printHeaderStyle() {
                 let maxRows = Math.max(this.shift1Rows.length || 0, this.shift2Rows.length || 0);
-                if (maxRows >= 12) return 'padding: 3px 4px; white-space: nowrap;';
-                if (maxRows >= 11) return 'padding: 3.5px 4px; white-space: nowrap;';
-                if (maxRows >= 10) return 'padding: 4px 5px; white-space: nowrap;';
-                if (maxRows >= 9) return 'padding: 5px 5px; white-space: nowrap;';
-                return 'padding: 6px 8px; white-space: nowrap;';
+                if (maxRows >= 12) return 'padding: 2.5px 2px;';
+                if (maxRows >= 10) return 'padding: 3px 2px;';
+                if (maxRows >= 8)  return 'padding: 3px 2px;';
+                return 'padding: 3.5px 2px;';
             },
 
             get printTableFontSize() {
-                return '15px';
+                return '14px';
             },
             
             selectSession(id, name) {
@@ -589,29 +613,32 @@
                 if (!sub) return '×';
                 sub = this.fixMojibake(sub);
                 let s = sub.trim();
-                if (s.includes('বিশ্বপরিচয়')) return 'বাঃ ও বিশ্বঃ';
-                if (s.includes('নৈতিক শিক্ষা')) return 'ইসলাম ও নৈঃ শিঃ';
-                if (s.includes('সাধারন বিজ্ঞান')) return 'বাঃ ও বিঃ/ সাধাঃ বিঃ';
-                if (s.includes('তথ্য ও যোগাযোগ প্রযুক্তি')) return 'তথ্য ও যোঃ';
-                if (s.includes('জীব বিজ্ঞান')) return 'জীব বিঃ';
-                if (s.includes('উচ্চতর গণিত')) return 'উচ্চঃ গঃ/ কৃষি শিক্ষা';
+                if (/বিশ্ব\s*পরিচ/u.test(s)) return 'বাঃ ও বিশ্বঃ';
+                if (/নৈতিক\s*শিক্ষা/u.test(s)) return 'ইসলাম ও নৈঃ শিঃ';
+                if (/ইসলাম\s*\/\s*হিন্দু/u.test(s)) return 'ইসলাম / হিন্দু';
+                if (/আরবী\s*\/\s*ধর্ম/u.test(s)) return 'আরবী / ধর্ম';
+                if (/সাধার[ণন]\s*বিজ্ঞান/u.test(s)) return 'বাঃ ও বিঃ/ সাধাঃ বিঃ';
+                if (/তথ্য/u.test(s)) return 'তথ্য ও যোঃ';
+                if (/জীব\s*বিজ্ঞান\s*\/\s*ভূগোল/u.test(s)) return 'জীব বিঃ/ ভূগোল';
+                if (/জীব/u.test(s)) return 'জীব বিঃ';
+                if (/উচ্চতর\s*গণিত/u.test(s)) return 'উচ্চঃ গঃ/ কৃষি';
                 return s;
             },
 
             getSubjectStyle(rawSub) {
                 let sub = this.translateSubject(rawSub);
-                if (!sub) return 'font-size: 15px; white-space: nowrap;';
+                if (!sub) return 'font-size: 14px; white-space: nowrap; overflow: hidden;';
                 let len = sub.length;
-                if (len <= 7) {
-                    return 'font-size: 15px; white-space: nowrap;';
-                } else if (len <= 11) {
-                    return 'font-size: 14px; white-space: nowrap;';
-                } else if (len <= 15) {
-                    return 'font-size: 13px; white-space: nowrap;';
-                } else if (len <= 20) {
-                    return 'font-size: 13px; white-space: nowrap;';
+                if (len <= 5) {
+                    return 'font-size: 14px; white-space: nowrap; overflow: hidden;';
+                } else if (len <= 9) {
+                    return 'font-size: 13px; white-space: nowrap; overflow: hidden;';
+                } else if (len <= 13) {
+                    return 'font-size: 12px; white-space: nowrap; overflow: hidden;';
+                } else if (len <= 16) {
+                    return 'font-size: 11px; white-space: nowrap; overflow: hidden;';
                 } else {
-                    return 'font-size: 13px; white-space: nowrap;';
+                    return 'font-size: 10px; white-space: nowrap; overflow: hidden;';
                 }
             },
 
@@ -632,13 +659,185 @@
                 return this.formatTimeBangla(start) + ' - ' + this.formatTimeBangla(end);
             },
 
+            translateExamNameBangla(name) {
+                if (!name) return '২য় সাময়িক পরীক্ষা-২০২৬';
+                if (/[\u0980-\u09FF]/.test(name) && name.includes('পরীক্ষা')) {
+                    return name;
+                }
+                let str = name.trim();
+                let yearMatch = str.match(/\b(20\d\d)\b/);
+                let yearStr = yearMatch ? this.toBanglaNum(yearMatch[1]) : '২০২৬';
+
+                const ordinals = {
+                    '1st': '১ম', 'first': '১ম', '1': '১ম',
+                    '2nd': '২য়', 'second': '২য়', '2': '২য়',
+                    '3rd': '৩য়', 'third': '৩য়', '3': '৩য়',
+                    '4th': '৪র্থ', 'fourth': '৪র্থ', '4': '৪র্থ',
+                    '5th': '৫ম', 'fifth': '৫ম', '5': '৫ম',
+                    '6th': '৬ষ্ঠ', 'sixth': '৬ষ্ঠ', '6': '৬ষ্ঠ',
+                    '7th': '৭ম', 'seventh': '৭ম', '7': '৭ম',
+                    '8th': '৮ম', 'eighth': '৮ম', '8': '৮ম',
+                    '9th': '৯ম', 'ninth': '৯ম', '9': '৯ম',
+                    '10th': '১০ম', 'tenth': '১০ম', '10': '১০ম'
+                };
+
+                let monthlyMatch = str.match(/(\d+(?:st|nd|rd|th)?|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)?\s*monthly\s*(?:exam)?/i);
+                if (monthlyMatch) {
+                    let ordKey = (monthlyMatch[1] || '').toLowerCase();
+                    let ord = ordKey ? (ordinals[ordKey] || this.toBanglaNum(monthlyMatch[1])) : '';
+                    let title = ord ? `${ord} মাসিক পরীক্ষা` : 'মাসিক পরীক্ষা';
+                    return `${title}-${yearStr}`;
+                }
+
+                let termMatch = str.match(/(\d+(?:st|nd|rd|th)?|first|second|third)?\s*term\s*(?:exam)?/i);
+                if (termMatch) {
+                    let ordKey = (termMatch[1] || '').toLowerCase();
+                    let ord = ordKey ? (ordinals[ordKey] || this.toBanglaNum(termMatch[1])) : '২য়';
+                    return `${ord} সাময়িক পরীক্ষা-${yearStr}`;
+                }
+
+                let ctMatch = str.match(/(\d+(?:st|nd|rd|th)?)\s*(?:ct|class\s*test)\s*(?:exam)?/i);
+                if (ctMatch) {
+                    let ordKey = (ctMatch[1] || '').toLowerCase();
+                    let ord = ordinals[ordKey] || this.toBanglaNum(ctMatch[1]);
+                    return `${ord} শ্রেণী পরীক্ষা-${yearStr}`;
+                }
+
+                if (/pre[- ]?model/i.test(str)) return `প্রি-মডেল পরীক্ষা-${yearStr}`;
+                if (/model\s*(?:test|exam)/i.test(str)) return `মডেল টেস্ট পরীক্ষা-${yearStr}`;
+                if (/annual|final/i.test(str)) return `বার্ষিক পরীক্ষা-${yearStr}`;
+                if (/half\s*yearly|mid\s*term/i.test(str)) return `অর্ধ-বার্ষিক পরীক্ষা-${yearStr}`;
+
+                if (str.includes('2nd Term') || str.includes('2nd')) return `২য় সাময়িক পরীক্ষা-${yearStr}`;
+                if (str.includes('1st Term') || str.includes('1st')) return `১ম সাময়িক পরীক্ষা-${yearStr}`;
+
+                let converted = str
+                    .replace(/\b1st\b/gi, '১ম')
+                    .replace(/\b2nd\b/gi, '২য়')
+                    .replace(/\b3rd\b/gi, '৩য়')
+                    .replace(/\b4th\b/gi, '৪র্থ')
+                    .replace(/\b5th\b/gi, '৫ম')
+                    .replace(/\b6th\b/gi, '৬ষ্ঠ')
+                    .replace(/\b7th\b/gi, '৭ম')
+                    .replace(/\b8th\b/gi, '৮ম')
+                    .replace(/\b9th\b/gi, '৯ম')
+                    .replace(/\b10th\b/gi, '১০ম')
+                    .replace(/\bmonthly\b/gi, 'মাসিক')
+                    .replace(/\bterm\b/gi, 'সাময়িক')
+                    .replace(/\bexam\b/gi, 'পরীক্ষা')
+                    .replace(/\btest\b/gi, 'টেস্ট');
+
+                converted = this.toBanglaNum(converted);
+                if (!converted.includes('পরীক্ষা')) {
+                    converted += ' পরীক্ষা';
+                }
+                if (!converted.includes(yearStr)) {
+                    converted += `-${yearStr}`;
+                }
+                return converted;
+            },
+
             getPrintExamNameBengali() {
                 let examObj = this.examsList ? this.examsList.find(e => e.id == this.printExamId) : null;
                 let name = examObj ? examObj.name : (this.examText || '');
-                if (name.includes('2nd Term') || name.includes('2nd')) return '২য় সাময়িক পরীক্ষা-২০২৬';
-                if (name.includes('1st Term') || name.includes('1st')) return '১ম সাময়িক পরীক্ষা-২০২৬';
-                if (name.includes('Annual') || name.includes('annual')) return 'বার্ষিক পরীক্ষা-২০২৬';
-                return name || '২য় সাময়িক পরীক্ষা-২০২৬';
+                return this.translateExamNameBangla(name);
+            },
+
+            isMonthlyExam() {
+                let examObj = this.examsList ? this.examsList.find(e => e.id == this.printExamId) : null;
+                let name = examObj ? examObj.name : (this.examText || '');
+                return /monthly|মাসিক/i.test(name);
+            },
+
+            buildShiftRows(slots, classIds) {
+                if (!this.isMonthlyExam()) {
+                    let shiftDates = {};
+                    slots.forEach(slot => {
+                        let d = slot.exam_date;
+                        if (!shiftDates[d]) {
+                            shiftDates[d] = {
+                                date: d,
+                                formattedDate: new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                                day: new Date(d).toLocaleDateString('en-US', { weekday: 'short' }),
+                                isFirstOfDate: true,
+                                rowspan: 1,
+                                time: '',
+                                subjects: {}
+                            };
+                        }
+                        shiftDates[d].subjects[slot.class_id] = slot.subject ? (slot.subject.subject_name || slot.subject.name) : '';
+                    });
+                    return Object.values(shiftDates).sort((a,b) => a.date.localeCompare(b.date));
+                }
+
+                // Monthly Exam logic (Multi-slot with time breakdown)
+                let byDate = {};
+                slots.forEach(slot => {
+                    let d = slot.exam_date;
+                    if (!byDate[d]) byDate[d] = [];
+                    byDate[d].push(slot);
+                });
+
+                let sortedDates = Object.keys(byDate).sort();
+                let rows = [];
+
+                sortedDates.forEach(d => {
+                    let dSlots = byDate[d];
+                    let classSlots = {};
+                    classIds.forEach(cid => { classSlots[cid] = []; });
+                    dSlots.forEach(s => {
+                        if (!classSlots[s.class_id]) classSlots[s.class_id] = [];
+                        classSlots[s.class_id].push(s);
+                    });
+                    classIds.forEach(cid => {
+                        classSlots[cid].sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
+                    });
+
+                    let maxSlots = 1;
+                    classIds.forEach(cid => {
+                        if (classSlots[cid].length > maxSlots) {
+                            maxSlots = classSlots[cid].length;
+                        }
+                    });
+
+                    for (let p = 0; p < maxSlots; p++) {
+                        let pStarts = [];
+                        let pEnds = [];
+                        let rowSubjects = {};
+
+                        classIds.forEach(cid => {
+                            if (classSlots[cid] && classSlots[cid][p]) {
+                                let sl = classSlots[cid][p];
+                                rowSubjects[cid] = sl.subject ? (sl.subject.subject_name || sl.subject.name) : '';
+                                if (sl.start_time) pStarts.push(sl.start_time.substring(0, 5));
+                                if (sl.end_time) pEnds.push(sl.end_time.substring(0, 5));
+                            } else {
+                                rowSubjects[cid] = '';
+                            }
+                        });
+
+                        let timeLabel = '';
+                        if (pStarts.length > 0 && pEnds.length > 0) {
+                            pStarts.sort();
+                            pEnds.sort();
+                            let startMin = pStarts[0];
+                            let endMax = pEnds[pEnds.length - 1];
+                            timeLabel = `${this.toBanglaNum(startMin)} - ${this.toBanglaNum(endMax)}`;
+                        }
+
+                        rows.push({
+                            date: d,
+                            formattedDate: new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                            day: new Date(d).toLocaleDateString('en-US', { weekday: 'short' }),
+                            isFirstOfDate: (p === 0),
+                            rowspan: maxSlots,
+                            time: timeLabel,
+                            subjects: rowSubjects
+                        });
+                    }
+                });
+
+                return rows;
             },
 
             applyPrintPreset(preset) {
@@ -883,6 +1082,12 @@
                 if (!this.printExamId) {
                     this.printExamId = this.form.exam_id || '{{ $exams->first()->id ?? "" }}';
                 }
+                if (this.printExamId) {
+                    let bName = this.getPrintExamNameBengali();
+                    if (bName && (!this.printConfig.announcement.title || this.printConfig.announcement.title === '২য় সাময়িক পরীক্ষা-২০২৬')) {
+                        this.printConfig.announcement.title = bName;
+                    }
+                }
                 this.showPrintModal = true;
             },
 
@@ -939,35 +1144,8 @@
                         });
                     }
 
-                    let shift1Dates = {};
-                    shift1Slots.forEach(slot => {
-                        let d = slot.exam_date;
-                        if (!shift1Dates[d]) {
-                            shift1Dates[d] = {
-                                date: d,
-                                formattedDate: new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-                                day: new Date(d).toLocaleDateString('en-US', { weekday: 'short' }),
-                                subjects: {}
-                            };
-                        }
-                        shift1Dates[d].subjects[slot.class_id] = slot.subject ? (slot.subject.subject_name || slot.subject.name) : '';
-                    });
-                    this.shift1Rows = Object.values(shift1Dates).sort((a,b) => a.date.localeCompare(b.date));
-
-                    let shift2Dates = {};
-                    shift2Slots.forEach(slot => {
-                        let d = slot.exam_date;
-                        if (!shift2Dates[d]) {
-                            shift2Dates[d] = {
-                                date: d,
-                                formattedDate: new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-                                day: new Date(d).toLocaleDateString('en-US', { weekday: 'short' }),
-                                subjects: {}
-                            };
-                        }
-                        shift2Dates[d].subjects[slot.class_id] = slot.subject ? (slot.subject.subject_name || slot.subject.name) : '';
-                    });
-                    this.shift2Rows = Object.values(shift2Dates).sort((a,b) => a.date.localeCompare(b.date));
+                    this.shift1Rows = this.buildShiftRows(shift1Slots, this.printConfig.shift1.classes);
+                    this.shift2Rows = this.buildShiftRows(shift2Slots, this.printConfig.shift2.classes);
 
                     // 2. If Batch Class is selected, fetch students & batch class slots (For Page 2 Back Side)
                     if (this.batchClassId) {
@@ -1593,7 +1771,7 @@
                 <div class="print-page flex flex-col justify-between" style="height: 282mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 0; box-sizing: border-box; background-color: #fff !important;">
                     
                     <!-- SHIFT 1 TABLE (TOP HALF) -->
-                    <div style="display: flex !important; flex-direction: column !important; box-sizing: border-box; background-color: #fff !important;">
+                    <div class="routine-half" style="height: 138mm !important; max-height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; padding: 2mm 1mm 2mm 1mm; width: 100%; box-sizing: border-box; background-color: #fff !important;">
                         <!-- Header -->
                         <div class="text-center" style="margin-top: 1mm; margin-bottom: 1.5mm;">
                             <h2 class="text-xl font-black" style="margin: 0 0 2px 0; color: #000; font-size: 22px;">ম্যাকস স্কুল এন্ড কলেজ</h2>
@@ -1611,16 +1789,19 @@
                             </div>
 
                             <!-- Right Side: The Third Div -->
-                            <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 6px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift1.timeLabel">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</div>
+                            <div x-show="!isMonthlyExam()" style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 6px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift1.timeLabel">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</div>
 
                         </div>
                         
                         <!-- Table -->
-                        <table :style="`width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize};`">
+                        <table :style="`width: 100%; table-layout: fixed; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize}; box-sizing: border-box;`">
                             <thead>
                                 <tr class="routine-header-tr">
-                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
-                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
+                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">তারিখ</th>
+                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">বার</th>
+                                    <template x-if="isMonthlyExam()">
+                                        <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 12%; padding-left: 1px !important; padding-right: 1px !important;`">সময়</th>
+                                    </template>
                                     <template x-for="clsName in shift1ClassNames">
                                         <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
                                     </template>
@@ -1629,10 +1810,17 @@
                             <tbody>
                                 <template x-for="row in shift1Rows">
                                     <tr>
-                                        <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="formatDateBangla(row.date)"></td>
-                                        <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="getDayBangla(row.date)"></td>
+                                        <template x-if="!isMonthlyExam() || row.isFirstOfDate">
+                                            <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="formatDateBangla(row.date)"></td>
+                                        </template>
+                                        <template x-if="!isMonthlyExam() || row.isFirstOfDate">
+                                            <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="getDayBangla(row.date)"></td>
+                                        </template>
+                                        <template x-if="isMonthlyExam()">
+                                            <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; font-size: 13px; padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;`" x-text="row.time"></td>
+                                        </template>
                                         <template x-for="clsId in printConfig.shift1.classes">
-                                            <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold;`" :class="getSubjectStyle(row.subjects[clsId])" x-text="translateSubject(row.subjects[clsId])"></td>
+                                            <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold; ${getSubjectStyle(row.subjects[clsId])}`" x-text="translateSubject(row.subjects[clsId])"></td>
                                         </template>
                                     </tr>
                                 </template>
@@ -1644,65 +1832,74 @@
                     </div>
 
                     <!-- SHIFT 2 TABLE (BOTTOM HALF) -->
-                    <div style="display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding-top: 4mm !important; box-sizing: border-box; background-color: #fff !important;">
-                        <div>
-                            <!-- Header -->
-                            <div class="text-center" style="margin-top: 1mm; margin-bottom: 1.5mm;">
-                                <h2 class="text-xl font-black" style="margin: 0 0 2px 0; color: #000; font-size: 22px;">ম্যাকস স্কুল এন্ড কলেজ</h2>
-                                <h3 class="text-xs font-extrabold" style="margin: 2px 0; font-size: 16px;" x-text="getPrintExamNameBengali()">২য় সাময়িক পরীক্ষা-২০২৬</h3>
-                                <div style="display: inline-block; border: 1.5px solid #000; border-radius: 3px; padding: 0px 10px; font-size: 18px; font-weight: 900; margin-top: 2px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
-                            </div>
-                            
-                            <!-- Meta Info Row -->
-                            <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 1mm;">
-    
-                                <!-- Left Side: Grouping First Two Divs -->
-                                <div class="flex items-center gap-3">
-                                    <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 6px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift2.name">দ্বিতীয় শিফট</div>
-                                    <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 8px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift2.classRange">৫ম - ৯ম</div>
-                                </div>
+                    <div class="routine-half" style="height: 138mm !important; max-height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; padding: 2mm 1mm 2mm 1mm; width: 100%; box-sizing: border-box; background-color: #fff !important;">
+                        <!-- Header -->
+                        <div class="text-center" style="margin-top: 1mm; margin-bottom: 1.5mm;">
+                            <h2 class="text-xl font-black" style="margin: 0 0 2px 0; color: #000; font-size: 22px;">ম্যাকস স্কুল এন্ড কলেজ</h2>
+                            <h3 class="text-xs font-extrabold" style="margin: 2px 0; font-size: 16px;" x-text="getPrintExamNameBengali()">২য় সাময়িক পরীক্ষা-২০২৬</h3>
+                            <div style="display: inline-block; border: 1.5px solid #000; border-radius: 3px; padding: 0px 10px; font-size: 18px; font-weight: 900; margin-top: 2px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
+                        </div>
+                        
+                        <!-- Meta Info Row -->
+                        <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 1mm;">
 
-                                <!-- Right Side: The Third Div -->
-                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 6px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift2.timeLabel">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</div>
-
+                            <!-- Left Side: Grouping First Two Divs -->
+                            <div class="flex items-center gap-3">
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 6px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift2.name">দ্বিতীয় শিফট</div>
+                                <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 8px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift2.classRange">৫ম - ৯ম</div>
                             </div>
-                            
-                            <!-- Table -->
-                            <table :style="`width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize};`">
-                                <thead>
-                                    <tr class="routine-header-tr">
-                                        <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
-                                        <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
-                                        <template x-for="clsName in shift2ClassNames">
-                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
+
+                            <!-- Right Side: The Third Div -->
+                            <div x-show="!isMonthlyExam()" style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 6px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift2.timeLabel">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</div>
+
+                        </div>
+                        
+                        <!-- Table -->
+                        <table :style="`width: 100%; table-layout: fixed; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize}; box-sizing: border-box;`">
+                            <thead>
+                                <tr class="routine-header-tr">
+                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">তারিখ</th>
+                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">বার</th>
+                                    <template x-if="isMonthlyExam()">
+                                        <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 12%; padding-left: 1px !important; padding-right: 1px !important;`">সময়</th>
+                                    </template>
+                                    <template x-for="clsName in shift2ClassNames">
+                                        <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
+                                    </template>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="row in shift2Rows">
+                                    <tr>
+                                        <template x-if="!isMonthlyExam() || row.isFirstOfDate">
+                                            <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="formatDateBangla(row.date)"></td>
+                                        </template>
+                                        <template x-if="!isMonthlyExam() || row.isFirstOfDate">
+                                            <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="getDayBangla(row.date)"></td>
+                                        </template>
+                                        <template x-if="isMonthlyExam()">
+                                            <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; font-size: 13px; padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;`" x-text="row.time"></td>
+                                        </template>
+                                        <template x-for="clsId in printConfig.shift2.classes">
+                                            <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold; ${getSubjectStyle(row.subjects[clsId])}`" x-text="translateSubject(row.subjects[clsId])"></td>
                                         </template>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <template x-for="row in shift2Rows">
-                                        <tr>
-                                            <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="formatDateBangla(row.date)"></td>
-                                            <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="getDayBangla(row.date)"></td>
-                                            <template x-for="clsId in printConfig.shift2.classes">
-                                                <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold; ${getSubjectStyle(row.subjects[clsId])}`" x-text="translateSubject(row.subjects[clsId])"></td>
-                                            </template>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
+                                </template>
+                            </tbody>
+                        </table>
 
-                            <!-- Footnote -->
-                            <div class="text-center text-[14px] font-bold" x-show="printConfig.shift2.footnote" x-text="printConfig.shift2.footnote" style="margin-top: 2mm;"></div>
-                        </div>
+                        <!-- Footnote -->
+                        <div class="text-center text-[14px] font-bold" x-show="printConfig.shift2.footnote" x-text="printConfig.shift2.footnote" style="margin-top: 2mm;"></div>
                     </div>
+                </div>
 
                 <div class="page-break"></div>
 
                 <!-- PAGE 2: PARENT FLYER BACK PAGE (BLANK TEMPLATE) -->
-                <div class="print-page flex flex-col justify-between" style="height: 282mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 1mm 0; box-sizing: border-box; background-color: #fff !important;">
+                <div class="print-page flex flex-col justify-between" style="height: 282mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 0; box-sizing: border-box; background-color: #fff !important;">
                     
                     <!-- FLYER TOP HALF -->
-                    <div class="flyer-half" style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 2mm 5mm 4mm 5mm; box-sizing: border-box; background-color: #fff !important;">
+                    <div class="flyer-half" style="height: 138mm !important; max-height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 2mm 5mm 3mm 5mm; box-sizing: border-box; background-color: #fff !important;">
                         <div class="text-center" style="margin-bottom: 1.5mm;">
                             <p class="font-extrabold uppercase text-[16px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
                             <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
@@ -1715,18 +1912,18 @@
                         </div>
 
                         <!-- Right Signatures Area -->
-                        <div class="flex justify-end" style="padding-right: 15px; margin-top: 4mm;">
+                        <div class="flex justify-end" style="padding-right: 15px; margin-top: 3mm;">
                             <div class="text-center" style="line-height: 1.2;">
                                 <p class="font-extrabold text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
-                                <div style="height: 15mm; text-align: center;"><img src="/img/signature.png" alt="signature" style="height: 100%; object-fit: contain; display: block; margin: 0 auto;"></div>
+                                <div style="height: 14mm; text-align: center;"><img src="/img/signature.png" alt="signature" style="height: 100%; object-fit: contain; display: block; margin: 0 auto;"></div>
                                 <p class="font-black text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
                                 <p class="font-bold text-[16px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
                             </div>
                         </div>
 
                         <!-- Student Info Blanks -->
-                        <div class="font-bold text-sm" style="padding: 0 5px; margin-top: 4mm;">
-                            <p style="margin: 0;">ছাত্র/ছাত্রীর নাম :.................................................................শ্রেণি :....................শাখা :..............রোল :....................</p>
+                        <div class="font-bold text-sm" style="padding: 0 5px; margin-top: 3mm;">
+                            <p style="margin: 0; white-space: nowrap;">ছাত্র/ছাত্রীর নাম : ..................................................... শ্রেণি : ............... শাখা : .......... রোল : ..........</p>
                         </div>
 
                         <!-- Student Fee Box & Details (Directly Below Student Info) -->
@@ -1767,7 +1964,7 @@
                     </div>
 
                     <!-- FLYER BOTTOM HALF -->
-                    <div class="flyer-half" style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 4mm 5mm 4mm 5mm; box-sizing: border-box; background-color: #fff !important;">
+                    <div class="flyer-half" style="height: 138mm !important; max-height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 2mm 5mm 3mm 5mm; box-sizing: border-box; background-color: #fff !important;">
                         <div class="text-center" style="margin-bottom: 1.5mm;">
                             <p class="font-extrabold uppercase text-[16px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
                             <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
@@ -1780,18 +1977,18 @@
                         </div>
 
                         <!-- Right Signatures Area -->
-                        <div class="flex justify-end" style="padding-right: 15px; margin-top: 4mm;">
+                        <div class="flex justify-end" style="padding-right: 15px; margin-top: 3mm;">
                             <div class="text-center" style="line-height: 1.2;">
                                 <p class="font-extrabold text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
-                                <div style="height: 7mm;"><img src="/img/signature.png" alt="signature" style="height: 100%; object-fit: contain;"></div>
+                                <div style="height: 14mm; text-align: center;"><img src="/img/signature.png" alt="signature" style="height: 100%; object-fit: contain; display: block; margin: 0 auto;"></div>
                                 <p class="font-black text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
                                 <p class="font-bold text-[16px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
                             </div>
                         </div>
 
                         <!-- Student Info Blanks -->
-                        <div class="font-bold text-sm" style="padding: 0 5px; margin-top: 4mm;">
-                            <p style="margin: 0;">ছাত্র/ছাত্রীর নাম :.................................................................শ্রেণি :....................শাখা :..............রোল :....................</p>
+                        <div class="font-bold text-sm" style="padding: 0 5px; margin-top: 3mm;">
+                            <p style="margin: 0; white-space: nowrap;">ছাত্র/ছাত্রীর নাম : ..................................................... শ্রেণি : ............... শাখা : .......... রোল : ..........</p>
                         </div>
 
                         <!-- Student Fee Box & Details (Directly Below Student Info) -->
@@ -1843,7 +2040,7 @@
                         <div class="print-page flex flex-col justify-between" style="height: 282mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 0; box-sizing: border-box; background-color: #fff !important;">
                             
                             <!-- SHIFT 1 TABLE (TOP HALF) -->
-                            <div style="display: flex !important; flex-direction: column !important; box-sizing: border-box; background-color: #fff !important;">
+                            <div class="routine-half" style="height: 138mm !important; max-height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; padding: 2mm 1mm 2mm 1mm; width: 100%; box-sizing: border-box; background-color: #fff !important;">
                                 <!-- Header -->
                                 <div class="text-center" style="margin-top: 1mm; margin-bottom: 1.5mm;">
                                     <h2 class="text-xl font-black" style="margin: 0 0 2px 0; color: #000; font-size: 22px;">ম্যাকস স্কুল এন্ড কলেজ</h2>
@@ -1861,16 +2058,19 @@
                                     </div>
 
                                     <!-- Right Side: The Third Div -->
-                                    <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 6px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift1.timeLabel">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</div>
+                                    <div x-show="!isMonthlyExam()" style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 6px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift1.timeLabel">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</div>
 
                                 </div>
                                 
                                 <!-- Table -->
-                                <table :style="`width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize};`">
+                                <table :style="`width: 100%; table-layout: fixed; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize}; box-sizing: border-box;`">
                                     <thead>
                                         <tr class="routine-header-tr">
-                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
-                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
+                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">তারিখ</th>
+                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">বার</th>
+                                            <template x-if="isMonthlyExam()">
+                                                <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 12%; padding-left: 1px !important; padding-right: 1px !important;`">সময়</th>
+                                            </template>
                                             <template x-for="clsName in shift1ClassNames">
                                                 <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
                                             </template>
@@ -1879,8 +2079,15 @@
                                     <tbody>
                                         <template x-for="row in shift1Rows">
                                             <tr>
-                                                <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="formatDateBangla(row.date)"></td>
-                                                <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="getDayBangla(row.date)"></td>
+                                                <template x-if="!isMonthlyExam() || row.isFirstOfDate">
+                                                    <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="formatDateBangla(row.date)"></td>
+                                                </template>
+                                                <template x-if="!isMonthlyExam() || row.isFirstOfDate">
+                                                    <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="getDayBangla(row.date)"></td>
+                                                </template>
+                                                <template x-if="isMonthlyExam()">
+                                                    <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; font-size: 13px; padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;`" x-text="row.time"></td>
+                                                </template>
                                                 <template x-for="clsId in printConfig.shift1.classes">
                                                     <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold; ${getSubjectStyle(row.subjects[clsId])}`" x-text="translateSubject(row.subjects[clsId])"></td>
                                                 </template>
@@ -1894,56 +2101,64 @@
                             </div>
 
                             <!-- SHIFT 2 TABLE (BOTTOM HALF) -->
-                            <div style="display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding-top: 2mm !important; box-sizing: border-box; background-color: #fff !important;">
-                                <div>
-                                    <!-- Header -->
-                                    <div class="text-center" style="margin-top: 1mm; margin-bottom: 1.5mm;">
-                                        <h2 class="text-xl font-black" style="margin: 0 0 2px 0; color: #000; font-size: 22px;">ম্যাকস স্কুল এন্ড কলেজ</h2>
-                                        <h3 class="text-xs font-extrabold" style="margin: 2px 0; font-size: 16px;" x-text="getPrintExamNameBengali()">২য় সাময়িক পরীক্ষা-২০২৬</h3>
-                                        <div style="display: inline-block; border: 1.5px solid #000; border-radius: 3px; padding: 0px 10px; font-size: 18px; font-weight: 900; margin-top: 2px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
-                                    </div>
-                                    
-                                    <!-- Meta Info Row -->
-                                    <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 1mm;">
+                            <div class="routine-half" style="height: 138mm !important; max-height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; padding: 2mm 1mm 2mm 1mm; width: 100%; box-sizing: border-box; background-color: #fff !important;">
+                                <!-- Header -->
+                                <div class="text-center" style="margin-top: 1mm; margin-bottom: 1.5mm;">
+                                    <h2 class="text-xl font-black" style="margin: 0 0 2px 0; color: #000; font-size: 22px;">ম্যাকস স্কুল এন্ড কলেজ</h2>
+                                    <h3 class="text-xs font-extrabold" style="margin: 2px 0; font-size: 16px;" x-text="getPrintExamNameBengali()">২য় সাময়িক পরীক্ষা-২০২৬</h3>
+                                    <div style="display: inline-block; border: 1.5px solid #000; border-radius: 3px; padding: 0px 10px; font-size: 18px; font-weight: 900; margin-top: 2px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact;">রুটিন</div>
+                                </div>
+                                
+                                <!-- Meta Info Row -->
+                                <div class="flex justify-between items-center text-xs font-extrabold" style="margin-bottom: 1mm;">
             
-                                        <!-- Left Side: Grouping First Two Divs -->
-                                        <div class="flex items-center gap-3">
-                                            <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 6px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift2.name">দ্বিতীয় শিফট</div>
-                                            <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 8px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift2.classRange">৫ম - ৯ম</div>
-                                        </div>
-
-                                        <!-- Right Side: The Third Div -->
-                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 6px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift2.timeLabel">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</div>
-
+                                    <!-- Left Side: Grouping First Two Divs -->
+                                    <div class="flex items-center gap-3">
+                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 6px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift2.name">দ্বিতীয় শিফট</div>
+                                        <div style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 8px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift2.classRange">৫ম - ৯ম</div>
                                     </div>
-                                    
-                                    <!-- Table -->
-                                    <table :style="`width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize};`">
-                                        <thead>
-                                            <tr class="routine-header-tr">
-                                                <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">তারিখ</th>
-                                                <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%;">বার</th>
-                                                <template x-for="clsName in shift2ClassNames">
-                                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
+
+                                    <!-- Right Side: The Third Div -->
+                                    <div x-show="!isMonthlyExam()" style="border: 1.5px solid #000; border-radius: 3px; padding: 2px 6px; font-weight: 800; font-size: 14px;" x-text="printConfig.shift2.timeLabel">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</div>
+
+                                </div>
+                                
+                                <!-- Table -->
+                                <table :style="`width: 100%; table-layout: fixed; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize}; box-sizing: border-box;`">
+                                    <thead>
+                                        <tr class="routine-header-tr">
+                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">তারিখ</th>
+                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">বার</th>
+                                            <template x-if="isMonthlyExam()">
+                                                <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 12%; padding-left: 1px !important; padding-right: 1px !important;`">সময়</th>
+                                            </template>
+                                            <template x-for="clsName in shift2ClassNames">
+                                                <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
+                                            </template>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="row in shift2Rows">
+                                            <tr>
+                                                <template x-if="!isMonthlyExam() || row.isFirstOfDate">
+                                                    <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="formatDateBangla(row.date)"></td>
+                                                </template>
+                                                <template x-if="!isMonthlyExam() || row.isFirstOfDate">
+                                                    <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="getDayBangla(row.date)"></td>
+                                                </template>
+                                                <template x-if="isMonthlyExam()">
+                                                    <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; font-size: 13px; padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;`" x-text="row.time"></td>
+                                                </template>
+                                                <template x-for="clsId in printConfig.shift2.classes">
+                                                    <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold; ${getSubjectStyle(row.subjects[clsId])}`" x-text="translateSubject(row.subjects[clsId])"></td>
                                                 </template>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            <template x-for="row in shift2Rows">
-                                                <tr>
-                                                    <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="formatDateBangla(row.date)"></td>
-                                                    <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center;`" x-text="getDayBangla(row.date)"></td>
-                                                    <template x-for="clsId in printConfig.shift2.classes">
-                                                        <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold; ${getSubjectStyle(row.subjects[clsId])}`" x-text="translateSubject(row.subjects[clsId])"></td>
-                                                    </template>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
+                                        </template>
+                                    </tbody>
+                                </table>
 
-                                    <!-- Footnote -->
-                                    <div class="text-center text-[14px] font-bold" x-show="printConfig.shift2.footnote" x-text="printConfig.shift2.footnote" style="margin-top: 2mm;"></div>
-                                </div>
+                                <!-- Footnote -->
+                                <div class="text-center text-[14px] font-bold" x-show="printConfig.shift2.footnote" x-text="printConfig.shift2.footnote" style="margin-top: 2mm;"></div>
                             </div>
                             
                         </div>
@@ -1951,10 +2166,10 @@
                         <div class="page-break"></div>
                         
                         <!-- PAGE 2: PARENT FLYERS BACK PAGE (Top = Student A, Bottom = Student B) -->
-                        <div class="print-page flex flex-col justify-between" style="height: 282mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 1mm 0; box-sizing: border-box; background-color: #fff !important;">
+                        <div class="print-page flex flex-col justify-between" style="height: 282mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 0; box-sizing: border-box; background-color: #fff !important;">
                             
                             <!-- TOP FLYER (Student A) -->
-                            <div class="flyer-half" style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 2mm 5mm 4mm 5mm; box-sizing: border-box; background-color: #fff !important;">
+                            <div class="flyer-half" style="height: 138mm !important; max-height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 2mm 5mm 3mm 5mm; box-sizing: border-box; background-color: #fff !important;">
                                 <div class="text-center" style="margin-bottom: 1.5mm;">
                                     <p class="font-extrabold uppercase text-[16px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
                                     <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
@@ -1962,15 +2177,15 @@
                                 </div>
                                 
                                 <div class="font-bold" style="padding: 0 5px;">
-                                    <p style="margin: 0; font-size: 16px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
-                                    <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 16px;" x-text="printConfig.announcement.text"></p>
+                                    <p style="margin: 0; font-size: 15px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
+                                    <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 15px;" x-text="printConfig.announcement.text"></p>
                                 </div>
                                 
                                 <!-- Right Signatures Area -->
-                                <div class="flex justify-end" style="padding-right: 15px; margin-top: 4mm;">
+                                <div class="flex justify-end" style="padding-right: 15px; margin-top: 3mm;">
                                     <div class="text-center" style="line-height: 1.2;">
                                         <p class="font-extrabold text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
-                                        <div style="height: 15mm; text-align: center;"><img src="/img/signature.png" alt="signature" style="height: 100%; object-fit: contain; display: block; margin: 0 auto;"></div>
+                                        <div style="height: 14mm; text-align: center;"><img src="/img/signature.png" alt="signature" style="height: 100%; object-fit: contain; display: block; margin: 0 auto;"></div>
                                         <p class="font-black text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
                                         <p class="font-bold text-[16px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
                                     </div>
@@ -1981,7 +2196,7 @@
                                     <p style="margin: 0;">
                                         <span>ছাত্র/ছাত্রীর নাম : </span><span class="font-black underline" x-text="pair[0].student_name"></span>
                                         <span style="margin-left: 8px;">শ্রেণি : </span><span class="font-black underline" x-text="translateClass(batchClassName)"></span>
-                                        <span style="margin-left: 8px;">শাখা : </span><span class="font-black underline" x-text="pair[0].section ? (pair[0].section.section_name.includes('A') ? 'এ' : (pair[0].section.section_name.includes('B') ? 'বি' : pair[0].section.section_name)) : ''"></span>
+                                        <span style="margin-left: 8px;"> শাখা : </span><span class="font-black underline" x-text="pair[0].section ? (pair[0].section.section_name.includes('A') ? 'এ' : (pair[0].section.section_name.includes('B') ? 'বি' : pair[0].section.section_name)) : ''"></span>
                                         <span style="margin-left: 8px;">রোল : </span><span class="font-black underline" x-text="toBanglaNum(pair[0].roll_number)"></span>
                                     </p>
                                 </div>
@@ -2024,7 +2239,7 @@
                             </div>
                             
                             <!-- BOTTOM FLYER (Student B / Empty template if not exists) -->
-                            <div class="flyer-half" style="height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 4mm 5mm 4mm 5mm; box-sizing: border-box; background-color: #fff !important;">
+                            <div class="flyer-half" style="height: 138mm !important; max-height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 2mm 5mm 3mm 5mm; box-sizing: border-box; background-color: #fff !important;">
                                 <div class="text-center" style="margin-bottom: 1.5mm;">
                                     <p class="font-extrabold uppercase text-[16px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
                                     <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
@@ -2032,15 +2247,15 @@
                                 </div>
                                 
                                 <div class="font-bold" style="padding: 0 5px;">
-                                    <p style="margin: 0; font-size: 16px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
-                                    <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 16px;" x-text="printConfig.announcement.text"></p>
+                                    <p style="margin: 0; font-size: 15px;">সম্মানিত অভিভাবক ও সুপ্রিয় শিক্ষার্থী,</p>
+                                    <p class="text-justify font-semibold" style="text-indent: 1.5em; margin: 2px 0 0 0; font-size: 15px;" x-text="printConfig.announcement.text"></p>
                                 </div>
                                 
                                 <!-- Right Signatures Area -->
-                                <div class="flex justify-end" style="padding-right: 15px; margin-top: 4mm;">
+                                <div class="flex justify-end" style="padding-right: 15px; margin-top: 3mm;">
                                     <div class="text-center" style="line-height: 1.2;">
                                         <p class="font-extrabold text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalName || 'মা-আসসালাম'"></p>
-                                        <div style="height: 15mm; text-align: center;"><img src="/img/signature.png" alt="signature" style="height: 100%; object-fit: contain; display: block; margin: 0 auto;"></div>
+                                        <div style="height: 14mm; text-align: center;"><img src="/img/signature.png" alt="signature" style="height: 100%; object-fit: contain; display: block; margin: 0 auto;"></div>
                                         <p class="font-black text-[16px]" style="margin: 0;" x-text="printConfig.announcement.principalTitle || 'অধ্যক্ষ'"></p>
                                         <p class="font-bold text-[16px]" style="margin: 0;">ম্যাকস স্কুল এন্ড কলেজ</p>
                                     </div>
