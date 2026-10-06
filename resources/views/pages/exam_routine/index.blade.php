@@ -1797,10 +1797,10 @@
                         <table :style="`width: 100%; table-layout: fixed; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize}; box-sizing: border-box;`">
                             <thead>
                                 <tr class="routine-header-tr">
-                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">তারিখ</th>
-                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">বার</th>
+                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '9%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 3px !important; padding-right: 3px !important;' : ''}`">তারিখ</th>
+                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '7.5%' : '12.5%'};`">বার</th>
                                     <template x-if="isMonthlyExam()">
-                                        <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 12%; padding-left: 1px !important; padding-right: 1px !important;`">সময়</th>
+                                        <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%; padding-left: 5px !important; padding-right: 5px !important;`">সময়</th>
                                     </template>
                                     <template x-for="clsName in shift1ClassNames">
                                         <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
@@ -1811,13 +1811,13 @@
                                 <template x-for="row in shift1Rows">
                                     <tr>
                                         <template x-if="!isMonthlyExam() || row.isFirstOfDate">
-                                            <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="formatDateBangla(row.date)"></td>
+                                            <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 3px !important; padding-right: 3px !important; white-space: nowrap;' : ''}`" x-text="formatDateBangla(row.date)"></td>
                                         </template>
                                         <template x-if="!isMonthlyExam() || row.isFirstOfDate">
-                                            <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="getDayBangla(row.date)"></td>
+                                            <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'white-space: nowrap;' : ''}`" x-text="getDayBangla(row.date)"></td>
                                         </template>
                                         <template x-if="isMonthlyExam()">
-                                            <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; font-size: 13px; padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;`" x-text="row.time"></td>
+                                            <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; font-size: 13px; padding-left: 5px !important; padding-right: 5px !important; white-space: nowrap;`" x-text="row.time"></td>
                                         </template>
                                         <template x-for="clsId in printConfig.shift1.classes">
                                             <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold; ${getSubjectStyle(row.subjects[clsId])}`" x-text="translateSubject(row.subjects[clsId])"></td>
@@ -1858,10 +1858,10 @@
                         <table :style="`width: 100%; table-layout: fixed; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize}; box-sizing: border-box;`">
                             <thead>
                                 <tr class="routine-header-tr">
-                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">তারিখ</th>
-                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">বার</th>
+                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '9%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 3px !important; padding-right: 3px !important;' : ''}`">তারিখ</th>
+                                    <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '7.5%' : '12.5%'};`">বার</th>
                                     <template x-if="isMonthlyExam()">
-                                        <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 12%; padding-left: 1px !important; padding-right: 1px !important;`">সময়</th>
+                                        <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%; padding-left: 5px !important; padding-right: 5px !important;`">সময়</th>
                                     </template>
                                     <template x-for="clsName in shift2ClassNames">
                                         <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
@@ -1872,13 +1872,13 @@
                                 <template x-for="row in shift2Rows">
                                     <tr>
                                         <template x-if="!isMonthlyExam() || row.isFirstOfDate">
-                                            <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="formatDateBangla(row.date)"></td>
+                                            <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 3px !important; padding-right: 3px !important; white-space: nowrap;' : ''}`" x-text="formatDateBangla(row.date)"></td>
                                         </template>
                                         <template x-if="!isMonthlyExam() || row.isFirstOfDate">
-                                            <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="getDayBangla(row.date)"></td>
+                                            <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'white-space: nowrap;' : ''}`" x-text="getDayBangla(row.date)"></td>
                                         </template>
                                         <template x-if="isMonthlyExam()">
-                                            <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; font-size: 13px; padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;`" x-text="row.time"></td>
+                                            <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; font-size: 13px; padding-left: 5px !important; padding-right: 5px !important; white-space: nowrap;`" x-text="row.time"></td>
                                         </template>
                                         <template x-for="clsId in printConfig.shift2.classes">
                                             <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold; ${getSubjectStyle(row.subjects[clsId])}`" x-text="translateSubject(row.subjects[clsId])"></td>
@@ -2066,10 +2066,10 @@
                                 <table :style="`width: 100%; table-layout: fixed; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize}; box-sizing: border-box;`">
                                     <thead>
                                         <tr class="routine-header-tr">
-                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">তারিখ</th>
-                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">বার</th>
+                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '9%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 3px !important; padding-right: 3px !important;' : ''}`">তারিখ</th>
+                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '7.5%' : '12.5%'};`">বার</th>
                                             <template x-if="isMonthlyExam()">
-                                                <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 12%; padding-left: 1px !important; padding-right: 1px !important;`">সময়</th>
+                                                <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%; padding-left: 5px !important; padding-right: 5px !important;`">সময়</th>
                                             </template>
                                             <template x-for="clsName in shift1ClassNames">
                                                 <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
@@ -2080,13 +2080,13 @@
                                         <template x-for="row in shift1Rows">
                                             <tr>
                                                 <template x-if="!isMonthlyExam() || row.isFirstOfDate">
-                                                    <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="formatDateBangla(row.date)"></td>
+                                                    <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 3px !important; padding-right: 3px !important; white-space: nowrap;' : ''}`" x-text="formatDateBangla(row.date)"></td>
                                                 </template>
                                                 <template x-if="!isMonthlyExam() || row.isFirstOfDate">
-                                                    <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="getDayBangla(row.date)"></td>
+                                                    <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'white-space: nowrap;' : ''}`" x-text="getDayBangla(row.date)"></td>
                                                 </template>
                                                 <template x-if="isMonthlyExam()">
-                                                    <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; font-size: 13px; padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;`" x-text="row.time"></td>
+                                                    <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; font-size: 13px; padding-left: 5px !important; padding-right: 5px !important; white-space: nowrap;`" x-text="row.time"></td>
                                                 </template>
                                                 <template x-for="clsId in printConfig.shift1.classes">
                                                     <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold; ${getSubjectStyle(row.subjects[clsId])}`" x-text="translateSubject(row.subjects[clsId])"></td>
@@ -2127,10 +2127,10 @@
                                 <table :style="`width: 100%; table-layout: fixed; border-collapse: collapse; border: 1.5px solid #000; font-size: ${printTableFontSize}; box-sizing: border-box;`">
                                     <thead>
                                         <tr class="routine-header-tr">
-                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">তারিখ</th>
-                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '8.5%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important;' : ''}`">বার</th>
+                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '9%' : '12.5%'}; ${isMonthlyExam() ? 'padding-left: 3px !important; padding-right: 3px !important;' : ''}`">তারিখ</th>
+                                            <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: ${isMonthlyExam() ? '7.5%' : '12.5%'};`">বার</th>
                                             <template x-if="isMonthlyExam()">
-                                                <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 12%; padding-left: 1px !important; padding-right: 1px !important;`">সময়</th>
+                                                <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; width: 14%; padding-left: 5px !important; padding-right: 5px !important;`">সময়</th>
                                             </template>
                                             <template x-for="clsName in shift2ClassNames">
                                                 <th class="routine-th" :style="`border: 1px solid #000; ${printHeaderStyle} font-weight: bold; text-align: center; background-color: #d1d5db !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`" x-text="translateClass(clsName)"></th>
@@ -2141,13 +2141,13 @@
                                         <template x-for="row in shift2Rows">
                                             <tr>
                                                 <template x-if="!isMonthlyExam() || row.isFirstOfDate">
-                                                    <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="formatDateBangla(row.date)"></td>
+                                                    <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 3px !important; padding-right: 3px !important; white-space: nowrap;' : ''}`" x-text="formatDateBangla(row.date)"></td>
                                                 </template>
                                                 <template x-if="!isMonthlyExam() || row.isFirstOfDate">
-                                                    <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;' : ''}`" x-text="getDayBangla(row.date)"></td>
+                                                    <td :rowspan="isMonthlyExam() ? row.rowspan : 1" :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; ${isMonthlyExam() ? 'white-space: nowrap;' : ''}`" x-text="getDayBangla(row.date)"></td>
                                                 </template>
                                                 <template x-if="isMonthlyExam()">
-                                                    <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; font-size: 13px; padding-left: 1px !important; padding-right: 1px !important; white-space: nowrap;`" x-text="row.time"></td>
+                                                    <td :style="`border: 1px solid #000; ${printRowStyle} font-weight: bold; text-align: center; font-size: 13px; padding-left: 5px !important; padding-right: 5px !important; white-space: nowrap;`" x-text="row.time"></td>
                                                 </template>
                                                 <template x-for="clsId in printConfig.shift2.classes">
                                                     <td :style="`border: 1px solid #000; ${printRowStyle} text-align: center; font-weight: bold; ${getSubjectStyle(row.subjects[clsId])}`" x-text="translateSubject(row.subjects[clsId])"></td>
