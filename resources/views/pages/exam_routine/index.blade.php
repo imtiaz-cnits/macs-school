@@ -1633,22 +1633,11 @@
                     </div>
                     <div>
                         <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Classes Range Label</label>
-                        <select x-model="printConfig.shift1.classRange" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
-                            <option value="প্লে - ৪র্থ">প্লে - ৪র্থ</option>
-                            <option value="৫ম - ১০ম">৫ম - ১০ম</option>
-                            <option value="প্লে - ১০ম">প্লে - ১০ম</option>
-                            <option value="১ম - ৫ম">১ম - ৫ম</option>
-                            <option value="৬ষ্ঠ - ১০ম">৬ষ্ঠ - ১০ম</option>
-                        </select>
+                        <input type="text" x-model="printConfig.shift1.classRange" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue" placeholder="e.g. প্লে - ৪র্থ">
                     </div>
                     <div>
                         <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Timing Label</label>
-                        <select x-model="printConfig.shift1.timeLabel" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
-                            <option value="সময় : সকাল ৯.০০ থেকে ১১.০০ টা">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</option>
-                            <option value="সময় : দুপুর ১২.০০ থেকে ০২.০০ টা">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</option>
-                            <option value="সময় : সকাল ১০.০০ থেকে ০১.০০ টা">সময় : সকাল ১০.০০ থেকে ০১.০০ টা</option>
-                            <option value="সময় : দুপুর ০২.০০ থেকে ০৫.০০ টা">সময় : দুপুর ০২.০০ থেকে ০৫.০০ টা</option>
-                        </select>
+                        <input type="text" x-model="printConfig.shift1.timeLabel" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue" placeholder="e.g. সময় : সকাল ৯.০০ থেকে ১১.০০ টা">
                     </div>
                     <div>
                         <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Footnote Note (Optional)</label>
@@ -1682,22 +1671,11 @@
                     </div>
                     <div>
                         <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Classes Range Label</label>
-                        <select x-model="printConfig.shift2.classRange" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
-                            <option value="৫ম - ১০ম">৫ম - ১০ম</option>
-                            <option value="প্লে - ৪র্থ">প্লে - ৪র্থ</option>
-                            <option value="প্লে - ১০ম">প্লে - ১০ম</option>
-                            <option value="১ম - ৫ম">১ম - ৫ম</option>
-                            <option value="৬ষ্ঠ - ১০ম">৬ষ্ঠ - ১০ম</option>
-                        </select>
+                        <input type="text" x-model="printConfig.shift2.classRange" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue" placeholder="e.g. ৫ম - ১০ম">
                     </div>
                     <div>
                         <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Timing Label</label>
-                        <select x-model="printConfig.shift2.timeLabel" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue">
-                            <option value="সময় : দুপুর ১২.০০ থেকে ০২.০০ টা">সময় : দুপুর ১২.০০ থেকে ০২.০০ টা</option>
-                            <option value="সময় : সকাল ৯.০০ থেকে ১১.০০ টা">সময় : সকাল ৯.০০ থেকে ১১.০০ টা</option>
-                            <option value="সময় : সকাল ১০.০০ থেকে ০১.০০ টা">সময় : সকাল ১০.০০ থেকে ০১.০০ টা</option>
-                            <option value="সময় : দুপুর ০২.০০ থেকে ০৫.০০ টা">সময় : দুপুর ০২.০০ থেকে ০৫.০০ টা</option>
-                        </select>
+                        <input type="text" x-model="printConfig.shift2.timeLabel" class="w-full h-10 px-3 bg-white dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none focus:border-themeBlue" placeholder="e.g. সময় : দুপুর ১২.০০ থেকে ০২.০০ টা">
                     </div>
                     <div>
                         <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1 ml-1">Footnote Note (Optional)</label>
