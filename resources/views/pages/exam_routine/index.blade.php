@@ -613,11 +613,13 @@
                 if (!sub) return '×';
                 sub = this.fixMojibake(sub);
                 let s = sub.trim();
+                if (/বাঃ\s*ও\s*বিশ্বঃ\s*\/\s*বিজ্ঞান/u.test(s)) return 'বাঃ ও বিশ্বঃ/বিজ্ঞান';
+                if (/বিশ্ব\s*পরিচ/u.test(s) && /বিজ্ঞান/u.test(s)) return 'বাঃ ও বিশ্বঃ/বিজ্ঞান';
+                if (/সাধার[ণন]\s*বিজ্ঞান/u.test(s)) return 'বাঃ ও বিশ্বঃ/বিজ্ঞান';
                 if (/বিশ্ব\s*পরিচ/u.test(s)) return 'বাঃ ও বিশ্বঃ';
                 if (/নৈতিক\s*শিক্ষা/u.test(s)) return 'ইসলাম ও নৈঃ শিঃ';
                 if (/ইসলাম\s*\/\s*হিন্দু/u.test(s)) return 'ইসলাম / হিন্দু';
                 if (/আরবী\s*\/\s*ধর্ম/u.test(s)) return 'আরবী / ধর্ম';
-                if (/সাধার[ণন]\s*বিজ্ঞান/u.test(s)) return 'বাঃ ও বিঃ/ সাধাঃ বিঃ';
                 if (/তথ্য/u.test(s)) return 'তথ্য ও যোঃ';
                 if (/জীব\s*বিজ্ঞান\s*\/\s*ভূগোল/u.test(s)) return 'জীব বিঃ/ ভূগোল';
                 if (/জীব/u.test(s)) return 'জীব বিঃ';
@@ -1878,10 +1880,9 @@
                     
                     <!-- FLYER TOP HALF -->
                     <div class="flyer-half" style="height: 138mm !important; max-height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 2mm 5mm 3mm 5mm; box-sizing: border-box; background-color: #fff !important;">
-                        <div class="text-center" style="margin-bottom: 1.5mm;">
-                            <p class="font-extrabold uppercase text-[16px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
-                            <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
-                            <p class="text-[16px] font-bold" style="margin: 1px 0 0 0;" x-text="`${printConfig.announcement.title} নোটিশ`"></p>
+                        <div class="text-center" style="margin-bottom: 1.5mm; padding-top: 5.5mm;">
+                            <p class="text-[16px] font-bold" style="margin: 0; color: #000;">বিসমিল্লাহির রাহমানির রাহিম</p>
+                            <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;" x-text="`${printConfig.announcement.title} নোটিশ`"></h3>
                         </div>
                         
                         <div class="font-bold" style="padding: 0 5px;">
@@ -1943,10 +1944,9 @@
 
                     <!-- FLYER BOTTOM HALF -->
                     <div class="flyer-half" style="height: 138mm !important; max-height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 2mm 5mm 3mm 5mm; box-sizing: border-box; background-color: #fff !important;">
-                        <div class="text-center" style="margin-bottom: 1.5mm;">
-                            <p class="font-extrabold uppercase text-[16px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
-                            <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
-                            <p class="text-[16px] font-bold" style="margin: 1px 0 0 0;" x-text="`${printConfig.announcement.title} নোটিশ`"></p>
+                        <div class="text-center" style="margin-bottom: 1.5mm; padding-top: 5.5mm;">
+                            <p class="text-[16px] font-bold" style="margin: 0; color: #000;">বিসমিল্লাহির রাহমানির রাহিম</p>
+                            <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;" x-text="`${printConfig.announcement.title} নোটিশ`"></h3>
                         </div>
                         
                         <div class="font-bold" style="padding: 0 5px;">
@@ -2148,10 +2148,9 @@
                             
                             <!-- TOP FLYER (Student A) -->
                             <div class="flyer-half" style="height: 138mm !important; max-height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 2mm 5mm 3mm 5mm; box-sizing: border-box; background-color: #fff !important;">
-                                <div class="text-center" style="margin-bottom: 1.5mm;">
-                                    <p class="font-extrabold uppercase text-[16px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
-                                    <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
-                                    <p class="text-[16px] font-bold" style="margin: 1px 0 0 0;" x-text="`${printConfig.announcement.title} নোটিশ`"></p>
+                                <div class="text-center" style="margin-bottom: 1.5mm; padding-top: 5.5mm;">
+                                    <p class="text-[16px] font-bold" style="margin: 0; color: #000;">বিসমিল্লাহির রাহমানির রাহিম</p>
+                                    <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;" x-text="`${printConfig.announcement.title} নোটিশ`"></h3>
                                 </div>
                                 
                                 <div class="font-bold" style="padding: 0 5px;">
@@ -2218,10 +2217,9 @@
                             
                             <!-- BOTTOM FLYER (Student B / Empty template if not exists) -->
                             <div class="flyer-half" style="height: 138mm !important; max-height: 138mm !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; padding: 2mm 5mm 3mm 5mm; box-sizing: border-box; background-color: #fff !important;">
-                                <div class="text-center" style="margin-bottom: 1.5mm;">
-                                    <p class="font-extrabold uppercase text-[16px]" style="margin: 0;">বিসমিল্লাহির রাহমানির রাহিম</p>
-                                    <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;">ম্যাকস স্কুল এন্ড কলেজ</h3>
-                                    <p class="text-[16px] font-bold" style="margin: 1px 0 0 0;" x-text="`${printConfig.announcement.title} নোটিশ`"></p>
+                                <div class="text-center" style="margin-bottom: 1.5mm; padding-top: 5.5mm;">
+                                    <p class="text-[16px] font-bold" style="margin: 0; color: #000;">বিসমিল্লাহির রাহমানির রাহিম</p>
+                                    <h3 class="text-xl font-black" style="margin: 1px 0 0 0; color: #000;" x-text="`${printConfig.announcement.title} নোটিশ`"></h3>
                                 </div>
                                 
                                 <div class="font-bold" style="padding: 0 5px;">
