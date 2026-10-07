@@ -635,13 +635,24 @@
                     return 'font-size: 14px; white-space: nowrap; overflow: hidden;';
                 } else if (len <= 9) {
                     return 'font-size: 13px; white-space: nowrap; overflow: hidden;';
-                } else if (len <= 13) {
+                } else if (len <= 15) {
                     return 'font-size: 12px; white-space: nowrap; overflow: hidden;';
-                } else if (len <= 16) {
+                } else if (len <= 20) {
                     return 'font-size: 11px; white-space: nowrap; overflow: hidden;';
                 } else {
                     return 'font-size: 10px; white-space: nowrap; overflow: hidden;';
                 }
+            },
+
+            formatTime12Bangla(timeStr) {
+                if (!timeStr) return '';
+                const parts = timeStr.split(':');
+                let h = parseInt(parts[0], 10);
+                let m = parseInt(parts[1] || '0', 10);
+                let displayHour = h % 12;
+                if (displayHour === 0) displayHour = 12;
+                let timeFormatted = `${String(displayHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                return this.toBanglaNum(timeFormatted);
             },
 
             formatTimeBangla(timeStr) {
@@ -824,7 +835,7 @@
                             pEnds.sort();
                             let startMin = pStarts[0];
                             let endMax = pEnds[pEnds.length - 1];
-                            timeLabel = `${this.toBanglaNum(startMin)} - ${this.toBanglaNum(endMax)}`;
+                            timeLabel = `${this.formatTime12Bangla(startMin)} - ${this.formatTime12Bangla(endMax)}`;
                         }
 
                         rows.push({
