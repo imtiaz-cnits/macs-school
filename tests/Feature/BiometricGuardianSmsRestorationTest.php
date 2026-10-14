@@ -379,17 +379,22 @@ class BiometricGuardianSmsRestorationTest extends TestCase
     }
 
     /**
-     * Requirement 9: Provider failure states are recorded without unsafe duplicate retries.
+     * Requirement 9a: An ambiguous timeout does not trigger an automatic duplicate,
+     * and a subsequent polling cycle does not silently mark an uncertain event as successfully delivered.
      */
-    public function test_provider_failure_is_recorded_safely_without_unsafe_retries(): void
+    public function test_ambiguous_timeout_does_not_trigger_automatic_duplicate_and_remains_ambiguous(): void
     {
-        $student = $this->createTestStudent('CARD_PROVIDER_FAIL');
+        $student = $this->createTestStudent('CARD_TIMEOUT_FAIL');
         $today = Carbon::today('Asia/Dhaka')->format('Y-m-d');
         $eventKey = "att:check_in:{$student->id}:{$today}";
 
-        // Simulate provider 500 error
+        $httpAttempts = 0;
+        // Simulate provider timeout / connection drop
         Http::fake([
-            'https://api.mimsms.com/*' => Http::response(['StatusCode' => '500', 'StatusName' => 'Gateway Error'], 500),
+            'https://api.mimsms.com/*' => function () use (&$httpAttempts) {
+                $httpAttempts++;
+                throw new \Illuminate\Http\Client\ConnectionException('Connection timed out after 5000 milliseconds');
+            },
         ]);
 
         $smsService = app(SmsService::class);
@@ -402,13 +407,14 @@ class BiometricGuardianSmsRestorationTest extends TestCase
         );
 
         $this->assertFalse($sent);
+        $this->assertEquals(1, $httpAttempts, 'Initial attempt must reach the HTTP transport layer.');
 
-        // Record exists with status 'Failed'
+        // Record exists with status 'Ambiguous' (not 'Failed' or 'Sent')
         $log = SmsLog::where('event_key', $eventKey)->first();
         $this->assertNotNull($log);
-        $this->assertEquals('Failed', $log->status);
+        $this->assertEquals('Ambiguous', $log->status);
 
-        // Subsequent poll attempts to send the same event
+        // Subsequent poll attempts to process the same event
         $secondAttempt = $smsService->sendSms(
             $student->guardian_mobile,
             'Check in message',
@@ -417,9 +423,124 @@ class BiometricGuardianSmsRestorationTest extends TestCase
             'check_in'
         );
 
-        $this->assertFalse($secondAttempt, 'Failed event key must not be re-fired without explicit resolution.');
+        // Assert: no automatic duplicate HTTP request is fired, and status remains Ambiguous
+        $this->assertFalse($secondAttempt, 'Ambiguous event key must not be re-fired without explicit reconciliation.');
         $this->assertEquals(1, SmsLog::where('event_key', $eventKey)->count());
+        $this->assertEquals('Ambiguous', $log->fresh()->status, 'Subsequent poll must not silently mark uncertain event as Sent.');
+        $this->assertEquals(1, $httpAttempts, 'Second attempt must be blocked before reaching HTTP transport layer.');
+    }
+
+    /**
+     * Requirement 9b: A definite failure can be retried safely, transitioning to Sent upon success,
+     * while subsequent polling cycles remain protected against duplicate processing.
+     */
+    public function test_definite_failure_can_be_retried_safely(): void
+    {
+        $student = $this->createTestStudent('CARD_DEFINITE_RETRY');
+        $today = Carbon::today('Asia/Dhaka')->format('Y-m-d');
+        $eventKey = "att:check_in:{$student->id}:{$today}";
+
+        // Attempt 1: Provider returns definite HTTP 500 error
+        Http::fakeSequence()
+            ->push(['StatusCode' => '500', 'StatusName' => 'Gateway Error'], 500)
+            ->push(['StatusCode' => '200', 'StatusName' => 'Successful'], 200);
+
+        $smsService = app(SmsService::class);
+        $firstAttempt = $smsService->sendSms(
+            $student->guardian_mobile,
+            'Check in message',
+            $student->id,
+            $eventKey,
+            'check_in'
+        );
+
+        $this->assertFalse($firstAttempt);
+        $log = SmsLog::where('event_key', $eventKey)->first();
+        $this->assertNotNull($log);
+        $this->assertEquals('Failed', $log->status);
         Http::assertSentCount(1);
+
+        // Attempt 2 (Subsequent polling cycle / recovery): Definite failure is retried safely
+        $secondAttempt = $smsService->sendSms(
+            $student->guardian_mobile,
+            'Check in message',
+            $student->id,
+            $eventKey,
+            'check_in'
+        );
+
+        $this->assertTrue($secondAttempt, 'Definite failure should be safely retried.');
+        $this->assertEquals('Sent', $log->fresh()->status);
+        $this->assertEquals(1, SmsLog::where('event_key', $eventKey)->count(), 'Row count must remain 1 (no duplicate rows created).');
+        Http::assertSentCount(2);
+
+        // Attempt 3: Future polling cycles must treat the now-Sent event as protected
+        $thirdAttempt = $smsService->sendSms(
+            $student->guardian_mobile,
+            'Check in message',
+            $student->id,
+            $eventKey,
+            'check_in'
+        );
+
+        $this->assertFalse($thirdAttempt, 'Sent event must be protected against duplicate processing.');
+        Http::assertSentCount(2);
+    }
+
+    /**
+     * Requirement 9c: Concurrent retry attempts on a failed event cannot create duplicate sends.
+     */
+    public function test_concurrent_retry_attempts_cannot_create_duplicate_sends(): void
+    {
+        $student = $this->createTestStudent('CARD_CONCURRENT_RETRY');
+        $today = Carbon::today('Asia/Dhaka')->format('Y-m-d');
+        $eventKey = "att:check_in:{$student->id}:{$today}";
+
+        // Pre-populate a Failed log
+        SmsLog::create([
+            'student_id'    => $student->id,
+            'event_key'     => $eventKey,
+            'event_type'    => 'check_in',
+            'mobile_number' => $student->guardian_mobile,
+            'message'       => 'Check in message',
+            'status'        => 'Failed',
+            'created_at'    => Carbon::now('Asia/Dhaka')->subMinutes(5),
+            'updated_at'    => Carbon::now('Asia/Dhaka')->subMinutes(5),
+        ]);
+
+        Http::fake([
+            'https://api.mimsms.com/*' => Http::response(['StatusCode' => '200'], 200),
+        ]);
+
+        $smsService = app(SmsService::class);
+
+        // Simulate Process A claiming the retry
+        $claimed = SmsLog::where('event_key', $eventKey)
+            ->where(function ($q) {
+                $q->where('status', 'Failed')
+                  ->orWhere(function ($sub) {
+                      $sub->where('status', 'Attempted')
+                          ->where('updated_at', '<=', Carbon::now('Asia/Dhaka')->subSeconds(60));
+                  });
+            })
+            ->update([
+                'status'     => 'Attempted',
+                'updated_at' => Carbon::now('Asia/Dhaka'),
+            ]);
+
+        $this->assertEquals(1, $claimed);
+
+        // Process B attempts to retry concurrently while Process A has it in 'Attempted' state
+        $processBResult = $smsService->sendSms(
+            $student->guardian_mobile,
+            'Check in message',
+            $student->id,
+            $eventKey,
+            'check_in'
+        );
+
+        $this->assertFalse($processBResult, 'Process B must be blocked from sending while Process A is in-flight.');
+        Http::assertSentCount(0);
     }
 
     /**

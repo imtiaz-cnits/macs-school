@@ -27,6 +27,17 @@ class SmsService
     /**
      * Send single SMS using MIM SMS V2 API
      *
+     * Provider Limitations Note:
+     * The MiM SMS API (https://api.mimsms.com/api/V2/SMS) does not support a client-side
+     * idempotency-key header or unique request identifier. A 200 HTTP response confirms
+     * that the message was accepted by the gateway, but does not provide real-time handset DLR.
+     * In the event of an ambiguous transport failure (e.g. HTTP timeout, socket reset),
+     * it is impossible to verify programmatically whether the gateway processed the SMS without
+     * an external delivery receipt callback. To prevent sending duplicate SMS to guardians,
+     * ambiguous events are marked 'Ambiguous' and locked against automatic resending.
+     * Exactly-once SMS delivery cannot be guaranteed under network partition without
+     * provider-level idempotency support.
+     *
      * @param string $mobileNumber
      * @param string $message
      * @param int|null $studentId
@@ -42,10 +53,59 @@ class SmsService
         ?string $eventType = null
     ): bool
     {
-        // 1. Idempotency fast-check if eventKey is specified
-        if ($eventKey && SmsLog::where('event_key', $eventKey)->exists()) {
-            Log::info("MIM SMS skipped: duplicate event_key {$eventKey} already recorded.");
-            return false;
+        // 1. Idempotency & Lifecycle Check if eventKey is specified
+        $smsLog = null;
+        if ($eventKey) {
+            $existing = SmsLog::where('event_key', $eventKey)->first();
+            if ($existing) {
+                // Terminal state: successfully sent
+                if ($existing->status === 'Sent') {
+                    Log::info("MIM SMS skipped: event_key {$eventKey} was already successfully sent.");
+                    return false;
+                }
+
+                // Ambiguous outcome: delivery acceptance is uncertain (e.g. timeout / connection drop).
+                // Automatic duplicate send is blocked to protect against sending duplicate SMS to guardians.
+                if ($existing->status === 'Ambiguous') {
+                    Log::warning("MIM SMS skipped: event_key {$eventKey} is in Ambiguous status; automatic duplicate send blocked.");
+                    return false;
+                }
+
+                // Currently in-flight by a concurrent process (within 60s cooldown)
+                if ($existing->status === 'Attempted' && $existing->updated_at && $existing->updated_at->gt(Carbon::now('Asia/Dhaka')->subSeconds(60))) {
+                    Log::info("MIM SMS skipped: event_key {$eventKey} is currently in-flight by another process.");
+                    return false;
+                }
+
+                // Blocked by test mode whitelist
+                if ($existing->status === 'Blocked (Test Mode)') {
+                    Log::info("MIM SMS skipped: event_key {$eventKey} was blocked by test mode whitelist.");
+                    return false;
+                }
+
+                // Definite failure (or expired in-flight reservation):
+                // Safe to retry because there is reliable evidence that the earlier attempt was not accepted.
+                // Concurrency safety: Atomically transition status to 'Attempted' with updated_at.
+                $claimed = SmsLog::where('event_key', $eventKey)
+                    ->where(function ($q) {
+                        $q->where('status', 'Failed')
+                          ->orWhere(function ($sub) {
+                              $sub->where('status', 'Attempted')
+                                  ->where('updated_at', '<=', Carbon::now('Asia/Dhaka')->subSeconds(60));
+                          });
+                    })
+                    ->update([
+                        'status'     => 'Attempted',
+                        'updated_at' => Carbon::now('Asia/Dhaka'),
+                    ]);
+
+                if (!$claimed) {
+                    Log::info("MIM SMS retry skipped: concurrent process claimed event_key {$eventKey}.");
+                    return false;
+                }
+
+                $smsLog = $existing->fresh();
+            }
         }
 
         // Normalize mobile number to Bangladeshi format (starts with 8801)
@@ -56,17 +116,22 @@ class SmsService
 
         if (!preg_match('/^8801[0-9]{9}$/', $cleanNumber)) {
             Log::warning("MIM SMS blocked: recipient number {$mobileNumber} has an invalid format.");
+            if ($smsLog) {
+                $smsLog->update(['status' => 'Failed']);
+            }
             return false;
         }
 
         if (empty($this->username) || empty($this->apiKey) || empty($this->senderId)) {
             Log::error('MIM SMS is not configured. Set MIM_SMS_USERNAME, MIM_SMS_API_KEY, and MIM_SMS_SENDER_ID.');
+            if ($smsLog) {
+                $smsLog->update(['status' => 'Failed']);
+            }
             return false;
         }
 
-        // 2. Atomic Database Reservation: prevent concurrent race conditions
-        $smsLog = null;
-        if ($eventKey) {
+        // 2. Atomic Database Reservation: prevent concurrent race conditions on first attempt
+        if ($eventKey && !$smsLog) {
             try {
                 $smsLog = SmsLog::create([
                     'student_id'    => $studentId,
@@ -98,7 +163,7 @@ class SmsService
 
             if (!in_array($cleanNumber, $allowedNumbers)) {
                 Log::info('MIM SMS blocked: recipient is not the configured test number.');
-                
+
                 if ($smsLog) {
                     $smsLog->update(['status' => 'Blocked (Test Mode)']);
                 } else {
@@ -113,14 +178,14 @@ class SmsService
                         'updated_at'    => Carbon::now('Asia/Dhaka'),
                     ]);
                 }
-                
+
                 return false;
             }
         }
 
         try {
             $url = 'https://api.mimsms.com/api/V2/SMS';
-            
+
             $response = Http::timeout(5)->post($url, [
                 'userName'        => $this->username,
                 'apiKey'          => $this->apiKey,
@@ -131,9 +196,11 @@ class SmsService
             ]);
 
             $isSuccess = $response->successful();
-            
+
             Log::info("MIM SMS Send status to {$cleanNumber}: " . ($isSuccess ? 'Success' : 'Failed') . " - Response: " . $response->body());
 
+            // A 2xx response is a definite acceptance by the provider gateway
+            // A 4xx/5xx response with a completed HTTP roundtrip is a definite rejection
             $finalStatus = $isSuccess ? 'Sent' : 'Failed';
 
             if ($smsLog) {
@@ -154,10 +221,19 @@ class SmsService
             return $isSuccess;
 
         } catch (\Exception $e) {
-            Log::error("MIM SMS sending failed for {$mobileNumber}: " . $e->getMessage());
-            
+            // Determine whether this was an ambiguous network/transport timeout without response
+            // or an explicit client/server exception that contains a response
+            $isAmbiguous = true;
+            if ($e instanceof \Illuminate\Http\Client\RequestException && $e->hasResponse()) {
+                $isAmbiguous = false;
+            }
+
+            $failureStatus = $isAmbiguous ? 'Ambiguous' : 'Failed';
+
+            Log::error("MIM SMS sending error for {$mobileNumber} [{$failureStatus}]: " . $e->getMessage());
+
             if ($smsLog) {
-                $smsLog->update(['status' => 'Failed']);
+                $smsLog->update(['status' => $failureStatus]);
             } else {
                 SmsLog::create([
                     'student_id'    => $studentId,
@@ -165,7 +241,7 @@ class SmsService
                     'event_type'    => $eventType,
                     'mobile_number' => $mobileNumber,
                     'message'       => $message,
-                    'status'        => 'Failed',
+                    'status'        => $failureStatus,
                     'created_at'    => Carbon::now('Asia/Dhaka'),
                     'updated_at'    => Carbon::now('Asia/Dhaka'),
                 ]);
