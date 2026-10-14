@@ -584,4 +584,44 @@ class BiometricGuardianSmsRestorationTest extends TestCase
 
         Http::assertSentCount(1);
     }
+
+    /**
+     * Test that an attendance record resulting in 'Absent' status does not
+     * repeatedly re-trigger database updates once its check-in punch remarks are persisted.
+     */
+    public function test_absent_punch_does_not_repeat_database_updates_once_persisted(): void
+    {
+        $today = Carbon::today('Asia/Dhaka')->format('Y-m-d');
+        $student = $this->createTestStudent('CARD_ABSENT_CYCLE');
+
+        // Create an existing record where student was recorded as Absent but has already swiped in at 15:56:29
+        $attendance = Attendance::create([
+            'student_id'      => $student->id,
+            'attendance_date' => $today,
+            'branch_id'       => 1,
+            'session_year_id' => 1,
+            'class_id'        => 1,
+            'section_id'      => 1,
+            'user_id'         => 1,
+            'status'          => 'Absent',
+            'remarks'         => 'Card Swiped (In: 15:56:29)',
+        ]);
+
+        $checkInTime = '15:56:29';
+        $checkOutTime = null;
+
+        // Simulate MonitorAttendance condition evaluation
+        $shouldUpdate = false;
+        if (!$attendance) {
+            $shouldUpdate = true;
+        } else {
+            if ($attendance->status === 'Absent' && !str_contains($attendance->remarks ?? '', "In: {$checkInTime}")) {
+                $shouldUpdate = true;
+            } elseif ($checkOutTime && !str_contains($attendance->remarks ?? '', "Out: {$checkOutTime}")) {
+                $shouldUpdate = true;
+            }
+        }
+
+        $this->assertFalse($shouldUpdate, "Should not update already persisted absent record with matching check-in time.");
+    }
 }

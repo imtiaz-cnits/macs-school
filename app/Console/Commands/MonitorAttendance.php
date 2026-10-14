@@ -117,9 +117,9 @@ class MonitorAttendance extends Command
                     if (!$attRecord) {
                         $shouldUpdate = true;
                     } else {
-                        if ($attRecord->status === 'Absent') {
+                        if ($attRecord->status === 'Absent' && !str_contains($attRecord->remarks ?? '', "In: {$checkInTime}")) {
                             $shouldUpdate = true;
-                        } elseif ($checkOutTime && !str_contains($attRecord->remarks, "Out: {$checkOutTime}")) {
+                        } elseif ($checkOutTime && !str_contains($attRecord->remarks ?? '', "Out: {$checkOutTime}")) {
                             $shouldUpdate = true;
                         }
                     }
