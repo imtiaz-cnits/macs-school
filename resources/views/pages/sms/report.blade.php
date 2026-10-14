@@ -101,7 +101,7 @@
                     <span class="text-xs font-semibold text-gray-400">sms</span>
                 </div>
                 <div class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1 flex items-center justify-between" title="Synced at {{ $gatewayBalance['synced_at'] }} from MiM SMS Gateway">
-                    <span>৳{{ number_format((float)$gatewayBalance['balance'], 2) }} BDT (0.33/sms)</span>
+                    <span>Available to send</span>
                     <span class="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                         Live

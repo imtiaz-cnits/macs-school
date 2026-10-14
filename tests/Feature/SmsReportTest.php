@@ -123,7 +123,7 @@ class SmsReportTest extends TestCase
         $response->assertViewHas('totalFailed', 1);
         $response->assertSee('Sakib Al Hasan');
         $response->assertSee('7,425');
-        $response->assertSee('2,450.50');
+        $response->assertSee('Available to send');
     }
 
     public function test_sms_report_filters_by_search_and_status(): void
