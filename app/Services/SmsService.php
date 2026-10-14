@@ -250,4 +250,88 @@ class SmsService
             return false;
         }
     }
+
+    /**
+     * Get real-time SMS balance from MiM SMS API
+     *
+     * @param bool $forceRefresh
+     * @return array
+     */
+    public function getBalance(bool $forceRefresh = false): array
+    {
+        if (empty($this->username) || empty($this->apiKey)) {
+            return [
+                'status'  => 'unconfigured',
+                'balance' => null,
+                'message' => 'MiM SMS credentials are not configured.',
+                'synced_at' => Carbon::now('Asia/Dhaka')->format('h:i A'),
+            ];
+        }
+
+        $cacheKey = 'mim_sms_live_balance';
+        if ($forceRefresh) {
+            \Illuminate\Support\Facades\Cache::forget($cacheKey);
+        }
+
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 120, function () {
+            try {
+                $response = Http::timeout(6)->post('https://api.mimsms.com/api/V2/BalanceCheck', [
+                    'userName' => $this->username,
+                    'apiKey'   => $this->apiKey,
+                ]);
+
+                if ($response->successful()) {
+                    $json = $response->json();
+
+                    $balance = null;
+                    if (isset($json['data']['balance'])) {
+                        $balance = $json['data']['balance'];
+                    } elseif (isset($json['balance'])) {
+                        $balance = $json['balance'];
+                    } elseif (isset($json['data']) && is_numeric($json['data'])) {
+                        $balance = $json['data'];
+                    }
+
+                    $currency = $json['data']['currency'] ?? $json['currency'] ?? 'BDT';
+
+                    if ($balance !== null) {
+                        return [
+                            'status'    => 'success',
+                            'balance'   => $balance,
+                            'currency'  => $currency,
+                            'raw'       => $json,
+                            'synced_at' => Carbon::now('Asia/Dhaka')->format('h:i A'),
+                        ];
+                    }
+
+                    $msg = $json['message'] ?? $json['status'] ?? 'Unknown response';
+                    Log::warning("MiM SMS BalanceCheck returned non-balance response: " . json_encode($json));
+                    return [
+                        'status'    => 'error',
+                        'balance'   => null,
+                        'message'   => $msg,
+                        'raw'       => $json,
+                        'synced_at' => Carbon::now('Asia/Dhaka')->format('h:i A'),
+                    ];
+                }
+
+                Log::warning("MiM SMS BalanceCheck HTTP error: " . $response->status() . " Body: " . $response->body());
+                return [
+                    'status'    => 'error',
+                    'balance'   => null,
+                    'message'   => 'Gateway returned HTTP ' . $response->status(),
+                    'synced_at' => Carbon::now('Asia/Dhaka')->format('h:i A'),
+                ];
+            } catch (\Exception $e) {
+                Log::error("MiM SMS BalanceCheck exception: " . $e->getMessage());
+                return [
+                    'status'    => 'error',
+                    'balance'   => null,
+                    'message'   => $e->getMessage(),
+                    'synced_at' => Carbon::now('Asia/Dhaka')->format('h:i A'),
+                ];
+            }
+        });
+    }
 }
+

@@ -124,34 +124,85 @@ class SmsController extends Controller
     // }
 
     // এসএমএস রিপোর্ট ও কাউন্টার দেখানোর মেথড
-    public function report()
+    public function report(Request $request, \App\Services\SmsService $smsService)
     {
-        $now = \Carbon\Carbon::now();
+        $todayDhaka = Carbon::today('Asia/Dhaka');
+        $nowDhaka = Carbon::now('Asia/Dhaka');
 
-        // ১. কাউন্টারের জন্য ডাটা ক্যালকুলেশন
-        $todaySent = SmsLog::whereDate('created_at', $now->today())->count();
+        // ১. কাউন্টারের জন্য রিয়েল ডাটা ক্যালকুলেশন (সফলভাবে সেন্ড হওয়া এসএমএস)
+        $todaySent = SmsLog::where('status', 'Sent')
+                           ->whereDate('created_at', $todayDhaka)
+                           ->count();
         
-        $monthSent = SmsLog::whereMonth('created_at', $now->month)
-                           ->whereYear('created_at', $now->year)
+        $monthSent = SmsLog::where('status', 'Sent')
+                           ->whereYear('created_at', $nowDhaka->year)
+                           ->whereMonth('created_at', $nowDhaka->month)
                            ->count();
                            
-        $totalSent = SmsLog::count(); // ডাটাবেসে মোট কতগুলো এসএমএস সেন্ড হয়েছে
+        $totalSent = SmsLog::where('status', 'Sent')->count();
+        $totalFailed = SmsLog::whereIn('status', ['Failed', 'Blocked (Test Mode)', 'Ambiguous'])->count();
 
-        // ২. এসএমএস ব্যালেন্স লজিক
-        // (এখানে আমি আপনার জন্য ৫০০০ সেট করে দিয়েছি, আপনি চাইলে নিজের ইচ্ছামতো পরিবর্তন করতে পারবেন)
-        $smsLimit = 5000; 
-        $remainingBalance = $smsLimit - $totalSent;
+        // ২. MiM SMS লাইভ ব্যালেন্স চেক (gateway API)
+        $forceRefresh = $request->boolean('refresh_balance');
+        $gatewayBalance = $smsService->getBalance($forceRefresh);
 
-        // ৩. টেবিলের জন্য লেটেস্ট এসএমএসগুলো আনা (পেজিনেশন সহ)
-        $logs = SmsLog::with('student')->orderBy('created_at', 'desc')->paginate(50);
+        // ৩. টেবিলের জন্য ফিল্টারিং কোয়েরি
+        $query = SmsLog::with(['student.schoolClass', 'student.section']);
+
+        // সার্চ ফিল্টার (নাম, স্টুডেন্ট আইডি, মোবাইল নম্বর, মেসেজ টেক্সট)
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('mobile_number', 'LIKE', "%{$search}%")
+                  ->orWhere('message', 'LIKE', "%{$search}%")
+                  ->orWhereHas('student', function ($sq) use ($search) {
+                      $sq->where('student_name', 'LIKE', "%{$search}%")
+                         ->orWhere('student_identity', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+
+        // স্ট্যাটাস ফিল্টার
+        if ($request->filled('status') && $request->status !== 'All') {
+            $query->where('status', $request->status);
+        }
+
+        // ইভেন্ট টাইপ ফিল্টার (check_in, check_out, notice, result)
+        if ($request->filled('event_type') && $request->event_type !== 'All') {
+            $query->where('event_type', $request->event_type);
+        }
+
+        // ডেট ফিল্টার
+        if ($request->filled('date_filter')) {
+            if ($request->date_filter === 'today') {
+                $query->whereDate('created_at', $todayDhaka);
+            } elseif ($request->date_filter === 'yesterday') {
+                $query->whereDate('created_at', Carbon::yesterday('Asia/Dhaka'));
+            } elseif ($request->date_filter === 'last_7_days') {
+                $query->where('created_at', '>=', Carbon::now('Asia/Dhaka')->subDays(7));
+            } elseif ($request->date_filter === 'this_month') {
+                $query->whereYear('created_at', $nowDhaka->year)
+                      ->whereMonth('created_at', $nowDhaka->month);
+            } elseif ($request->date_filter === 'custom') {
+                if ($request->filled('start_date')) {
+                    $query->whereDate('created_at', '>=', $request->start_date);
+                }
+                if ($request->filled('end_date')) {
+                    $query->whereDate('created_at', '<=', $request->end_date);
+                }
+            }
+        }
+
+        // ৪. টেবিলের জন্য লেটেস্ট এসএমএসগুলো আনা (পেজিনেশন সহ এবং ফিল্টার কোয়েরি স্ট্রিং প্রিজার্ভ করে)
+        $logs = $query->orderBy('created_at', 'desc')->paginate(30)->withQueryString();
         
         return view('pages.sms.report', compact(
             'logs', 
             'todaySent', 
             'monthSent', 
             'totalSent', 
-            'smsLimit', 
-            'remainingBalance'
+            'totalFailed',
+            'gatewayBalance'
         ));
     }
 
