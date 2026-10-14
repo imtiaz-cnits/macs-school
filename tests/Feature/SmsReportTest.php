@@ -122,6 +122,7 @@ class SmsReportTest extends TestCase
         $response->assertViewHas('totalSent', 1);
         $response->assertViewHas('totalFailed', 1);
         $response->assertSee('Sakib Al Hasan');
+        $response->assertSee('7,425');
         $response->assertSee('2,450.50');
     }
 

@@ -36,10 +36,11 @@ return [
     ],
 
     'mim_sms' => [
-        'username' => env('MIM_SMS_USERNAME'),
-        'api_key' => env('MIM_SMS_API_KEY'),
-        'sender_id' => env('MIM_SMS_SENDER_ID'),
-        'test_mode' => env('SMS_TEST_MODE', true),
+        'username'       => env('MIM_SMS_USERNAME'),
+        'api_key'        => env('MIM_SMS_API_KEY'),
+        'sender_id'      => env('MIM_SMS_SENDER_ID'),
+        'rate_per_sms'   => (float) env('MIM_SMS_RATE_PER_SMS', 0.33),
+        'test_mode'      => env('SMS_TEST_MODE', true),
         'test_recipient' => env('SMS_TEST_RECIPIENT'),
     ],
 

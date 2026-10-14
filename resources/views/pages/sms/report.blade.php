@@ -87,19 +87,25 @@
         <!-- Live SMS Balance -->
         <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
             <div class="flex items-center justify-between mb-2">
-                <div class="text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-widest">MiM SMS Balance</div>
+                <div class="text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-widest">SMS Balance</div>
                 <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                 </div>
             </div>
             @if($gatewayBalance['status'] === 'success')
+                @php
+                    $smsCount = $gatewayBalance['remaining_sms'] ?? (is_numeric($gatewayBalance['balance']) ? (int) floor((float)$gatewayBalance['balance'] / 0.33) : 0);
+                @endphp
                 <div class="text-3xl font-black text-themeGreen tracking-tight">
-                    {{ is_numeric($gatewayBalance['balance']) ? (floor((float)$gatewayBalance['balance']) == (float)$gatewayBalance['balance'] ? number_format((float)$gatewayBalance['balance']) : number_format((float)$gatewayBalance['balance'], 2)) : $gatewayBalance['balance'] }}
-                    <span class="text-xs font-bold text-gray-400">{{ $gatewayBalance['currency'] ?? 'BDT' }}</span>
+                    {{ number_format($smsCount) }}
+                    <span class="text-xs font-semibold text-gray-400">sms</span>
                 </div>
-                <div class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Live Gateway ({{ $gatewayBalance['synced_at'] }})</span>
+                <div class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1 flex items-center justify-between" title="Synced at {{ $gatewayBalance['synced_at'] }} from MiM SMS Gateway">
+                    <span>৳{{ number_format((float)$gatewayBalance['balance'], 2) }} BDT (0.33/sms)</span>
+                    <span class="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Live
+                    </span>
                 </div>
             @else
                 <div class="text-2xl font-black text-amber-500 tracking-tight">Standby</div>

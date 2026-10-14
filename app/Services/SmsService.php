@@ -306,12 +306,20 @@ class SmsService
 
                 if ($balance !== null) {
                     $currency = $json['data']['currency'] ?? $json['currency'] ?? 'BDT';
+                    $ratePerSms = (float) config('services.mim_sms.rate_per_sms', 0.33);
+                    if ($ratePerSms <= 0) {
+                        $ratePerSms = 0.33;
+                    }
+                    $remainingSms = (int) floor((float)$balance / $ratePerSms);
+
                     return [
-                        'status'    => 'success',
-                        'balance'   => $balance,
-                        'currency'  => $currency,
-                        'raw'       => $json,
-                        'synced_at' => Carbon::now('Asia/Dhaka')->format('h:i A'),
+                        'status'        => 'success',
+                        'balance'       => $balance,
+                        'currency'      => $currency,
+                        'rate_per_sms'  => $ratePerSms,
+                        'remaining_sms' => $remainingSms,
+                        'raw'           => $json,
+                        'synced_at'     => Carbon::now('Asia/Dhaka')->format('h:i A'),
                     ];
                 }
 
