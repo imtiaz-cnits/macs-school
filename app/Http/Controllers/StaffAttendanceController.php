@@ -21,7 +21,7 @@ class StaffAttendanceController extends Controller
      */
     public function index(Request $request)
     {
-        $date = $request->input('date', date('Y-m-d'));
+        $date = $request->input('date', Carbon::today('Asia/Dhaka')->toDateString());
         $search = $request->input('search');
 
         // Check current biometric machine connection details
@@ -60,7 +60,7 @@ class StaffAttendanceController extends Controller
     public function sync(Request $request)
     {
         try {
-            $date = $request->input('date', date('Y-m-d'));
+            $date = $request->input('date', Carbon::today('Asia/Dhaka')->toDateString());
             $count = $this->zktecoService->syncLogs($date);
 
             return response()->json([
@@ -81,7 +81,7 @@ class StaffAttendanceController extends Controller
     public function simulate(Request $request)
     {
         try {
-            $date = Carbon::parse($request->input('date', date('Y-m-d')));
+            $date = Carbon::parse($request->input('date', Carbon::today('Asia/Dhaka')->toDateString()), 'Asia/Dhaka');
             $count = $this->zktecoService->generateSimulationLogs($date);
 
             return response()->json([

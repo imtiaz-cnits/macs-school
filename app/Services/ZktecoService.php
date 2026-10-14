@@ -15,11 +15,19 @@ class ZktecoService
 
     public function __construct()
     {
-        // Fetch configs from environment / config with default fallback to simulation mode
-        $this->ip = env('ZKTECO_IP', '192.168.1.201');
-        $this->port = env('ZKTECO_PORT', 4370);
-        $this->timeout = env('ZKTECO_TIMEOUT', 3);
-        $this->mode = env('ZKTECO_MODE', 'simulation'); // 'live' or 'simulation'
+        // Fetch configs from config/services.php with environment fallback
+        $this->ip = config('services.zkteco.ip', env('ZKTECO_IP', '192.168.1.201'));
+        $this->port = (int) config('services.zkteco.port', env('ZKTECO_PORT', 4370));
+        $this->timeout = (int) config('services.zkteco.timeout', env('ZKTECO_TIMEOUT', 3));
+
+        $configuredMode = config('services.zkteco.mode', env('ZKTECO_MODE'));
+
+        if (empty($configuredMode)) {
+            // In production, missing configuration MUST default to 'live' and NEVER silently simulate fake data
+            $this->mode = app()->isProduction() ? 'live' : 'simulation';
+        } else {
+            $this->mode = strtolower(trim((string) $configuredMode));
+        }
     }
 
     /**
@@ -28,6 +36,16 @@ class ZktecoService
     public function getConnectionStatus()
     {
         if ($this->mode === 'simulation') {
+            if (app()->isProduction()) {
+                return [
+                    'status' => 'Disabled',
+                    'connected' => false,
+                    'ip' => $this->ip,
+                    'port' => $this->port,
+                    'message' => 'Simulation mode blocked in production'
+                ];
+            }
+
             return [
                 'status' => 'Simulated',
                 'connected' => true,
@@ -76,9 +94,14 @@ class ZktecoService
      */
     public function syncLogs($dateString = null)
     {
-        $date = $dateString ? Carbon::parse($dateString) : Carbon::today();
+        $date = $dateString ? Carbon::parse($dateString, 'Asia/Dhaka') : Carbon::today('Asia/Dhaka');
 
         if ($this->mode === 'simulation') {
+            if (app()->isProduction()) {
+                \Illuminate\Support\Facades\Log::error('ZKTeco syncLogs: Simulation mode is blocked in production to prevent fake attendance creation.');
+                return 0;
+            }
+
             return $this->generateSimulationLogs($date);
         }
 
@@ -185,6 +208,11 @@ class ZktecoService
      */
     public function generateSimulationLogs(Carbon $date)
     {
+        if (app()->isProduction()) {
+            \Illuminate\Support\Facades\Log::error('ZKTeco generateSimulationLogs: Blocked in production to prevent synthetic attendance creation.');
+            return 0;
+        }
+
         $teachers = Teacher::all();
         $synced = 0;
 
@@ -261,9 +289,14 @@ class ZktecoService
      */
     public function getRawLogsByCard($dateString = null)
     {
-        $date = $dateString ? Carbon::parse($dateString) : Carbon::today();
+        $date = $dateString ? Carbon::parse($dateString, 'Asia/Dhaka') : Carbon::today('Asia/Dhaka');
 
         if ($this->mode === 'simulation') {
+            if (app()->isProduction()) {
+                \Illuminate\Support\Facades\Log::error('ZKTeco getRawLogsByCard: Simulation mode is blocked in production to prevent synthetic attendance creation.');
+                return [];
+            }
+
             $cards = [];
             // Get all students with card numbers
             $students = \App\Models\Student::whereNotNull('card_number')->get();

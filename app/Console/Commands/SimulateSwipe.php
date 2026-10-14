@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Student;
 use App\Models\Attendance;
-use App\Services\SmsService;
 use Carbon\Carbon;
 
 class SimulateSwipe extends Command
@@ -47,8 +46,6 @@ class SimulateSwipe extends Command
             ->where('attendance_date', $today)
             ->first();
             
-        $smsService = app(SmsService::class);
-        
         if ($existing && in_array($existing->status, ['Present', 'Late'])) {
             // CHECK-OUT SIMULATION
             preg_match('/In:\s*(\d{2}:\d{2}:\d{2})/', $existing->remarks, $inMatches);
@@ -58,12 +55,6 @@ class SimulateSwipe extends Command
             $existing->update(['remarks' => $remarks]);
             
             $this->info("SUCCESS: Simulated CHECK-OUT for {$student->student_name} at {$currentTime}.");
-            
-            if ($student->sms_status === 'Active' && !empty($student->guardian_mobile)) {
-                $msg = "Dear Guardian, your child {$student->student_name} has left the school at {$timeFormatted} on {$attendanceDateFormatted}. - MACS School";
-                $smsService->sendSms($student->guardian_mobile, $msg, $student->id);
-                $this->info("Check-Out SMS sent to: {$student->guardian_mobile}");
-            }
         } else {
             // CHECK-IN SIMULATION
             $status = 'Present';
@@ -82,7 +73,7 @@ class SimulateSwipe extends Command
                     'session_year_id' => $student->session_year_id ?? 1,
                     'class_id'        => $student->class_id ?? 1,
                     'section_id'      => $student->section_id ?? 1,
-                    'teacher_id'      => 1,
+                    'teacher_id'      => null,
                     'user_id'         => 1,
                     'status'          => $status,
                     'remarks'         => $remarks
@@ -90,13 +81,6 @@ class SimulateSwipe extends Command
             );
             
             $this->info("SUCCESS: Simulated CHECK-IN for {$student->student_name} as {$status} at {$currentTime}.");
-            
-            if ($student->sms_status === 'Active' && !empty($student->guardian_mobile)) {
-                $statusLabel = $status === 'Late' ? ' (Late)' : '';
-                $msg = "Dear Guardian, your child {$student->student_name} has entered the school at {$timeFormatted} on {$attendanceDateFormatted}{$statusLabel}. - MACS School";
-                $smsService->sendSms($student->guardian_mobile, $msg, $student->id);
-                $this->info("Check-In SMS sent to: {$student->guardian_mobile}");
-            }
         }
 
         return 0;

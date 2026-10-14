@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\Attendance;
-use App\Models\SmsLog; // এসএমএস লগের জন্য
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -46,7 +45,7 @@ class AttendanceController extends Controller
             $allStudentIds = (clone $query)->pluck('students.id');
             $totalCount = $allStudentIds->count();
             
-            $date = $request->input('attendance_date', date('Y-m-d'));
+            $date = $request->input('attendance_date', Carbon::today('Asia/Dhaka')->toDateString());
             
             $presentCount = Attendance::whereIn('student_id', $allStudentIds)
                 ->where('attendance_date', $date)
@@ -141,6 +140,7 @@ class AttendanceController extends Controller
 
             $syncedCount = 0;
             $absentStudentIds = [];
+            $persistedPunches = [];
 
             foreach ($students as $student) {
                 $status = 'Absent';
@@ -180,7 +180,7 @@ class AttendanceController extends Controller
                     $absentStudentIds[] = $student->id;
                 }
 
-                Attendance::updateOrCreate(
+                $persisted = Attendance::updateOrCreate(
                     [
                         'student_id'      => $student->id,
                         'attendance_date' => $date,
@@ -196,96 +196,27 @@ class AttendanceController extends Controller
                         'remarks'         => $remarks,
                     ]
                 );
+
+                if ($times && in_array($status, ['Present', 'Late'])) {
+                    $persistedPunches[] = [
+                        'student'    => $student,
+                        'attendance' => $persisted,
+                        'times'      => $times,
+                    ];
+                }
             }
 
             DB::commit();
 
-            // ==========================================
-            // SMART ATTENDANCE SMS MODULE FOR BIOMETRIC
-            // ==========================================
-            $smsSentCount = 0;
-            try {
-                $smsService = app(\App\Services\SmsService::class);
-                $attendanceDateFormatted = Carbon::parse($date)->format('d-M-Y');
-                
-                foreach ($students as $student) {
-                    if ($student->sms_status !== 'Active' || empty($student->guardian_mobile)) {
-                        continue;
-                    }
-                    
-                    // Fetch the updated attendance status
-                    $att = Attendance::where('student_id', $student->id)
-                        ->where('attendance_date', $date)
-                        ->first();
-                        
-                    if (!$att) continue;
-                    
-                    if (in_array($att->status, ['Present', 'Late'])) {
-                        // 1. Check-In SMS
-                        $alreadySentToday = SmsLog::where('student_id', $student->id)
-                            ->where('message', 'like', "%{$attendanceDateFormatted}%")
-                            ->where('message', 'like', '%entered the school%')
-                            ->exists();
-                            
-                        if (!$alreadySentToday) {
-                            preg_match('/In:\s*(\d{2}:\d{2}:\d{2})/', $att->remarks, $inMatches);
-                            $timeStr = isset($inMatches[1]) ? $inMatches[1] : '';
-                            if (empty($timeStr)) {
-                                preg_match('/\((.*?)\)/', $att->remarks, $matches);
-                                $timeStr = isset($matches[1]) ? $matches[1] : '';
-                            }
-                            $timeFormatted = !empty($timeStr) ? Carbon::parse($timeStr)->format('h:i A') : '';
-                            
-                            $timeMessage = !empty($timeFormatted) ? " at {$timeFormatted}" : "";
-                            $statusLabel = $att->status === 'Late' ? ' (Late)' : '';
-                            
-                            $msg = "Dear Guardian, your child {$student->student_name} has entered the school{$timeMessage} on {$attendanceDateFormatted}{$statusLabel}. - MACS School";
-                            $smsService->sendSms($student->guardian_mobile, $msg, $student->id);
-                            $smsSentCount++;
-                        }
-                        
-                        // 2. Check-Out SMS
-                        if (str_contains($att->remarks, 'Out:')) {
-                            $alreadySentOutToday = SmsLog::where('student_id', $student->id)
-                                ->where('message', 'like', "%{$attendanceDateFormatted}%")
-                                ->where('message', 'like', '%left the school%')
-                                ->exists();
-                                
-                            if (!$alreadySentOutToday) {
-                                preg_match('/Out:\s*(\d{2}:\d{2}:\d{2})/', $att->remarks, $outMatches);
-                                $outTimeStr = isset($outMatches[1]) ? $outMatches[1] : '';
-                                if (!empty($outTimeStr)) {
-                                    $outTimeFormatted = Carbon::parse($outTimeStr)->format('h:i A');
-                                    
-                                    $msg = "Dear Guardian, your child {$student->student_name} has left the school at {$outTimeFormatted} on {$attendanceDateFormatted}. - MACS School";
-                                    $smsService->sendSms($student->guardian_mobile, $msg, $student->id);
-                                    $smsSentCount++;
-                                }
-                            }
-                        }
-                    } elseif ($att->status === 'Absent') {
-                        $alreadySentToday = SmsLog::where('student_id', $student->id)
-                            ->where('message', 'like', "%{$attendanceDateFormatted}%")
-                            ->where('message', 'like', '%ABSENT today%')
-                            ->exists();
-                            
-                        if (!$alreadySentToday) {
-                            $msg = "Dear Guardian, your child {$student->student_name} is ABSENT today ({$attendanceDateFormatted}). Please contact the school. - MACS School";
-                            $smsService->sendSms($student->guardian_mobile, $msg, $student->id);
-                            $smsSentCount++;
-                        }
-                    }
-                }
-            } catch (\Exception $smsEx) {
-                \Log::error("Biometric Sync SMS Notification Failed: " . $smsEx->getMessage());
+            // Trigger guardian notification only after successful DB persistence for real device punches
+            $notifier = app(\App\Services\AttendanceSmsNotifier::class);
+            foreach ($persistedPunches as $punchItem) {
+                $notifier->notifyPunch($punchItem['student'], $punchItem['attendance'], $punchItem['times'], 'k60_live');
             }
-            // ==========================================
-
-            $smsNotice = $smsSentCount > 0 ? " and sent {$smsSentCount} SMS to guardian(s)!" : "";
 
             return response()->json([
                 'status' => 'success',
-                'message' => "Successfully synced attendance logs. Marked {$syncedCount} Present/Late, " . count($absentStudentIds) . " Absent" . $smsNotice . ".",
+                'message' => "Successfully synced attendance logs. Marked {$syncedCount} Present/Late, " . count($absentStudentIds) . " Absent.",
                 'synced_count' => $syncedCount,
                 'absent_count' => count($absentStudentIds)
             ], 200);

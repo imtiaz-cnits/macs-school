@@ -5,9 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Student;
 use App\Models\Attendance;
-use App\Models\SmsLog;
 use App\Services\ZktecoService;
-use App\Services\SmsService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -37,8 +35,14 @@ class MonitorAttendance extends Command
         $this->info("==================================================");
         
         $zkService = app(ZktecoService::class);
-        $smsService = app(SmsService::class);
-        
+
+        if ($zkService->getMode() === 'simulation' && app()->isProduction()) {
+            $this->error("CRITICAL CONFIGURATION ERROR: ZKTeco biometric device mode is 'simulation' in production.");
+            $this->error("Simulation mode is strictly blocked in production to prevent synthetic attendance creation.");
+            $this->error("Please configure ZKTECO_MODE=live and verify device network parameters in .env.");
+            return 1;
+        }
+
         $this->info("Biometric Device IP: " . $zkService->getIp());
         $this->info("Biometric Device Port: " . $zkService->getPort());
         $this->info("Monitoring Mode: " . $zkService->getMode());
@@ -122,7 +126,7 @@ class MonitorAttendance extends Command
                     
                     if ($shouldUpdate) {
                         // Insert/Update attendance record
-                        Attendance::updateOrCreate(
+                        $persistedAttendance = Attendance::updateOrCreate(
                             [
                                 'student_id'      => $student->id,
                                 'attendance_date' => $today,
@@ -140,42 +144,10 @@ class MonitorAttendance extends Command
                         );
                         
                         $this->info("[" . date('H:i:s') . "] PUNCH RECORD UPDATED: Student '{$student->student_name}' (Card: {$key}) remarks set to: {$remarks}.");
-                        
-                        // Send SMS instantly to guardian if SMS is Active
-                        if ($student->sms_status === 'Active' && !empty($student->guardian_mobile)) {
-                            $attendanceDateFormatted = Carbon::parse($today)->format('d-M-Y');
-                            
-                            // 1. Check-In SMS
-                            $alreadySentToday = SmsLog::where('student_id', $student->id)
-                                ->where('message', 'like', "%{$attendanceDateFormatted}%")
-                                ->where('message', 'like', '%entered the school%')
-                                ->exists();
-                                
-                            if (!$alreadySentToday) {
-                                $timeFormatted = Carbon::parse($checkInTime)->format('h:i A');
-                                $statusLabel = $status === 'Late' ? ' (Late)' : '';
-                                
-                                $msg = "Dear Guardian, your child {$student->student_name} has entered the school at {$timeFormatted} on {$attendanceDateFormatted}{$statusLabel}. - MACS School";
-                                $smsService->sendSms($student->guardian_mobile, $msg, $student->id);
-                                $this->info("  --> Check-In SMS fired to guardian's number: {$student->guardian_mobile}");
-                            }
-                            
-                            // 2. Check-Out SMS
-                            if ($checkOutTime) {
-                                $alreadySentOutToday = SmsLog::where('student_id', $student->id)
-                                    ->where('message', 'like', "%{$attendanceDateFormatted}%")
-                                    ->where('message', 'like', '%left the school%')
-                                    ->exists();
-                                    
-                                if (!$alreadySentOutToday) {
-                                    $outTimeFormatted = Carbon::parse($checkOutTime)->format('h:i A');
-                                    
-                                    $msg = "Dear Guardian, your child {$student->student_name} has left the school at {$outTimeFormatted} on {$attendanceDateFormatted}. - MACS School";
-                                    $smsService->sendSms($student->guardian_mobile, $msg, $student->id);
-                                    $this->info("  --> Check-Out SMS fired to guardian's number: {$student->guardian_mobile}");
-                                }
-                            }
-                        }
+
+                        // Trigger immediate Guardian SMS notification for valid persisted punch
+                        $notifier = app(\App\Services\AttendanceSmsNotifier::class);
+                        $notifier->notifyPunch($student, $persistedAttendance, $times, 'k60_live');
                     }
                 }
             } catch (\Exception $e) {
