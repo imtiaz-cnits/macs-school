@@ -369,6 +369,55 @@
                 </button>
             </div>
         </div>
+
+        <!-- RFID Card Status -->
+        <div x-data="{
+            open: false,
+            selectedValue: '',
+            selectedLabel: 'All RFID Cards',
+            select(label, val) {
+                this.selectedLabel = label;
+                this.selectedValue = val;
+                this.open = false;
+                let input = document.getElementById('filter_rfid_status');
+                if (input) {
+                    input.value = val;
+                    input.dispatchEvent(new Event('change'));
+                }
+            }
+        }" class="relative">
+            <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">RFID Card</label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span x-text="selectedLabel">All RFID Cards</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="filter_rfid_status" value="">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <button type="button" @click="select('All RFID Cards', '')" :class="selectedValue === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                    <span>All RFID Cards</span>
+                    <template x-if="selectedValue === ''">
+                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </template>
+                </button>
+                <button type="button" @click="select('Card Synced', 'synced')" :class="selectedValue === 'synced' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Card Synced
+                    </span>
+                    <template x-if="selectedValue === 'synced'">
+                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </template>
+                </button>
+                <button type="button" @click="select('Not Synced', 'not_synced')" :class="selectedValue === 'not_synced' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span> Not Synced
+                    </span>
+                    <template x-if="selectedValue === 'not_synced'">
+                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </template>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -451,6 +500,7 @@
         let shift_id = document.getElementById('filter_shift').value; 
         let gender = document.getElementById('filter_gender').value;
         let status = document.getElementById('filter_status') ? document.getElementById('filter_status').value : '';
+        let rfid_status = document.getElementById('filter_rfid_status') ? document.getElementById('filter_rfid_status').value : '';
 
         let queryParams = new URLSearchParams({
             search: search_text,
@@ -461,6 +511,7 @@
             shift_id: shift_id,
             gender: gender,
             status: status,
+            rfid_status: rfid_status,
             page: page
         }).toString();
 
@@ -668,6 +719,7 @@
         let shift_id = document.getElementById('filter_shift').value; 
         let gender = document.getElementById('filter_gender').value;
         let status = document.getElementById('filter_status') ? document.getElementById('filter_status').value : '';
+        let rfid_status = document.getElementById('filter_rfid_status') ? document.getElementById('filter_rfid_status').value : '';
 
         let queryParams = new URLSearchParams({
             search: search_text,
@@ -677,7 +729,8 @@
             session_year_id: session_id,
             shift_id: shift_id,
             gender: gender,
-            status: status
+            status: status,
+            rfid_status: rfid_status
         }).toString();
 
         window.location.href = `/ajax/students/export-excel?${queryParams}`;
@@ -692,6 +745,7 @@
         let shift_id = document.getElementById('filter_shift').value; 
         let gender = document.getElementById('filter_gender').value;
         let status = document.getElementById('filter_status') ? document.getElementById('filter_status').value : '';
+        let rfid_status = document.getElementById('filter_rfid_status') ? document.getElementById('filter_rfid_status').value : '';
 
         let queryParams = new URLSearchParams({
             search: search_text,
@@ -701,7 +755,8 @@
             session_year_id: session_id,
             shift_id: shift_id,
             gender: gender,
-            status: status
+            status: status,
+            rfid_status: rfid_status
         }).toString();
 
         window.open(`/ajax/students/export-pdf?${queryParams}`, '_blank');
@@ -714,7 +769,7 @@
         typingTimer = setTimeout(function () { window.fetchList(1); }, 400); 
     });
 
-    ['filter_branch', 'filter_class', 'filter_section', 'filter_session', 'filter_shift', 'filter_gender', 'filter_status'].forEach(id => {
+    ['filter_branch', 'filter_class', 'filter_section', 'filter_session', 'filter_shift', 'filter_gender', 'filter_status', 'filter_rfid_status'].forEach(id => {
         let el = document.getElementById(id);
         if (el) {
             el.addEventListener('change', function() { window.fetchList(1); });

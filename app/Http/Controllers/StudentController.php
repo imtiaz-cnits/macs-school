@@ -64,6 +64,23 @@ class StudentController extends Controller
                 $query->where('status', $request->status);
             }
 
+            // 🔍 ৫. RFID Card Status ফিল্টার (synced vs not_synced)
+            if ($request->filled('rfid_status')) {
+                if ($request->rfid_status === 'synced') {
+                    $query->whereNotNull('card_number')
+                          ->where('card_number', '!=', '')
+                          ->where('card_number', '!=', '0')
+                          ->where('card_number', '!=', 'N/A');
+                } elseif ($request->rfid_status === 'not_synced') {
+                    $query->where(function ($q) {
+                        $q->whereNull('card_number')
+                          ->orWhere('card_number', '')
+                          ->orWhere('card_number', '0')
+                          ->orWhere('card_number', 'N/A');
+                    });
+                }
+            }
+
             // পেজিনেশন
             $students = $query->paginate(15);
             
@@ -666,6 +683,24 @@ public function detectStudentInfo(Request $request)
             if ($request->filled('gender')) {
                 $query->where('gender', $request->gender);
             }
+            if ($request->filled('status') && $request->status !== 'All') {
+                $query->where('status', $request->status);
+            }
+            if ($request->filled('rfid_status')) {
+                if ($request->rfid_status === 'synced') {
+                    $query->whereNotNull('card_number')
+                          ->where('card_number', '!=', '')
+                          ->where('card_number', '!=', '0')
+                          ->where('card_number', '!=', 'N/A');
+                } elseif ($request->rfid_status === 'not_synced') {
+                    $query->where(function ($q) {
+                        $q->whereNull('card_number')
+                          ->orWhere('card_number', '')
+                          ->orWhere('card_number', '0')
+                          ->orWhere('card_number', 'N/A');
+                    });
+                }
+            }
 
             $students = $query->get();
 
@@ -763,6 +798,24 @@ public function detectStudentInfo(Request $request)
             }
             if ($request->filled('gender')) {
                 $query->where('gender', $request->gender);
+            }
+            if ($request->filled('status') && $request->status !== 'All') {
+                $query->where('status', $request->status);
+            }
+            if ($request->filled('rfid_status')) {
+                if ($request->rfid_status === 'synced') {
+                    $query->whereNotNull('card_number')
+                          ->where('card_number', '!=', '')
+                          ->where('card_number', '!=', '0')
+                          ->where('card_number', '!=', 'N/A');
+                } elseif ($request->rfid_status === 'not_synced') {
+                    $query->where(function ($q) {
+                        $q->whereNull('card_number')
+                          ->orWhere('card_number', '')
+                          ->orWhere('card_number', '0')
+                          ->orWhere('card_number', 'N/A');
+                    });
+                }
             }
 
             $students = $query->get()->sortBy(function ($student) {
