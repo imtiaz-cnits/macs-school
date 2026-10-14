@@ -85,9 +85,10 @@ class SmsReportTest extends TestCase
     {
         Http::fake([
             'https://api.mimsms.com/api/V2/BalanceCheck' => Http::response([
-                'status' => 'success',
-                'balance' => 2450.50,
-                'currency' => 'BDT'
+                'statusCode'     => '200',
+                'status'         => 'Success',
+                'trxnId'         => 'P6BKLTRMA8ZB75T',
+                'responseResult' => '2450.50',
             ], 200),
         ]);
 

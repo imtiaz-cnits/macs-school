@@ -94,7 +94,7 @@
             </div>
             @if($gatewayBalance['status'] === 'success')
                 <div class="text-3xl font-black text-themeGreen tracking-tight">
-                    {{ is_numeric($gatewayBalance['balance']) ? number_format((float)$gatewayBalance['balance'], 2) : $gatewayBalance['balance'] }}
+                    {{ is_numeric($gatewayBalance['balance']) ? (floor((float)$gatewayBalance['balance']) == (float)$gatewayBalance['balance'] ? number_format((float)$gatewayBalance['balance']) : number_format((float)$gatewayBalance['balance'], 2)) : $gatewayBalance['balance'] }}
                     <span class="text-xs font-bold text-gray-400">{{ $gatewayBalance['currency'] ?? 'BDT' }}</span>
                 </div>
                 <div class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1.5">

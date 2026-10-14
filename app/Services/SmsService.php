@@ -284,12 +284,16 @@ class SmsService
                     $json = $response->json();
 
                     $balance = null;
-                    if (isset($json['data']['balance'])) {
+                    if (isset($json['responseResult']) && is_numeric(trim((string)$json['responseResult']))) {
+                        $balance = trim((string)$json['responseResult']);
+                    } elseif (isset($json['data']['balance']) && is_numeric($json['data']['balance'])) {
                         $balance = $json['data']['balance'];
-                    } elseif (isset($json['balance'])) {
+                    } elseif (isset($json['balance']) && is_numeric($json['balance'])) {
                         $balance = $json['balance'];
                     } elseif (isset($json['data']) && is_numeric($json['data'])) {
                         $balance = $json['data'];
+                    } elseif (isset($json['responseResult']) && !empty($json['responseResult']) && preg_match('/[0-9]+(?:\.[0-9]+)?/', (string)$json['responseResult'], $m)) {
+                        $balance = $m[0];
                     }
 
                     $currency = $json['data']['currency'] ?? $json['currency'] ?? 'BDT';
@@ -304,7 +308,7 @@ class SmsService
                         ];
                     }
 
-                    $msg = $json['message'] ?? $json['status'] ?? 'Unknown response';
+                    $msg = $json['message'] ?? $json['responseResult'] ?? $json['status'] ?? 'Unknown response';
                     Log::warning("MiM SMS BalanceCheck returned non-balance response: " . json_encode($json));
                     return [
                         'status'    => 'error',
