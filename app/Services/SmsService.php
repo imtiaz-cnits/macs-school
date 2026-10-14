@@ -261,9 +261,9 @@ class SmsService
     {
         if (empty($this->username) || empty($this->apiKey)) {
             return [
-                'status'  => 'unconfigured',
-                'balance' => null,
-                'message' => 'MiM SMS credentials are not configured.',
+                'status'    => 'unconfigured',
+                'balance'   => null,
+                'message'   => 'MiM SMS credentials are not configured.',
                 'synced_at' => Carbon::now('Asia/Dhaka')->format('h:i A'),
             ];
         }
@@ -275,41 +275,54 @@ class SmsService
 
         return \Illuminate\Support\Facades\Cache::remember($cacheKey, 120, function () {
             try {
+                // 1. Try POST request (default recommended method)
                 $response = Http::timeout(6)->post('https://api.mimsms.com/api/V2/BalanceCheck', [
                     'userName' => $this->username,
                     'apiKey'   => $this->apiKey,
                 ]);
 
-                if ($response->successful()) {
-                    $json = $response->json();
+                $json = $response->successful() ? $response->json() : null;
+                $balance = $json ? $this->extractBalanceFromResponse($json) : null;
 
-                    $balance = null;
-                    if (isset($json['responseResult']) && is_numeric(trim((string)$json['responseResult']))) {
-                        $balance = trim((string)$json['responseResult']);
-                    } elseif (isset($json['data']['balance']) && is_numeric($json['data']['balance'])) {
-                        $balance = $json['data']['balance'];
-                    } elseif (isset($json['balance']) && is_numeric($json['balance'])) {
-                        $balance = $json['balance'];
-                    } elseif (isset($json['data']) && is_numeric($json['data'])) {
-                        $balance = $json['data'];
-                    } elseif (isset($json['responseResult']) && !empty($json['responseResult']) && preg_match('/[0-9]+(?:\.[0-9]+)?/', (string)$json['responseResult'], $m)) {
-                        $balance = $m[0];
+                // 2. If POST didn't yield a balance, try GET request as fallback
+                if ($balance === null) {
+                    $getResponse = Http::timeout(6)->get('https://api.mimsms.com/api/V2/BalanceCheck', [
+                        'userName' => $this->username,
+                        'apiKey'   => $this->apiKey,
+                    ]);
+                    if ($getResponse->successful()) {
+                        $getJson = $getResponse->json();
+                        $getBalance = $this->extractBalanceFromResponse($getJson);
+                        if ($getBalance !== null) {
+                            $json = $getJson;
+                            $balance = $getBalance;
+                            $response = $getResponse;
+                        } elseif (!$json && $getJson) {
+                            $json = $getJson;
+                            $response = $getResponse;
+                        }
                     }
+                }
 
+                if ($balance !== null) {
                     $currency = $json['data']['currency'] ?? $json['currency'] ?? 'BDT';
+                    return [
+                        'status'    => 'success',
+                        'balance'   => $balance,
+                        'currency'  => $currency,
+                        'raw'       => $json,
+                        'synced_at' => Carbon::now('Asia/Dhaka')->format('h:i A'),
+                    ];
+                }
 
-                    if ($balance !== null) {
-                        return [
-                            'status'    => 'success',
-                            'balance'   => $balance,
-                            'currency'  => $currency,
-                            'raw'       => $json,
-                            'synced_at' => Carbon::now('Asia/Dhaka')->format('h:i A'),
-                        ];
+                if ($json) {
+                    $rawJsonStr = json_encode($json, JSON_UNESCAPED_UNICODE);
+                    $msg = $json['message'] ?? $json['responseResult'] ?? $json['status'] ?? 'Unknown response';
+                    if (in_array(strtolower($msg), ['success', 'ok', 'successful'])) {
+                        $msg = 'Raw: ' . substr($rawJsonStr, 0, 100);
                     }
 
-                    $msg = $json['message'] ?? $json['responseResult'] ?? $json['status'] ?? 'Unknown response';
-                    Log::warning("MiM SMS BalanceCheck returned non-balance response: " . json_encode($json));
+                    Log::warning("MiM SMS BalanceCheck returned non-balance response: " . $rawJsonStr);
                     return [
                         'status'    => 'error',
                         'balance'   => null,
@@ -336,6 +349,76 @@ class SmsService
                 ];
             }
         });
+    }
+
+    /**
+     * Recursively extract balance from various provider response shapes.
+     */
+    protected function extractBalanceFromResponse($data): ?string
+    {
+        if (is_numeric($data)) {
+            return (string)$data;
+        }
+
+        if (!is_array($data)) {
+            if (is_string($data) && preg_match('/^\s*([0-9]+(?:\.[0-9]+)?)\s*$/', $data, $m)) {
+                return $m[1];
+            }
+            return null;
+        }
+
+        // Direct candidate keys
+        $candidateKeys = [
+            'responseResult',
+            'balance',
+            'Balance',
+            'currentBalance',
+            'current_balance',
+            'CurrentBalance',
+            'sms_balance',
+            'smsBalance',
+            'amount',
+            'Amount',
+            'credit',
+            'Credit',
+            'credits',
+            'remaining_sms',
+            'remainingSms',
+            'available_balance',
+            'balance_amount',
+        ];
+
+        foreach ($candidateKeys as $key) {
+            if (isset($data[$key])) {
+                $val = $data[$key];
+                if (is_numeric($val)) {
+                    return (string)$val;
+                }
+                if (is_string($val) && preg_match('/[0-9]+(?:\.[0-9]+)?/', $val, $m)) {
+                    return $m[0];
+                }
+            }
+        }
+
+        // If 'data' key exists, inspect inside
+        if (isset($data['data'])) {
+            $fromData = $this->extractBalanceFromResponse($data['data']);
+            if ($fromData !== null) {
+                return $fromData;
+            }
+        }
+
+        // Search in items (e.g. data: [ { balance: ... } ])
+        foreach ($data as $item) {
+            if (is_array($item)) {
+                $fromItem = $this->extractBalanceFromResponse($item);
+                if ($fromItem !== null) {
+                    return $fromItem;
+                }
+            }
+        }
+
+        return null;
     }
 }
 

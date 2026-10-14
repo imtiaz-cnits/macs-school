@@ -103,7 +103,7 @@
                 </div>
             @else
                 <div class="text-2xl font-black text-amber-500 tracking-tight">Standby</div>
-                <div class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1 truncate" title="{{ $gatewayBalance['message'] ?? 'Gateway connection standby' }}">
+                <div class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1 truncate" title="{{ is_array($gatewayBalance['raw'] ?? null) ? json_encode($gatewayBalance['raw']) : ($gatewayBalance['message'] ?? 'Gateway connection standby') }}">
                     {{ $gatewayBalance['message'] ?? 'Synced via MiM SMS' }}
                 </div>
             @endif
