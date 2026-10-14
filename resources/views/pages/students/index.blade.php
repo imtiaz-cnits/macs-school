@@ -34,9 +34,19 @@
     window.dropdownState = function(id, defaultLabel, ajaxUrl, dataKey, nameField, idField) {
         return {
             open: false,
+            defaultLabel: defaultLabel,
             selectedLabel: defaultLabel,
             selectedValue: '',
             options: [],
+            reset() {
+                this.selectedLabel = this.defaultLabel;
+                this.selectedValue = '';
+                this.open = false;
+                let input = document.getElementById(id);
+                if (input) {
+                    input.value = '';
+                }
+            },
             async init() {
                 if (ajaxUrl) {
                     try {
@@ -142,7 +152,7 @@
 
         <!-- Dynamic Custom Dropdowns with Alpine.js -->
         <!-- Branch -->
-        <div x-data="dropdownState('filter_branch', 'All Branches', '/ajax/branches', 'branchData', 'branch_name', 'id')" class="relative">
+        <div x-data="dropdownState('filter_branch', 'All Branches', '/ajax/branches', 'branchData', 'branch_name', 'id')" @reset-filters.window="reset()" class="relative">
             <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Branch</label>
             <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                 <span x-text="selectedLabel">All Branches</span>
@@ -169,7 +179,7 @@
         </div>
 
         <!-- Session -->
-        <div x-data="dropdownState('filter_session', 'All Sessions', '/ajax/sessions', 'sessionData', 'session_name', 'id')" class="relative">
+        <div x-data="dropdownState('filter_session', 'All Sessions', '/ajax/sessions', 'sessionData', 'session_name', 'id')" @reset-filters.window="reset()" class="relative">
             <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Session</label>
             <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                 <span x-text="selectedLabel">All Sessions</span>
@@ -196,7 +206,7 @@
         </div>
 
         <!-- Class -->
-        <div x-data="dropdownState('filter_class', 'All Classes', '/ajax/classes', 'classData', 'class_name', 'id')" class="relative">
+        <div x-data="dropdownState('filter_class', 'All Classes', '/ajax/classes', 'classData', 'class_name', 'id')" @reset-filters.window="reset()" class="relative">
             <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Class</label>
             <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                 <span x-text="selectedLabel">All Classes</span>
@@ -223,7 +233,7 @@
         </div>
 
         <!-- Shift -->
-        <div x-data="dropdownState('filter_shift', 'All Shifts', '/ajax/shifts?type=student', 'shiftData', 'shift_name', 'id')" class="relative">
+        <div x-data="dropdownState('filter_shift', 'All Shifts', '/ajax/shifts?type=student', 'shiftData', 'shift_name', 'id')" @reset-filters.window="reset()" class="relative">
             <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Shift</label>
             <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                 <span x-text="selectedLabel">All Shifts</span>
@@ -250,7 +260,7 @@
         </div>
 
         <!-- Section -->
-        <div x-data="dropdownState('filter_section', 'All Sections', '/ajax/sections', 'sectionData', 'section_name', 'id')" class="relative">
+        <div x-data="dropdownState('filter_section', 'All Sections', '/ajax/sections', 'sectionData', 'section_name', 'id')" @reset-filters.window="reset()" class="relative">
             <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Section</label>
             <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                 <span x-text="selectedLabel">All Sections</span>
@@ -290,8 +300,14 @@
                     input.value = val;
                     input.dispatchEvent(new Event('change'));
                 }
+            },
+            reset() {
+                this.selectedLabel = 'All Genders';
+                this.selectedValue = '';
+                let input = document.getElementById('filter_gender');
+                if (input) input.value = '';
             }
-        }" class="relative">
+        }" @reset-filters.window="reset()" class="relative">
             <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Gender</label>
             <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                 <span x-text="selectedLabel">All Genders</span>
@@ -335,8 +351,14 @@
                     input.value = val;
                     input.dispatchEvent(new Event('change'));
                 }
+            },
+            reset() {
+                this.selectedLabel = 'All Status';
+                this.selectedValue = '';
+                let input = document.getElementById('filter_status');
+                if (input) input.value = '';
             }
-        }" class="relative">
+        }" @reset-filters.window="reset()" class="relative">
             <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Status</label>
             <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                 <span x-text="selectedLabel">All Status</span>
@@ -384,8 +406,14 @@
                     input.value = val;
                     input.dispatchEvent(new Event('change'));
                 }
+            },
+            reset() {
+                this.selectedLabel = 'All RFID Cards';
+                this.selectedValue = '';
+                let input = document.getElementById('filter_rfid_status');
+                if (input) input.value = '';
             }
-        }" class="relative">
+        }" @reset-filters.window="reset()" class="relative">
             <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">RFID Card</label>
             <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                 <span x-text="selectedLabel">All RFID Cards</span>
@@ -417,6 +445,17 @@
                     </template>
                 </button>
             </div>
+        </div>
+
+        <!-- Reset Button -->
+        <div>
+            <label class="block text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-550 uppercase mb-1.5">Reset</label>
+            <button type="button" onclick="window.resetFilters()" title="Reset all filters" class="w-full flex items-center justify-center gap-2 px-3 h-10 text-xs font-black uppercase tracking-[0.1em] bg-gray-50/50 hover:bg-rose-50/70 dark:bg-themeNavy dark:hover:bg-rose-950/20 text-gray-600 hover:text-rose-600 dark:text-gray-300 dark:hover:text-rose-400 border-2 border-gray-100 hover:border-rose-200 dark:border-gray-800 dark:hover:border-rose-900/40 rounded-xl transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
+                <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-rose-500 group-hover:rotate-[-90deg] transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                <span>Reset</span>
+            </button>
         </div>
     </div>
 </div>
@@ -760,6 +799,25 @@
         }).toString();
 
         window.open(`/ajax/students/export-pdf?${queryParams}`, '_blank');
+    };
+
+    // Reset all filters back to defaults
+    window.resetFilters = function() {
+        let searchInput = document.getElementById('filter_search');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+
+        ['filter_branch', 'filter_class', 'filter_section', 'filter_session', 'filter_shift', 'filter_gender', 'filter_status', 'filter_rfid_status'].forEach(id => {
+            let el = document.getElementById(id);
+            if (el) {
+                el.value = '';
+            }
+        });
+
+        window.dispatchEvent(new CustomEvent('reset-filters'));
+
+        window.fetchList(1);
     };
 
     // Event Listeners
