@@ -10,4 +10,4 @@ Artisan::command('inspire', function () {
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('app:resolve-missing-out-punches')->dailyAt('23:59')->timezone('Asia/Dhaka');
-Schedule::command('fees:auto-generate')->monthlyOn(1, '00:00')->timezone('Asia/Dhaka');
+Schedule::command('fees:auto-generate')->dailyAt('00:05')->timezone('Asia/Dhaka');
