@@ -40,6 +40,10 @@ class FeeInvoice extends Model
         return $this->belongsTo(User::class); 
     }
 
+    public function adjustmentLogs() {
+        return $this->hasMany(FeeAdjustmentLog::class);
+    }
+
     /**
      * Get the resolved month name for this invoice.
      */

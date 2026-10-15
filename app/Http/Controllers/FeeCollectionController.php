@@ -686,7 +686,7 @@ class FeeCollectionController extends Controller
 
     /**
      * Single Collection: Adjust invoice fee amount (increase, decrease, or set exact)
-     * either for this specific invoice (single month) or continuous across all upcoming invoices.
+     * either for this specific invoice (single month) or continuous across all upcoming eligible invoices.
      */
     public function adjustInvoiceFee(Request $request)
     {
@@ -695,42 +695,105 @@ class FeeCollectionController extends Controller
             'mode' => 'required|in:increase,decrease,set_amount',
             'amount' => 'required|numeric|min:0',
             'scope' => 'required|in:single,continuous',
-            'note' => 'nullable|string|max:255',
+            'reason' => 'nullable|string|max:255',
+            'note' => 'nullable|string|max:255', // backward compatibility alias for reason
         ]);
+
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $operatorId = Auth::id();
+        $reason = $request->filled('reason') ? trim($request->reason) : ($request->filled('note') ? trim($request->note) : null);
 
         DB::beginTransaction();
         try {
-            $invoice = FeeInvoice::with(['student', 'feeSetup'])->lockForUpdate()->findOrFail($request->invoice_id);
+            $invoice = FeeInvoice::with(['student', 'feeSetup', 'payments'])->lockForUpdate()->findOrFail($request->invoice_id);
 
             $studentId = $invoice->student_id;
             $feeSetup = $invoice->feeSetup;
             $feeCategoryId = $feeSetup->fee_category_id;
-            $setupAmount = floatval($feeSetup->amount);
-            $inputAmount = floatval($request->amount);
+            $setupAmount = round((float) $feeSetup->amount, 2);
+
+            $currentAmount = round((float) $invoice->amount, 2);
+            $currentDiscount = round((float) $invoice->discount, 2);
+            $currentNet = round((float) $invoice->net_amount, 2);
+            $paidAmount = round((float) $invoice->paid_amount, 2);
+            $inputAmount = round((float) $request->amount, 2);
             $mode = $request->mode;
             $scope = $request->scope;
 
-            $currentNet = floatval($invoice->net_amount);
-            $paidAmount = floatval($invoice->paid_amount);
-
+            // 1. Calculate new values according to strict accounting rules per mode
             if ($mode === 'increase') {
-                $newNetAmount = $currentNet + $inputAmount;
+                $adjustmentDelta = $inputAmount;
+                $newNet = round($currentNet + $inputAmount, 2);
+                // Preserve existing discount: amount increases to accommodate extra charge
+                $newDiscount = $currentDiscount;
+                $newAmount = round($newNet + $newDiscount, 2);
+                $newDue = round($newNet - $paidAmount, 2);
             } elseif ($mode === 'decrease') {
-                $newNetAmount = max($paidAmount, $currentNet - $inputAmount);
+                $maxAllowableReduction = round(max(0, $currentNet - $paidAmount), 2);
+                if ($inputAmount > $maxAllowableReduction) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Reduction of ৳" . number_format($inputAmount, 2) . " would make the net bill ৳" . number_format($currentNet - $inputAmount, 2) . ", which is less than the already collected payment of ৳" . number_format($paidAmount, 2) . ". Maximum allowable reduction is ৳" . number_format($maxAllowableReduction, 2) . "."
+                    ], 422);
+                }
+
+                $adjustmentDelta = $inputAmount;
+                // Keep original gross amount unchanged, increase discount
+                $newAmount = $currentAmount;
+                $newDiscount = round($currentDiscount + $inputAmount, 2);
+                $newNet = round($newAmount - $newDiscount, 2);
+                $newDue = round($newNet - $paidAmount, 2);
             } else { // set_amount
-                $newNetAmount = max($paidAmount, $inputAmount);
+                if ($inputAmount < $paidAmount) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Desired net fee of ৳" . number_format($inputAmount, 2) . " cannot be less than the already collected payment of ৳" . number_format($paidAmount, 2) . "."
+                    ], 422);
+                }
+
+                $adjustmentDelta = round(abs($inputAmount - $currentNet), 2);
+                if ($inputAmount <= $currentAmount) {
+                    $newAmount = $currentAmount;
+                    $newDiscount = round($currentAmount - $inputAmount, 2);
+                    $newNet = $inputAmount;
+                } else {
+                    $newAmount = $inputAmount;
+                    $newDiscount = 0.00;
+                    $newNet = $inputAmount;
+                }
+                $newDue = round($newNet - $paidAmount, 2);
             }
 
+            // Guard against negative due amounts
+            $newDue = max(0.00, $newDue);
+            $newStatus = ($newDue <= 0.00) ? 'Paid' : (($paidAmount > 0.00) ? 'Partial' : 'Unpaid');
+
+            $updatedInvoicesData = [];
+
             if ($scope === 'continuous') {
+                // Rule C: Prevent continuous adjustment initiation from an invoice with payments
+                if ($invoice->paid_amount > 0 || $invoice->payments()->exists()) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Continuous fee adjustment cannot be initiated from an invoice with existing payment records. Please choose 'This Month Only' or use an unpaid invoice without payments."
+                    ], 422);
+                }
+
                 // Update or create custom fee profile for this student and category
-                if ($newNetAmount != $setupAmount) {
+                if ($newNet != $setupAmount) {
                     \App\Models\StudentCustomFee::updateOrCreate(
                         [
                             'student_id' => $studentId,
                             'fee_category_id' => $feeCategoryId,
                         ],
                         [
-                            'amount' => $newNetAmount
+                            'amount' => $newNet
                         ]
                     );
                 } else {
@@ -739,67 +802,119 @@ class FeeCollectionController extends Controller
                         ->delete();
                 }
 
-                // Sync all unpaid or partially paid invoices for this student and category
-                $affectedInvoices = FeeInvoice::with('feeSetup')
+                // Rule C: Update ONLY eligible unpaid invoices (paid_amount == 0, status == 'Unpaid', and no payments)
+                $eligibleInvoices = FeeInvoice::with(['student', 'feeSetup'])
                     ->where('student_id', $studentId)
-                    ->whereIn('status', ['Unpaid', 'Partial'])
+                    ->where('status', 'Unpaid')
+                    ->where('paid_amount', 0)
+                    ->whereDoesntHave('payments')
                     ->whereHas('feeSetup', function($q) use ($feeCategoryId) {
                         $q->where('fee_category_id', $feeCategoryId);
                     })
                     ->lockForUpdate()
                     ->get();
 
-                $updatedInvoicesData = [];
-                foreach ($affectedInvoices as $inv) {
-                    $invSetupAmount = floatval($inv->feeSetup->amount);
-                    if ($newNetAmount > $invSetupAmount) {
-                        $inv->amount = $newNetAmount;
-                        $inv->discount = 0;
+                foreach ($eligibleInvoices as $inv) {
+                    $invSetupAmount = round((float) $inv->feeSetup->amount, 2);
+                    $invPrevAmount = round((float) $inv->amount, 2);
+                    $invPrevDiscount = round((float) $inv->discount, 2);
+                    $invPrevNet = round((float) $inv->net_amount, 2);
+                    $invPrevDue = round((float) $inv->due_amount, 2);
+
+                    if ($newNet > $invSetupAmount) {
+                        $inv->amount = $newNet;
+                        $inv->discount = 0.00;
                     } else {
                         $inv->amount = $invSetupAmount;
-                        $inv->discount = max(0, $invSetupAmount - $newNetAmount);
+                        $inv->discount = round(max(0, $invSetupAmount - $newNet), 2);
                     }
-                    $inv->net_amount = $newNetAmount;
-                    $inv->due_amount = max(0, $newNetAmount - $inv->paid_amount);
-                    $inv->status = $inv->due_amount <= 0 ? 'Paid' : ($inv->paid_amount > 0 ? 'Partial' : 'Unpaid');
+                    $inv->net_amount = $newNet;
+                    $inv->due_amount = $newNet;
+                    $inv->status = 'Unpaid';
                     $inv->save();
+
+                    // Audit trail entry for each updated invoice
+                    \App\Models\FeeAdjustmentLog::create([
+                        'fee_invoice_id' => $inv->id,
+                        'student_id' => $studentId,
+                        'user_id' => $operatorId,
+                        'invoice_no' => $inv->invoice_no,
+                        'student_identity' => $inv->student->student_identity ?? null,
+                        'mode' => $mode,
+                        'scope' => 'continuous',
+                        'adjustment_amount' => $adjustmentDelta,
+                        'previous_amount' => $invPrevAmount,
+                        'previous_discount' => $invPrevDiscount,
+                        'previous_net_amount' => $invPrevNet,
+                        'previous_due_amount' => $invPrevDue,
+                        'new_amount' => $inv->amount,
+                        'new_discount' => $inv->discount,
+                        'new_net_amount' => $inv->net_amount,
+                        'new_due_amount' => $inv->due_amount,
+                        'paid_amount' => 0.00,
+                        'reason' => $reason,
+                    ]);
 
                     $updatedInvoicesData[] = [
                         'id' => $inv->id,
+                        'amount' => number_format($inv->amount, 2, '.', ''),
+                        'discount' => number_format($inv->discount, 2, '.', ''),
                         'net_amount' => number_format($inv->net_amount, 2, '.', ''),
                         'due_amount' => number_format($inv->due_amount, 2, '.', ''),
-                        'discount' => number_format($inv->discount, 2, '.', ''),
                         'paid_amount' => number_format($inv->paid_amount, 2, '.', ''),
                         'status' => $inv->status,
                     ];
                 }
             } else {
-                // Single month adjustment strictly for this invoice
-                if ($newNetAmount > $setupAmount) {
-                    $invoice->amount = $newNetAmount;
-                    $invoice->discount = 0;
-                } else {
-                    $invoice->amount = $setupAmount;
-                    $invoice->discount = max(0, $setupAmount - $newNetAmount);
-                }
-                $invoice->net_amount = $newNetAmount;
-                $invoice->due_amount = max(0, $newNetAmount - $paidAmount);
-                $invoice->status = $invoice->due_amount <= 0 ? 'Paid' : ($paidAmount > 0 ? 'Partial' : 'Unpaid');
+                // Rule A: Single month adjustment strictly for this invoice
+                $prevAmount = $currentAmount;
+                $prevDiscount = $currentDiscount;
+                $prevNet = $currentNet;
+                $prevDue = round((float) $invoice->due_amount, 2);
+
+                $invoice->amount = $newAmount;
+                $invoice->discount = $newDiscount;
+                $invoice->net_amount = $newNet;
+                $invoice->due_amount = $newDue;
+                $invoice->status = $newStatus;
                 $invoice->save();
 
-                $updatedInvoicesData = [[
+                // Audit trail entry
+                \App\Models\FeeAdjustmentLog::create([
+                    'fee_invoice_id' => $invoice->id,
+                    'student_id' => $studentId,
+                    'user_id' => $operatorId,
+                    'invoice_no' => $invoice->invoice_no,
+                    'student_identity' => $invoice->student->student_identity ?? null,
+                    'mode' => $mode,
+                    'scope' => 'single',
+                    'adjustment_amount' => $adjustmentDelta,
+                    'previous_amount' => $prevAmount,
+                    'previous_discount' => $prevDiscount,
+                    'previous_net_amount' => $prevNet,
+                    'previous_due_amount' => $prevDue,
+                    'new_amount' => $invoice->amount,
+                    'new_discount' => $invoice->discount,
+                    'new_net_amount' => $invoice->net_amount,
+                    'new_due_amount' => $invoice->due_amount,
+                    'paid_amount' => $paidAmount,
+                    'reason' => $reason,
+                ]);
+
+                $updatedInvoicesData[] = [
                     'id' => $invoice->id,
+                    'amount' => number_format($invoice->amount, 2, '.', ''),
+                    'discount' => number_format($invoice->discount, 2, '.', ''),
                     'net_amount' => number_format($invoice->net_amount, 2, '.', ''),
                     'due_amount' => number_format($invoice->due_amount, 2, '.', ''),
-                    'discount' => number_format($invoice->discount, 2, '.', ''),
                     'paid_amount' => number_format($invoice->paid_amount, 2, '.', ''),
                     'status' => $invoice->status,
-                ]];
+                ];
             }
 
             DB::commit();
 
-            // Calculate updated summary totals for all pending invoices of this student
+            // Calculate updated authoritative summary totals for all pending invoices of this student
             $allPendingInvoices = FeeInvoice::where('student_id', $studentId)
                 ->whereIn('status', ['Unpaid', 'Partial'])
                 ->get();
@@ -813,8 +928,8 @@ class FeeCollectionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => $scope === 'continuous' 
-                    ? 'Continuous fee updated successfully across all invoices.' 
+                'message' => $scope === 'continuous'
+                    ? 'Continuous fee updated successfully across all eligible unpaid invoices.'
                     : "Fee for {$invoice->month_name} adjusted successfully.",
                 'scope' => $scope,
                 'updated_invoices' => $updatedInvoicesData,

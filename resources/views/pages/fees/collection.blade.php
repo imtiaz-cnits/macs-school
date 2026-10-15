@@ -390,25 +390,10 @@
                                         </td>
                                         <td id="net-bill-{{ $inv->id }}" class="py-4 px-4 text-right text-sm font-semibold text-gray-600 dark:text-gray-400 font-mono">{{ number_format($inv->net_amount, 2) }}</td>
                                         <td class="py-3 px-4 text-right">
-                                            <div class="inline-flex items-center justify-end relative">
-                                                <span class="text-xs font-black font-mono text-gray-400 dark:text-gray-500 mr-1.5">৳</span>
-                                                <input type="number" 
-                                                       step="0.01" 
-                                                       min="0"
-                                                       name="custom_due_amounts[{{ $inv->id }}]"
-                                                       value="{{ number_format($inv->due_amount, 2, '.', '') }}" 
-                                                       data-invoice-id="{{ $inv->id }}"
-                                                       data-category-id="{{ $inv->feeSetup->fee_category_id }}"
-                                                       data-prev-value="{{ number_format($inv->due_amount, 2, '.', '') }}"
-                                                       class="single-due-input w-28 sm:w-32 h-9 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-bold font-mono text-themeGreen dark:text-themeGreen px-2.5 text-right shadow-sm"
-                                                       onchange="updateSingleFeeAmount(this)">
-                                                <span id="spinner-{{ $inv->id }}" class="hidden ml-1.5">
-                                                    <svg class="animate-spin h-3.5 w-3.5 text-themeBlue" fill="none" viewBox="0 0 24 24">
-                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                                                    </svg>
-                                                </span>
-                                            </div>
+                                            <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-gray-50/80 dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] text-sm font-black font-mono text-themeGreen dark:text-themeGreen shadow-sm">
+                                                <span class="text-xs mr-1 opacity-70">৳</span>
+                                                <span id="due-display-{{ $inv->id }}">{{ number_format($inv->due_amount, 2) }}</span>
+                                            </span>
                                         </td>
                                         <td class="py-4 px-4 text-right">
                                             <div class="flex items-center justify-end gap-2">
@@ -417,6 +402,8 @@
                                                         data-fee-name="{{ $inv->feeSetup->category->name }}"
                                                         data-month-name="{{ $inv->month_name }}"
                                                         data-setup-amount="{{ $inv->feeSetup->amount }}"
+                                                        data-gross-amount="{{ $inv->amount }}"
+                                                        data-discount-amount="{{ $inv->discount }}"
                                                         data-net-amount="{{ $inv->net_amount }}"
                                                         data-paid-amount="{{ $inv->paid_amount }}"
                                                         data-due-amount="{{ $inv->due_amount }}"
@@ -1220,9 +1207,31 @@
                                 <span x-show="scope === 'continuous'">✓</span>
                             </span>
                         </div>
-                        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1 leading-tight">Updates student's monthly fee profile for all unpaid months.</p>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1 leading-tight">Updates student's monthly fee profile for all eligible unpaid months.</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Continuous Confirmation Checkbox Warning -->
+            <div x-show="scope === 'continuous'" x-cloak class="mb-5 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300">
+                <div class="flex items-start gap-2.5">
+                    <input type="checkbox" id="continuousConfirmCheck" x-model="continuousConfirmed" class="w-4 h-4 mt-0.5 text-themeBlue rounded border-gray-300 dark:border-gray-700 focus:ring-themeBlue cursor-pointer">
+                    <label for="continuousConfirmCheck" class="text-xs font-semibold cursor-pointer">
+                        I confirm that I want to update this student's continuous monthly fee profile for all eligible zero-paid upcoming invoices.
+                    </label>
+                </div>
+            </div>
+
+            <!-- Optional Reason / Remarks Field -->
+            <div class="mb-5">
+                <label class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-2 block">
+                    Reason / Remarks <span class="text-gray-400 font-normal lowercase">(optional)</span>
+                </label>
+                <input type="text"
+                       maxlength="255"
+                       x-model="reason"
+                       placeholder="e.g. Principal approved discount, extra coaching charge"
+                       class="w-full h-11 px-4 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-xs font-semibold text-gray-900 dark:text-white shadow-sm">
             </div>
 
             <!-- Action Buttons -->
@@ -1284,6 +1293,8 @@
             mode: 'increase',
             adjustAmount: '',
             scope: 'single',
+            reason: '',
+            continuousConfirmed: false,
 
             initModal(data) {
                 this.invoiceId = data.id;
@@ -1296,6 +1307,8 @@
                 this.mode = 'increase';
                 this.adjustAmount = '';
                 this.scope = 'single';
+                this.reason = '';
+                this.continuousConfirmed = false;
                 this.submitting = false;
                 this.isOpen = true;
                 this.$nextTick(() => {
@@ -1316,7 +1329,7 @@
                 } else if (this.mode === 'decrease') {
                     return Math.max(this.paidAmount, this.netAmount - val);
                 } else {
-                    return Math.max(this.paidAmount, val);
+                    return val;
                 }
             },
 
@@ -1333,7 +1346,17 @@
                 }
 
                 if (this.mode === 'decrease' && val > (this.netAmount - this.paidAmount)) {
-                    showDanger('Exceeds Limit', 'Decrease amount cannot exceed current unpaid balance.');
+                    showDanger('Exceeds Limit', 'Decrease amount cannot exceed current unpaid balance of ৳' + (this.netAmount - this.paidAmount).toFixed(2));
+                    return;
+                }
+
+                if (this.mode === 'set_amount' && val < this.paidAmount) {
+                    showDanger('Invalid Amount', 'Desired amount cannot be less than already collected payment of ৳' + this.paidAmount.toFixed(2));
+                    return;
+                }
+
+                if (this.scope === 'continuous' && !this.continuousConfirmed) {
+                    showDanger('Confirmation Required', 'Please confirm continuous adjustment by checking the confirmation box.');
                     return;
                 }
 
@@ -1351,7 +1374,8 @@
                             invoice_id: this.invoiceId,
                             mode: this.mode,
                             amount: val,
-                            scope: this.scope
+                            scope: this.scope,
+                            reason: this.reason
                         })
                     });
 
@@ -1360,14 +1384,13 @@
                     if (response.ok && data.success) {
                         if (data.updated_invoices && data.updated_invoices.length > 0) {
                             data.updated_invoices.forEach(invData => {
-                                // Update input
-                                const rowInput = document.querySelector(`.single-due-input[data-invoice-id="${invData.id}"]`);
-                                if (rowInput) {
-                                    rowInput.value = parseFloat(invData.due_amount).toFixed(2);
-                                    rowInput.dataset.prevValue = rowInput.value;
+                                // Update read-only due badge
+                                const dueEl = document.getElementById(`due-display-${invData.id}`);
+                                if (dueEl) {
+                                    dueEl.innerText = parseFloat(invData.due_amount).toFixed(2);
                                 }
 
-                                // Update net bill
+                                // Update net bill column
                                 const netCell = document.getElementById(`net-bill-${invData.id}`);
                                 if (netCell) {
                                     netCell.innerText = parseFloat(invData.net_amount).toFixed(2);
@@ -1392,6 +1415,8 @@
                                     adjBtn.dataset.netAmount = invData.net_amount;
                                     adjBtn.dataset.dueAmount = invData.due_amount;
                                     adjBtn.dataset.paidAmount = invData.paid_amount;
+                                    adjBtn.dataset.grossAmount = invData.amount;
+                                    adjBtn.dataset.discountAmount = invData.discount;
                                 }
                             });
                         }
@@ -1435,12 +1460,6 @@
     }
 
     function openPayModal(invoiceId, feeName, dueAmount) {
-        // If the row's input was edited, use its current value
-        const rowInput = document.querySelector(`.single-due-input[data-invoice-id="${invoiceId}"]`);
-        if (rowInput && parseFloat(rowInput.value) >= 0) {
-            dueAmount = parseFloat(rowInput.value);
-        }
-
         document.getElementById('modalInvoiceId').value = invoiceId;
         document.getElementById('modalFeeName').innerText = feeName;
         document.getElementById('modalDueAmountText').innerText = parseFloat(dueAmount).toFixed(2);
