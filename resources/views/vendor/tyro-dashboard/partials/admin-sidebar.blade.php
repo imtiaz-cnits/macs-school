@@ -279,6 +279,12 @@
                     <a href="{{ route('accounts.categories.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
                         <span>Expense Categories</span>
                     </a>
+                    <a href="{{ route('accounts.payables.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Payables & Due</span>
+                    </a>
+                    <a href="{{ route('accounts.vendor-payments.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Vendor Payments</span>
+                    </a>
                     <!-- Financial Reports -->
                     <div class="px-4 pt-2 pb-0.5 text-[9px] font-black uppercase tracking-wider text-amber-500">Financial Reports</div>
                     <a href="{{ route('accounts.reports.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
@@ -598,7 +604,7 @@
             </a>
 
             <!-- Group 2: Expense Management -->
-            <div class="px-3 pt-3 pb-1 text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase border-t border-gray-100 dark:border-white/[0.05] mt-2">
+            <div class="px-3 pt-3 pb-1 text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-550 uppercase border-t border-gray-100 dark:border-white/[0.05] mt-2">
                 Expense Management
             </div>
             <a href="{{ route('accounts.expenses.index') }}" class="sidebar-link {{ request()->routeIs('accounts.expenses.*') ? 'active' : '' }}">
@@ -608,6 +614,14 @@
             <a href="{{ route('accounts.categories.index') }}" class="sidebar-link {{ request()->routeIs('accounts.categories.*') ? 'active' : '' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 0 1 0 2.828l-7 7a2 2 0 0 1-2.828 0l-7-7A1.994 1.994 0 0 1 3 12V7a4 4 0 0 1 4-4z"/></svg>
                 <span class="sidebar-text">Expense Categories</span>
+            </a>
+            <a href="{{ route('accounts.payables.index') }}" class="sidebar-link {{ request()->routeIs('accounts.payables.*') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="sidebar-text">Payables & Due</span>
+            </a>
+            <a href="{{ route('accounts.vendor-payments.index') }}" class="sidebar-link {{ request()->routeIs('accounts.vendor-payments.*') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <span class="sidebar-text">Vendor Payments</span>
             </a>
 
             <!-- Group 3: Financial Reports -->

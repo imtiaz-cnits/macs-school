@@ -49,42 +49,204 @@
         <form action="{{ route('accounts.reports.index') }}" method="GET" class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-                <!-- Date From -->
+                <!-- Period From: Rule 10 Custom Alpine DatePicker -->
                 <div>
                     <label class="block text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">Period From</label>
-                    <input type="date" name="start_date" value="{{ $startDate }}" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-xs font-semibold text-gray-700 dark:text-gray-200 px-3">
+                    <div class="relative" x-data="datePicker('{{ $startDate }}')" @click.away="show = false; mOpen = false">
+                        <input type="hidden" name="start_date" :value="value">
+                        <button type="button" @click="show = !show" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                            <span class="truncate font-mono" x-text="formatDisplay(value)"></span>
+                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </button>
+
+                        <!-- Calendar Dropdown Panel (Rule 10) -->
+                        <div x-show="show" x-cloak class="absolute left-0 z-50 mt-1.5 w-72 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl p-3" x-transition>
+                            <div class="flex items-center justify-between gap-1 mb-2 pb-2 border-b border-gray-100 dark:border-white/[0.06]">
+                                <!-- Month Dropdown Toggle -->
+                                <div class="relative">
+                                    <button type="button" @click="mOpen = !mOpen" class="text-xs font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1 hover:text-themeBlue">
+                                        <span x-text="monthNames[currentMonth]"></span>
+                                        <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <div x-show="mOpen" x-cloak class="absolute left-0 z-50 mt-1 w-32 bg-white dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto">
+                                        <template x-for="(m, mIdx) in monthNames" :key="mIdx">
+                                            <button type="button" @click="currentMonth = mIdx; mOpen = false; generateCalendar()" class="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-themeNavy font-bold" :class="currentMonth === mIdx ? 'text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" x-text="m"></button>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- Year Input Field -->
+                                <input type="number" x-model.number="currentYear" @input="generateCalendar()" class="w-16 h-7 text-xs font-black text-center bg-gray-50 dark:bg-themeDark border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:border-themeBlue [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+
+                                <!-- Month Navigation Arrows -->
+                                <div class="flex items-center gap-1">
+                                    <button type="button" @click="prevMonth()" class="p-1 hover:bg-gray-50 dark:hover:bg-themeDark/45 rounded-lg transition-colors">
+                                        <svg class="w-3.5 h-3.5 text-gray-550" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                                    </button>
+                                    <button type="button" @click="nextMonth()" class="p-1 hover:bg-gray-50 dark:hover:bg-themeDark/45 rounded-lg transition-colors">
+                                        <svg class="w-3.5 h-3.5 text-gray-550" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Days Header -->
+                            <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-widest mb-1">
+                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+
+                            <!-- Days Grid -->
+                            <div class="grid grid-cols-7 gap-1">
+                                <template x-for="(d, i) in days" :key="i">
+                                    <button type="button" @click="selectDay(d.day)"
+                                            class="h-7 w-7 text-[10px] font-bold rounded-lg flex items-center justify-center transition-all"
+                                            :class="d.day === parseInt(value.split('-')[2]) && d.isCurrentMonth ? 'bg-themeBlue text-white font-black shadow-sm' : d.isCurrentMonth ? 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-themeDark/45' : 'text-transparent cursor-default'"
+                                            :disabled="!d.isCurrentMonth">
+                                        <span x-text="d.day"></span>
+                                    </button>
+                                </template>
+                            </div>
+
+                            <!-- Action Shortcuts -->
+                            <div class="flex items-center justify-between pt-2 mt-2 border-t border-gray-100 dark:border-white/[0.06]">
+                                <button type="button" @click="clearDate()" class="text-[10px] font-bold text-gray-400 hover:text-red-500 transition-colors">Clear</button>
+                                <button type="button" @click="selectToday()" class="text-[10px] font-bold text-themeBlue hover:underline transition-colors">Today</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Date To -->
+                <!-- Period To: Rule 10 Custom Alpine DatePicker -->
                 <div>
                     <label class="block text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">Period To</label>
-                    <input type="date" name="end_date" value="{{ $endDate }}" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-xs font-semibold text-gray-700 dark:text-gray-200 px-3">
+                    <div class="relative" x-data="datePicker('{{ $endDate }}')" @click.away="show = false; mOpen = false">
+                        <input type="hidden" name="end_date" :value="value">
+                        <button type="button" @click="show = !show" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                            <span class="truncate font-mono" x-text="formatDisplay(value)"></span>
+                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </button>
+
+                        <!-- Calendar Dropdown Panel (Rule 10) -->
+                        <div x-show="show" x-cloak class="absolute left-0 sm:left-auto sm:right-0 z-50 mt-1.5 w-72 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl p-3" x-transition>
+                            <div class="flex items-center justify-between gap-1 mb-2 pb-2 border-b border-gray-100 dark:border-white/[0.06]">
+                                <!-- Month Dropdown Toggle -->
+                                <div class="relative">
+                                    <button type="button" @click="mOpen = !mOpen" class="text-xs font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1 hover:text-themeBlue">
+                                        <span x-text="monthNames[currentMonth]"></span>
+                                        <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <div x-show="mOpen" x-cloak class="absolute left-0 z-50 mt-1 w-32 bg-white dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto">
+                                        <template x-for="(m, mIdx) in monthNames" :key="mIdx">
+                                            <button type="button" @click="currentMonth = mIdx; mOpen = false; generateCalendar()" class="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-themeNavy font-bold" :class="currentMonth === mIdx ? 'text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" x-text="m"></button>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- Year Input Field -->
+                                <input type="number" x-model.number="currentYear" @input="generateCalendar()" class="w-16 h-7 text-xs font-black text-center bg-gray-50 dark:bg-themeDark border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:border-themeBlue [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+
+                                <!-- Month Navigation Arrows -->
+                                <div class="flex items-center gap-1">
+                                    <button type="button" @click="prevMonth()" class="p-1 hover:bg-gray-50 dark:hover:bg-themeDark/45 rounded-lg transition-colors">
+                                        <svg class="w-3.5 h-3.5 text-gray-550" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                                    </button>
+                                    <button type="button" @click="nextMonth()" class="p-1 hover:bg-gray-50 dark:hover:bg-themeDark/45 rounded-lg transition-colors">
+                                        <svg class="w-3.5 h-3.5 text-gray-550" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Days Header -->
+                            <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-widest mb-1">
+                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+
+                            <!-- Days Grid -->
+                            <div class="grid grid-cols-7 gap-1">
+                                <template x-for="(d, i) in days" :key="i">
+                                    <button type="button" @click="selectDay(d.day)"
+                                            class="h-7 w-7 text-[10px] font-bold rounded-lg flex items-center justify-center transition-all"
+                                            :class="d.day === parseInt(value.split('-')[2]) && d.isCurrentMonth ? 'bg-themeBlue text-white font-black shadow-sm' : d.isCurrentMonth ? 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-themeDark/45' : 'text-transparent cursor-default'"
+                                            :disabled="!d.isCurrentMonth">
+                                        <span x-text="d.day"></span>
+                                    </button>
+                                </template>
+                            </div>
+
+                            <!-- Action Shortcuts -->
+                            <div class="flex items-center justify-between pt-2 mt-2 border-t border-gray-100 dark:border-white/[0.06]">
+                                <button type="button" @click="clearDate()" class="text-[10px] font-bold text-gray-400 hover:text-red-500 transition-colors">Clear</button>
+                                <button type="button" @click="selectToday()" class="text-[10px] font-bold text-themeBlue hover:underline transition-colors">Today</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Branch Filter -->
+                <!-- Branch Filter: Rule 7 Custom Select -->
                 <div>
                     <label class="block text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">Branch</label>
-                    <select name="branch_id" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-xs font-semibold text-gray-700 dark:text-gray-200 px-3">
-                        <option value="">All Branches</option>
-                        @foreach($branches as $b)
-                            <option value="{{ $b->id }}" {{ $branchId == $b->id ? 'selected' : '' }}>
-                                {{ $b->branch_name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <div x-data="{
+                        open: false,
+                        value: '{{ $branchId }}',
+                        label: '{{ $branches->firstWhere('id', $branchId)?->branch_name ?? 'All Branches' }}',
+                        select(val, txt) {
+                            this.value = val;
+                            this.label = txt;
+                            this.open = false;
+                        }
+                    }" class="relative" @click.away="open = false">
+                        <input type="hidden" name="branch_id" :value="value">
+                        <button type="button" @click="open = !open" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                            <span class="truncate" x-text="label"></span>
+                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+
+                        <div x-show="open" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                            <button type="button" @click="select('', 'All Branches')" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="value === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                <span>All Branches</span>
+                                <svg x-show="value === ''" class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </button>
+                            @foreach($branches as $b)
+                                <button type="button" @click="select('{{ $b->id }}', '{{ addslashes($b->branch_name) }}')" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="value == '{{ $b->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                    <span>{{ $b->branch_name }}</span>
+                                    <svg x-show="value == '{{ $b->id }}'" class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Payment Method Filter -->
+                <!-- Payment Method Filter: Rule 7 Custom Select -->
                 <div>
                     <label class="block text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">Payment Method</label>
-                    <select name="payment_method" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-xs font-semibold text-gray-700 dark:text-gray-200 px-3">
-                        <option value="">All Methods</option>
-                        @foreach(['Cash', 'Bank', 'bKash', 'Nagad', 'Cheque', 'Rocket'] as $m)
-                            <option value="{{ $m }}" {{ strcasecmp($paymentMethod ?? '', $m) === 0 ? 'selected' : '' }}>
-                                {{ $m }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <div x-data="{
+                        open: false,
+                        value: '{{ $paymentMethod ?? '' }}',
+                        label: '{{ !empty($paymentMethod) ? $paymentMethod : 'All Methods' }}',
+                        select(val, txt) {
+                            this.value = val;
+                            this.label = txt;
+                            this.open = false;
+                        }
+                    }" class="relative" @click.away="open = false">
+                        <input type="hidden" name="payment_method" :value="value">
+                        <button type="button" @click="open = !open" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                            <span class="truncate" x-text="label"></span>
+                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+
+                        <div x-show="open" x-cloak class="absolute left-0 sm:left-auto sm:right-0 z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                            <button type="button" @click="select('', 'All Methods')" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="value === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                <span>All Methods</span>
+                                <svg x-show="value === ''" class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </button>
+                            @foreach(['Cash', 'Bank', 'bKash', 'Nagad', 'Cheque', 'Rocket'] as $m)
+                                <button type="button" @click="select('{{ $m }}', '{{ $m }}')" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="value.toLowerCase() === '{{ strtolower($m) }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                    <span>{{ $m }}</span>
+                                    <svg x-show="value.toLowerCase() === '{{ strtolower($m) }}'" class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -471,3 +633,112 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // Rule 10 Custom Alpine DatePicker
+    function datePicker(initialValue = '') {
+        return {
+            show: false,
+            mOpen: false,
+            value: initialValue || '',
+            currentYear: new Date().getFullYear(),
+            currentMonth: new Date().getMonth(),
+            days: [],
+            monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+
+            init() {
+                if (this.value) {
+                    this.parseInitial(this.value);
+                }
+                this.generateCalendar();
+                this.$watch('value', val => {
+                    if (val) {
+                        this.parseInitial(val);
+                        this.generateCalendar();
+                    }
+                });
+            },
+
+            parseInitial(val) {
+                if (!val) return;
+                const parts = val.split('-');
+                if (parts.length === 3) {
+                    this.currentYear = parseInt(parts[0]);
+                    this.currentMonth = parseInt(parts[1]) - 1;
+                }
+            },
+
+            generateCalendar() {
+                const firstDayIndex = new Date(this.currentYear, this.currentMonth, 1).getDay();
+                const totalDays = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
+
+                const days = [];
+                for (let i = 0; i < firstDayIndex; i++) {
+                    days.push({ day: '', isCurrentMonth: false });
+                }
+                for (let i = 1; i <= totalDays; i++) {
+                    days.push({ day: i, isCurrentMonth: true });
+                }
+                this.days = days;
+            },
+
+            prevMonth() {
+                if (this.currentMonth === 0) {
+                    this.currentMonth = 11;
+                    this.currentYear--;
+                } else {
+                    this.currentMonth--;
+                }
+                this.generateCalendar();
+            },
+
+            nextMonth() {
+                if (this.currentMonth === 11) {
+                    this.currentMonth = 0;
+                    this.currentYear++;
+                } else {
+                    this.currentMonth++;
+                }
+                this.generateCalendar();
+            },
+
+            selectDay(day) {
+                if (!day) return;
+                const formattedMonth = String(this.currentMonth + 1).padStart(2, '0');
+                const formattedDay = String(day).padStart(2, '0');
+                this.value = `${this.currentYear}-${formattedMonth}-${formattedDay}`;
+                this.show = false;
+                this.$dispatch('date-selected', this.value);
+            },
+
+            clearDate() {
+                this.value = '';
+                this.show = false;
+                this.$dispatch('date-selected', '');
+            },
+
+            selectToday() {
+                const now = new Date();
+                this.currentYear = now.getFullYear();
+                this.currentMonth = now.getMonth();
+                const formattedMonth = String(now.getMonth() + 1).padStart(2, '0');
+                const formattedDay = String(now.getDate()).padStart(2, '0');
+                this.value = `${this.currentYear}-${formattedMonth}-${formattedDay}`;
+                this.show = false;
+                this.$dispatch('date-selected', this.value);
+            },
+
+            formatDisplay(val) {
+                if (!val) return 'Select Date';
+                const parts = val.split('-');
+                if (parts.length === 3) {
+                    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+                    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+                }
+                return val;
+            }
+        };
+    }
+</script>
+@endpush

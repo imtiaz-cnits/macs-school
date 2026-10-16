@@ -6,6 +6,8 @@ use App\Models\Branch;
 use App\Models\Expense;
 use App\Models\FeeInvoice;
 use App\Models\FeePayment;
+use App\Models\VendorOpeningBalance;
+use App\Models\VendorPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -71,8 +73,8 @@ class FinancialReportController extends Controller
         $totalIncome = (float) $payments->sum('paid_amount');
         $totalCollectionsCount = $payments->count();
 
-        // 2. Expenses Query (ACTUAL SAVED EXPENSES)
-        $expensesQuery = Expense::with(['category', 'branch', 'creator'])
+        // 2. Expenses Query (ACTUAL INCURRED EXPENSES RECORDED IN PERIOD)
+        $expensesQuery = Expense::with(['category', 'branch', 'creator', 'items.category', 'vendor'])
             ->whereBetween('expense_date', [$startDate, $endDate]);
 
         if ($branchId) {
@@ -90,14 +92,54 @@ class FinancialReportController extends Controller
         // 3. Overall Net Surplus / Deficit (Total Income - Total Expense)
         $netSurplus = $totalIncome - $totalExpense;
 
-        // 4. Method Breakdown and Pure Physical Cash Flow (Cash Collections - Cash Expenses)
+        // 4. Actual Cash Outflow & Method Breakdown:
+        // Cash outflow occurs on payment settlement, not on unpaid bills.
+        // A. Vendor payments recorded during the period
+        $vendorPaymentsQuery = VendorPayment::whereBetween('payment_date', [$startDate, $endDate]);
+        if ($branchId) {
+            $vendorPaymentsQuery->where('branch_id', $branchId);
+        }
+        if ($paymentMethod) {
+            $vendorPaymentsQuery->where('payment_method', 'like', $paymentMethod);
+        }
+        $vendorPayments = $vendorPaymentsQuery->get();
+
+        // B. Backward-compatible legacy paid expenses or ad-hoc non-vendor paid expenses
+        // Only include expenses that do NOT have any canonical payments or payment allocations
+        $legacyPaidQuery = Expense::whereBetween('expense_date', [$startDate, $endDate])
+            ->where('payment_status', 'Paid')
+            ->whereDoesntHave('payments')
+            ->whereDoesntHave('paymentAllocations');
+        if ($branchId) {
+            $legacyPaidQuery->where('branch_id', $branchId);
+        }
+        if ($paymentMethod) {
+            $legacyPaidQuery->where('payment_method', 'like', $paymentMethod);
+        }
+        $legacyPaidExpenses = $legacyPaidQuery->get();
+
+        $outflowItems = collect();
+        foreach ($vendorPayments as $vp) {
+            $outflowItems->push([
+                'method' => $vp->payment_method,
+                'amount' => (float) $vp->amount,
+            ]);
+        }
+        foreach ($legacyPaidExpenses as $le) {
+            $outflowItems->push([
+                'method' => $le->payment_method,
+                'amount' => (float) $le->amount,
+            ]);
+        }
+
+        // Method Breakdown and Pure Physical Cash Flow (Cash Collections - Cash Expenses)
         $methodSummary = [];
         $totalCashIn = 0;
         $totalCashOut = 0;
 
         foreach ($this->supportedMethods as $method) {
             $in = (float) $payments->filter(fn($p) => strcasecmp(trim($p->payment_method ?? ''), $method) === 0)->sum('paid_amount');
-            $out = (float) $expenses->filter(fn($e) => strcasecmp(trim($e->payment_method ?? ''), $method) === 0)->sum('amount');
+            $out = (float) $outflowItems->filter(fn($e) => strcasecmp(trim($e['method'] ?? ''), $method) === 0)->sum('amount');
             $net = $in - $out;
 
             $methodSummary[$method] = [
@@ -116,7 +158,7 @@ class FinancialReportController extends Controller
         // Unclassified / Custom payment methods if any exist
         $knownMethodsLower = array_map('strtolower', $this->supportedMethods);
         $otherIn = (float) $payments->filter(fn($p) => !in_array(strtolower(trim($p->payment_method ?? '')), $knownMethodsLower))->sum('paid_amount');
-        $otherOut = (float) $expenses->filter(fn($e) => !in_array(strtolower(trim($e->payment_method ?? '')), $knownMethodsLower))->sum('amount');
+        $otherOut = (float) $outflowItems->filter(fn($e) => !in_array(strtolower(trim($e['method'] ?? '')), $knownMethodsLower))->sum('amount');
         if ($otherIn > 0 || $otherOut > 0) {
             $methodSummary['Other'] = [
                 'method' => 'Other',
@@ -126,7 +168,7 @@ class FinancialReportController extends Controller
             ];
         }
 
-        // Physical Cash In Hand Movement = Cash Collections - Cash Expenses
+        // Physical Cash In Hand Movement = Cash Collections - Cash Outflow
         $netCashMovement = $totalCashIn - $totalCashOut;
 
         // 5. Income by Fee Category
@@ -143,16 +185,35 @@ class FinancialReportController extends Controller
             ];
         })->sortByDesc('amount')->values();
 
-        // 6. Expense by Expense Category
-        $expenseByCategory = $expenses->groupBy(function ($e) {
-            return $e->category?->name ?? 'Uncategorized Expense';
-        })->map(function ($group, $name) use ($totalExpense) {
-            $amt = (float) $group->sum('amount');
+        // 6. Expense by Expense Category (Item-level category attribution with legacy voucher fallback)
+        $categoryBreakdown = [];
+        foreach ($expenses as $expense) {
+            if ($expense->items && $expense->items->isNotEmpty()) {
+                foreach ($expense->items as $item) {
+                    $catName = $item->category?->name ?? ($expense->category?->name ?? 'Uncategorized Expense');
+                    if (!isset($categoryBreakdown[$catName])) {
+                        $categoryBreakdown[$catName] = ['name' => $catName, 'amount' => 0.0, 'count' => 0];
+                    }
+                    $categoryBreakdown[$catName]['amount'] += (float) $item->line_total;
+                    $categoryBreakdown[$catName]['count']++;
+                }
+            } else {
+                $catName = $expense->category?->name ?? 'Uncategorized Expense';
+                if (!isset($categoryBreakdown[$catName])) {
+                    $categoryBreakdown[$catName] = ['name' => $catName, 'amount' => 0.0, 'count' => 0];
+                }
+                $categoryBreakdown[$catName]['amount'] += (float) $expense->amount;
+                $categoryBreakdown[$catName]['count']++;
+            }
+        }
+
+        $expenseByCategory = collect($categoryBreakdown)->map(function ($item) use ($totalExpense) {
+            $amt = round((float) $item['amount'], 2);
             $pct = $totalExpense > 0 ? round(($amt / $totalExpense) * 100, 1) : 0;
             return [
-                'name' => $name,
+                'name' => $item['name'],
                 'amount' => $amt,
-                'count' => $group->count(),
+                'count' => $item['count'],
                 'percentage' => $pct,
             ];
         })->sortByDesc('amount')->values();
@@ -170,6 +231,17 @@ class FinancialReportController extends Controller
         $totalBilledDiscount = (float) $invoicesQuery->sum('discount');
         $totalBilledNet = (float) $invoicesQuery->sum('net_amount');
         $totalOutstandingDue = (float) $invoicesQuery->sum('due_amount');
+
+        // 8. Contextual Accounts Payable & Unsettled Liabilities (NOT counted as cash outflow)
+        $billsDueQuery = Expense::outstanding();
+        $obDueQuery = VendorOpeningBalance::whereIn('status', ['Unpaid', 'Partially Paid']);
+        if ($branchId) {
+            $billsDueQuery->where('branch_id', $branchId);
+            $obDueQuery->where('branch_id', $branchId);
+        }
+        $totalPayableBillsDue = (float) $billsDueQuery->get()->sum('due_amount');
+        $totalPayableOBDue = (float) $obDueQuery->get()->sum('due_amount');
+        $totalPayableDue = round($totalPayableBillsDue + $totalPayableOBDue, 2);
 
         // Lookup data for filters
         $branches = Branch::all();
@@ -198,7 +270,10 @@ class FinancialReportController extends Controller
             'totalBilledGross',
             'totalBilledDiscount',
             'totalBilledNet',
-            'totalOutstandingDue'
+            'totalOutstandingDue',
+            'totalPayableBillsDue',
+            'totalPayableOBDue',
+            'totalPayableDue'
         );
     }
 }

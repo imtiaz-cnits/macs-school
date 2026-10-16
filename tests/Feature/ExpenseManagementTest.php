@@ -440,6 +440,7 @@ class ExpenseManagementTest extends TestCase
             'amount' => 850.00,
             'payment_method' => 'Bank',
             'paid_to' => 'Changed Recipient',
+            'edit_reason' => 'Testing file cleanup on DB failure',
             'receipt' => $newFile,
         ]);
 

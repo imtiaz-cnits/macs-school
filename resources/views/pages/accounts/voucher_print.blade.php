@@ -113,14 +113,24 @@
                     <div class="double-line"></div>
 
                     <!-- Payment Details Table/Grid -->
-                    <div class="space-y-2 py-2 text-[11px]">
+                    <div class="space-y-1.5 py-1.5 text-[11px]">
                         <div class="grid grid-cols-6 gap-2">
                             <span class="font-bold text-gray-700 col-span-2">Paid To:</span>
-                            <span class="font-extrabold text-gray-900 col-span-4">{{ $expense->paid_to }}</span>
+                            <div class="col-span-4">
+                                <span class="font-extrabold text-gray-900">{{ $expense->paid_to }}</span>
+                                @if($expense->vendor && ($expense->vendor->phone || $expense->vendor->address))
+                                    <span class="text-[9px] text-gray-500 font-normal block">{{ implode(' • ', array_filter([$expense->vendor->phone, $expense->vendor->address])) }}</span>
+                                @endif
+                            </div>
                         </div>
+                        @php
+                            $uniqueCategories = $expense->items && $expense->items->isNotEmpty()
+                                ? $expense->items->pluck('category.name')->filter()->unique()->values()
+                                : collect([$expense->category->name ?? 'General Expense']);
+                        @endphp
                         <div class="grid grid-cols-6 gap-2">
-                            <span class="font-bold text-gray-700 col-span-2">Expense Category:</span>
-                            <span class="font-bold text-gray-900 col-span-4">{{ $expense->category->name ?? 'General Expense' }}</span>
+                            <span class="font-bold text-gray-700 col-span-2">{{ $uniqueCategories->count() > 1 ? 'Categories:' : 'Expense Category:' }}</span>
+                            <span class="font-bold text-gray-900 col-span-4">{{ $uniqueCategories->join(', ') }}</span>
                         </div>
                         <div class="grid grid-cols-6 gap-2">
                             <span class="font-bold text-gray-700 col-span-2">Branch:</span>
@@ -144,16 +154,65 @@
                         @endif
                     </div>
 
-                    <div class="dashed-line"></div>
+                    <!-- Line Items Table -->
+                    <div class="my-2 border border-black rounded overflow-hidden">
+                        <table class="w-full text-left border-collapse text-[10px]">
+                            <thead>
+                                <tr class="border-b border-black bg-gray-100 font-black">
+                                    <th class="py-1 px-1.5 uppercase w-8 text-center border-r border-black">SL</th>
+                                    <th class="py-1 px-1.5 uppercase border-r border-black">Item Description</th>
+                                    <th class="py-1 px-1.5 uppercase w-28 border-r border-black">Category</th>
+                                    <th class="py-1 px-1.5 uppercase text-center w-14 border-r border-black">Qty</th>
+                                    <th class="py-1 px-1.5 uppercase text-right w-20 border-r border-black">Unit Rate</th>
+                                    <th class="py-1 px-1.5 uppercase text-right w-24">Line Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if($expense->items && $expense->items->isNotEmpty())
+                                    @foreach($expense->items as $idx => $item)
+                                        <tr class="border-b border-gray-300 {{ $loop->last ? '!border-b-0' : '' }}">
+                                            <td class="py-1 px-1.5 text-center font-mono border-r border-gray-300">{{ $idx + 1 }}</td>
+                                            <td class="py-1 px-1.5 font-semibold text-gray-900 border-r border-gray-300">
+                                                {{ $item->item_name }}
+                                                @if($item->note)
+                                                    <span class="text-[9px] text-gray-500 font-normal italic block">({{ $item->note }})</span>
+                                                @endif
+                                            </td>
+                                            <td class="py-1 px-1.5 font-medium text-gray-800 border-r border-gray-300">
+                                                {{ $item->category->name ?? ($expense->category->name ?? 'General') }}
+                                            </td>
+                                            <td class="py-1 px-1.5 text-center font-mono border-r border-gray-300">{{ number_format($item->quantity, 2) }}</td>
+                                            <td class="py-1 px-1.5 text-right font-mono border-r border-gray-300">৳ {{ number_format($item->unit_rate, 2) }}</td>
+                                            <td class="py-1 px-1.5 text-right font-mono font-bold">৳ {{ number_format($item->line_total, 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                @else
+                                    {{-- Backward compatibility fallback for legacy single-amount vouchers --}}
+                                    <tr>
+                                        <td class="py-1 px-1.5 text-center font-mono border-r border-gray-300">1</td>
+                                        <td class="py-1 px-1.5 font-semibold text-gray-900 border-r border-gray-300">
+                                            {{ $expense->note ?: ($expense->category->name ?? 'General Expense') }}
+                                        </td>
+                                        <td class="py-1 px-1.5 font-medium text-gray-800 border-r border-gray-300">
+                                            {{ $expense->category->name ?? 'General Expense' }}
+                                        </td>
+                                        <td class="py-1 px-1.5 text-center font-mono border-r border-gray-300">1.00</td>
+                                        <td class="py-1 px-1.5 text-right font-mono border-r border-gray-300">৳ {{ number_format($expense->amount, 2) }}</td>
+                                        <td class="py-1 px-1.5 text-right font-mono font-bold">৳ {{ number_format($expense->amount, 2) }}</td>
+                                    </tr>
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
 
                     <!-- Financial Summary Box -->
-                    <div class="my-3 p-3 bg-gray-50 border border-black rounded flex justify-between items-center">
+                    <div class="my-2 p-2.5 bg-gray-50 border border-black rounded flex justify-between items-center">
                         <div>
-                            <span class="text-[10px] font-black uppercase text-gray-600 block">Total Amount Paid</span>
-                            <span class="text-[10px] text-gray-500 font-medium italic">Payment verified and recorded</span>
+                            <span class="text-[10px] font-black uppercase text-gray-700 block">Total Voucher Amount</span>
+                            <span class="text-[9px] text-gray-500 font-medium italic">Payment verified and recorded in BDT</span>
                         </div>
                         <div class="text-right">
-                            <span class="text-xl font-black font-mono">৳ {{ number_format($expense->amount, 2) }}</span>
+                            <span class="text-lg font-black font-mono">৳ {{ number_format($expense->amount, 2) }}</span>
                         </div>
                     </div>
                 </div>

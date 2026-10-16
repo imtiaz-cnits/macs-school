@@ -55,6 +55,31 @@ class ExpenseCategoryController extends Controller
     }
 
     /**
+     * Store a new expense category via AJAX (e.g. from the Expense modal).
+     */
+    public function storeAjax(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:expense_categories,name',
+            'description' => 'nullable|string|max:500',
+            'status' => 'nullable|in:Active,Inactive',
+        ]);
+
+        $category = ExpenseCategory::create([
+            'name' => trim($validated['name']),
+            'description' => !empty($validated['description']) ? trim($validated['description']) : null,
+            'status' => $validated['status'] ?? 'Active',
+            'user_id' => Auth::id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Expense category created successfully.',
+            'category' => $category,
+        ], 201);
+    }
+
+    /**
      * Update an existing expense category.
      */
     public function update(Request $request, $id)

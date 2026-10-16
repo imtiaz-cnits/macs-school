@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Expense extends Model
 {
@@ -16,9 +17,13 @@ class Expense extends Model
     protected $fillable = [
         'voucher_no',
         'expense_category_id',
+        'vendor_id',
         'branch_id',
         'expense_date',
+        'due_date',
         'amount',
+        'paid_amount',
+        'payment_status',
         'payment_method',
         'paid_to',
         'reference_no',
@@ -29,7 +34,9 @@ class Expense extends Model
 
     protected $casts = [
         'expense_date' => 'date:Y-m-d',
+        'due_date' => 'date:Y-m-d',
         'amount' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
     ];
 
     /**
@@ -38,6 +45,96 @@ class Expense extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(ExpenseCategory::class, 'expense_category_id');
+    }
+
+    /**
+     * The vendor associated with this expense (nullable for historical or ad-hoc expenses).
+     */
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(ExpenseVendor::class, 'vendor_id');
+    }
+
+    /**
+     * Direct payments linked to this expense voucher.
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(VendorPayment::class, 'expense_id');
+    }
+
+    /**
+     * Payment allocations made against this expense bill.
+     */
+    public function paymentAllocations(): MorphMany
+    {
+        return $this->morphMany(VendorPaymentAllocation::class, 'allocatable');
+    }
+
+    /**
+     * Determine if any canonical payment or allocation exists for this expense.
+     */
+    public function hasCanonicalPayments(): bool
+    {
+        return $this->payments()->exists() || $this->paymentAllocations()->exists();
+    }
+
+    /**
+     * Remaining due amount on this expense voucher.
+     */
+    public function getDueAmountAttribute(): float
+    {
+        return max(0.0, round((float) $this->amount - (float) $this->paid_amount, 2));
+    }
+
+    /**
+     * Determine if this voucher is currently overdue.
+     */
+    public function getIsOverdueAttribute(): bool
+    {
+        return $this->due_amount > 0.0 && !empty($this->due_date) && $this->due_date->format('Y-m-d') < date('Y-m-d');
+    }
+
+    /**
+     * Recalculate payment status based on paid amount vs total amount.
+     */
+    public function updatePaymentStatus(): void
+    {
+        $due = $this->due_amount;
+        if ($due <= 0.0) {
+            $this->payment_status = 'Paid';
+        } elseif ((float) $this->paid_amount > 0.0) {
+            $this->payment_status = 'Partially Paid';
+        } else {
+            $this->payment_status = 'Unpaid';
+        }
+        $this->save();
+    }
+
+    /**
+     * Scope query to outstanding (unpaid or partially paid) vouchers.
+     */
+    public function scopeOutstanding($query)
+    {
+        return $query->whereIn('payment_status', ['Unpaid', 'Partially Paid']);
+    }
+
+    /**
+     * Scope query to overdue vouchers.
+     */
+    public function scopeOverdue($query)
+    {
+        return $query->whereIn('payment_status', ['Unpaid', 'Partially Paid'])
+                     ->whereNotNull('due_date')
+                     ->where('due_date', '<', date('Y-m-d'));
+    }
+
+    /**
+     * The line items recorded on this expense voucher.
+     */
+    public function items(): HasMany
+    {
+        return $this->hasMany(ExpenseItem::class, 'expense_id');
     }
 
     /**

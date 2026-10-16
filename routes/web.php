@@ -30,7 +30,10 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpenseReceiptController;
+use App\Http\Controllers\ExpenseVendorController;
 use App\Http\Controllers\FinancialReportController;
+use App\Http\Controllers\PayableManagementController;
+use App\Http\Controllers\VendorPaymentController;
 
 // Custom Login Page Override
 Route::get('/login', function () {
@@ -436,8 +439,13 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
         // Expense Categories
         Route::get('/categories', [ExpenseCategoryController::class, 'index'])->name('categories.index');
         Route::post('/categories', [ExpenseCategoryController::class, 'store'])->name('categories.store');
+        Route::post('/categories/ajax', [ExpenseCategoryController::class, 'storeAjax'])->name('categories.store_ajax');
         Route::put('/categories/{id}', [ExpenseCategoryController::class, 'update'])->name('categories.update');
         Route::delete('/categories/{id}', [ExpenseCategoryController::class, 'destroy'])->name('categories.destroy');
+
+        // Expense Vendors / Recipients
+        Route::get('/vendors', [ExpenseVendorController::class, 'index'])->name('vendors.index');
+        Route::post('/vendors/ajax', [ExpenseVendorController::class, 'storeAjax'])->name('vendors.store_ajax');
 
         // Expenses
         Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
@@ -445,6 +453,19 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
         Route::put('/expenses/{id}', [ExpenseController::class, 'update'])->name('expenses.update');
         Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
         Route::get('/expenses/{id}/voucher-print', [ExpenseController::class, 'printVoucher'])->name('expenses.voucher_print');
+
+        // Payables & Due Management
+        Route::get('/payables', [PayableManagementController::class, 'index'])->name('payables.index');
+        Route::get('/payables/vendors/{id}/ledger', [PayableManagementController::class, 'ledger'])->name('payables.ledger');
+        Route::get('/payables/vendors/{id}/ledger/print', [PayableManagementController::class, 'printLedger'])->name('payables.ledger_print');
+        Route::post('/payables/opening-balance', [PayableManagementController::class, 'storeOpeningBalance'])->name('payables.opening_balance.store');
+
+        // Vendor Payments
+        Route::get('/vendor-payments', [VendorPaymentController::class, 'index'])->name('vendor-payments.index');
+        Route::get('/vendor-payments/create', [VendorPaymentController::class, 'create'])->name('vendor-payments.create');
+        Route::post('/vendor-payments', [VendorPaymentController::class, 'store'])->name('vendor-payments.store');
+        Route::get('/vendor-payments/{id}', [VendorPaymentController::class, 'show'])->name('vendor-payments.show');
+        Route::get('/vendor-payments/bills-ajax/{vendorId}', [VendorPaymentController::class, 'getVendorBillsAjax'])->name('vendor-payments.bills_ajax');
 
         // Financial Reports & Statements
         Route::get('/reports', [FinancialReportController::class, 'index'])->name('reports.index');
