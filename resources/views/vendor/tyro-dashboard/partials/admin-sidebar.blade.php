@@ -14,7 +14,7 @@
         $initialView = 'sms';
     } elseif (request()->routeIs('sections.*', 'shifts.*', 'sessions.*', 'branches.*', 'subjects.*', 'grades.*', 'classes.*', 'routine.*')) {
         $initialView = 'academic';
-    } elseif (request()->routeIs('fees.*')) {
+    } elseif (request()->routeIs('fees.*', 'accounts.*', 'expenses.*')) {
         $initialView = 'fees';
     } elseif (request()->routeIs('tyro-dashboard.users.*', 'tyro-dashboard.roles.*', 'tyro-dashboard.privileges.*', 'tyro-dashboard.dashboard.*', 'tyro-dashboard.profile*')) {
         $initialView = 'admin';
@@ -241,38 +241,53 @@
             </div>
             @endif
 
-            <!-- Fee Management (Drilldown Trigger) -->
+            <!-- Accounts & Finance (Drilldown Trigger) -->
             @if(auth()->check() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
             <div class="relative group/trigger">
                 <button type="button" @click="currentView = 'fees'" class="flex items-center justify-between sidebar-link border-none bg-transparent group !w-[calc(100%-16px)] !mx-2">
                     <span class="flex items-center gap-2.5">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><path d="M15 10H11a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3H9"/></svg>
-                        <span class="sidebar-text">Fee Management</span>
+                        <span class="sidebar-text">Accounts & Finance</span>
                     </span>
                     <span class="w-5 h-5 rounded-[5px] flex items-center justify-center bg-gray-100/70 dark:bg-white/[0.04] border border-gray-200/50 dark:border-white/[0.05] transition-all group-hover:bg-gray-200/80 dark:group-hover:bg-white/[0.15] group-hover:border-gray-300 dark:group-hover:border-white/[0.18] shrink-0">
                         <svg class="w-2.5 h-2.5 text-gray-400 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                     </span>
                 </button>
-                <div class="sidebar-popup-menu absolute left-[62px] top-0 ml-2 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-2 min-w-[200px] z-[9999] pointer-events-auto text-left hidden">
-                    <div class="px-4 py-1.5 border-b border-gray-100 dark:border-white/[0.05] text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
-                        Fee Management
+                <div class="sidebar-popup-menu absolute left-[62px] top-0 ml-2 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-2 min-w-[210px] z-[9999] pointer-events-auto text-left hidden">
+                    <div class="px-4 py-1.5 border-b border-gray-100 dark:border-white/[0.05] text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
+                        Accounts & Finance
                     </div>
-                    <a href="{{ route('fees.categories.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
-                        <span>Fee Categories</span>
-                    </a>
-                    <a href="{{ route('fees.setup.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
-                        <span>Fee Setup</span>
-                    </a>
-                    <a href="{{ route('fees.invoice.generate') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
-                        <span>Generate Invoices</span>
-                    </a>
-                    <a href="{{ route('fees.collection.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                    <!-- Incomes & Fees -->
+                    <div class="px-4 pt-1.5 pb-0.5 text-[9px] font-black uppercase tracking-wider text-themeBlue">Incomes & Fees</div>
+                    <a href="{{ route('fees.collection.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
                         <span>Collect Fees</span>
                     </a>
-                    <a href="{{ route('fees.reports.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
-                        <span>Financial Reports</span>
+                    <a href="{{ route('fees.payments.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Receipts List</span>
                     </a>
-                    <a href="{{ route('fees.reports.summary') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                    <a href="{{ route('fees.categories.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Fee Categories</span>
+                    </a>
+                    <a href="{{ route('fees.setup.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Fee Setup</span>
+                    </a>
+                    <!-- Expense Management -->
+                    <div class="px-4 pt-2 pb-0.5 text-[9px] font-black uppercase tracking-wider text-themeGreen">Expense Management</div>
+                    <a href="{{ route('accounts.expenses.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Expenses List</span>
+                    </a>
+                    <a href="{{ route('accounts.categories.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Expense Categories</span>
+                    </a>
+                    <!-- Financial Reports -->
+                    <div class="px-4 pt-2 pb-0.5 text-[9px] font-black uppercase tracking-wider text-amber-500">Financial Reports</div>
+                    <a href="{{ route('accounts.reports.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Financial Statement</span>
+                    </a>
+                    <a href="{{ route('fees.reports.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Fee Collections</span>
+                    </a>
+                    <a href="{{ route('fees.reports.summary') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
                         <span>Category Summary</span>
                     </a>
                 </div>
@@ -548,16 +563,27 @@
         </div>
 
         <!-- ==============================================
-             FEES VIEW
+             ACCOUNTS & FINANCE VIEW
              ============================================== -->
         <div x-show="currentView === 'fees'" style="display: {{ $initialView === 'fees' ? 'block' : 'none' }};" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-2" x-transition:enter-end="opacity-100 translate-x-0" class="px-2">
             <!-- Back Button -->
             <button type="button" @click="currentView = 'main'" class="sidebar-back-btn border-none bg-transparent">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                <span>Fee Management</span>
+                <span>Accounts & Finance</span>
             </button>
 
-            <!-- Menu links -->
+            <!-- Group 1: Incomes & Fees -->
+            <div class="px-3 pt-2.5 pb-1 text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase">
+                Incomes & Fees
+            </div>
+            <a href="{{ route('fees.collection.index') }}" class="sidebar-link {{ request()->routeIs('fees.collection.index') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 10h18a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z"/></svg>
+                <span class="sidebar-text">Collect Fees</span>
+            </a>
+            <a href="{{ route('fees.payments.index') }}" class="sidebar-link {{ request()->routeIs('fees.payments.index') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <span class="sidebar-text">Receipts List</span>
+            </a>
             <a href="{{ route('fees.categories.index') }}" class="sidebar-link {{ request()->routeIs('fees.categories.index') ? 'active' : '' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                 <span class="sidebar-text">Fee Categories</span>
@@ -570,17 +596,31 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                 <span class="sidebar-text">Generate Invoices</span>
             </a>
-            <a href="{{ route('fees.collection.index') }}" class="sidebar-link {{ request()->routeIs('fees.collection.index') ? 'active' : '' }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 10h18a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z"/></svg>
-                <span class="sidebar-text">Collect Fees</span>
+
+            <!-- Group 2: Expense Management -->
+            <div class="px-3 pt-3 pb-1 text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase border-t border-gray-100 dark:border-white/[0.05] mt-2">
+                Expense Management
+            </div>
+            <a href="{{ route('accounts.expenses.index') }}" class="sidebar-link {{ request()->routeIs('accounts.expenses.*') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                <span class="sidebar-text">Expenses List</span>
             </a>
-            <a href="{{ route('fees.payments.index') }}" class="sidebar-link {{ request()->routeIs('fees.payments.index') ? 'active' : '' }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                <span class="sidebar-text">Receipts List</span>
+            <a href="{{ route('accounts.categories.index') }}" class="sidebar-link {{ request()->routeIs('accounts.categories.*') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 0 1 0 2.828l-7 7a2 2 0 0 1-2.828 0l-7-7A1.994 1.994 0 0 1 3 12V7a4 4 0 0 1 4-4z"/></svg>
+                <span class="sidebar-text">Expense Categories</span>
+            </a>
+
+            <!-- Group 3: Financial Reports -->
+            <div class="px-3 pt-3 pb-1 text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase border-t border-gray-100 dark:border-white/[0.05] mt-2">
+                Financial Reports
+            </div>
+            <a href="{{ route('accounts.reports.index') }}" class="sidebar-link {{ request()->routeIs('accounts.reports.*') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+                <span class="sidebar-text">Financial Statement</span>
             </a>
             <a href="{{ route('fees.reports.index') }}" class="sidebar-link {{ request()->routeIs('fees.reports.index') ? 'active' : '' }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
-                <span class="sidebar-text">Financial Reports</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <span class="sidebar-text">Fee Collections</span>
             </a>
             <a href="{{ route('fees.reports.summary') }}" class="sidebar-link {{ request()->routeIs('fees.reports.summary') ? 'active' : '' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/></svg>

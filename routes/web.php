@@ -27,6 +27,10 @@ use App\Http\Controllers\FeeCollectionController;
 use App\Http\Controllers\FeeInvoiceController;
 use App\Http\Controllers\FeeReportController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\ExpenseCategoryController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\ExpenseReceiptController;
+use App\Http\Controllers\FinancialReportController;
 
 // Custom Login Page Override
 Route::get('/login', function () {
@@ -422,4 +426,28 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
     Route::delete('/ajax/inventory/items/{id}', [InventoryController::class, 'deleteItemAjax']);
     Route::post('/ajax/inventory/adjust', [InventoryController::class, 'adjustStockAjax']);
     Route::get('/ajax/inventory/logs', [InventoryController::class, 'getLogsAjax']);
+
+    // Accounts & Finance: Expense Receipt Secure Streaming
+    Route::get('/expenses/{id}/receipt', [ExpenseReceiptController::class, 'viewReceipt'])
+        ->name('expenses.receipt.view');
+
+    // Accounts & Finance: Expense Management Routes
+    Route::prefix('accounts')->name('accounts.')->group(function () {
+        // Expense Categories
+        Route::get('/categories', [ExpenseCategoryController::class, 'index'])->name('categories.index');
+        Route::post('/categories', [ExpenseCategoryController::class, 'store'])->name('categories.store');
+        Route::put('/categories/{id}', [ExpenseCategoryController::class, 'update'])->name('categories.update');
+        Route::delete('/categories/{id}', [ExpenseCategoryController::class, 'destroy'])->name('categories.destroy');
+
+        // Expenses
+        Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+        Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+        Route::put('/expenses/{id}', [ExpenseController::class, 'update'])->name('expenses.update');
+        Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
+        Route::get('/expenses/{id}/voucher-print', [ExpenseController::class, 'printVoucher'])->name('expenses.voucher_print');
+
+        // Financial Reports & Statements
+        Route::get('/reports', [FinancialReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/print', [FinancialReportController::class, 'printStatement'])->name('reports.print');
+    });
 });
