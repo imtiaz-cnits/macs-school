@@ -41,6 +41,7 @@
             <input type="hidden" name="class_id" :value="form.class_id">
             <input type="hidden" name="section_id" :value="form.section_id">
             <input type="hidden" name="subject_id" :value="form.subject_id">
+            <input type="hidden" name="entry_mode" :value="form.entry_mode">
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 transition-all duration-300" :class="hasMultipleSections ? 'lg:grid-cols-4' : 'lg:grid-cols-3'">
                 <!-- Branch Dropdown -->
@@ -120,7 +121,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
                 <!-- Exam Dropdown -->
                 <div class="relative" @click.away="if(activeDropdown === 'exam') activeDropdown = null">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Select Exam *</label>
@@ -163,6 +164,47 @@
                                 Please select a class first
                             </div>
                         </template>
+                    </div>
+                </div>
+
+                <!-- Entry Mode Dropdown (For Play-9, locked for Class 10) -->
+                <div class="relative" @click.away="if(activeDropdown === 'entry_mode') activeDropdown = null">
+                    <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                        Entry Mode *
+                    </label>
+                    <button type="button"
+                        :disabled="isClassTen"
+                        @click="if(!isClassTen) activeDropdown = activeDropdown === 'entry_mode' ? null : 'entry_mode'"
+                        class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left"
+                        :class="isClassTen ? 'opacity-70 cursor-not-allowed bg-gray-100 dark:bg-themeDark/60' : ''">
+                        <span class="truncate" x-text="isClassTen ? 'All Components (Class 10)' : entryModeText"></span>
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="activeDropdown === 'entry_mode' && !isClassTen" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                        <button type="button" @click="selectEntryMode('all', 'All Components (Default)')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.entry_mode === 'all' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>All Components (Default)</span>
+                            <template x-if="form.entry_mode === 'all'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                        <button type="button" @click="selectEntryMode('ct_only', 'CT Only')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.entry_mode === 'ct_only' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>CT Only</span>
+                            <template x-if="form.entry_mode === 'ct_only'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                        <button type="button" @click="selectEntryMode('mt_only', 'MT Only')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.entry_mode === 'mt_only' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>MT Only</span>
+                            <template x-if="form.entry_mode === 'mt_only'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                        <button type="button" @click="selectEntryMode('terminal_only', 'Terminal Only')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.entry_mode === 'terminal_only' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>Terminal Only</span>
+                            <template x-if="form.entry_mode === 'terminal_only'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
                     </div>
                 </div>
 
@@ -221,6 +263,11 @@
                     <h3 class="text-sm font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider ml-1">Enter Marks</h3>
                     <p class="text-[11px] font-semibold text-gray-450 mt-0.5 ml-1">
                         Pattern: <span class="font-bold {{ $isClassTen ? 'text-purple-600 dark:text-purple-400' : 'text-themeGreen' }}">{{ $isClassTen ? 'Class Ten (MCQ | Written CQ | Practical)' : 'Play - Nine (CT | MT | Terminal)' }}</span>
+                        @if(!$isClassTen && ($entryMode ?? 'all') !== 'all')
+                            <span class="ml-2 px-2 py-0.5 text-[10px] font-black uppercase rounded-md bg-blue-100 text-themeBlue dark:bg-blue-950/40 dark:text-blue-300">
+                                Active Mode: {{ strtoupper(str_replace('_', ' ', $entryMode)) }}
+                            </span>
+                        @endif
                     </p>
                 </div>
                 @if($exam_schedule)
@@ -311,23 +358,29 @@
                                     @endif
                                 </td>
                             @else
+                                @php
+                                    $currentMode = $entryMode ?? 'all';
+                                    $isCtDisabled = $col1Disabled || ($currentMode === 'mt_only' || $currentMode === 'terminal_only');
+                                    $isMtDisabled = $col2Disabled || ($currentMode === 'ct_only' || $currentMode === 'terminal_only');
+                                    $isTerminalDisabled = $col3Disabled || ($currentMode === 'ct_only' || $currentMode === 'mt_only');
+                                @endphp
                                 <td class="py-3.5 px-4 text-center">
-                                    @if($col1Disabled)
-                                        <input type="text" disabled tabindex="-1" value="—" title="CT is not configured for this subject" class="ct-input h-9 text-center font-bold border-2 border-gray-150 dark:border-gray-800/80 rounded-lg bg-gray-150/70 dark:bg-themeDark/60 text-gray-400 dark:text-gray-500 cursor-not-allowed select-none opacity-60 w-20">
+                                    @if($isCtDisabled)
+                                        <input type="text" disabled tabindex="-1" value="{{ isset($student->mark) && $student->mark->ct_mark !== null ? (float)$student->mark->ct_mark : '—' }}" title="{{ $col1Disabled ? 'CT is not configured' : 'Locked in ' . strtoupper(str_replace('_', ' ', $currentMode)) . ' mode' }}" class="ct-input h-9 text-center font-bold border-2 border-gray-150 dark:border-gray-800/80 rounded-lg bg-gray-150/70 dark:bg-themeDark/60 text-gray-400 dark:text-gray-500 cursor-not-allowed select-none opacity-60 w-20">
                                     @else
                                         <input type="number" step="0.5" min="0" max="{{ $col1Max }}" data-max="{{ $col1Max }}" data-label="{{ $col1Label }}" class="mark-input ct-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->ct_mark ?? '' }}">
                                     @endif
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
-                                    @if($col2Disabled)
-                                        <input type="text" disabled tabindex="-1" value="—" title="MT is not configured for this subject" class="mcq-input h-9 text-center font-bold border-2 border-gray-150 dark:border-gray-800/80 rounded-lg bg-gray-150/70 dark:bg-themeDark/60 text-gray-400 dark:text-gray-500 cursor-not-allowed select-none opacity-60 w-20">
+                                    @if($isMtDisabled)
+                                        <input type="text" disabled tabindex="-1" value="{{ isset($student->mark) && $student->mark->mcq_mark !== null ? (float)$student->mark->mcq_mark : '—' }}" title="{{ $col2Disabled ? 'MT is not configured' : 'Locked in ' . strtoupper(str_replace('_', ' ', $currentMode)) . ' mode' }}" class="mcq-input h-9 text-center font-bold border-2 border-gray-150 dark:border-gray-800/80 rounded-lg bg-gray-150/70 dark:bg-themeDark/60 text-gray-400 dark:text-gray-500 cursor-not-allowed select-none opacity-60 w-20">
                                     @else
                                         <input type="number" step="0.5" min="0" max="{{ $col2Max }}" data-max="{{ $col2Max }}" data-label="{{ $col2Label }}" class="mark-input mcq-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->mcq_mark ?? '' }}">
                                     @endif
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
-                                    @if($col3Disabled)
-                                        <input type="text" disabled tabindex="-1" value="—" title="Terminal is not configured for this subject" class="written-input h-9 text-center font-bold border-2 border-gray-150 dark:border-gray-800/80 rounded-lg bg-gray-150/70 dark:bg-themeDark/60 text-gray-400 dark:text-gray-500 cursor-not-allowed select-none opacity-60 w-20">
+                                    @if($isTerminalDisabled)
+                                        <input type="text" disabled tabindex="-1" value="{{ isset($student->mark) && $student->mark->written_mark !== null ? (float)$student->mark->written_mark : '—' }}" title="{{ $col3Disabled ? 'Terminal is not configured' : 'Locked in ' . strtoupper(str_replace('_', ' ', $currentMode)) . ' mode' }}" class="written-input h-9 text-center font-bold border-2 border-gray-150 dark:border-gray-800/80 rounded-lg bg-gray-150/70 dark:bg-themeDark/60 text-gray-400 dark:text-gray-500 cursor-not-allowed select-none opacity-60 w-20">
                                     @else
                                         <input type="number" step="0.5" min="0" max="{{ $col3Max }}" data-max="{{ $col3Max }}" data-label="{{ $col3Label }}" class="mark-input written-input h-9 text-center font-bold border-2 border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50/50 dark:bg-themeNavy focus:outline-none focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all w-20" data-id="{{ $student->id }}" value="{{ $student->mark->written_mark ?? '' }}">
                                     @endif
@@ -386,14 +439,17 @@
             classText: '{{ $classes->firstWhere("id", request("class_id"))->class_name ?? "Select Class" }}',
             sectionText: '{{ request("section_id") && $sections->firstWhere("id", request("section_id")) ? $sections->firstWhere("id", request("section_id"))->section_name : "Select Section" }}',
             subjectText: '{{ $subjects->firstWhere("id", request("subject_id"))->subject_name ?? "Select Subject" }}',
-            
+
+            entryModeText: '{{ ($entryMode ?? "all") === "ct_only" ? "CT Only" : (($entryMode ?? "all") === "mt_only" ? "MT Only" : (($entryMode ?? "all") === "terminal_only" ? "Terminal Only" : "All Components (Default)")) }}',
+
             form: {
                 session_year_id: '{{ request("session_year_id") }}',
                 branch_id: '{{ request("branch_id") }}',
                 exam_id: '{{ request("exam_id") }}',
                 class_id: '{{ request("class_id") }}',
                 section_id: '{{ request("section_id") }}',
-                subject_id: '{{ request("subject_id") }}'
+                subject_id: '{{ request("subject_id") }}',
+                entry_mode: '{{ $entryMode ?? "all" }}'
             },
 
             allSubjects: @json($subjects),
@@ -407,13 +463,23 @@
             get hasMultipleSections() {
                 return this.availableSections.length > 1;
             },
-            
+
             // Alpine Getter: ক্লাস সিলেক্ট করলে শুধুমাত্র ওই ক্লাসের সাবজেক্ট রিটার্ন করবে
             get filteredSubjects() {
                 if (!this.form.class_id) return [];
                 return this.allSubjects.filter(subject => subject.class_id == this.form.class_id);
             },
-            
+
+            get isClassTen() {
+                const cls = (this.classText || '').toLowerCase().trim();
+                return ['ten', 'class ten', '10', 'class 10'].includes(cls);
+            },
+
+            selectEntryMode(mode, name) {
+                this.form.entry_mode = mode;
+                this.entryModeText = name;
+                this.activeDropdown = null;
+            },
             selectSession(id, name) {
                 this.form.session_year_id = id;
                 this.sessionText = name;
@@ -606,7 +672,9 @@
                 statusLabel.className = `status-${studentId} text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 opacity-100`;
             }
 
-            axios.post("{{ route('marks.store.ajax') }}", {
+            const currentEntryMode = "{{ $entryMode ?? 'all' }}";
+
+            const payload = {
                 _token: "{{ csrf_token() }}",
                 session_year_id: session_year_id,
                 branch_id: branch_id,
@@ -614,10 +682,14 @@
                 class_id: class_id,
                 subject_id: subject_id,
                 student_id: studentId,
-                ct_mark: ctVal,
-                written_mark: writtenVal,
-                mcq_mark: mcqVal
-            })
+                entry_mode: currentEntryMode
+            };
+
+            if (ctInput && !ctInput.disabled) payload.ct_mark = ctVal;
+            if (writtenInput && !writtenInput.disabled) payload.written_mark = writtenVal;
+            if (mcqInput && !mcqInput.disabled) payload.mcq_mark = mcqVal;
+
+            axios.post("{{ route('marks.store.ajax') }}", payload)
             .then(response => {
                 if (response.data.success) {
                     const totalDisplay = row.querySelector(`.total-display-${studentId}`);

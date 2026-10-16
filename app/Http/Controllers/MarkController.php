@@ -95,12 +95,34 @@ class MarkController extends Controller
                 });
         }
 
-        return view('pages.marks.index', compact('sessions', 'branches', 'exams', 'classes', 'subjects', 'sections', 'classSections', 'students', 'exam_schedule'));
+        $entryMode = $request->input('entry_mode', 'all');
+        if (!in_array($entryMode, ['all', 'ct_only', 'mt_only', 'terminal_only'])) {
+            $entryMode = 'all';
+        }
+
+        if ($request->filled('class_id') && $this->isClassTen($request->class_id)) {
+            $entryMode = 'all';
+        }
+
+        return view('pages.marks.index', compact('sessions', 'branches', 'exams', 'classes', 'subjects', 'sections', 'classSections', 'students', 'exam_schedule', 'entryMode'));
     }
 
     // AJAX এর মাধ্যমে রিয়েল-টাইম ডাটা সেভ করার ফাংশন
     public function storeAjax(Request $request)
     {
+        $request->validate([
+            'session_year_id' => 'required',
+            'branch_id'       => 'required',
+            'exam_id'         => 'required',
+            'class_id'        => 'required',
+            'subject_id'      => 'required',
+            'student_id'      => 'required',
+            'entry_mode'      => 'nullable|in:all,ct_only,mt_only,terminal_only',
+        ]);
+
+        $isTen = $this->isClassTen($request->class_id);
+        $entryMode = $isTen ? 'all' : ($request->input('entry_mode') ?: 'all');
+
         $exam_schedule = $this->getExamSchedule(
             $request->class_id,
             $request->subject_id,
@@ -108,9 +130,34 @@ class MarkController extends Controller
             $request->exam_id
         );
 
-        $ct = (float)($request->ct_mark ?? 0);
-        $written = (float)($request->written_mark ?? 0);
-        $mcq = (float)($request->mcq_mark ?? 0);
+        $existingMark = Mark::where([
+            'session_year_id' => $request->session_year_id,
+            'branch_id'       => $request->branch_id,
+            'exam_id'         => $request->exam_id,
+            'class_id'        => $request->class_id,
+            'subject_id'      => $request->subject_id,
+            'student_id'      => $request->student_id,
+        ])->first();
+
+        // Selective component resolution based on entry mode
+        if ($entryMode === 'ct_only') {
+            $ct = ($request->has('ct_mark') && $request->ct_mark !== null && $request->ct_mark !== '') ? (float)$request->ct_mark : 0.0;
+            $written = $existingMark ? (float)$existingMark->written_mark : 0.0;
+            $mcq = $existingMark ? (float)$existingMark->mcq_mark : 0.0;
+        } elseif ($entryMode === 'mt_only') {
+            $ct = $existingMark ? (float)$existingMark->ct_mark : 0.0;
+            $mcq = ($request->has('mcq_mark') && $request->mcq_mark !== null && $request->mcq_mark !== '') ? (float)$request->mcq_mark : 0.0;
+            $written = $existingMark ? (float)$existingMark->written_mark : 0.0;
+        } elseif ($entryMode === 'terminal_only') {
+            $ct = $existingMark ? (float)$existingMark->ct_mark : 0.0;
+            $mcq = $existingMark ? (float)$existingMark->mcq_mark : 0.0;
+            $written = ($request->has('written_mark') && $request->written_mark !== null && $request->written_mark !== '') ? (float)$request->written_mark : 0.0;
+        } else {
+            // 'all' mode: update supplied inputs, retain existing if not supplied or preserve safe defaults
+            $ct = ($request->has('ct_mark') && $request->ct_mark !== null && $request->ct_mark !== '') ? (float)$request->ct_mark : ($existingMark ? (float)$existingMark->ct_mark : 0.0);
+            $written = ($request->has('written_mark') && $request->written_mark !== null && $request->written_mark !== '') ? (float)$request->written_mark : ($existingMark ? (float)$existingMark->written_mark : 0.0);
+            $mcq = ($request->has('mcq_mark') && $request->mcq_mark !== null && $request->mcq_mark !== '') ? (float)$request->mcq_mark : ($existingMark ? (float)$existingMark->mcq_mark : 0.0);
+        }
 
         if ($ct < 0 || $written < 0 || $mcq < 0) {
             return response()->json([
@@ -121,7 +168,6 @@ class MarkController extends Controller
 
         // বেস মার্কস ভ্যালিডেশন চেক
         if ($exam_schedule) {
-            $isTen = $this->isClassTen($request->class_id);
             if ($isTen) {
                 $maxMcq = (float)($exam_schedule->mcq_marks ?? 0);
                 $maxWritten = (float)($exam_schedule->written_marks ?? 0);
@@ -158,36 +204,42 @@ class MarkController extends Controller
                 $maxMt = (float)($exam_schedule->mcq_marks ?? 0);
                 $maxTerminal = (float)($exam_schedule->written_marks ?? 0);
 
-                if ($maxCt <= 0) {
-                    $ct = 0;
-                } elseif ($ct > $maxCt) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "CT mark ({$ct}) cannot exceed base mark of {$maxCt}!"
-                    ], 422);
+                if ($entryMode === 'ct_only' || $entryMode === 'all') {
+                    if ($maxCt <= 0) {
+                        $ct = 0;
+                    } elseif ($ct > $maxCt) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "CT mark ({$ct}) cannot exceed base mark of {$maxCt}!"
+                        ], 422);
+                    }
                 }
 
-                if ($maxMt <= 0) {
-                    $mcq = 0;
-                } elseif ($mcq > $maxMt) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "MT mark ({$mcq}) cannot exceed base mark of {$maxMt}!"
-                    ], 422);
+                if ($entryMode === 'mt_only' || $entryMode === 'all') {
+                    if ($maxMt <= 0) {
+                        $mcq = 0;
+                    } elseif ($mcq > $maxMt) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "MT mark ({$mcq}) cannot exceed base mark of {$maxMt}!"
+                        ], 422);
+                    }
                 }
 
-                if ($maxTerminal <= 0) {
-                    $written = 0;
-                } elseif ($written > $maxTerminal) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Terminal mark ({$written}) cannot exceed base mark of {$maxTerminal}!"
-                    ], 422);
+                if ($entryMode === 'terminal_only' || $entryMode === 'all') {
+                    if ($maxTerminal <= 0) {
+                        $written = 0;
+                    } elseif ($written > $maxTerminal) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Terminal mark ({$written}) cannot exceed base mark of {$maxTerminal}!"
+                        ], 422);
+                    }
                 }
             }
         }
 
-        // টোটাল মার্কস ক্যালকুলেট
+        // টোটাল মার্কস ক্যালকুলেট (সমন্বিত composite total)
         $total = $ct + $written + $mcq;
 
         // ফুল মার্কস ও পাস মার্কস নির্ধারণ
@@ -226,7 +278,10 @@ class MarkController extends Controller
             'success'      => true, 
             'total'        => $total, 
             'letter_grade' => $mark->letter_grade,
-            'grade_point'  => $mark->grade_point
+            'grade_point'  => $mark->grade_point,
+            'ct_mark'      => (float)$mark->ct_mark,
+            'mcq_mark'     => (float)$mark->mcq_mark,
+            'written_mark' => (float)$mark->written_mark,
         ]);
     }
 

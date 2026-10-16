@@ -341,6 +341,15 @@
     $isMultiPart = $chunks->count() > 1;
     $className = strtolower(trim($schoolClass->class_name ?? ''));
     $isHighSchool = in_array($className, ['ten', 'class ten', '10', 'class 10']);
+    $activeComponentMode = $isHighSchool ? 'all' : ($componentMode ?? 'all');
+    $subjectColspan = 4;
+    if (!$isHighSchool) {
+        if ($activeComponentMode === 'ct_only' || $activeComponentMode === 'mt_only' || $activeComponentMode === 'terminal_only') {
+            $subjectColspan = 2;
+        } elseif ($activeComponentMode === 'ct_mt') {
+            $subjectColspan = 4;
+        }
+    }
 @endphp
 
 @foreach($chunks as $chunkIndex => $chunkSchedules)
@@ -377,7 +386,7 @@
                             @endif
                         </div>
                         <div class="exam-banner-title">
-                            {{ $exam->name }} &bull; Class: {{ $schoolClass->class_name }}@if(!empty($section)) &bull; Section: {{ $section->section_name }}@endif &bull; Session: {{ $sessionYear->session_name ?? date('Y') }}
+                            {{ $exam->name }}@if(!$isHighSchool && $activeComponentMode !== 'all') ({{ strtoupper(str_replace('_', ' ', $activeComponentMode)) }})@endif &bull; Class: {{ $schoolClass->class_name }}@if(!empty($section)) &bull; Section: {{ $section->section_name }}@endif &bull; Session: {{ $sessionYear->session_name ?? date('Y') }}
                         </div>
                     </td>
 
@@ -398,7 +407,7 @@
                         @php
                             $subName = $schedule->formatted_subject_name ?? \App\Http\Controllers\ResultController::formatSubjectName($schedule->subject->subject_name ?? '');
                         @endphp
-                        <th colspan="4" class="th-main">{{ $subName }}</th>
+                        <th colspan="{{ $subjectColspan }}" class="th-main">{{ $subName }}</th>
                     @endforeach
 
                     @if($isLastPart)
@@ -415,6 +424,20 @@
                             <th class="th-sub">WRT</th>
                             <th class="th-sub">PRAC</th>
                             <th class="th-sub th-sub-total">TOTAL</th>
+                        @elseif($activeComponentMode === 'ct_only')
+                            <th class="th-sub" style="width: 24px;">CT</th>
+                            <th class="th-sub th-sub-total" style="width: 24px;">GRADE</th>
+                        @elseif($activeComponentMode === 'mt_only')
+                            <th class="th-sub" style="width: 24px;">MT</th>
+                            <th class="th-sub th-sub-total" style="width: 24px;">GRADE</th>
+                        @elseif($activeComponentMode === 'ct_mt')
+                            <th class="th-sub">CT</th>
+                            <th class="th-sub">MT</th>
+                            <th class="th-sub th-sub-total">TOTAL</th>
+                            <th class="th-sub" style="width: 20px;">GRADE</th>
+                        @elseif($activeComponentMode === 'terminal_only')
+                            <th class="th-sub" style="width: 24px;">TERM</th>
+                            <th class="th-sub th-sub-total" style="width: 24px;">GRADE</th>
                         @else
                             <th class="th-sub">CT</th>
                             <th class="th-sub">MT</th>
@@ -434,24 +457,50 @@
                     <td class="td-student">{{ $data->student->student_name ?? 'Name N/A' }}</td>
 
                     @foreach($chunkSchedules as $schedule)
-                        @php
-                            $mark = $data->marks->get($schedule->subject_id);
-                            $isSubFailed = $mark && ($mark->letter_grade === 'F' || $mark->letter_grade === 'Fail');
-                        @endphp
                         @if($isHighSchool)
+                            @php
+                                $mark = $data->marks->get($schedule->subject_id);
+                                $isSubFailed = $mark && ($mark->letter_grade === 'F' || $mark->letter_grade === 'Fail');
+                            @endphp
                             <td class="td-mark">{{ $mark && $mark->mcq_mark > 0 ? (float)$mark->mcq_mark : '-' }}</td>
                             <td class="td-mark">{{ $mark && $mark->written_mark > 0 ? (float)$mark->written_mark : '-' }}</td>
                             <td class="td-mark">{{ $mark && $mark->ct_mark > 0 ? (float)$mark->ct_mark : '-' }}</td>
+                            <td class="td-mark td-total {{ $isSubFailed ? 'mark-fail' : '' }}">
+                                {{ $mark ? (float)$mark->total_mark : '-' }}
+                            </td>
+                        @elseif($activeComponentMode === 'all')
+                            @php
+                                $mark = $data->marks->get($schedule->subject_id);
+                                $isSubFailed = $mark && ($mark->letter_grade === 'F' || $mark->letter_grade === 'Fail');
+                            @endphp
+                            <td class="td-mark">{{ $mark && $mark->ct_mark > 0 ? (float)$mark->ct_mark : '-' }}</td>
+                            <td class="td-mark">{{ $mark && $mark->mcq_mark > 0 ? (float)$mark->mcq_mark : '-' }}</td>
+                            <td class="td-mark">{{ $mark && $mark->written_mark > 0 ? (float)$mark->written_mark : '-' }}</td>
                             <td class="td-mark td-total {{ $isSubFailed ? 'mark-fail' : '' }}">
                                 {{ $mark ? (float)$mark->total_mark : '-' }}
                             </td>
                         @else
-                            <td class="td-mark">{{ $mark && $mark->ct_mark > 0 ? (float)$mark->ct_mark : '-' }}</td>
-                            <td class="td-mark">{{ $mark && $mark->mcq_mark > 0 ? (float)$mark->mcq_mark : '-' }}</td>
-                            <td class="td-mark">{{ $mark && $mark->written_mark > 0 ? (float)$mark->written_mark : '-' }}</td>
-                            <td class="td-mark td-total {{ $isSubFailed ? 'mark-fail' : '' }}">
-                                {{ $mark ? (float)$mark->total_mark : '-' }}
-                            </td>
+                            @php
+                                $pMark = $data->partial_marks ? $data->partial_marks->get($schedule->subject_id) : null;
+                                $isExempt = $pMark && !empty($pMark->is_exempt);
+                                $hasMark = $pMark && !empty($pMark->has_mark);
+                                $isSubFailed = !$isExempt && $hasMark && ($pMark->letter_grade === 'F' || $pMark->letter_grade === 'Fail');
+                            @endphp
+                            @if($activeComponentMode === 'ct_only')
+                                <td class="td-mark">{{ $hasMark && !$isExempt ? (float)$pMark->ct : '-' }}</td>
+                                <td class="td-mark td-total {{ $isSubFailed ? 'mark-fail' : '' }}">{{ $hasMark && !$isExempt ? $pMark->letter_grade : '-' }}</td>
+                            @elseif($activeComponentMode === 'mt_only')
+                                <td class="td-mark">{{ $hasMark && !$isExempt ? (float)$pMark->mt : '-' }}</td>
+                                <td class="td-mark td-total {{ $isSubFailed ? 'mark-fail' : '' }}">{{ $hasMark && !$isExempt ? $pMark->letter_grade : '-' }}</td>
+                            @elseif($activeComponentMode === 'ct_mt')
+                                <td class="td-mark">{{ $hasMark && !$isExempt && !empty($pMark->is_ct_applicable) ? (float)$pMark->ct : '-' }}</td>
+                                <td class="td-mark">{{ $hasMark && !$isExempt && !empty($pMark->is_mt_applicable) ? (float)$pMark->mt : '-' }}</td>
+                                <td class="td-mark td-total {{ $isSubFailed ? 'mark-fail' : '' }}">{{ $hasMark && !$isExempt ? (float)$pMark->total : '-' }}</td>
+                                <td class="td-mark {{ $isSubFailed ? 'mark-fail' : '' }}" style="font-weight: 700;">{{ $hasMark && !$isExempt ? $pMark->letter_grade : '-' }}</td>
+                            @elseif($activeComponentMode === 'terminal_only')
+                                <td class="td-mark">{{ $hasMark && !$isExempt ? (float)$pMark->term : '-' }}</td>
+                                <td class="td-mark td-total {{ $isSubFailed ? 'mark-fail' : '' }}">{{ $hasMark && !$isExempt ? $pMark->letter_grade : '-' }}</td>
+                            @endif
                         @endif
                     @endforeach
 
@@ -472,7 +521,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="{{ 2 + count($chunkSchedules) * 4 + ($isLastPart ? 4 : 0) }}" class="no-data-cell">
+                    <td colspan="{{ 2 + count($chunkSchedules) * $subjectColspan + ($isLastPart ? 4 : 0) }}" class="no-data-cell">
                         No student records found for this class and examination.
                     </td>
                 </tr>

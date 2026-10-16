@@ -929,22 +929,36 @@ class ResultController extends Controller
         ini_set('max_execution_time', '300');
 
         $request->validate([
-            'session_year_id' => 'required',
-            'branch_id'       => 'required',
-            'exam_id'         => 'required',
-            'class_id'        => 'required',
-            'section_id'      => 'nullable',
-            'sort_by'         => 'nullable|in:roll,merit',
+            'session_year_id'     => 'required',
+            'branch_id'           => 'required',
+            'exam_id'             => 'required',
+            'class_id'            => 'required',
+            'section_id'          => 'nullable',
+            'sort_by'             => 'nullable|in:roll,merit',
+            'exam_component_mode' => 'nullable|in:all,ct_only,mt_only,ct_mt,terminal_only',
         ]);
 
         $exam = Exam::find($request->exam_id);
         $schoolClass = Classes::find($request->class_id);
         $branch = Branch::find($request->branch_id);
 
+        $className = strtolower(trim($schoolClass->class_name ?? ''));
+        $isHighSchool = in_array($className, ['ten', 'class ten', '10', 'class 10']);
+        $componentMode = $isHighSchool ? 'all' : ($request->input('exam_component_mode') ?: 'all');
+        if (!in_array($componentMode, ['all', 'ct_only', 'mt_only', 'ct_mt', 'terminal_only'])) {
+            $componentMode = 'all';
+        }
+
+        $branchId = $branch ? $branch->id : null;
         $schedules = ExamSchedule::with('subject')
             ->where('class_id', $schoolClass->id)
-            ->when($branch, fn($q) => $q->where('branch_id', $branch->id))
-            ->where('exam_id', $exam->id)
+            ->when($branch, fn($q) => $q->where(function ($b) use ($branch) {
+                $b->where('branch_id', $branch->id)->orWhereNull('branch_id');
+            }))
+            ->where(function ($q) use ($exam) {
+                $q->where('exam_id', $exam->id)->orWhereNull('exam_id');
+            })
+            ->orderByRaw("CASE WHEN exam_id = {$exam->id} THEN 0 ELSE 1 END" . ($branchId ? ", CASE WHEN branch_id = {$branchId} THEN 0 ELSE 1 END" : ""))
             ->get()
             ->unique('subject_id')
             ->values();
@@ -970,13 +984,27 @@ class ResultController extends Controller
         $missingSubjectIds = $markSubjectIds->diff($existingSubjectIds);
 
         if ($missingSubjectIds->isNotEmpty()) {
+            $existingClassSchedules = ExamSchedule::with('subject')
+                ->where('class_id', $schoolClass->id)
+                ->whereIn('subject_id', $missingSubjectIds)
+                ->get()
+                ->unique('subject_id')
+                ->keyBy('subject_id');
+
             $extraSubjects = \App\Models\Subject::whereIn('id', $missingSubjectIds)->get();
             foreach ($extraSubjects as $extraSub) {
-                $schedules->push((object)[
-                    'subject_id' => $extraSub->id,
-                    'subject'    => $extraSub,
-                    'full_marks' => 100,
-                ]);
+                if ($existingClassSchedules->has($extraSub->id)) {
+                    $schedules->push($existingClassSchedules->get($extraSub->id));
+                } else {
+                    $schedules->push((object)[
+                        'subject_id'    => $extraSub->id,
+                        'subject'       => $extraSub,
+                        'full_marks'    => 100,
+                        'ct_marks'      => 0,
+                        'mcq_marks'     => 0,
+                        'written_marks' => 100,
+                    ]);
+                }
             }
         }
 
@@ -985,15 +1013,49 @@ class ResultController extends Controller
             ->where('subject_name', 'like', '%S.B.A%')
             ->first();
         if ($sbaSubject && !in_array($sbaSubject->id, $schedules->pluck('subject_id')->toArray())) {
-            $schedules->push((object)[
-                'subject_id' => $sbaSubject->id,
-                'subject'    => $sbaSubject,
-                'full_marks' => 100,
-            ]);
+            $sbaSched = ExamSchedule::with('subject')
+                ->where('class_id', $schoolClass->id)
+                ->where('subject_id', $sbaSubject->id)
+                ->first();
+            if ($sbaSched) {
+                $schedules->push($sbaSched);
+            } else {
+                $schedules->push((object)[
+                    'subject_id'    => $sbaSubject->id,
+                    'subject'       => $sbaSubject,
+                    'full_marks'    => 100,
+                    'ct_marks'      => 0,
+                    'mcq_marks'     => 0,
+                    'written_marks' => 100,
+                ]);
+            }
+        }
+
+        $schedules = $schedules->sortBy('subject_id')->values();
+
+        // In partial tabulation modes, omit entire subject column groups when none of the selected components applies
+        if ($componentMode !== 'all' && !$isHighSchool) {
+            $schedules = $schedules->filter(function ($sched) use ($componentMode) {
+                $ctFull = (float)($sched->ct_marks ?? 0);
+                $mtFull = (float)($sched->mcq_marks ?? 0);
+                $termFull = (float)($sched->written_marks ?? 0);
+
+                if ($componentMode === 'ct_only') {
+                    return $ctFull > 0;
+                } elseif ($componentMode === 'mt_only') {
+                    return $mtFull > 0;
+                } elseif ($componentMode === 'ct_mt') {
+                    return ($ctFull > 0 || $mtFull > 0);
+                } elseif ($componentMode === 'terminal_only') {
+                    return $termFull > 0;
+                }
+
+                return true;
+            })->values();
         }
 
         if ($schedules->isEmpty()) {
-            return back()->withErrors(['error' => 'No subjects found for this class in Exam Subject Setup.']);
+            return back()->withErrors(['error' => 'No applicable subjects found for this class in the selected exam component mode.']);
         }
 
         // Filter marks strictly to subjects present in schedules/sheet
@@ -1025,29 +1087,123 @@ class ResultController extends Controller
 
         $studentData = [];
 
-        foreach ($students as $student) {
-            $studentMarks = $allMarks->where('student_id', $student->id);
-            $grandTotal = $studentMarks->sum('total_mark');
-            $totalGradePoints = $studentMarks->sum('grade_point');
-            $subjectCount = $studentMarks->count();
+        if ($componentMode === 'all') {
+            // Default composite calculation path (Play-9 All Components & Class 10 High School)
+            foreach ($students as $student) {
+                $studentMarks = $allMarks->where('student_id', $student->id);
+                $grandTotal = $studentMarks->sum('total_mark');
+                $totalGradePoints = $studentMarks->sum('grade_point');
+                $subjectCount = $studentMarks->count();
 
-            $is_failed = $studentMarks->contains(function ($m) {
-                return $m->letter_grade == 'F' || $m->letter_grade == 'Fail';
-            });
+                $is_failed = $studentMarks->contains(function ($m) {
+                    return $m->letter_grade == 'F' || $m->letter_grade == 'Fail';
+                });
 
-            $cgpa = 0.00;
-            if (!$is_failed && $subjectCount > 0) {
-                $cgpa = number_format($totalGradePoints / $subjectCount, 2);
+                $cgpa = 0.00;
+                if (!$is_failed && $subjectCount > 0) {
+                    $cgpa = number_format($totalGradePoints / $subjectCount, 2);
+                }
+                $finalGrade = $is_failed ? 'F' : $this->getFinalGrade($cgpa);
+
+                $studentData[] = (object)[
+                    'student'       => $student,
+                    'marks'         => $studentMarks->keyBy('subject_id'),
+                    'partial_marks' => null,
+                    'grand_total'   => $grandTotal,
+                    'cgpa'          => $is_failed ? '0.00' : $cgpa,
+                    'final_grade'   => $finalGrade
+                ];
             }
-            $finalGrade = $is_failed ? 'F' : $this->getFinalGrade($cgpa);
+        } else {
+            // Non-mutating partial-component calculation path (CT Only, MT Only, CT + MT, Terminal Only)
+            foreach ($students as $student) {
+                $studentMarks = $allMarks->where('student_id', $student->id)->keyBy('subject_id');
+                $partialSubjectMarks = [];
+                $selectedGrandTotal = 0.0;
+                $totalSelectedGradePoints = 0.0;
+                $evaluatedSubjectCount = 0;
+                $isPartialFailed = false;
 
-            $studentData[] = (object)[
-                'student'     => $student,
-                'marks'       => $studentMarks->keyBy('subject_id'),
-                'grand_total' => $grandTotal,
-                'cgpa'        => $is_failed ? '0.00' : $cgpa,
-                'final_grade' => $finalGrade
-            ];
+                foreach ($schedules as $sched) {
+                    $subId = $sched->subject_id;
+                    $markRecord = $studentMarks->get($subId);
+
+                    $ctFull = (float)($sched->ct_marks ?? 0);
+                    $mtFull = (float)($sched->mcq_marks ?? 0);
+                    $termFull = (float)($sched->written_marks ?? 0);
+
+                    $ctObtained = $markRecord ? (float)$markRecord->ct_mark : 0.0;
+                    $mtObtained = $markRecord ? (float)$markRecord->mcq_mark : 0.0;
+                    $termObtained = $markRecord ? (float)$markRecord->written_mark : 0.0;
+
+                    if ($componentMode === 'ct_only') {
+                        $selectedObtained = $ctObtained;
+                        $selectedFull = $ctFull;
+                    } elseif ($componentMode === 'mt_only') {
+                        $selectedObtained = $mtObtained;
+                        $selectedFull = $mtFull;
+                    } elseif ($componentMode === 'ct_mt') {
+                        $selectedObtained = $ctObtained + $mtObtained;
+                        $selectedFull = $ctFull + $mtFull;
+                    } elseif ($componentMode === 'terminal_only') {
+                        $selectedObtained = $termObtained;
+                        $selectedFull = $termFull;
+                    } else {
+                        $selectedObtained = $ctObtained + $mtObtained + $termObtained;
+                        $selectedFull = (float)($sched->full_marks > 0 ? $sched->full_marks : ($ctFull + $mtFull + $termFull));
+                    }
+
+                    $isExempt = ($selectedFull <= 0.0);
+                    $hasMark = ($markRecord !== null);
+
+                    if ($isExempt) {
+                        $gradeInfo = ['grade' => '-', 'point' => 0.0, 'comment' => 'N/A'];
+                    } elseif (!$hasMark) {
+                        $gradeInfo = ['grade' => '-', 'point' => 0.0, 'comment' => 'Missing'];
+                    } else {
+                        $gradeInfo = $this->calculatePartialGradeAndPoint($selectedObtained, $selectedFull);
+                    }
+
+                    if (!$isExempt && $hasMark) {
+                        if ($gradeInfo['grade'] === 'F') {
+                            $isPartialFailed = true;
+                        }
+                        $selectedGrandTotal += $selectedObtained;
+                        $totalSelectedGradePoints += $gradeInfo['point'];
+                        $evaluatedSubjectCount++;
+                    }
+
+                    $partialSubjectMarks[$subId] = (object)[
+                        'ct'                 => $ctObtained,
+                        'mt'                 => $mtObtained,
+                        'term'               => $termObtained,
+                        'total'              => $isExempt ? 0.0 : $selectedObtained,
+                        'letter_grade'       => $gradeInfo['grade'],
+                        'grade_point'        => $gradeInfo['point'],
+                        'selected_full'      => $selectedFull,
+                        'has_mark'           => $hasMark,
+                        'is_exempt'          => $isExempt,
+                        'is_ct_applicable'   => ($ctFull > 0),
+                        'is_mt_applicable'   => ($mtFull > 0),
+                        'is_term_applicable' => ($termFull > 0),
+                    ];
+                }
+
+                $cgpa = 0.00;
+                if (!$isPartialFailed && $evaluatedSubjectCount > 0) {
+                    $cgpa = number_format($totalSelectedGradePoints / $evaluatedSubjectCount, 2);
+                }
+                $finalGrade = $isPartialFailed ? 'F' : $this->getFinalGrade($cgpa);
+
+                $studentData[] = (object)[
+                    'student'       => $student,
+                    'marks'         => $studentMarks,
+                    'partial_marks' => collect($partialSubjectMarks),
+                    'grand_total'   => $selectedGrandTotal,
+                    'cgpa'          => $isPartialFailed ? '0.00' : $cgpa,
+                    'final_grade'   => $finalGrade
+                ];
+            }
         }
 
         // Sort by merit first to establish accurate merit positions
@@ -1112,16 +1268,26 @@ class ResultController extends Controller
             $schedule->formatted_subject_name = self::formatSubjectName($schedule->subject->subject_name ?? '', true);
         }
 
-        // Dynamically compute subject chunks for multi-page layout (optimized for compact 4 columns per subject)
+        // Dynamically compute subject chunks for multi-page layout (optimized for column density)
         $totalSubjects = $schedules->count();
-        if ($totalSubjects <= 8) {
-            $subjectChunks = collect([$schedules]);
-        } elseif ($totalSubjects <= 14) {
-            $chunkSize = (int)ceil($totalSubjects / 2);
-            $subjectChunks = $schedules->chunk($chunkSize)->values();
+        $subCols = in_array($componentMode, ['ct_only', 'mt_only', 'terminal_only']) ? 2 : 4;
+        if ($subCols === 2) {
+            if ($totalSubjects <= 14) {
+                $subjectChunks = collect([$schedules]);
+            } else {
+                $chunkSize = (int)ceil($totalSubjects / 2);
+                $subjectChunks = $schedules->chunk($chunkSize)->values();
+            }
         } else {
-            $chunkSize = (int)ceil($totalSubjects / 3);
-            $subjectChunks = $schedules->chunk($chunkSize)->values();
+            if ($totalSubjects <= 8) {
+                $subjectChunks = collect([$schedules]);
+            } elseif ($totalSubjects <= 14) {
+                $chunkSize = (int)ceil($totalSubjects / 2);
+                $subjectChunks = $schedules->chunk($chunkSize)->values();
+            } else {
+                $chunkSize = (int)ceil($totalSubjects / 3);
+                $subjectChunks = $schedules->chunk($chunkSize)->values();
+            }
         }
 
         $data = array_merge([
@@ -1135,6 +1301,7 @@ class ResultController extends Controller
             'totalSubjects' => $totalSubjects,
             'studentData'   => $studentData,
             'sortBy'        => $sortBy,
+            'componentMode' => $componentMode,
             'logoSrc'       => $logoSrc,
             'signatureSrc'  => $signatureSrc,
         ], self::getFontPaths());
@@ -1142,6 +1309,33 @@ class ResultController extends Controller
         $pdf = PDF::loadView('pages.results.tabulation_pdf', $data)->setPaper('a4', 'landscape');
         $sectionSuffix = !empty($selectedSection) ? '_' . str_replace(' ', '_', $selectedSection->section_name) : '';
         return $pdf->stream('Tabulation_Sheet_' . str_replace(' ', '_', $schoolClass->class_name) . $sectionSuffix . '.pdf');
+    }
+
+    /**
+     * Calculate Grade and Point for Partial Component Evaluation (Proportional 33% threshold)
+     */
+    protected function calculatePartialGradeAndPoint($obtained, $fullMarks)
+    {
+        $obtained = (float)$obtained;
+        $fullMarks = (float)$fullMarks;
+        if ($fullMarks <= 0) {
+            return ['grade' => '-', 'point' => 0.0, 'comment' => 'N/A'];
+        }
+
+        // Proportional 33% passing threshold
+        $effectivePassMarks = $fullMarks * 0.33;
+        if ($obtained < $effectivePassMarks) {
+            return ['grade' => 'F', 'point' => 0.0, 'comment' => 'Fail'];
+        }
+
+        $pct = ($obtained / $fullMarks) * 100.0;
+        if ($pct >= 80) return ['grade' => 'A+', 'point' => 5.0, 'comment' => 'Excellent'];
+        if ($pct >= 70) return ['grade' => 'A',  'point' => 4.0, 'comment' => 'Very Good'];
+        if ($pct >= 60) return ['grade' => 'A-', 'point' => 3.5, 'comment' => 'Good'];
+        if ($pct >= 50) return ['grade' => 'B',  'point' => 3.0, 'comment' => 'Average'];
+        if ($pct >= 40) return ['grade' => 'C',  'point' => 2.0, 'comment' => 'Poor'];
+        if ($pct >= 33) return ['grade' => 'D',  'point' => 1.0, 'comment' => 'Very Poor'];
+        return ['grade' => 'F', 'point' => 0.0, 'comment' => 'Fail'];
     }
 
     /**

@@ -42,8 +42,9 @@
             <input type="hidden" name="class_id" :value="form.class_id">
             <input type="hidden" name="section_id" :value="form.section_id">
             <input type="hidden" name="sort_by" :value="form.sort_by">
+            <input type="hidden" name="exam_component_mode" :value="form.exam_component_mode">
             
-            <div :class="hasSections ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8'">
+            <div :class="hasSections ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-8' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-8'">
                 <!-- Session Dropdown -->
                 <div class="relative" @click.away="if(activeDropdown === 'session') activeDropdown = null">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Session *</label>
@@ -145,6 +146,51 @@
                     </div>
                 </div>
 
+                <!-- Exam Component Dropdown -->
+                <div class="relative" @click.away="if(activeDropdown === 'component') activeDropdown = null">
+                    <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Exam Component *</label>
+                    <button type="button"
+                        :disabled="isClassTen"
+                        @click="if(!isClassTen) activeDropdown = activeDropdown === 'component' ? null : 'component'"
+                        class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left"
+                        :class="isClassTen ? 'opacity-70 cursor-not-allowed bg-gray-100 dark:bg-themeDark/60' : ''">
+                        <span class="truncate" x-text="isClassTen ? 'All (Class 10)' : componentText"></span>
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="activeDropdown === 'component' && !isClassTen" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                        <button type="button" @click="selectComponent('all', 'All Components (Default)')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.exam_component_mode === 'all' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>All Components (Default)</span>
+                            <template x-if="form.exam_component_mode === 'all'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                        <button type="button" @click="selectComponent('ct_only', 'CT Only')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.exam_component_mode === 'ct_only' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>CT Only</span>
+                            <template x-if="form.exam_component_mode === 'ct_only'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                        <button type="button" @click="selectComponent('mt_only', 'MT Only')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.exam_component_mode === 'mt_only' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>MT Only</span>
+                            <template x-if="form.exam_component_mode === 'mt_only'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                        <button type="button" @click="selectComponent('ct_mt', 'CT + MT')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.exam_component_mode === 'ct_mt' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>CT + MT</span>
+                            <template x-if="form.exam_component_mode === 'ct_mt'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                        <button type="button" @click="selectComponent('terminal_only', 'Terminal Only')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.exam_component_mode === 'terminal_only' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>Terminal Only</span>
+                            <template x-if="form.exam_component_mode === 'terminal_only'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Sort By Dropdown -->
                 <div class="relative" @click.away="if(activeDropdown === 'sort') activeDropdown = null">
                     <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Sort By *</label>
@@ -193,6 +239,7 @@
             classText: 'Choose Class',
             sectionText: 'Choose Section',
             sortText: 'Roll Wise',
+            componentText: 'All Components (Default)',
             
             form: {
                 session_year_id: '',
@@ -200,9 +247,15 @@
                 exam_id: '',
                 class_id: '',
                 section_id: '',
-                sort_by: 'roll'
+                sort_by: 'roll',
+                exam_component_mode: 'all'
             },
             
+            get isClassTen() {
+                const cls = (this.classText || '').toLowerCase().trim();
+                return ['ten', 'class ten', '10', 'class 10'].includes(cls);
+            },
+
             selectSession(id, name) {
                 this.form.session_year_id = id;
                 this.sessionText = name;
@@ -222,6 +275,11 @@
                 this.form.class_id = id;
                 this.classText = name;
                 this.activeDropdown = null;
+
+                if (['ten', 'class ten', '10', 'class 10'].includes((name || '').toLowerCase().trim())) {
+                    this.form.exam_component_mode = 'all';
+                    this.componentText = 'All Components (Default)';
+                }
 
                 const sections = this.classSections[id] || [];
                 if (sections.length > 1) {
@@ -244,6 +302,11 @@
             selectSort(val, name) {
                 this.form.sort_by = val;
                 this.sortText = name;
+                this.activeDropdown = null;
+            },
+            selectComponent(val, name) {
+                this.form.exam_component_mode = val;
+                this.componentText = name;
                 this.activeDropdown = null;
             }
         };
