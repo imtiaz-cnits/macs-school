@@ -219,7 +219,8 @@ class FinancialReportController extends Controller
         })->sortByDesc('amount')->values();
 
         // 7. Contextual Billed Invoices & Accounts Receivable (NOT counted as income)
-        $invoicesQuery = FeeInvoice::query();
+        // Cancelled invoices are strictly excluded so they do not artificially distort billed totals or discounts
+        $invoicesQuery = FeeInvoice::where('status', '!=', 'Cancelled');
         if ($branchId) {
             $invoicesQuery->whereHas('student', fn($q) => $q->where('branch_id', $branchId));
         }

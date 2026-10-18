@@ -234,6 +234,10 @@
         display: none !important;
     }
 
+    .sidebar.collapsed .sidebar-section-heading {
+        display: none !important;
+    }
+
     .sidebar.collapsed .sidebar-submenu {
         display: none !important;
     }

@@ -249,6 +249,12 @@ class FeeCollectionController extends Controller
             // ডাটাবেস লক করে ইনভয়েস আনা হচ্ছে যাতে একই সাথে ডাবল পেমেন্ট না হয়
             $invoice = FeeInvoice::lockForUpdate()->findOrFail($request->invoice_id);
 
+            // Defensive Guard: Reject payments on Cancelled invoices
+            if ($invoice->isCancelled()) {
+                DB::rollBack();
+                return back()->with('error', "Error: Cannot collect payment for a cancelled invoice ({$invoice->invoice_no})!");
+            }
+
             if ($request->pay_amount > $invoice->due_amount) {
                 return back()->with('error', 'Error: Paying amount cannot be greater than the Due amount!');
             }
@@ -309,7 +315,7 @@ class FeeCollectionController extends Controller
             foreach ($request->invoice_ids as $inv_id) {
                 $invoice = FeeInvoice::lockForUpdate()->find($inv_id);
                 
-                if ($invoice && $invoice->due_amount > 0) {
+                if ($invoice && !$invoice->isCancelled() && $invoice->due_amount > 0) {
                     $studentId = $invoice->student_id; 
                     $payAmount = $invoice->due_amount; 
                     
@@ -352,7 +358,7 @@ class FeeCollectionController extends Controller
     public function printBulkPos($receipt_no)
     {
         // 'like' ব্যবহার করে এই মাস্টার রিসিটের আন্ডারে যতগুলো পেমেন্ট হয়েছে সব আনা হলো
-        $payments = FeePayment::with(['invoice.feeSetup.category', 'student.schoolClass', 'collector'])
+        $payments = FeePayment::with(['invoice.feeSetup.category', 'student.schoolClass', 'student.section', 'student.sessionYear', 'collector'])
                               ->where('receipt_no', 'like', $receipt_no . '%')
                               ->get();
 
@@ -498,6 +504,10 @@ class FeeCollectionController extends Controller
 
                 $invoice = FeeInvoice::with(['student', 'feeSetup'])->lockForUpdate()->findOrFail($invId);
 
+                if ($invoice->isCancelled()) {
+                    continue; // Skip any cancelled invoice
+                }
+
                 $feeSetup = $invoice->feeSetup;
                 $feeCategoryId = $feeSetup->fee_category_id;
                 $originalSetupAmount = floatval($feeSetup->amount);
@@ -596,6 +606,14 @@ class FeeCollectionController extends Controller
         DB::beginTransaction();
         try {
             $invoice = FeeInvoice::with(['student', 'feeSetup'])->lockForUpdate()->findOrFail($request->invoice_id);
+
+            if ($invoice->isCancelled()) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot update custom fee for a cancelled invoice ({$invoice->invoice_no})."
+                ], 422);
+            }
 
             $studentId = $invoice->student_id;
             $feeSetup = $invoice->feeSetup;
@@ -709,6 +727,15 @@ class FeeCollectionController extends Controller
         DB::beginTransaction();
         try {
             $invoice = FeeInvoice::with(['student', 'feeSetup', 'payments'])->lockForUpdate()->findOrFail($request->invoice_id);
+
+            // Defensive Guard: Reject fee adjustment for Cancelled invoices
+            if ($invoice->isCancelled()) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot adjust fees for a cancelled invoice ({$invoice->invoice_no})."
+                ], 422);
+            }
 
             $studentId = $invoice->student_id;
             $feeSetup = $invoice->feeSetup;

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FeePayment;
 use App\Models\FeeInvoice;
 use App\Models\Classes; // বা Classes (আপনার মডেলে যে নাম আছে)
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class FeeReportController extends Controller
@@ -23,6 +24,7 @@ class FeeReportController extends Controller
 
         // ২. বকেয়া বা ডিউ এর কোয়েরি
         $duesQuery = FeeInvoice::with(['student.schoolClass', 'student.branch', 'feeSetup.category'])
+            ->where('status', '!=', 'Cancelled')
             ->where('due_amount', '>', 0);
 
         // যদি নির্দিষ্ট তারিখ রেঞ্জ ফিল্টার করা হয়
@@ -86,6 +88,66 @@ class FeeReportController extends Controller
             return $receiptNo;
         };
 
+        // হেল্পার ফাংশন: পেমেন্ট রেকর্ড থেকে প্রকৃত কালেকশন তারিখ ও সময় নির্ধারণ
+        $resolveCollectionDate = function ($paymentItems) {
+            $first = $paymentItems->first();
+            if (!$first) {
+                return (object) [
+                    'formatted' => 'Date unavailable',
+                    'raw_date' => null,
+                    'has_time' => false,
+                ];
+            }
+
+            // FeePayment মডেলের created_at এবং payment_date
+            $createdAt = $first->created_at ? Carbon::parse($first->created_at) : null;
+            $paymentDateStr = $first->payment_date ? trim((string)$first->payment_date) : null;
+
+            if ($createdAt && $paymentDateStr) {
+                // payment_date এবং created_at একই দিন হলে created_at এর সঠিক তারিখ ও সময় ব্যবহার
+                if ($createdAt->format('Y-m-d') === date('Y-m-d', strtotime($paymentDateStr))) {
+                    return (object) [
+                        'formatted' => $createdAt->format('d M Y, h:i A'),
+                        'raw_date' => $createdAt,
+                        'has_time' => true,
+                    ];
+                }
+
+                // ব্যাকডেটেড পেমেন্ট হলে payment_date এর সাথে created_at এর সময় যুক্ত করা
+                $timePart = $createdAt->format('H:i:s');
+                $combined = Carbon::parse($paymentDateStr . ' ' . $timePart);
+                return (object) [
+                    'formatted' => $combined->format('d M Y, h:i A'),
+                    'raw_date' => $combined,
+                    'has_time' => true,
+                ];
+            }
+
+            if ($createdAt) {
+                return (object) [
+                    'formatted' => $createdAt->format('d M Y, h:i A'),
+                    'raw_date' => $createdAt,
+                    'has_time' => true,
+                ];
+            }
+
+            if ($paymentDateStr) {
+                // শুধুমাত্র payment_date থাকলে কৃত্রিম 12:00 AM সময় না বানিয়ে শুধু তারিখ প্রদর্শন
+                $d = Carbon::parse($paymentDateStr);
+                return (object) [
+                    'formatted' => $d->format('d M Y'),
+                    'raw_date' => $d,
+                    'has_time' => false,
+                ];
+            }
+
+            return (object) [
+                'formatted' => 'Date unavailable',
+                'raw_date' => null,
+                'has_time' => false,
+            ];
+        };
+
         $monthOrderMap = [
             'january' => 1, 'february' => 2, 'march' => 3, 'april' => 4,
             'may' => 5, 'june' => 6, 'july' => 7, 'august' => 8,
@@ -96,10 +158,11 @@ class FeeReportController extends Controller
         $collections = $payments->groupBy(function ($item) use ($resolveMasterReceipt) {
             $masterReceipt = $resolveMasterReceipt($item->receipt_no);
             return $item->student_id . '_' . $masterReceipt;
-        })->map(function ($items) use ($resolveMasterReceipt, $resolveMonth, $monthOrderMap) {
+        })->map(function ($items) use ($resolveMasterReceipt, $resolveMonth, $monthOrderMap, $resolveCollectionDate) {
             $first = $items->first();
             $masterReceipt = $resolveMasterReceipt($first->receipt_no);
             $totalAmount = $items->sum('paid_amount');
+            $colDateInfo = $resolveCollectionDate($items);
 
             $categories = $items->map(function ($i) {
                 return $i->invoice->feeSetup->category->name ?? 'Fee';
@@ -139,7 +202,9 @@ class FeeReportController extends Controller
 
             return (object) [
                 'receipt_no' => $masterReceipt,
-                'payment_date' => $first->payment_date ?? $first->created_at,
+                'payment_date' => $colDateInfo->raw_date ? $colDateInfo->raw_date->format('Y-m-d') : null,
+                'collection_date_formatted' => $colDateInfo->formatted,
+                'collection_date_has_time' => $colDateInfo->has_time,
                 'created_at' => $first->created_at,
                 'student' => $first->student,
                 'categories' => $categories,
@@ -216,7 +281,7 @@ class FeeReportController extends Controller
             return [
                 'sl' => $index + 1,
                 'receipt_no' => $col->receipt_no ?? 'N/A',
-                'date' => date('d M Y, h:i A', strtotime($col->payment_date ?? $col->created_at)),
+                'date' => $col->collection_date_formatted ?? 'Date unavailable',
                 'student_name' => $col->student->student_name ?? 'N/A',
                 'student_id' => $col->student->student_identity ?? 'N/A',
                 'class' => $col->student->schoolClass->class_name ?? 'N/A',
@@ -289,7 +354,7 @@ class FeeReportController extends Controller
         $classId = $request->class_id;
 
         // ইনভয়েস কোয়েরি (FeeSetup এর সাথে জয়েন করে)
-        $query = FeeInvoice::with('feeSetup.category');
+        $query = FeeInvoice::with('feeSetup.category')->where('status', '!=', 'Cancelled');
 
         // যদি ফিল্টার সিলেক্ট করা থাকে
         if ($branchId || $sessionId || $classId) {

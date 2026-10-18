@@ -354,10 +354,10 @@ class StudentController extends Controller
                 ]
             );
 
-            // Find all unpaid or partially paid invoices for this student and category and update their balances
+            // Find all unpaid or partially paid active invoices for this student and category and update their balances
             $unpaidInvoices = \App\Models\FeeInvoice::with('feeSetup')
                 ->where('student_id', $studentId)
-                ->where('status', '!=', 'Paid')
+                ->whereIn('status', ['Unpaid', 'Partial'])
                 ->whereHas('feeSetup', function($q) use ($request) {
                     $q->where('fee_category_id', $request->fee_category_id);
                 })
@@ -394,10 +394,10 @@ class StudentController extends Controller
 
             $customFee->delete();
 
-            // Revert all unpaid/partially paid invoices for this student and category to setup standard rates
+            // Revert all unpaid/partially paid active invoices for this student and category to setup standard rates
             $unpaidInvoices = \App\Models\FeeInvoice::with('feeSetup')
                 ->where('student_id', $studentId)
-                ->where('status', '!=', 'Paid')
+                ->whereIn('status', ['Unpaid', 'Partial'])
                 ->whereHas('feeSetup', function($q) use ($feeCategoryId) {
                     $q->where('fee_category_id', $feeCategoryId);
                 })
@@ -461,8 +461,18 @@ class StudentController extends Controller
                 'card_number'      => 'nullable|string|unique:students,card_number,' . $id,
             ]);
 
-            // Security: allow updating student_identity if it is custom set and valid
-            $excepts = ['photo', 'document_file', 'admission_number', 'admission_date'];
+            // Security: Status & discontinuation cannot be modified via ordinary edit form
+            // Student status changes must strictly use Discontinuation, Reactivation or Toggle workflows
+            $excepts = [
+                'photo',
+                'document_file',
+                'admission_number',
+                'admission_date',
+                'status',
+                'discontinued_month',
+                'inactive_at',
+                'inactive_reason'
+            ];
             if (!$request->filled('student_identity') || 
                 str_contains($request->student_identity, 'YYYY') || 
                 str_contains($request->student_identity, 'MM') || 
@@ -512,21 +522,400 @@ class StudentController extends Controller
     }
 
     /**
+     * Preview historical discontinuation and invoice reconciliation (Read-Only)
+     */
+    public function previewDiscontinuation(Request $request, $id): JsonResponse
+    {
+        if (!$request->filled('last_active_month') && $request->filled('month') && $request->filled('year')) {
+            $monthPad = str_pad((string) $request->month, 2, '0', STR_PAD_LEFT);
+            $request->merge([
+                'last_active_month' => sprintf('%04d-%02d', (int) $request->year, (int) $monthPad)
+            ]);
+        }
+
+        $request->validate([
+            'last_active_month' => [
+                'required',
+                'regex:/^\d{4}-(0[1-9]|1[0-2])$/'
+            ],
+            'month' => 'nullable|integer|between:1,12',
+            'year' => 'nullable|integer|between:2000,2099',
+        ]);
+
+        try {
+            $student = Student::with(['branch', 'schoolClass', 'section'])->findOrFail($id);
+            $lastActiveMonth = $request->last_active_month; // e.g. '2026-03'
+            $effectiveDate = \Carbon\Carbon::parse($lastActiveMonth . '-01')->addMonth()->toDateString(); // e.g. '2026-04-01'
+            $effectiveMonthName = \Carbon\Carbon::parse($effectiveDate)->format('F Y'); // e.g. 'April 2026'
+
+            // Load all invoices with fee setup category and payment history
+            $invoices = \App\Models\FeeInvoice::with(['feeSetup.category', 'payments.collector'])
+                ->where('student_id', $student->id)
+                ->orderBy('due_date', 'asc')
+                ->orderBy('id', 'asc')
+                ->get();
+
+            $historicalInvoices = [];
+            $historicalTotalGross = 0;
+            $historicalTotalNet = 0;
+            $historicalTotalPaid = 0;
+            $historicalTotalDue = 0;
+
+            $eligibleCancellationInvoices = [];
+            $eligibleCancellationTotalNet = 0;
+            $eligibleCancellationTotalDue = 0;
+
+            $requiresReviewInvoices = [];
+            $requiresReviewTotalGross = 0;
+            $requiresReviewTotalPaid = 0;
+            $requiresReviewTotalDue = 0;
+
+            $alreadyCancelledCount = 0;
+
+            foreach ($invoices as $inv) {
+                $billingPeriod = $inv->billing_period;
+                $hasPayments = $inv->payments->isNotEmpty() || ((float)$inv->paid_amount > 0);
+
+                if ($billingPeriod <= $lastActiveMonth) {
+                    // Category 1: Valid historical invoices through discontinuation month
+                    $historicalInvoices[] = [
+                        'id' => $inv->id,
+                        'invoice_no' => $inv->invoice_no,
+                        'billing_period' => $billingPeriod,
+                        'month_name' => $inv->month_name,
+                        'category_name' => $inv->feeSetup->category->name ?? 'Fee',
+                        'amount' => (float) $inv->amount,
+                        'discount' => (float) $inv->discount,
+                        'net_amount' => (float) $inv->net_amount,
+                        'paid_amount' => (float) $inv->paid_amount,
+                        'due_amount' => (float) $inv->due_amount,
+                        'status' => $inv->status,
+                        'has_payments' => $hasPayments,
+                    ];
+                    $historicalTotalGross += (float) $inv->amount;
+                    $historicalTotalNet += (float) $inv->net_amount;
+                    $historicalTotalPaid += (float) $inv->paid_amount;
+                    $historicalTotalDue += (float) $inv->due_amount;
+                } else {
+                    // Invoices for period after discontinuation
+                    if ($inv->status === 'Cancelled') {
+                        $alreadyCancelledCount++;
+                        continue;
+                    }
+
+                    if ($inv->status === 'Unpaid' && !$hasPayments) {
+                        // Category 2: Post-discontinuation strictly unpaid invoices (safe to cancel)
+                        $eligibleCancellationInvoices[] = [
+                            'id' => $inv->id,
+                            'invoice_no' => $inv->invoice_no,
+                            'billing_period' => $billingPeriod,
+                            'month_name' => $inv->month_name,
+                            'category_name' => $inv->feeSetup->category->name ?? 'Fee',
+                            'amount' => (float) $inv->amount,
+                            'discount' => (float) $inv->discount,
+                            'net_amount' => (float) $inv->net_amount,
+                            'due_amount' => (float) $inv->due_amount,
+                            'status' => $inv->status,
+                        ];
+                        $eligibleCancellationTotalNet += (float) $inv->net_amount;
+                        $eligibleCancellationTotalDue += (float) $inv->due_amount;
+                    } else {
+                        // Category 3: Post-discontinuation partial/paid invoices (requires manual review)
+                        $receipts = $inv->payments->map(function ($p) {
+                            return [
+                                'receipt_no' => $p->receipt_no,
+                                'paid_amount' => (float) $p->paid_amount,
+                                'payment_date' => $p->payment_date,
+                                'payment_method' => $p->payment_method,
+                                'collector_name' => $p->collector->name ?? 'N/A',
+                            ];
+                        })->all();
+
+                        $requiresReviewInvoices[] = [
+                            'id' => $inv->id,
+                            'invoice_no' => $inv->invoice_no,
+                            'billing_period' => $billingPeriod,
+                            'month_name' => $inv->month_name,
+                            'category_name' => $inv->feeSetup->category->name ?? 'Fee',
+                            'amount' => (float) $inv->amount,
+                            'discount' => (float) $inv->discount,
+                            'net_amount' => (float) $inv->net_amount,
+                            'paid_amount' => (float) $inv->paid_amount,
+                            'due_amount' => (float) $inv->due_amount,
+                            'status' => $inv->status,
+                            'receipts' => $receipts,
+                        ];
+                        $requiresReviewTotalGross += (float) $inv->amount;
+                        $requiresReviewTotalPaid += (float) $inv->paid_amount;
+                        $requiresReviewTotalDue += (float) $inv->due_amount;
+                    }
+                }
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'student' => [
+                    'id' => $student->id,
+                    'name' => $student->student_name,
+                    'student_identity' => $student->student_identity,
+                    'class_name' => $student->schoolClass->class_name ?? 'N/A',
+                    'section_name' => $student->section->section_name ?? 'N/A',
+                    'roll_number' => $student->roll_number,
+                    'current_status' => $student->status,
+                    'discontinued_month' => $student->discontinued_month,
+                ],
+                'discontinuation' => [
+                    'last_active_month' => $lastActiveMonth,
+                    'last_active_month_name' => \Carbon\Carbon::parse($lastActiveMonth . '-01')->format('F Y'),
+                    'effective_date' => $effectiveDate,
+                    'effective_month_name' => $effectiveMonthName,
+                ],
+                'historical_category' => [
+                    'count' => count($historicalInvoices),
+                    'total_gross' => round($historicalTotalGross, 2),
+                    'total_net' => round($historicalTotalNet, 2),
+                    'total_paid' => round($historicalTotalPaid, 2),
+                    'total_due' => round($historicalTotalDue, 2),
+                    'invoices' => $historicalInvoices,
+                ],
+                'cancellation_category' => [
+                    'count' => count($eligibleCancellationInvoices),
+                    'total_net' => round($eligibleCancellationTotalNet, 2),
+                    'total_due' => round($eligibleCancellationTotalDue, 2),
+                    'invoices' => $eligibleCancellationInvoices,
+                ],
+                'review_category' => [
+                    'count' => count($requiresReviewInvoices),
+                    'total_gross' => round($requiresReviewTotalGross, 2),
+                    'total_paid' => round($requiresReviewTotalPaid, 2),
+                    'total_due' => round($requiresReviewTotalDue, 2),
+                    'invoices' => $requiresReviewInvoices,
+                ],
+                'already_cancelled_count' => $alreadyCancelledCount,
+            ], 200);
+        } catch (Exception $e) {
+            Log::error("Preview Discontinuation Error: " . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => 'Failed to generate discontinuation preview: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Execute safe historical student discontinuation and transactional fee reconciliation
+     */
+    public function discontinueAndReconcile(Request $request, $id): JsonResponse
+    {
+        if (!$request->filled('last_active_month') && $request->filled('month') && $request->filled('year')) {
+            $monthPad = str_pad((string) $request->month, 2, '0', STR_PAD_LEFT);
+            $request->merge([
+                'last_active_month' => sprintf('%04d-%02d', (int) $request->year, (int) $monthPad)
+            ]);
+        }
+
+        $request->validate([
+            'last_active_month' => [
+                'required',
+                'regex:/^\d{4}-(0[1-9]|1[0-2])$/'
+            ],
+            'month' => 'nullable|integer|between:1,12',
+            'year' => 'nullable|integer|between:2000,2099',
+            'reason' => 'nullable|string|max:255',
+            'confirm' => 'required',
+        ]);
+
+        $operatorId = Auth::id() ?? 1;
+        $lastActiveMonth = $request->last_active_month; // e.g. '2026-03'
+        $effectiveDate = \Carbon\Carbon::parse($lastActiveMonth . '-01')->addMonth()->toDateString(); // e.g. '2026-04-01'
+        $reason = $request->filled('reason') ? trim($request->reason) : null;
+
+        DB::beginTransaction();
+        try {
+            $student = Student::lockForUpdate()->findOrFail($id);
+            $previousStatus = $student->status;
+
+            // 1. Update Student record
+            $student->status = 'Inactive';
+            $student->discontinued_month = $lastActiveMonth;
+            $student->inactive_at = now();
+            $student->inactive_reason = $reason;
+            $student->save();
+
+            // 2. Query and lock all post-discontinuation invoices for this student
+            $invoices = \App\Models\FeeInvoice::with(['payments', 'feeSetup.category'])
+                ->where('student_id', $student->id)
+                ->lockForUpdate()
+                ->get();
+
+            $cancelledInvoiceIds = [];
+            $cancelledTotalDue = 0.00;
+            $skippedPaidInvoices = [];
+
+            foreach ($invoices as $inv) {
+                $billingPeriod = $inv->billing_period;
+
+                // Only consider invoices strictly after the last active month
+                if ($billingPeriod > $lastActiveMonth) {
+                    // Skip if already cancelled
+                    if ($inv->status === 'Cancelled') {
+                        continue;
+                    }
+
+                    $hasPayments = $inv->payments->isNotEmpty() || ((float)$inv->paid_amount > 0);
+
+                    if ($inv->status === 'Unpaid' && !$hasPayments) {
+                        // Safe to cancel: preserve original amount, discount, net_amount; set due_amount to 0
+                        $prevDue = (float) $inv->due_amount;
+
+                        $inv->status = 'Cancelled';
+                        $inv->due_amount = 0.00;
+                        $inv->save();
+
+                        // Create FeeAdjustmentLog audit record
+                        \App\Models\FeeAdjustmentLog::create([
+                            'fee_invoice_id' => $inv->id,
+                            'student_id' => $student->id,
+                            'user_id' => $operatorId,
+                            'invoice_no' => $inv->invoice_no,
+                            'student_identity' => $student->student_identity,
+                            'mode' => 'set_amount',
+                            'scope' => 'single',
+                            'adjustment_amount' => $prevDue,
+                            'previous_amount' => $inv->amount,
+                            'previous_discount' => $inv->discount,
+                            'previous_net_amount' => $inv->net_amount,
+                            'previous_due_amount' => $prevDue,
+                            'new_amount' => $inv->amount,
+                            'new_discount' => $inv->discount,
+                            'new_net_amount' => $inv->net_amount,
+                            'new_due_amount' => 0.00,
+                            'paid_amount' => 0.00,
+                            'reason' => 'Discontinued effective ' . $effectiveDate . ($reason ? ' - ' . $reason : ''),
+                        ]);
+
+                        $cancelledInvoiceIds[] = $inv->id;
+                        $cancelledTotalDue += $prevDue;
+                    } else {
+                        // Has payments or partial/paid status: MUST NOT be automatically altered
+                        $skippedPaidInvoices[] = [
+                            'id' => $inv->id,
+                            'invoice_no' => $inv->invoice_no,
+                            'month_name' => $inv->month_name,
+                            'category_name' => $inv->feeSetup->category->name ?? 'Fee',
+                            'net_amount' => (float) $inv->net_amount,
+                            'paid_amount' => (float) $inv->paid_amount,
+                            'due_amount' => (float) $inv->due_amount,
+                            'status' => $inv->status,
+                            'receipts' => $inv->payments->pluck('receipt_no')->all(),
+                        ];
+                    }
+                }
+            }
+
+            // 3. Create comprehensive StudentStatusLog audit entry
+            \App\Models\StudentStatusLog::create([
+                'student_id' => $student->id,
+                'user_id' => $operatorId,
+                'previous_status' => $previousStatus,
+                'new_status' => 'Inactive',
+                'action_type' => 'discontinuation',
+                'last_active_month' => $lastActiveMonth,
+                'effective_date' => $effectiveDate,
+                'reason' => $reason,
+                'reconciled_invoice_ids' => $cancelledInvoiceIds,
+                'reconciled_amount' => $cancelledTotalDue,
+                'skipped_invoice_ids' => collect($skippedPaidInvoices)->pluck('id')->all(),
+            ]);
+
+            DB::commit();
+
+            $msg = "Student successfully discontinued effective from {$lastActiveMonth}. " . count($cancelledInvoiceIds) . " post-discontinuation invoice(s) were cancelled (৳" . number_format($cancelledTotalDue, 2) . " dues cleared).";
+            if (!empty($skippedPaidInvoices)) {
+                $msg .= " Notice: " . count($skippedPaidInvoices) . " invoice(s) have recorded payments and were preserved for manual review.";
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => $msg,
+                'student_id' => $student->id,
+                'new_status' => 'Inactive',
+                'cancelled_count' => count($cancelledInvoiceIds),
+                'cancelled_amount' => round($cancelledTotalDue, 2),
+                'skipped_paid_invoices' => $skippedPaidInvoices,
+            ], 200);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error("Discontinuation Error: " . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => 'Discontinuation failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Reactivate a previously discontinued student (Preserving historical logs)
+     */
+    public function reactivateStudent(Request $request, $id): JsonResponse
+    {
+        $request->validate([
+            'reason' => 'nullable|string|max:255',
+        ]);
+
+        $operatorId = Auth::id() ?? 1;
+        $reason = $request->filled('reason') ? trim($request->reason) : 'Student reactivated by admin';
+
+        DB::beginTransaction();
+        try {
+            $student = Student::lockForUpdate()->findOrFail($id);
+
+            // Log reactivation in audit table preserving history
+            \App\Models\StudentStatusLog::create([
+                'student_id' => $student->id,
+                'user_id' => $operatorId,
+                'previous_status' => $student->status,
+                'new_status' => 'Active',
+                'action_type' => 'reactivation',
+                'last_active_month' => $student->discontinued_month, // Preserved history
+                'effective_date' => now()->toDateString(),
+                'reason' => $reason,
+            ]);
+
+            $student->status = 'Active';
+            $student->inactive_at = null;
+            $student->save();
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'new_status' => 'Active',
+                'message' => "Student {$student->student_name} has been reactivated successfully.",
+            ], 200);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error("Reactivate Student Error: " . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => 'Reactivation failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * স্টুডেন্ট স্ট্যাটাস টগল (Active <-> Inactive)
+     * Security Safeguard: Direct deactivation is prohibited to prevent bypassing invoice reconciliation.
      */
     public function toggleStatus($id): JsonResponse
     {
         try {
             $student = Student::findOrFail($id);
-            $newStatus = ($student->status === 'Inactive') ? 'Active' : 'Inactive';
-            $student->status = $newStatus;
-            $student->save();
 
-            return response()->json([
-                'status' => 'success',
-                'new_status' => $newStatus,
-                'message' => "Student status successfully changed to {$newStatus}."
-            ], 200);
+            if ($student->status === 'Active') {
+                return response()->json([
+                    'status' => 'error',
+                    'requires_reconciliation' => true,
+                    'message' => 'Direct deactivation is disabled. Please use the Discontinuation & Fee Reconciliation workflow to safely discontinue a student.'
+                ], 422);
+            }
+
+            // Delegate to safe reactivation workflow preserving history
+            return $this->reactivateStudent(request(), $id);
+
         } catch (Exception $e) {
             Log::error("Toggle Status Error: " . $e->getMessage());
             return response()->json([

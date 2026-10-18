@@ -69,14 +69,68 @@
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
-            min-height: calc(297mm - 8mm) !important;
-            display: block !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
             box-sizing: border-box !important;
             padding: 0 !important;
             margin: 0 !important;
             background: #ffffff !important;
             border: none !important;
             box-shadow: none !important;
+        }
+
+        /* Paginated Print Container Rules */
+        #printableReportArea.has-paginated-print > .print-top-section,
+        #printableReportArea.has-paginated-print > #printSigSpacer,
+        #printableReportArea.has-paginated-print > .print-signatures {
+            display: none !important;
+        }
+
+        #printableReportArea.has-paginated-print #printPagesContainer {
+            display: block !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .print-page {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            min-height: calc(297mm - 8mm) !important;
+            height: calc(297mm - 8mm) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+        }
+
+        .print-page:last-child {
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }
+
+        .print-page-content {
+            flex: 1 1 auto !important;
+            width: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        .print-page-footer {
+            flex: 0 0 auto !important;
+            width: 100% !important;
+            margin-top: auto !important;
+            padding-top: 6px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
         }
 
         .no-print,
@@ -267,6 +321,11 @@
             font-size: 8px !important;
         }
 
+        #printableReportArea td.col-method span {
+            font-size: 10.5px !important;
+            margin-top: 4px !important;
+        }
+
         #printableReportArea tfoot td.col-amount {
             font-size: 11.5px !important;
             font-weight: 900 !important;
@@ -370,12 +429,52 @@
         .print-signatures {
             display: block !important;
             width: 100% !important;
-            padding-top: 14px !important;
+            margin-top: 20px !important;
+            padding-top: 4px !important;
             padding-bottom: 2px !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
         }
     }
+
+    /* Measurement state for print pagination calculation */
+    #printableReportArea.measuring-print {
+        position: absolute !important;
+        left: -9999px !important;
+        top: 0 !important;
+        width: 200mm !important;
+        max-width: 200mm !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        background: #ffffff !important;
+        box-sizing: border-box !important;
+        font-family: 'Figtree', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    }
+    #printableReportArea.measuring-print .print-only { display: block !important; }
+    #printableReportArea.measuring-print .no-print { display: none !important; }
+    #printableReportArea.measuring-print table { width: 100% !important; border-collapse: collapse !important; border: 1px solid #475569 !important; }
+    #printableReportArea.measuring-print th { background-color: #008ED6 !important; color: #ffffff !important; font-size: 10px !important; font-weight: 900 !important; text-transform: uppercase !important; padding: 5px 6px !important; border: 1px solid #0072ad !important; }
+    #printableReportArea.measuring-print td { border: 1px solid #475569 !important; padding: 3px 4px !important; font-size: 8.5px !important; line-height: 1.2 !important; color: #0F1E2C !important; }
+    #printableReportArea.measuring-print th:first-child,
+    #printableReportArea.measuring-print td:first-child { width: 24px !important; min-width: 24px !important; max-width: 28px !important; padding: 3px 2px !important; text-align: center !important; }
+    #printableReportArea.measuring-print th.col-receipt, #printableReportArea.measuring-print td.col-receipt { width: 122px !important; min-width: 118px !important; max-width: 125px !important; }
+    #printableReportArea.measuring-print th.col-student, #printableReportArea.measuring-print td.col-student { width: 175px !important; min-width: 165px !important; max-width: 185px !important; }
+    #printableReportArea.measuring-print th.col-fee-details, #printableReportArea.measuring-print td.col-fee-details { width: auto !important; min-width: 250px !important; }
+    #printableReportArea.measuring-print th.col-method, #printableReportArea.measuring-print td.col-method { width: 58px !important; min-width: 55px !important; max-width: 65px !important; }
+    #printableReportArea.measuring-print th.col-amount, #printableReportArea.measuring-print td.col-amount { width: 88px !important; min-width: 85px !important; max-width: 92px !important; font-size: 11px !important; font-weight: 900 !important; font-family: monospace !important; text-align: right !important; }
+    #printableReportArea.measuring-print th.col-invoices, #printableReportArea.measuring-print td.col-invoices { width: 65px !important; min-width: 60px !important; max-width: 70px !important; text-align: center !important; }
+    #printableReportArea.measuring-print th.col-due-amount, #printableReportArea.measuring-print td.col-due-amount { width: 95px !important; min-width: 90px !important; max-width: 100px !important; font-size: 11px !important; font-weight: 900 !important; font-family: monospace !important; text-align: right !important; }
+    #printableReportArea.measuring-print .col-fee-details-list { display: flex !important; flex-direction: column !important; gap: 1.5px !important; }
+    #printableReportArea.measuring-print .fee-detail-line, #printableReportArea.measuring-print .fee-detail-line span { font-size: 10.5px !important; line-height: 1.25 !important; }
+    #printableReportArea.measuring-print td.col-method span { font-size: 10.5px !important; }
+    #printableReportArea.measuring-print .fee-cat-name { font-weight: 800 !important; color: #0F1E2C !important; }
+    #printableReportArea.measuring-print .fee-sep { font-weight: 700 !important; color: #475569 !important; margin: 0 2.5px !important; }
+    #printableReportArea.measuring-print .fee-months { font-weight: 600 !important; color: #0F1E2C !important; }
+    #printableReportArea.measuring-print .student-meta, #printableReportArea.measuring-print .student-meta span { font-size: 10.5px !important; font-weight: 700 !important; line-height: 1.25 !important; }
+    #printableReportArea.measuring-print tfoot td { padding: 5px 6px !important; font-size: 8.5px !important; font-weight: 800 !important; }
+    #printableReportArea.measuring-print tfoot td.col-amount { font-size: 11.5px !important; font-weight: 900 !important; font-family: monospace !important; text-align: right !important; }
 </style>
 @endpush
 
@@ -762,6 +861,9 @@
 
     <!-- Official Printable Report Area -->
     <div id="printableReportArea">
+        <!-- Paginated Print Output Container (Dynamically constructed for print) -->
+        <div id="printPagesContainer" class="print-only" style="display: none;"></div>
+
         <div class="print-top-section">
             <!-- Official Printable Report Header (Point 4: 1st page only, Point 3: minimized gaps) -->
             <div class="print-only mb-1.5">
@@ -789,7 +891,7 @@
                                 Hotline: 01896-220299, 01896-220300 &bull; Web: macs.edu.bd
                             </div>
                             <div style="margin-top: 4px; margin-bottom: 4px;">
-                                <span style="display: inline-block; background-color: #008ED6; color: #ffffff; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; padding: 4.5px 16px; border-radius: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact;" x-text="activeTab === 'collection' ? 'FEE COLLECTION HISTORY REPORT' : 'STUDENT DEFAULTERS & PENDING DUES REPORT'">
+                                <span style="display: inline-block; background-color: #008ED6; color: #ffffff; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; padding: 5px 18px; border-radius: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact;" x-text="activeTab === 'collection' ? 'FEE COLLECTION HISTORY REPORT' : 'STUDENT DEFAULTERS & PENDING DUES REPORT'">
                                     FEE COLLECTION HISTORY REPORT
                                 </span>
                             </div>
@@ -805,19 +907,19 @@
                 </table>
 
                 <!-- Filter Meta & Summary Highlights Card (Point 1: Ultra Compact Single-Row Table) -->
-                <div style="background-color: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 4px; padding: 2px 6px; margin-top: 1px; margin-bottom: 2px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                <div style="background-color: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 4px; padding: 3px 6px; margin-top: 1px; margin-bottom: 2px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
                     <!-- Collection Summary Row -->
                     <table x-show="activeTab === 'collection'" style="width: 100%; border: none !important; border-collapse: collapse; margin: 0 !important; padding: 0 !important; background: transparent !important;">
                         <tr style="border: none !important; background: transparent !important;">
-                            <td style="border: none !important; padding: 0.5px 2px !important; font-size: 8px; color: #334155; font-weight: 700; white-space: nowrap;">
+                            <td style="border: none !important; padding: 0.5px 2px !important; font-size: 10px; color: #334155; font-weight: 700; white-space: nowrap;">
                                 Branch: <strong style="color: #008ED6;">{{ $selectedBranchName }}</strong>
                                 &nbsp;&bull;&nbsp; Class: <strong style="color: #008ED6;">{{ $selectedClassName }}</strong>
                                 &nbsp;&bull;&nbsp; Period: <strong style="color: #0F1E2C;">{{ date('d M Y', strtotime($startDate)) }} - {{ date('d M Y', strtotime($endDate)) }}</strong>
                             </td>
-                            <td style="border: none !important; padding: 0.5px 2px !important; font-size: 8px; color: #334155; font-weight: 700; text-align: right; white-space: nowrap;">
-                                Receipts: <strong style="color: #0F1E2C;">{{ $totalCollectionCount }}</strong>@if($totalPaymentRecordsCount > $totalCollectionCount) <span style="color: #64748B; font-size: 7.5px;">({{ $totalPaymentRecordsCount }} Fees)</span>@endif
+                            <td style="border: none !important; padding: 0.5px 2px !important; font-size: 10px; color: #334155; font-weight: 700; text-align: right; white-space: nowrap;">
+                                Receipts: <strong style="color: #0F1E2C;">{{ $totalCollectionCount }}</strong>@if($totalPaymentRecordsCount > $totalCollectionCount) <span style="color: #64748B; font-size: 9px;">({{ $totalPaymentRecordsCount }} Fees)</span>@endif
                                 &nbsp;&bull;&nbsp; Students: <strong style="color: #0F1E2C;">{{ $uniquePayingStudentsCount }}</strong>
-                                &nbsp;&bull;&nbsp; Total Collected: <strong style="color: #009A49; font-size: 9.5px; font-family: monospace; font-weight: 900;">৳ {{ number_format($totalCollected, 2) }}</strong>
+                                &nbsp;&bull;&nbsp; Total Collected: <strong style="color: #009A49; font-size: 11.5px; font-family: monospace; font-weight: 900;">৳ {{ number_format($totalCollected, 2) }}</strong>
                             </td>
                         </tr>
                     </table>
@@ -825,15 +927,15 @@
                     <!-- Defaulters Summary Row -->
                     <table x-show="activeTab === 'dues'" style="width: 100%; border: none !important; border-collapse: collapse; margin: 0 !important; padding: 0 !important; background: transparent !important;">
                         <tr style="border: none !important; background: transparent !important;">
-                            <td style="border: none !important; padding: 0.5px 2px !important; font-size: 8px; color: #334155; font-weight: 700; white-space: nowrap;">
+                            <td style="border: none !important; padding: 0.5px 2px !important; font-size: 10px; color: #334155; font-weight: 700; white-space: nowrap;">
                                 Branch: <strong style="color: #008ED6;">{{ $selectedBranchName }}</strong>
                                 &nbsp;&bull;&nbsp; Class: <strong style="color: #008ED6;">{{ $selectedClassName }}</strong>
                                 &nbsp;&bull;&nbsp; Period: <strong style="color: #0F1E2C;">{{ date('d M Y', strtotime($startDate)) }} - {{ date('d M Y', strtotime($endDate)) }}</strong>
                             </td>
-                            <td style="border: none !important; padding: 0.5px 2px !important; font-size: 8px; color: #334155; font-weight: 700; text-align: right; white-space: nowrap;">
+                            <td style="border: none !important; padding: 0.5px 2px !important; font-size: 10px; color: #334155; font-weight: 700; text-align: right; white-space: nowrap;">
                                 Defaulters: <strong style="color: #DC2626;">{{ $uniqueDefaulterStudentsCount }}</strong>
                                 &nbsp;&bull;&nbsp; Invoices: <strong style="color: #0F1E2C;">{{ $totalDueInvoicesCount }}</strong>
-                                &nbsp;&bull;&nbsp; Total Due: <strong style="color: #DC2626; font-size: 9.5px; font-family: monospace; font-weight: 900;">৳ {{ number_format($totalDue, 2) }}</strong>
+                                &nbsp;&bull;&nbsp; Total Due: <strong style="color: #DC2626; font-size: 11.5px; font-family: monospace; font-weight: 900;">৳ {{ number_format($totalDue, 2) }}</strong>
                             </td>
                         </tr>
                     </table>
@@ -868,14 +970,16 @@
                                              <span class="no-print inline-block px-1.5 py-0.5 bg-blue-50 dark:bg-themeDark border border-blue-200 dark:border-white/[0.08] text-themeBlue text-[8.5px] font-black rounded-md">{{ $col->items_count }} Fees</span>
                                             @endif
                                         </div>
-                                        <div class="text-[10px] text-gray-500 font-semibold mt-0.5 whitespace-nowrap">{{ date('d M Y, h:i A', strtotime($col->payment_date ?? $col->created_at)) }}</div>
+                                        <div class="text-[10px] text-gray-500 font-semibold mt-0.5 whitespace-nowrap">{{ $col->collection_date_formatted ?? 'Date unavailable' }}</div>
                                     </td>
                                     <td class="py-0 px-0 col-student">
                                         <div class="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">{{ $col->student->student_name ?? 'N/A' }}</div>
                                         <div class="student-meta text-xs font-bold text-gray-600 dark:text-gray-400 mt-0.5 leading-tight whitespace-nowrap">
                                             <span class="font-mono text-gray-800 dark:text-gray-200">{{ $col->student->student_identity ?? 'N/A' }}</span>
                                             <span class="text-gray-400 mx-1">&bull;</span>
+                                            @if(!$selectedClass)
                                             <span class="text-gray-800 dark:text-gray-200">{{ $col->student->schoolClass->class_name ?? 'N/A' }}</span>,
+                                            @endif
                                             <span class="text-gray-700 dark:text-gray-300">Roll: {{ $col->student->roll_number ?? 'N/A' }}</span>
                                         </div>
                                     </td>
@@ -894,7 +998,7 @@
                                                 @endforeach
                                             @else
                                                 <div class="fee-detail-line text-xs leading-tight">
-                                                    <span class="fee-cat-name font-bold text-gray-900 dark:text-gray-100">{{ $col->categories_summary ?: 'Fee' }}</span>@if(!empty($col->months))<span class="fee-sep font-bold text-gray-500 dark:text-gray-400 mx-1">-</span><span class="fee-months font-semibold text-gray-800 dark:text-gray-200">{{ collect($col->months)->join(', ') }}</span>@endif
+                                                    <span class="fee-cat-name font-bold text-gray-900 dark:text-gray-100">{{ $col->categories_summary ?? 'Fee' }}</span>@if(!empty($col->months))<span class="fee-sep font-bold text-gray-500 dark:text-gray-400 mx-1">-</span><span class="fee-months font-semibold text-gray-800 dark:text-gray-200">{{ collect($col->months)->join(', ') }}</span>@endif
                                                 </div>
                                             @endif
                                         </div>
@@ -921,7 +1025,7 @@
                                         @endif
                                     </td>
                                     <td class="py-0 px-0 text-center col-method">
-                                        <span class="px-2 py-0.5 text-[10px] font-black rounded-md border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-themeDark/45">{{ $col->payment_method }}</span>
+                                        <span class="px-2 py-0.5 text-[10.5px] font-black rounded-md border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-themeDark/45">{{ $col->payment_method }}</span>
                                     </td>
                                     <td class="py-0 px-0 text-right font-black text-themeGreen dark:text-themeGreen text-sm sm:text-base font-mono col-amount">
                                         ৳ {{ number_format($col->paid_amount, 2) }}
@@ -977,7 +1081,9 @@
                                         <div class="student-meta text-xs font-bold text-gray-600 dark:text-gray-400 mt-0.5 leading-tight whitespace-nowrap">
                                             <span class="font-mono text-gray-800 dark:text-gray-200">{{ $def->student->student_identity ?? 'N/A' }}</span>
                                             <span class="text-gray-400 mx-1">&bull;</span>
+                                            @if(!$selectedClass)
                                             <span class="text-gray-800 dark:text-gray-200">{{ $def->student->schoolClass->class_name ?? 'N/A' }}</span>,
+                                            @endif
                                             <span class="text-gray-700 dark:text-gray-300">Roll: {{ $def->student->roll_number ?? 'N/A' }}</span>
                                             @if($def->student && $def->student->phone)
                                             <span class="text-gray-400 mx-1">&bull;</span>
@@ -1042,22 +1148,22 @@
         <!-- Dynamic spacer to push signatures to the absolute bottom of the final page -->
         <div id="printSigSpacer" class="print-only" style="width: 100%; height: 0px;"></div>
 
-        <!-- Official Printable Signatures (Point 2: Pinned to bottom of full-height page) -->
+        <!-- Official Printable Signatures (Point 3: Exactly once, only on final page near bottom) -->
         <div class="print-only print-signatures">
             <table style="width: 100%; border-collapse: collapse; border: none !important; margin-bottom: 2px;">
                 <tr style="border: none !important;">
                     <td style="width: 33.33%; text-align: center; vertical-align: bottom; border: none !important; padding: 0 !important;">
-                        <span style="display: inline-block; width: 140px; border-top: 1.2px dashed #94A3B8; padding-top: 4px; font-size: 8.5px; font-weight: 700; color: #334155;">
+                        <span style="display: inline-block; width: 145px; border-top: 1.4px dashed #64748B; padding-top: 5px; font-size: 10.5px; font-weight: 800; color: #0F1E2C; letter-spacing: 0.2px;">
                             Prepared By
                         </span>
                     </td>
                     <td style="width: 33.33%; text-align: center; vertical-align: bottom; border: none !important; padding: 0 !important;">
-                        <span style="display: inline-block; width: 140px; border-top: 1.2px dashed #94A3B8; padding-top: 4px; font-size: 8.5px; font-weight: 700; color: #334155;">
+                        <span style="display: inline-block; width: 145px; border-top: 1.4px dashed #64748B; padding-top: 5px; font-size: 10.5px; font-weight: 800; color: #0F1E2C; letter-spacing: 0.2px;">
                             Accounts Officer
                         </span>
                     </td>
                     <td style="width: 33.33%; text-align: center; vertical-align: bottom; border: none !important; padding: 0 !important;">
-                        <span style="display: inline-block; width: 140px; border-top: 1.2px dashed #94A3B8; padding-top: 4px; font-size: 8.5px; font-weight: 700; color: #334155;">
+                        <span style="display: inline-block; width: 165px; border-top: 1.4px dashed #64748B; padding-top: 5px; font-size: 10.5px; font-weight: 800; color: #0F1E2C; letter-spacing: 0.2px;">
                             Principal / Head of School
                         </span>
                     </td>
@@ -1065,7 +1171,7 @@
             </table>
 
             <!-- Subtle Brand Footer Line -->
-            <div style="margin-top: 6px; border-top: 1px solid #E2E8F0; padding-top: 3px; font-size: 7.5px; color: #94A3B8; display: flex; justify-content: space-between; align-items: center;">
+            <div style="margin-top: 6px; border-top: 1px solid #E2E8F0; padding-top: 3px; font-size: 8px; color: #64748B; display: flex; justify-content: space-between; align-items: center;">
                 <span>MACS School Management System &bull; Financial Reports</span>
                 <span>Generated: {{ date('d M, Y h:i A') }}</span>
             </div>
@@ -1304,169 +1410,271 @@
         }
     }
 
-    // Dynamic spacer calculation to guarantee signatures sit at the very bottom of the final page
-    function adjustPrintSignatures() {
+    let isPaginating = false;
+
+    // Paginated print generator guaranteeing signature pinned to bottom of final page and no orphaned rows
+    function buildPaginatedPrintPages() {
         const printable = document.getElementById('printableReportArea');
-        if (!printable) return;
+        if (!printable) return false;
 
-        let sandbox = null;
-        try {
-            // 1. Create a measurement sandbox with exact print styling and 200mm A4 printable width (210mm - 10mm margin)
-            sandbox = document.createElement('div');
-            sandbox.id = 'print-measure-sandbox';
-            sandbox.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 200mm; visibility: hidden; pointer-events: none; background: #fff; font-family: Figtree, Inter, sans-serif;';
+        const container = document.getElementById('printPagesContainer');
+        if (!container) return false;
 
-            const style = document.createElement('style');
-            style.textContent = `
-                #print-measure-sandbox * { box-sizing: border-box; }
-                #print-measure-sandbox table { width: 100% !important; border-collapse: collapse !important; border: 1px solid #475569 !important; }
-                #print-measure-sandbox th { background-color: #008ED6 !important; color: #fff !important; font-size: 10px !important; font-weight: 900 !important; text-transform: uppercase !important; padding: 5px 6px !important; border: 1px solid #0072ad !important; }
-                #print-measure-sandbox td { border: 1px solid #475569 !important; padding: 3px 4px !important; font-size: 8.5px !important; line-height: 1.2 !important; color: #0F1E2C !important; vertical-align: top !important; }
-                #print-measure-sandbox .col-fee-details-list { display: flex !important; flex-direction: column !important; gap: 1.5px !important; margin: 0 !important; padding: 0 !important; }
-                #print-measure-sandbox .col-fee-details-list > * { margin-top: 0 !important; margin-bottom: 0 !important; }
-                #print-measure-sandbox .fee-detail-line { font-size: 10.5px !important; line-height: 1.25 !important; margin: 0 !important; padding: 0 !important; }
-                #print-measure-sandbox .fee-detail-line span { font-size: 10.5px !important; line-height: 1.25 !important; padding: 0 !important; margin: 0 !important; }
-                #print-measure-sandbox .student-meta, #print-measure-sandbox .student-meta span { font-size: 10.5px !important; line-height: 1.25 !important; padding: 0 !important; }
-                #print-measure-sandbox th:first-child, #print-measure-sandbox td:first-child { width: 24px !important; min-width: 24px !important; max-width: 28px !important; text-align: center !important; padding: 3px 2px !important; }
-                #print-measure-sandbox tfoot td { padding: 4px 4px !important; font-size: 8.5px !important; font-weight: 800 !important; }
-                #print-measure-sandbox .print-signatures { width: 100% !important; padding-top: 14px !important; padding-bottom: 2px !important; }
-                #print-measure-sandbox .print-only { display: block !important; }
-            `;
-            sandbox.appendChild(style);
-            document.body.appendChild(sandbox);
+        container.innerHTML = '';
 
-            // Printable A4 page height (297mm - 8mm margin = 289mm = 1092px)
-            const pageH = Math.round(289 * (96 / 25.4));
+        // Determine active tab name
+        let activeTabName = 'collection';
+        const alpineEl = document.querySelector('[x-data]');
+        if (window.Alpine && alpineEl && Alpine.$data(alpineEl) && Alpine.$data(alpineEl).activeTab) {
+            activeTabName = Alpine.$data(alpineEl).activeTab;
+        } else {
+            const tabDues = document.getElementById('tab-dues');
+            if (tabDues && (tabDues.classList.contains('active') || tabDues.offsetParent !== null)) {
+                activeTabName = 'dues';
+            }
+        }
 
-            // Header branding (Page 1 only)
-            const headerBrand = printable.querySelector('.print-top-section > div.print-only');
-            let headerH = 0;
-            if (headerBrand) {
+        const activeTab = document.getElementById(`tab-${activeTabName}`);
+        const activeTable = activeTab ? activeTab.querySelector('table') : printable.querySelector('table');
+        if (!activeTable) return false;
+
+        const headerBrand = printable.querySelector('.print-top-section > div.print-only');
+        const sigElem = printable.querySelector('.print-signatures');
+        const thead = activeTable.querySelector('thead');
+        const tfoot = activeTable.querySelector('tfoot');
+        const rows = Array.from(activeTable.querySelectorAll('tbody tr'));
+
+        // Ensure inactive summary card is hidden during measurement
+        const duesSummaryTable = headerBrand ? headerBrand.querySelector('table[x-show*="dues"]') : null;
+        const colSummaryTable = headerBrand ? headerBrand.querySelector('table[x-show*="collection"]') : null;
+        if (headerBrand) {
+            if (activeTabName === 'collection') {
+                if (duesSummaryTable) duesSummaryTable.style.display = 'none';
+                if (colSummaryTable) colSummaryTable.style.display = 'table';
+            } else {
+                if (colSummaryTable) colSummaryTable.style.display = 'none';
+                if (duesSummaryTable) duesSummaryTable.style.display = 'table';
+            }
+        }
+
+        // Screen-to-print scale factor: print typography & compact padding render at ~0.78 of screen height
+        const SCALE = 0.78;
+
+        // Measure row heights accurately under 200mm printable width
+        printable.classList.add('measuring-print');
+        const headerH = Math.round((headerBrand ? headerBrand.offsetHeight : 110) * SCALE);
+        const theadH = Math.round((thead ? thead.offsetHeight : 28) * SCALE);
+        const tfootH = Math.round((tfoot ? tfoot.offsetHeight : 0) * SCALE);
+        const sigH = Math.round(((sigElem && sigElem.offsetHeight > 0) ? sigElem.offsetHeight : 55) * SCALE);
+        const rowHeights = rows.map(r => Math.round((r.offsetHeight || 30) * SCALE));
+        printable.classList.remove('measuring-print');
+
+        // Printable height budget (A4: 289mm = 1092px; 1060px safely preserves bottom margin without wasting space)
+        const PAGE_H = 1060;
+
+        const OVERHEAD_P1 = headerH + theadH + 6;
+        const OVERHEAD_PN = theadH + 6;
+        const SIG_ALLOWANCE = tfootH + sigH + 28; // Allowance for tfoot + margin + signatures + brand line
+
+        // Partition rows across pages
+        const pages = [];
+        const totalRows = rows.length;
+
+        if (totalRows === 0) {
+            pages.push([]);
+        } else {
+            let i = 0;
+            let isP1 = true;
+
+            while (i < totalRows) {
+                const overhead = isP1 ? OVERHEAD_P1 : OVERHEAD_PN;
+                const capacity = PAGE_H - overhead;
+
+                // Check remaining rows height from index i to end
+                let remainingRowsH = 0;
+                for (let j = i; j < totalRows; j++) {
+                    remainingRowsH += rowHeights[j];
+                }
+
+                // If ALL remaining rows AND totals AND signatures fit on this page, finish on this page
+                if (remainingRowsH + SIG_ALLOWANCE <= capacity) {
+                    const curPageRows = [];
+                    for (let j = i; j < totalRows; j++) {
+                        curPageRows.push(rows[j]);
+                    }
+                    pages.push(curPageRows);
+                    break;
+                }
+
+                // Not all remaining rows + signatures fit.
+                // We pack rows onto this intermediate page tightly to avoid unnecessary blank space below the table.
+                const curPageRows = [];
+                let curH = 0;
+
+                while (i < totalRows) {
+                    const rH = rowHeights[i];
+                    const rowsLeftAfterThis = totalRows - (i + 1);
+
+                    // If adding this row exceeds intermediate capacity, break to next page
+                    if (curH + rH > capacity && curPageRows.length > 0) {
+                        break;
+                    }
+
+                    // Protect against 0 data rows on the final page:
+                    // If this row would be the last row, but signatures won't fit here,
+                    // keep at least 1 or 2 rows for the final page alongside Grand Total and Signatures.
+                    if (rowsLeftAfterThis === 0 && curPageRows.length > 0) {
+                        if (curPageRows.length >= 2) {
+                            curPageRows.pop();
+                            i--; // Rewind so both rows move to next page
+                        }
+                        break;
+                    }
+
+                    // If only 1 row would be left after this row and it wouldn't fit with signatures on final page:
+                    // Only hold back 1 row if we have plenty of rows and are close to full capacity (>92%)
+                    if (rowsLeftAfterThis === 1 && curPageRows.length >= 3 && (curH + rH + rowHeights[i + 1] + SIG_ALLOWANCE > capacity)) {
+                        if (curH + rH > capacity * 0.92) {
+                            break;
+                        }
+                    }
+
+                    curPageRows.push(rows[i]);
+                    curH += rH;
+                    i++;
+                }
+
+                // Safety fallback to prevent infinite loop on abnormally tall single row
+                if (curPageRows.length === 0 && i < totalRows) {
+                    curPageRows.push(rows[i]);
+                    i++;
+                }
+
+                pages.push(curPageRows);
+                isP1 = false;
+            }
+        }
+
+        // Build DOM structure for each printed page
+        const numPages = pages.length;
+        pages.forEach((pRows, pageIdx) => {
+            const pageDiv = document.createElement('div');
+            pageDiv.className = 'print-page';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'print-page-content';
+
+            // Top branding & meta filter card ONLY on page 1
+            if (pageIdx === 0 && headerBrand) {
                 const headerClone = headerBrand.cloneNode(true);
                 headerClone.style.display = 'block';
-                sandbox.appendChild(headerClone);
-                headerH = headerClone.offsetHeight;
-                sandbox.removeChild(headerClone);
+
+                if (activeTabName === 'collection') {
+                    const duesCard = headerClone.querySelector('table[x-show*="dues"]');
+                    if (duesCard) duesCard.remove();
+                    const colCard = headerClone.querySelector('table[x-show*="collection"]');
+                    if (colCard) colCard.style.display = 'table';
+                } else {
+                    const colCard = headerClone.querySelector('table[x-show*="collection"]');
+                    if (colCard) colCard.remove();
+                    const duesCard = headerClone.querySelector('table[x-show*="dues"]');
+                    if (duesCard) duesCard.style.display = 'table';
+                }
+                contentDiv.appendChild(headerClone);
             }
 
-            // Determine active tab table
-            let activeTabName = 'collection';
-            const alpineEl = document.querySelector('[x-data]');
-            if (window.Alpine && alpineEl && Alpine.$data(alpineEl) && Alpine.$data(alpineEl).activeTab) {
-                activeTabName = Alpine.$data(alpineEl).activeTab;
+            // Page table with repeated thead
+            const pageTable = document.createElement('table');
+            pageTable.className = activeTable.className;
+
+            if (thead) {
+                pageTable.appendChild(thead.cloneNode(true));
+            }
+
+            const tbody = document.createElement('tbody');
+            if (pRows.length === 0) {
+                const emptyTr = document.createElement('tr');
+                const emptyTd = document.createElement('td');
+                emptyTd.colSpan = (activeTabName === 'collection' ? 6 : 7);
+                emptyTd.style.cssText = 'text-align: center; padding: 20px; font-size: 11px; color: #64748B;';
+                emptyTd.textContent = 'No records found for the selected period.';
+                emptyTr.appendChild(emptyTd);
+                tbody.appendChild(emptyTr);
             } else {
-                const tabDues = document.getElementById('tab-dues');
-                if (tabDues && (tabDues.classList.contains('active') || tabDues.offsetParent !== null)) {
-                    activeTabName = 'dues';
-                }
+                pRows.forEach(r => tbody.appendChild(r.cloneNode(true)));
             }
-            const activeTable = document.querySelector(`#tab-${activeTabName} table`) || printable.querySelector('table');
-            if (!activeTable) {
-                return;
-            }
+            pageTable.appendChild(tbody);
 
-            // Clone active table into sandbox to measure rows accurately at 190mm width
-            const tableClone = activeTable.cloneNode(true);
-            sandbox.appendChild(tableClone);
-
-            const theadClone = tableClone.querySelector('thead');
-            const theadH = theadClone ? theadClone.offsetHeight : 25;
-
-            const tfootClone = tableClone.querySelector('tfoot');
-            const tfootH = tfootClone ? tfootClone.offsetHeight : 0;
-
-            // Measure signature block
-            const sigElem = printable.querySelector('.print-signatures');
-            let sigH = 75;
-            if (sigElem) {
-                const sigClone = sigElem.cloneNode(true);
-                sigClone.style.display = 'block';
-                sandbox.appendChild(sigClone);
-                sigH = sigClone.offsetHeight;
-                sandbox.removeChild(sigClone);
+            // Totals row ONLY on final page
+            const isFinalPage = (pageIdx === numPages - 1);
+            if (isFinalPage && tfoot) {
+                pageTable.appendChild(tfoot.cloneNode(true));
             }
 
-            // Simulate page breaks
-            let curPage = 1;
-            let curH = headerH + theadH;
+            contentDiv.appendChild(pageTable);
+            pageDiv.appendChild(contentDiv);
 
-            const rows = tableClone.querySelectorAll('tbody tr');
-            rows.forEach((row) => {
-                const rH = row.offsetHeight;
-                if (curH + rH > pageH) {
-                    curPage++;
-                    curH = theadH + rH; // Page 2+ repeats thead!
+            // Signatures ONLY on final page (Point 3: Exactly once, positioned near bottom, reduced gap)
+            if (isFinalPage) {
+                const footerDiv = document.createElement('div');
+                footerDiv.className = 'print-page-footer';
+
+                if (sigElem) {
+                    const sigClone = sigElem.cloneNode(true);
+                    sigClone.style.display = 'block';
+                    footerDiv.appendChild(sigClone);
                 } else {
-                    curH += rH;
+                    const brandFoot = document.createElement('div');
+                    brandFoot.style.cssText = 'margin-top: 6px; border-top: 1px solid #E2E8F0; padding-top: 3px; font-size: 8px; color: #64748B; display: flex; justify-content: space-between; align-items: center; width: 100%;';
+                    brandFoot.innerHTML = `<span>MACS School Management System &bull; Financial Reports</span><span>Generated: {{ date('d M, Y h:i A') }}</span>`;
+                    footerDiv.appendChild(brandFoot);
                 }
-            });
 
-            if (tfootH > 0) {
-                if (curH + tfootH > pageH) {
-                    curPage++;
-                    curH = theadH + tfootH;
-                } else {
-                    curH += tfootH;
-                }
+                pageDiv.appendChild(footerDiv);
             }
 
-            // Calculate remaining space on the last page
-            let spacerH = 0;
-            let breakBefore = false;
-            const safetyBuffer = 20;
+            container.appendChild(pageDiv);
+        });
 
-            if (curH + sigH + safetyBuffer <= pageH) {
-                spacerH = pageH - curH - sigH - safetyBuffer;
-            } else {
-                // Signatures overflow to next page, pin to bottom of that new page
-                breakBefore = true;
-                curPage++;
-                spacerH = pageH - sigH - safetyBuffer;
-            }
+        printable.classList.add('has-paginated-print');
+        return true;
+    }
 
-            const spacer = document.getElementById('printSigSpacer');
-            if (spacer) {
-                spacer.style.height = Math.max(0, Math.floor(spacerH)) + 'px';
-                if (breakBefore) {
-                    spacer.style.breakBefore = 'page';
-                    spacer.style.pageBreakBefore = 'always';
-                } else {
-                    spacer.style.breakBefore = 'auto';
-                    spacer.style.pageBreakBefore = 'auto';
-                }
-            }
-        } catch (e) {
-            console.error('adjustPrintSignatures error:', e);
-        } finally {
-            if (sandbox && sandbox.parentNode) {
-                sandbox.parentNode.removeChild(sandbox);
-            }
+    function resetPrintPagination() {
+        const printable = document.getElementById('printableReportArea');
+        if (printable) {
+            printable.classList.remove('has-paginated-print');
+        }
+        const container = document.getElementById('printPagesContainer');
+        if (container) {
+            container.innerHTML = '';
         }
     }
 
     function prepareAndPrint() {
+        isPaginating = true;
         try {
-            adjustPrintSignatures();
+            buildPaginatedPrintPages();
         } catch (e) {
-            console.error('adjustPrintSignatures failed:', e);
+            console.error('buildPaginatedPrintPages failed:', e);
         }
         window.print();
+        setTimeout(() => { isPaginating = false; }, 1500);
     }
 
     window.addEventListener('beforeprint', () => {
-        try {
-            adjustPrintSignatures();
-        } catch (e) {
-            console.error('beforeprint error:', e);
+        if (!isPaginating) {
+            try {
+                buildPaginatedPrintPages();
+            } catch (e) {
+                console.error('beforeprint pagination error:', e);
+            }
         }
     });
+
     window.addEventListener('afterprint', () => {
-        const spacer = document.getElementById('printSigSpacer');
-        if (spacer) {
-            spacer.style.height = '0px';
-            spacer.style.breakBefore = 'auto';
-            spacer.style.pageBreakBefore = 'auto';
-        }
+        resetPrintPagination();
+        isPaginating = false;
     });
 </script>
 @endpush

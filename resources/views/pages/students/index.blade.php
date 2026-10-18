@@ -520,6 +520,243 @@
         </div>
     </div>
 </div>
+
+<!-- Discontinuation & Fee Reconciliation Modal -->
+<div id="discontinuationModal" class="hidden fixed inset-0 z-[9999] items-center justify-center bg-black/40 backdrop-blur-md p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-themeNavy w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden border border-gray-150 dark:border-white/[0.08] my-8">
+        <!-- Modal Header -->
+        <div class="px-6 py-5 border-b border-gray-150 dark:border-white/[0.08] flex items-center justify-between bg-gray-50/50 dark:bg-themeDark/40">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-450">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                        Discontinue Student
+                        <span id="discStudentIdentity" class="text-xs px-2 py-0.5 rounded-lg font-mono font-bold bg-themeBlue/10 text-themeBlue"></span>
+                    </h3>
+                    <p id="discStudentName" class="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5"></p>
+                </div>
+            </div>
+            <button type="button" onclick="window.closeModal('discontinuationModal')" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-themeDark/60 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+            <input type="hidden" id="discStudentId">
+
+            @php
+                $currentYearNum = (int) date('Y');
+                $currentMonthNum = date('m');
+                $currentMonthName = date('F');
+                $sessionYearsList = \App\Models\SessionYear::pluck('session_name')->map(function($s) {
+                    return preg_match('/\b(20\d{2})\b/', $s, $m) ? (int)$m[1] : null;
+                })->filter()->all();
+                $yearRangeList = range($currentYearNum + 1, $currentYearNum - 4);
+                $availableDiscYears = array_values(array_unique(array_merge($yearRangeList, $sessionYearsList)));
+                rsort($availableDiscYears);
+            @endphp
+            <!-- Month, Year & Reason Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Custom Alpine Month Dropdown -->
+                <div x-data="{
+                    open: false,
+                    value: '{{ $currentMonthNum }}',
+                    label: '{{ $currentMonthName }}',
+                    items: [
+                        { value: '01', label: 'January' },
+                        { value: '02', label: 'February' },
+                        { value: '03', label: 'March' },
+                        { value: '04', label: 'April' },
+                        { value: '05', label: 'May' },
+                        { value: '06', label: 'June' },
+                        { value: '07', label: 'July' },
+                        { value: '08', label: 'August' },
+                        { value: '09', label: 'September' },
+                        { value: '10', label: 'October' },
+                        { value: '11', label: 'November' },
+                        { value: '12', label: 'December' }
+                    ],
+                    setMonth(val) {
+                        let pad = String(val).padStart(2, '0');
+                        let found = this.items.find(i => i.value === pad);
+                        if (found) {
+                            this.value = found.value;
+                            this.label = found.label;
+                        }
+                        let el = document.getElementById('discMonth');
+                        if (el) el.value = pad;
+                    },
+                    select(item) {
+                        this.value = item.value;
+                        this.label = item.label;
+                        this.open = false;
+                        let el = document.getElementById('discMonth');
+                        if (el) el.value = item.value;
+                        window.onDiscontinuationPeriodChange();
+                    }
+                }" @set-disc-month.window="setMonth($event.detail)" @click.away="open = false" class="relative" :class="open ? 'z-30' : 'z-20'">
+                    <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Last Active Month *</label>
+                    <button type="button" @click="open = !open" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span class="truncate" x-text="label">{{ $currentMonthName }}</span>
+                        <svg class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <input type="hidden" id="discMonth" :value="value" value="{{ $currentMonthNum }}">
+
+                    <div x-show="open" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                        <template x-for="item in items" :key="item.value">
+                            <button type="button" @click="select(item)" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="value == item.value ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200 font-semibold'">
+                                <span x-text="item.label"></span>
+                                <svg x-show="value == item.value" class="w-3.5 h-3.5 text-themeBlue shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </button>
+                        </template>
+                    </div>
+                    <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1 font-medium">Final billing month.</p>
+                </div>
+
+                <!-- Custom Alpine Year Dropdown -->
+                <div x-data="{
+                    open: false,
+                    value: '{{ $currentYearNum }}',
+                    label: '{{ $currentYearNum }}',
+                    items: [
+                        @foreach($availableDiscYears as $yr)
+                            { value: '{{ $yr }}', label: '{{ $yr }}' },
+                        @endforeach
+                    ],
+                    setYear(val) {
+                        let y = String(val);
+                        let found = this.items.find(i => String(i.value) === y);
+                        if (!found) {
+                            this.items.unshift({ value: y, label: y });
+                            this.items.sort((a, b) => Number(b.value) - Number(a.value));
+                        }
+                        this.value = y;
+                        this.label = y;
+                        let el = document.getElementById('discYear');
+                        if (el) el.value = y;
+                    },
+                    select(item) {
+                        this.value = item.value;
+                        this.label = item.label;
+                        this.open = false;
+                        let el = document.getElementById('discYear');
+                        if (el) el.value = item.value;
+                        window.onDiscontinuationPeriodChange();
+                    }
+                }" @set-disc-year.window="setYear($event.detail)" @click.away="open = false" class="relative" :class="open ? 'z-30' : 'z-10'">
+                    <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Last Active Year *</label>
+                    <button type="button" @click="open = !open" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span class="truncate" x-text="label">{{ $currentYearNum }}</span>
+                        <svg class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <input type="hidden" id="discYear" :value="value" value="{{ $currentYearNum }}">
+
+                    <div x-show="open" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                        <template x-for="item in items" :key="item.value">
+                            <button type="button" @click="select(item)" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="value == item.value ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200 font-semibold'">
+                                <span x-text="item.label"></span>
+                                <svg x-show="value == item.value" class="w-3.5 h-3.5 text-themeBlue shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </button>
+                        </template>
+                    </div>
+                    <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1 font-medium">Billing session year.</p>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Discontinuation Reason</label>
+                    <input type="text" id="discReason" placeholder="e.g. TC issued, Family relocated..." class="w-full px-3.5 h-11 text-xs font-semibold rounded-xl bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
+                    <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1 font-medium">Optional note for audit logs.</p>
+                </div>
+            </div>
+            <input type="hidden" id="discLastActiveMonth">
+            <p class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                Note: The student remains active through this month and becomes inactive effective the 1st day of the following month.
+            </p>
+
+            <!-- Analyze Button -->
+            <div class="flex justify-end">
+                <button type="button" onclick="window.loadDiscontinuationPreview()" id="btnAnalyzeInvoices" class="h-9 px-4 bg-themeBlue text-white text-xs font-black rounded-xl hover:bg-themeBlue/90 transition-all flex items-center gap-1.5 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    Analyze Invoices
+                </button>
+            </div>
+
+            <!-- Loading Skeleton -->
+            <div id="discLoadingSkeleton" class="hidden py-6 text-center space-y-3">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-themeBlue border-r-transparent"></div>
+                <p class="text-xs font-bold text-gray-500">Analyzing billing records & payment history...</p>
+            </div>
+
+            <!-- Preview Results Container -->
+            <div id="discPreviewResults" class="hidden space-y-4 pt-2">
+                <!-- Effective Banner -->
+                <div class="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-themeBlue/10 border border-indigo-100 dark:border-themeBlue/20 flex items-center justify-between text-xs">
+                    <span class="font-bold text-gray-700 dark:text-gray-200">
+                        Effective Inactive Date: <strong id="discEffectiveDate" class="text-themeBlue"></strong>
+                    </span>
+                    <span class="text-[11px] font-semibold text-gray-500">
+                        Last Active: <span id="discLastActiveLabel" class="font-bold text-gray-700 dark:text-gray-300"></span>
+                    </span>
+                </div>
+
+                <!-- 3 Categories Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <!-- 1. Historical Invoices (Preserved) -->
+                    <div class="p-3.5 rounded-2xl border border-emerald-150 dark:border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-500/5">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Historical Invoices</span>
+                            <span id="discHistCount" class="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">0</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Preserved untouched. Valid historical bills.</p>
+                        <div class="mt-2 text-xs font-black text-gray-800 dark:text-gray-200">
+                            Dues: ৳<span id="discHistDue">0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Safe to Cancel Invoices -->
+                    <div class="p-3.5 rounded-2xl border border-sky-150 dark:border-sky-500/20 bg-sky-50/40 dark:bg-sky-500/5">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-sky-700 dark:text-sky-400">Safe to Cancel</span>
+                            <span id="discCancelCount" class="text-xs px-2 py-0.5 rounded-full font-bold bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300">0</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Unpaid post-discontinuation invoices to be cancelled.</p>
+                        <div class="mt-2 text-xs font-black text-sky-600 dark:text-sky-400">
+                            Clear: ৳<span id="discCancelDue">0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Invoices with Payments (Requires Review) -->
+                    <div class="p-3.5 rounded-2xl border border-amber-150 dark:border-amber-500/20 bg-amber-50/40 dark:bg-amber-500/5">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">Has Payments</span>
+                            <span id="discReviewCount" class="text-xs px-2 py-0.5 rounded-full font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300">0</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Will NOT be auto-cancelled. Preserved for review.</p>
+                        <div class="mt-2 text-xs font-black text-amber-600 dark:text-amber-400">
+                            Paid: ৳<span id="discReviewPaid">0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invoices Details List Accordion -->
+                <div id="discInvoicesDetailBox" class="space-y-2 text-xs">
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 bg-gray-50/50 dark:bg-themeNavy/30 flex items-center justify-between border-t border-gray-150 dark:border-white/[0.08]">
+            <button type="button" onclick="window.closeModal('discontinuationModal')" class="h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-100 dark:hover:bg-themeDark transition-colors">
+                Close
+            </button>
+            <button type="button" id="btnConfirmDiscontinue" onclick="window.submitDiscontinuationReconcile()" disabled class="h-10 px-6 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-wider opacity-50 cursor-not-allowed">
+                Confirm Discontinuation & Reconcile
+            </button>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -625,11 +862,19 @@
                     formattedShift = shiftName.replace(/\s*student/i, '').trim();
                 }
 
+                let discBadge = (item.status === 'Inactive' && item.discontinued_month)
+                    ? `<span class="ml-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-gray-100 dark:bg-themeDark text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/[0.06]">Disc: ${item.discontinued_month}</span>`
+                    : '';
+
+                let safeStudentName = (item.student_name || '').replace(/'/g, "\\'");
+                let safeIdentity = (item.student_identity || '').replace(/'/g, "\\'");
+                let safeDiscMonth = item.discontinued_month || '';
+
                 let statusBadge = item.status === 'Inactive'
-                    ? `<button type="button" onclick="toggleStudentStatus(${item.id}, 'Active')" title="Click to reactivate" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-450 border border-rose-200 dark:border-rose-500/20 hover:scale-105 transition-all cursor-pointer">
+                    ? `<button type="button" onclick="toggleStudentStatus(${item.id}, 'Active', '${safeStudentName}', '${safeIdentity}', '${safeDiscMonth}')" title="Click to reactivate student" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-450 border border-rose-200 dark:border-rose-500/20 hover:scale-105 transition-all cursor-pointer">
                         <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive
-                       </button>`
-                    : `<button type="button" onclick="toggleStudentStatus(${item.id}, 'Inactive')" title="Click to deactivate" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-450 border border-emerald-200 dark:border-emerald-500/20 hover:scale-105 transition-all cursor-pointer">
+                       </button>${discBadge}`
+                    : `<button type="button" onclick="toggleStudentStatus(${item.id}, 'Inactive', '${safeStudentName}', '${safeIdentity}', '${safeDiscMonth}')" title="Click to discontinue & reconcile invoices" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-450 border border-emerald-200 dark:border-emerald-500/20 hover:scale-105 transition-all cursor-pointer">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Active
                        </button>`;
 
@@ -834,19 +1079,226 @@
         }
     });
 
-    window.toggleStudentStatus = async function(studentId, targetStatus) {
-        let isDeactivating = targetStatus === 'Inactive';
-        let title = isDeactivating ? "Deactivate Student?" : "Reactivate Student?";
-        let msg = isDeactivating
-            ? "Are you sure you want to deactivate this student? They will be excluded from all invoice generation, marks entry, and exam results."
-            : "Are you sure you want to reactivate this student?";
+    window.toggleStudentStatus = async function(studentId, targetStatus, studentName = '', studentIdentity = '', discontinuedMonth = '') {
+        if (targetStatus === 'Inactive') {
+            window.openDiscontinuationModal(studentId, studentName, studentIdentity, discontinuedMonth);
+            return;
+        }
 
-        let confirmed = await showConfirm(title, msg);
+        // Reactivation confirmation
+        let confirmed = await showConfirm(
+            "Reactivate Student?",
+            `Do you want to reactivate ${studentName || 'this student'}? They will be active for current and future billing periods. Historical discontinuation logs will remain preserved.`
+        );
         if (!confirmed) return;
 
         try {
-            let res = await axios.post(`/ajax/students/${studentId}/toggle-status`, {}, getAuthHeaders());
+            let res = await axios.post(`/ajax/students/${studentId}/reactivate`, {}, getAuthHeaders());
             if (res.data.status === 'success') {
+                if (typeof showSuccess === 'function') {
+                    await showSuccess(res.data.message);
+                } else {
+                    await showAlert(res.data.message, "Reactivated");
+                }
+                window.fetchList();
+            } else {
+                await showAlert(res.data.message || "Reactivation failed.", "Error");
+            }
+        } catch (err) {
+            let errMsg = err.response?.data?.message || "Reactivation failed.";
+            await showAlert(errMsg, "Error");
+        }
+    };
+
+    window.onDiscontinuationPeriodChange = function() {
+        let monthEl = document.getElementById('discMonth');
+        let yearEl = document.getElementById('discYear');
+        if (!monthEl || !yearEl) return;
+
+        let mVal = monthEl.value;
+        let yVal = yearEl.value;
+        let ym = `${yVal}-${mVal}`;
+        document.getElementById('discLastActiveMonth').value = ym;
+
+        // Calculate and preview effective inactive date (first day of following month)
+        let mNum = parseInt(mVal, 10);
+        let yNum = parseInt(yVal, 10);
+        let nextMonth = mNum === 12 ? 1 : mNum + 1;
+        let nextYear = mNum === 12 ? yNum + 1 : yNum;
+        let monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        let effectiveStr = `01 ${monthNames[nextMonth]} ${nextYear}`;
+
+        let effEl = document.getElementById('discEffectiveDate');
+        if (effEl) effEl.innerText = effectiveStr;
+        let labelEl = document.getElementById('discLastActiveLabel');
+        if (labelEl) labelEl.innerText = `${monthNames[mNum]} ${yNum}`;
+
+        window.loadDiscontinuationPreview();
+    };
+
+    window.openDiscontinuationModal = function(id, name, identity, currentDiscMonth) {
+        document.getElementById('discStudentId').value = id;
+        document.getElementById('discStudentName').innerText = name || '';
+        document.getElementById('discStudentIdentity').innerText = identity ? `ID: ${identity}` : '';
+
+        // Default to previous month or current month (YYYY-MM)
+        let now = new Date();
+        let defaultYear = now.getFullYear();
+        let defaultMonth = String(now.getMonth() + 1).padStart(2, '0');
+
+        if (currentDiscMonth && currentDiscMonth.includes('-')) {
+            let parts = currentDiscMonth.split('-');
+            defaultYear = parseInt(parts[0], 10);
+            defaultMonth = parts[1].padStart(2, '0');
+        } else {
+            let prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            defaultYear = prevDate.getFullYear();
+            defaultMonth = String(prevDate.getMonth() + 1).padStart(2, '0');
+        }
+
+        let yearEl = document.getElementById('discYear');
+        let monthEl = document.getElementById('discMonth');
+
+        if (yearEl) yearEl.value = defaultYear;
+        if (monthEl) monthEl.value = defaultMonth;
+
+        window.dispatchEvent(new CustomEvent('set-disc-month', { detail: defaultMonth }));
+        window.dispatchEvent(new CustomEvent('set-disc-year', { detail: defaultYear }));
+
+        document.getElementById('discLastActiveMonth').value = `${defaultYear}-${defaultMonth}`;
+        document.getElementById('discReason').value = '';
+
+        document.getElementById('discPreviewResults').classList.add('hidden');
+        let confirmBtn = document.getElementById('btnConfirmDiscontinue');
+        confirmBtn.disabled = true;
+        confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+        window.openModal('discontinuationModal');
+        window.onDiscontinuationPeriodChange();
+    };
+
+    window.loadDiscontinuationPreview = async function() {
+        let studentId = document.getElementById('discStudentId').value;
+        let month = document.getElementById('discLastActiveMonth').value;
+        if (!month) {
+            await showAlert("Please select the last active billing month.", "Input Required");
+            return;
+        }
+
+        document.getElementById('discLoadingSkeleton').classList.remove('hidden');
+        document.getElementById('discPreviewResults').classList.add('hidden');
+        let confirmBtn = document.getElementById('btnConfirmDiscontinue');
+        confirmBtn.disabled = true;
+        confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+        try {
+            let res = await axios.get(`/ajax/students/${studentId}/discontinuation-preview?last_active_month=${month}`, getAuthHeaders());
+            document.getElementById('discLoadingSkeleton').classList.add('hidden');
+
+            if (res.data.status === 'success') {
+                let data = res.data;
+                document.getElementById('discEffectiveDate').innerText = data.discontinuation.effective_date;
+                document.getElementById('discLastActiveLabel').innerText = data.discontinuation.last_active_month_name;
+
+                // Summary cards
+                document.getElementById('discHistCount').innerText = data.historical_category.count;
+                document.getElementById('discHistDue').innerText = Number(data.historical_category.total_due).toFixed(2);
+
+                document.getElementById('discCancelCount').innerText = data.cancellation_category.count;
+                document.getElementById('discCancelDue').innerText = Number(data.cancellation_category.total_due).toFixed(2);
+
+                document.getElementById('discReviewCount').innerText = data.review_category.count;
+                document.getElementById('discReviewPaid').innerText = Number(data.review_category.total_paid).toFixed(2);
+
+                // Details list
+                let detailBox = document.getElementById('discInvoicesDetailBox');
+                let html = '';
+
+                if (data.cancellation_category.count > 0) {
+                    html += `<div class="p-3 bg-sky-50/50 dark:bg-sky-500/5 rounded-2xl border border-sky-150 dark:border-sky-500/10">
+                        <div class="font-bold text-sky-800 dark:text-sky-300 mb-1.5 flex items-center justify-between">
+                            <span>Invoices to be Cancelled (${data.cancellation_category.count})</span>
+                            <span class="text-[11px] font-mono font-black">Total Due: ৳${Number(data.cancellation_category.total_due).toFixed(2)}</span>
+                        </div>
+                        <div class="space-y-1 max-h-36 overflow-y-auto pr-1">`;
+                    data.cancellation_category.invoices.forEach(inv => {
+                        html += `<div class="flex items-center justify-between py-1 border-b border-sky-100 dark:border-sky-500/10 last:border-none">
+                            <div>
+                                <span class="font-mono font-bold text-gray-700 dark:text-gray-300">${inv.invoice_no}</span>
+                                <span class="text-gray-400 dark:text-gray-500 ml-1.5">(${inv.month_name} - ${inv.category_name})</span>
+                            </div>
+                            <div class="font-mono font-bold text-gray-800 dark:text-gray-200">
+                                ৳${Number(inv.due_amount).toFixed(2)}
+                            </div>
+                        </div>`;
+                    });
+                    html += `</div></div>`;
+                } else {
+                    html += `<div class="p-3 bg-gray-50/80 dark:bg-themeDark/40 rounded-2xl text-gray-500 text-center font-medium">No post-discontinuation unpaid invoices found to cancel.</div>`;
+                }
+
+                if (data.review_category.count > 0) {
+                    html += `<div class="p-3 bg-amber-50/50 dark:bg-amber-500/5 rounded-2xl border border-amber-200 dark:border-amber-500/20">
+                        <div class="font-bold text-amber-800 dark:text-amber-300 mb-1.5 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                Invoices with Payments (Will NOT be auto-cancelled)
+                            </span>
+                            <span class="text-[11px] font-mono font-black text-amber-700 dark:text-amber-300">Paid: ৳${Number(data.review_category.total_paid).toFixed(2)}</span>
+                        </div>
+                        <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1">`;
+                    data.review_category.invoices.forEach(inv => {
+                        let rList = inv.receipts.map(r => `${r.receipt_no} (৳${r.paid_amount})`).join(', ');
+                        html += `<div class="py-1 border-b border-amber-100 dark:border-amber-500/10 last:border-none">
+                            <div class="flex items-center justify-between">
+                                <span class="font-mono font-bold text-gray-700 dark:text-gray-300">${inv.invoice_no} (${inv.month_name})</span>
+                                <span class="font-mono font-bold text-amber-700 dark:text-amber-300">Paid: ৳${Number(inv.paid_amount).toFixed(2)}</span>
+                            </div>
+                            <div class="text-[10px] text-gray-500 mt-0.5">Receipts: ${rList || 'N/A'}</div>
+                        </div>`;
+                    });
+                    html += `</div></div>`;
+                }
+
+                detailBox.innerHTML = html;
+                document.getElementById('discPreviewResults').classList.remove('hidden');
+
+                confirmBtn.disabled = false;
+                confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                await showAlert(res.data.message || "Failed to load preview.", "Error");
+            }
+        } catch (e) {
+            document.getElementById('discLoadingSkeleton').classList.add('hidden');
+            await showAlert(e.response?.data?.message || "Failed to analyze invoices.", "Error");
+        }
+    };
+
+    window.submitDiscontinuationReconcile = async function() {
+        let studentId = document.getElementById('discStudentId').value;
+        let month = document.getElementById('discLastActiveMonth').value;
+        let reason = document.getElementById('discReason').value;
+
+        let confirmed = await showConfirm(
+            "Confirm Discontinuation & Fee Reconciliation",
+            `Are you sure you want to discontinue this student effective after ${month}? Eligible post-discontinuation invoices will be safely cancelled and historical records will remain intact.`
+        );
+        if (!confirmed) return;
+
+        let confirmBtn = document.getElementById('btnConfirmDiscontinue');
+        confirmBtn.disabled = true;
+        let originalText = confirmBtn.innerText;
+        confirmBtn.innerText = "Processing...";
+
+        try {
+            let res = await axios.post(`/ajax/students/${studentId}/discontinue-reconcile`, {
+                last_active_month: month,
+                reason: reason,
+                confirm: true,
+            }, getAuthHeaders());
+
+            if (res.data.status === 'success') {
+                window.closeModal('discontinuationModal');
                 if (typeof showSuccess === 'function') {
                     await showSuccess(res.data.message);
                 } else {
@@ -854,11 +1306,14 @@
                 }
                 window.fetchList();
             } else {
-                await showAlert(res.data.message || "Failed to update status.", "Error");
+                await showAlert(res.data.message || "Reconciliation failed.", "Error");
             }
-        } catch (err) {
-            let errMsg = err.response?.data?.message || "Status update failed.";
+        } catch (e) {
+            let errMsg = e.response?.data?.message || "Discontinuation failed.";
             await showAlert(errMsg, "Error");
+        } finally {
+            confirmBtn.disabled = false;
+            confirmBtn.innerText = originalText;
         }
     };
 

@@ -72,23 +72,23 @@ class FeeAutoGenerate extends Command
             foreach ($feeSetups as $feeSetup) {
                 $this->info("Processing: Branch ID {$feeSetup->branch_id} | Class ID {$feeSetup->class_id} | Session ID {$feeSetup->session_year_id} | Category ID {$feeSetup->fee_category_id}");
 
-                // Find all active students for this branch, class, and session
-                $students = \App\Models\Student::where([
-                    'branch_id' => $feeSetup->branch_id,
-                    'class_id' => $feeSetup->class_id,
-                    'session_year_id' => $feeSetup->session_year_id,
-                    'status' => 'Active'
-                ])->get();
-
-                if ($students->isEmpty()) {
-                    $this->line(" - No active students found in this group.");
-                    continue;
-                }
-
-                // Determine serials and invoice prefix
+                // Determine serials, padded month and invoice prefix
                 $monthIndex = array_search($currentMonth, ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']);
                 $paddedMonth = str_pad($monthIndex + 1, 2, '0', STR_PAD_LEFT);
                 $prefix = "INV-{$targetYear}{$paddedMonth}-";
+
+                // Find all eligible students for this branch, class, session, and target billing month
+                $students = \App\Models\Student::eligibleForBilling((int) $targetYear, $paddedMonth)
+                    ->where([
+                        'branch_id' => $feeSetup->branch_id,
+                        'class_id' => $feeSetup->class_id,
+                        'session_year_id' => $feeSetup->session_year_id,
+                    ])->get();
+
+                if ($students->isEmpty()) {
+                    $this->line(" - No eligible students found in this group.");
+                    continue;
+                }
 
                 // Find the last invoice for the prefix to compute serial
                 $lastInvoice = \App\Models\FeeInvoice::where('invoice_no', 'like', $prefix . '%')

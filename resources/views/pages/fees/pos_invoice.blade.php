@@ -45,12 +45,10 @@
                 box-sizing: border-box;
                 display: flex;
                 gap: 6mm;
-                page-break-after: always;
-                break-after: page;
-            }
-            .page-container:last-child {
                 page-break-after: avoid !important;
                 break-after: avoid !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
             .receipt-container {
                 flex: 1;
@@ -61,7 +59,8 @@
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
-                page-break-inside: avoid;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
             .no-print { display: none !important; }
             @page { size: A4 landscape; margin: 0; }
@@ -69,6 +68,13 @@
         .dashed-line { border-top: 1px dashed #000; margin: 8px 0; }
         .double-line { border-top: 3px double #000; margin: 8px 0; }
     </style>
+    <script>
+        window.onload = function() {
+            setTimeout(() => {
+                window.print();
+            }, 1000);
+        }
+    </script>
 </head>
 <body>
 
@@ -83,25 +89,25 @@
     </div>
 
     <div class="page-container">
-        @foreach(['STUDENT COPY', 'OFFICE COPY'] as $copyTitle)
+        @foreach(['OFFICE COPY', 'STUDENT COPY'] as $copyTitle)
             <div class="receipt-container text-[12px] leading-normal">
                 
                 <!-- Header -->
                 <div>
-                    <div class="flex justify-between items-start">
-                        <div class="flex items-center gap-3">
-                            <img src="{{ asset('img/macs_logo.jpeg') }}" class="w-12 h-12 object-contain filter grayscale contrast-125" alt="Logo">
-                            <div>
-                                <h1 class="text-lg font-black tracking-tight uppercase leading-none">MACS School and College</h1>
-                                <p class="text-[9px] mt-1 font-semibold text-gray-700">Jalalpur, Pabna Sadar, Pabna (Jalalpur Branch)</p>
-                                <p class="text-[9px] font-semibold text-gray-700">Phone: 01896-220299, 01896-220300</p>
+                    <div class="flex justify-between items-start gap-2">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <img src="{{ asset('img/macs_logo.jpeg') }}" class="w-11 h-11 object-contain filter grayscale contrast-125 shrink-0" alt="Logo">
+                            <div class="min-w-0">
+                                <h1 class="text-[15px] font-black tracking-tight uppercase leading-none whitespace-nowrap">MACS SCHOOL &amp; COLLEGE</h1>
+                                <p class="text-[9px] mt-1 font-semibold text-gray-700 whitespace-nowrap">Jalalpur, Pabna Sadar, Pabna (Jalalpur Branch)</p>
+                                <p class="text-[9px] font-semibold text-gray-700 whitespace-nowrap">Phone: 01896-220299, 01896-220300</p>
                             </div>
                         </div>
-                        <div class="text-right">
+                        <div class="text-right shrink-0">
                             <span class="text-[9px] font-black uppercase border border-black px-2 py-0.5 bg-gray-100 mb-1 inline-block">{{ $copyTitle }}</span>
                             <h2 class="text-sm font-extrabold uppercase block leading-none mt-1">Fee Receipt</h2>
-                            <p class="text-[10px] mt-1 font-semibold text-gray-755">Invoice No: <strong>{{ $invoice->invoice_no }}</strong></p>
-                            <p class="text-[10px] font-semibold text-gray-755">Date: {{ date('d-M-Y', strtotime($invoice->created_at)) }}</p>
+                            <p class="text-[10px] mt-1 font-semibold text-gray-755 whitespace-nowrap">Invoice No: <strong>{{ $invoice->invoice_no }}</strong></p>
+                            <p class="text-[10px] font-semibold text-gray-755 whitespace-nowrap">Date: {{ date('d-M-Y', strtotime($invoice->created_at)) }}</p>
                         </div>
                     </div>
 
@@ -190,10 +196,6 @@
                             <div class="border-t border-black w-full mb-0.5"></div>
                             <p class="text-[9px] font-black uppercase text-gray-600">Guardian</p>
                         </div>
-                        <div class="text-center text-[8px] font-bold text-gray-500 uppercase">
-                            <p>By: {{ $invoice->user->name ?? 'System' }}</p>
-                            <p class="text-[7px] italic">CodeNext IT</p>
-                        </div>
                         <div class="text-center w-40">
                             <div class="border-t border-black w-full mb-0.5"></div>
                             <p class="text-[9px] font-black uppercase text-gray-600">Authorized Cashier</p>
@@ -204,13 +206,5 @@
             </div>
         @endforeach
     </div>
-
-    <script>
-        window.onload = function() {
-            setTimeout(() => {
-                window.print();
-            }, 1000);
-        }
-    </script>
 </body>
 </html>

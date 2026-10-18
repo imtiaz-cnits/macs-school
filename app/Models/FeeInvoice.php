@@ -89,4 +89,55 @@ class FeeInvoice extends Model
 
         return 'One Time';
     }
+
+    /**
+     * Resolve canonical billing period in 'YYYY-MM' format (e.g. '2026-04').
+     */
+    public function getBillingPeriodAttribute(): string
+    {
+        // 1. Extract from invoice_no (e.g. INV-202604-0001 -> 2026-04)
+        if ($this->invoice_no && preg_match('/INV-(\d{4})(0[1-9]|1[0-2])-/i', $this->invoice_no, $matches)) {
+            return $matches[1] . '-' . $matches[2];
+        }
+
+        // 2. Extract from explicit feeSetup month name if present
+        $setupMonth = trim($this->feeSetup->fee_month ?? '');
+        $monthNum = Student::resolveMonthNumber($setupMonth);
+        $year = $this->due_date ? date('Y', strtotime($this->due_date)) : ($this->created_at ? date('Y', strtotime($this->created_at)) : date('Y'));
+        if ($monthNum) {
+            return sprintf('%04d-%02d', (int)$year, (int)$monthNum);
+        }
+
+        // 3. Extract from due_date
+        if ($this->due_date) {
+            return date('Y-m', strtotime($this->due_date));
+        }
+
+        // 4. Fallback to created_at
+        if ($this->created_at) {
+            return date('Y-m', strtotime($this->created_at));
+        }
+
+        return date('Y-m');
+    }
+
+    public function isCancelled(): bool
+    {
+        return ($this->status ?? '') === 'Cancelled';
+    }
+
+    public function canBeRestored(): bool
+    {
+        return $this->isCancelled();
+    }
+
+    public function scopeActiveInvoices($query)
+    {
+        return $query->where('status', '!=', 'Cancelled');
+    }
+
+    public function scopeCancelled($query)
+    {
+        return $query->where('status', 'Cancelled');
+    }
 }

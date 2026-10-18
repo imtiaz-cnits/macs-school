@@ -170,8 +170,11 @@ Route::middleware(['auth', 'roles:editor,admin,super-admin'])->group(function ()
     Route::get('/ajax/students/export-pdf', [StudentController::class, 'exportPDF'])->name('students.export.pdf');
     Route::get('/ajax/students/{id}/custom-fees', [StudentController::class, 'getCustomFees'])->name('students.custom-fees.index');
     Route::post('/ajax/students/{id}/custom-fees', [StudentController::class, 'saveCustomFee'])->name('students.custom-fees.store');
-    Route::delete('/ajax/students/custom-fees/{customFeeId}', [StudentController::class, 'deleteCustomFee'])->name('students.custom-fees.destroy');
+    Route::get('/ajax/students/{id}/discontinuation-preview', [StudentController::class, 'previewDiscontinuation'])->name('students.discontinuation.preview');
+    Route::post('/ajax/students/{id}/discontinue-reconcile', [StudentController::class, 'discontinueAndReconcile'])->name('students.discontinue.reconcile');
+    Route::post('/ajax/students/{id}/reactivate', [StudentController::class, 'reactivateStudent'])->name('students.reactivate');
     Route::post('/ajax/students/{id}/toggle-status', [StudentController::class, 'toggleStatus'])->name('students.toggle-status');
+    Route::post('/ajax/invoices/{id}/restore', [FeeInvoiceController::class, 'restoreInvoice'])->name('invoices.restore_ajax');
 
     // ৫. ডাটা সেভ, আপডেট, ডিলিট এবং রিড করার জন্য AJAX রাউট (API Resource)
     Route::resource('ajax/students', StudentController::class);
@@ -405,6 +408,7 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
         
         // POS Print Route
         Route::get('/invoice/{id}/pos-print', [FeeInvoiceController::class, 'printPos'])->name('invoice.pos_print');
+        Route::post('/invoice/{id}/restore', [FeeInvoiceController::class, 'restoreInvoice'])->name('invoice.restore');
 
         // Bulk Payment & Master Receipt Routes
         Route::post('/collection/bulk', [FeeCollectionController::class, 'bulkStore'])->name('collection.bulk_store');

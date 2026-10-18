@@ -374,6 +374,7 @@
                                 <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Paid</th>
                                 <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Due</th>
                                 <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Status</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody id="fees_table_body">
@@ -385,6 +386,7 @@
                                 <td class="!py-3.5 !px-3 text-right"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
                                 <td class="!py-3.5 !px-3 text-right"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
                                 <td class="!py-3.5 !px-3 text-center"><div class="h-4 w-14 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
+                                <td class="!py-3.5 !px-3 text-center"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
                             </tr>
                         </tbody>
                     </table>
@@ -515,6 +517,72 @@
             Developed by <a href="https://www.codenextit.com" target="_blank" class="text-themeGreen font-black hover:underline">Code Next IT</a>
         </p>
     </div>
+
+    <!-- Restore Cancelled Invoice Modal -->
+    <div id="restoreInvoiceModal" class="fixed inset-0 z-[9999] bg-themeDark/60 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300 hidden opacity-0">
+        <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl relative transform transition-all scale-95 duration-300" id="restoreInvoiceModalCard">
+            <!-- Close button -->
+            <button type="button" onclick="closeRestoreInvoiceModal()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-2xl bg-themeBlue/10 dark:bg-themeBlue/20 text-themeBlue flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-black text-gray-900 dark:text-white">Restore Cancelled Invoice</h3>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">Recalculate dues & reinstate invoice</p>
+                </div>
+            </div>
+
+            <!-- Invoice info pill -->
+            <div class="bg-gray-50/70 dark:bg-themeDark/40 border border-gray-150 dark:border-white/[0.06] rounded-2xl p-3.5 mb-4 space-y-1.5">
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-gray-500 dark:text-gray-400 font-semibold">Invoice No:</span>
+                    <span class="font-mono font-black text-gray-900 dark:text-white" id="modal_restore_inv_no">INV-XXXX</span>
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-gray-500 dark:text-gray-400 font-semibold">Fee Details:</span>
+                    <span class="font-bold text-gray-700 dark:text-gray-300" id="modal_restore_details">Tuition Fee</span>
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-gray-500 dark:text-gray-400 font-semibold">Net Amount:</span>
+                    <span class="font-mono font-black text-themeBlue text-sm" id="modal_restore_net">৳0.00</span>
+                </div>
+            </div>
+
+            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
+                This will reinstate the cancelled invoice and recalculate genuine outstanding balance based on verified payment records. If another active invoice exists for the same billing period, restoration will be safely prevented.
+            </p>
+
+            <!-- Reason Input -->
+            <div class="mb-5">
+                <label for="restore_reason_input" class="block text-[10px] font-black uppercase tracking-widest text-gray-555 dark:text-gray-400 mb-1.5">
+                    Restoration Reason <span class="text-red-500">*</span>
+                </label>
+                <textarea id="restore_reason_input" rows="3"
+                    placeholder="e.g. Student mistakenly marked inactive; reactivated for current session"
+                    class="w-full text-xs font-semibold px-3.5 py-2.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-themeNavy focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 text-gray-900 dark:text-gray-100 transition-all"></textarea>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex items-center justify-end gap-3">
+                <button type="button" onclick="closeRestoreInvoiceModal()"
+                    class="h-10 px-5 text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-400 bg-gray-100 hover:bg-gray-200 dark:bg-themeDark/60 dark:hover:bg-themeDark rounded-xl transition-all">
+                    Cancel
+                </button>
+                <button type="button" id="confirm_restore_btn" onclick="submitRestoreInvoice()"
+                    class="h-10 px-6 text-xs font-black uppercase tracking-widest text-white bg-gradient-to-r from-themeBlue to-themeGreen rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                    <span>Restore Invoice</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -522,6 +590,9 @@
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
     const studentId = "{{ $id }}";
+    window.canRestoreInvoices = {{ auth()->check() && (auth()->user()->hasRole('super-admin') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('editor')) ? 'true' : 'false' }};
+    let activeRestoreInvoiceId = null;
+    window.studentInvoices = [];
 
     const getAuthHeaders = () => ({ 
         headers: { 
@@ -530,7 +601,7 @@
         } 
     });
 
-    document.addEventListener('DOMContentLoaded', async function() {
+    async function loadStudentData() {
         try {
             let res = await axios.get(`/ajax/students/${studentId}`, getAuthHeaders());
             
@@ -661,15 +732,17 @@
             // ==========================================
             // DYNAMIC FEES & INVOICES PROCESSING
             // ==========================================
-            let invoices = res.data.invoices || [];
+            window.studentInvoices = res.data.invoices || [];
+            let invoices = window.studentInvoices;
             let feesBody = document.getElementById('fees_table_body');
             
             let totalBilled = 0;
             let totalPaid = 0;
             let totalDue = 0;
 
-            // Calculate totals across all invoices
+            // Calculate totals across all active, valid invoices (excluding Cancelled invoices)
             invoices.forEach(inv => {
+                if (inv.status === 'Cancelled') return;
                 let netAmt = inv.net_amount !== null ? parseFloat(inv.net_amount) : 0;
                 let paidAmt = inv.paid_amount !== null ? parseFloat(inv.paid_amount) : 0;
                 let dueAmt = inv.due_amount !== null ? parseFloat(inv.due_amount) : 0;
@@ -725,8 +798,25 @@
                         let statusClass = 'bg-red-100 text-red-600 dark:bg-red-950/30 dark:text-red-500';
                         if (status === 'Paid') {
                             statusClass = 'bg-green-100 text-themeGreen dark:bg-green-950/30 dark:text-green-500';
-                        } else if (status === 'Partially Paid') {
+                        } else if (status === 'Partially Paid' || status === 'Partial') {
                             statusClass = 'bg-amber-100 text-amber-600 dark:bg-amber-950/30 dark:text-amber-500';
+                        } else if (status === 'Cancelled') {
+                            statusClass = 'bg-gray-150 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+                        }
+
+                        let actionHtml = `<span class="text-xs text-gray-300 dark:text-gray-600 font-mono">—</span>`;
+                        if (status === 'Cancelled' && window.canRestoreInvoices) {
+                            actionHtml = `
+                                <button type="button"
+                                    onclick="openRestoreInvoiceModal(${inv.id})"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-themeBlue/10 text-themeBlue hover:bg-themeBlue hover:text-white dark:bg-themeBlue/20 dark:hover:bg-themeBlue dark:text-themeBlue dark:hover:text-white transition-all border border-themeBlue/25 hover:shadow-sm"
+                                    title="Restore Cancelled Invoice">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                    </svg>
+                                    Restore
+                                </button>
+                            `;
                         }
 
                         feesBody.innerHTML += `
@@ -738,6 +828,9 @@
                                 <td class="py-2.5 px-3 text-sm font-bold text-red-500 text-right font-mono">৳${dueAmt.toFixed(2)}</td>
                                 <td class="py-2.5 px-3 text-center">
                                     <span class="inline-block px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg ${statusClass}">${status}</span>
+                                </td>
+                                <td class="py-2.5 px-3 text-center">
+                                    ${actionHtml}
                                 </td>
                             </tr>
                         `;
@@ -755,7 +848,7 @@
                 } else {
                     feesBody.innerHTML = `
                         <tr>
-                            <td colspan="6" class="py-8 text-center text-xs font-semibold text-gray-400 dark:text-gray-555">No Fee Invoices Found.</td>
+                            <td colspan="7" class="py-8 text-center text-xs font-semibold text-gray-400 dark:text-gray-555">No Fee Invoices Found.</td>
                         </tr>
                     `;
                     document.getElementById('fees_pagination_container').classList.add('hidden');
@@ -901,7 +994,138 @@
             await showAlert("Critical Error: Failed to fetch student profile details.", "Error");
             window.location.href = '/students';
         }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadStudentData);
+
+    function openRestoreInvoiceModal(id, invoiceNo, netAmount, feeDetails) {
+        activeRestoreInvoiceId = id;
+        let inv = (window.studentInvoices || []).find(i => Number(i.id) === Number(id));
+
+        if (inv) {
+            invoiceNo = inv.invoice_no || 'N/A';
+            let categoryName = inv.fee_setup && inv.fee_setup.category ? inv.fee_setup.category.name : 'Fee Payment';
+            let feeMonth = '';
+            if (inv.due_date) {
+                try {
+                    const parts = inv.due_date.split('-');
+                    if (parts.length === 3) {
+                        const monthIndex = parseInt(parts[1], 10) - 1;
+                        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                        if (monthIndex >= 0 && monthIndex < 12) {
+                            feeMonth = ` (${monthNames[monthIndex]})`;
+                        }
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+            if (!feeMonth && inv.fee_setup && inv.fee_setup.fee_month) {
+                feeMonth = ` (${inv.fee_setup.fee_month})`;
+            }
+            feeDetails = categoryName + feeMonth;
+            netAmount = inv.net_amount !== null ? parseFloat(inv.net_amount) : 0;
+        }
+
+        const invNoEl = document.getElementById('modal_restore_inv_no');
+        const detailsEl = document.getElementById('modal_restore_details');
+        const netEl = document.getElementById('modal_restore_net');
+        const reasonInput = document.getElementById('restore_reason_input');
+
+        if (invNoEl) invNoEl.innerText = invoiceNo || 'INV-XXXX';
+        if (detailsEl) detailsEl.innerText = feeDetails || 'Tuition Fee';
+        if (netEl) netEl.innerText = '৳' + (parseFloat(netAmount) || 0).toFixed(2);
+        if (reasonInput) reasonInput.value = '';
+
+        const modal = document.getElementById('restoreInvoiceModal');
+        const card = document.getElementById('restoreInvoiceModalCard');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            if (card) {
+                card.classList.remove('scale-95');
+                card.classList.add('scale-100');
+            }
+            if (reasonInput) reasonInput.focus();
+        }, 20);
+    }
+
+    function closeRestoreInvoiceModal() {
+        activeRestoreInvoiceId = null;
+        const modal = document.getElementById('restoreInvoiceModal');
+        const card = document.getElementById('restoreInvoiceModalCard');
+        if (!modal) return;
+        modal.classList.add('opacity-0');
+        if (card) {
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+        }
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    // Close restore modal on backdrop click
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('restoreInvoiceModal');
+        if (modal && !modal.classList.contains('hidden') && e.target === modal) {
+            closeRestoreInvoiceModal();
+        }
     });
+
+    async function submitRestoreInvoice() {
+        if (!activeRestoreInvoiceId) return;
+
+        const reasonInput = document.getElementById('restore_reason_input');
+        const reason = reasonInput ? reasonInput.value.trim() : '';
+        if (!reason || reason.length < 3) {
+            await showAlert("Please enter a valid restoration reason (minimum 3 characters).", "Reason Required");
+            if (reasonInput) reasonInput.focus();
+            return;
+        }
+
+        const confirmBtn = document.getElementById('confirm_restore_btn');
+        const originalBtnHtml = confirmBtn ? confirmBtn.innerHTML : '<span>Restore Invoice</span>';
+
+        try {
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = `
+                    <svg class="w-4 h-4 animate-spin inline-block mr-1.5" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                    <span>Restoring...</span>
+                `;
+            }
+
+            const invoiceIdToRestore = activeRestoreInvoiceId;
+
+            let res = await axios.post(`/fees/invoice/${invoiceIdToRestore}/restore`, {
+                reason: reason,
+                confirm: true,
+                student_id: studentId
+            }, getAuthHeaders());
+
+            closeRestoreInvoiceModal();
+
+            if (res.data.success || res.data.status === 'success') {
+                await loadStudentData();
+                await showAlert(res.data.message || "Invoice restored successfully.", "Invoice Restored");
+            } else {
+                await showAlert(res.data.message || "Failed to restore invoice.", "Restoration Failed");
+            }
+        } catch (err) {
+            let errMsg = err.response?.data?.message || (err.message ? err.message : "Restoration request failed.");
+            await showAlert(errMsg, "Restoration Blocked");
+        } finally {
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalBtnHtml;
+            }
+        }
+    }
     async function syncRfidCardSingle(studentId) {
         try {
             document.getElementById('loadingOverlay').classList.remove('hidden', 'opacity-0', 'pointer-events-none');
