@@ -97,7 +97,7 @@
                 <div>
                     <div class="flex justify-between items-start gap-2">
                         <div class="flex items-center gap-2.5 min-w-0">
-                            <img src="{{ asset('img/macs_logo.jpeg') }}" class="w-11 h-11 object-contain filter grayscale contrast-125 shrink-0" alt="Logo">
+                            <img src="{{ asset('img/macs_logo.jpeg') }}" class="w-11 h-11 object-contain shrink-0" alt="Logo">
                             <div class="min-w-0">
                                 <h1 class="text-[15px] font-black tracking-tight uppercase leading-none whitespace-nowrap">MACS SCHOOL &amp; COLLEGE</h1>
                                 <p class="text-[9px] mt-1 font-semibold text-gray-700 whitespace-nowrap">Jalalpur, Pabna Sadar, Pabna (Jalalpur Branch)</p>

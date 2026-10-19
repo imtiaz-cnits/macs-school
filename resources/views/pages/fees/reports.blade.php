@@ -52,7 +52,7 @@
             print-color-adjust: exact !important;
             margin: 0 !important;
             padding: 0 !important;
-            height: 100% !important;
+            height: auto !important;
         }
 
         body * {
@@ -69,9 +69,10 @@
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
+            min-height: calc(297mm - 12mm) !important;
             display: flex !important;
             flex-direction: column !important;
-            justify-content: flex-start !important;
+            justify-content: space-between !important;
             box-sizing: border-box !important;
             padding: 0 !important;
             margin: 0 !important;
@@ -81,6 +82,12 @@
         }
 
         /* Paginated Print Container Rules */
+        #printableReportArea.has-paginated-print {
+            display: block !important;
+            min-height: auto !important;
+            height: auto !important;
+        }
+
         #printableReportArea.has-paginated-print > .print-top-section,
         #printableReportArea.has-paginated-print > #printSigSpacer,
         #printableReportArea.has-paginated-print > .print-signatures {
@@ -98,11 +105,9 @@
             width: 100% !important;
             max-width: 100% !important;
             box-sizing: border-box !important;
-            min-height: calc(297mm - 8mm) !important;
-            height: calc(297mm - 8mm) !important;
             display: flex !important;
             flex-direction: column !important;
-            justify-content: space-between !important;
+            justify-content: flex-start !important;
             page-break-after: always !important;
             break-after: page !important;
             page-break-inside: avoid !important;
@@ -112,13 +117,16 @@
             background: #ffffff !important;
         }
 
+        .print-page-final,
         .print-page:last-child {
+            min-height: calc(297mm - 16mm) !important;
+            justify-content: space-between !important;
             page-break-after: avoid !important;
             break-after: avoid !important;
         }
 
         .print-page-content {
-            flex: 1 1 auto !important;
+            flex: 0 0 auto !important;
             width: 100% !important;
             display: flex !important;
             flex-direction: column !important;
@@ -128,7 +136,8 @@
             flex: 0 0 auto !important;
             width: 100% !important;
             margin-top: auto !important;
-            padding-top: 6px !important;
+            padding-top: 16px !important;
+            padding-bottom: 0 !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
         }
@@ -429,13 +438,21 @@
         .print-signatures {
             display: block !important;
             width: 100% !important;
-            margin-top: 20px !important;
+            margin-top: auto !important;
             padding-top: 4px !important;
-            padding-bottom: 2px !important;
+            padding-bottom: 0 !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
             page-break-after: avoid !important;
             break-after: avoid !important;
+        }
+
+        #printableReportArea .print-signatures table,
+        #printableReportArea .print-signatures tr,
+        #printableReportArea .print-signatures td {
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
         }
     }
 
@@ -1150,7 +1167,7 @@
 
         <!-- Official Printable Signatures (Point 3: Exactly once, only on final page near bottom) -->
         <div class="print-only print-signatures">
-            <table style="width: 100%; border-collapse: collapse; border: none !important; margin-bottom: 2px;">
+            <table style="width: 100%; border-collapse: collapse; border: none !important; margin-bottom: 0 !important;">
                 <tr style="border: none !important;">
                     <td style="width: 33.33%; text-align: center; vertical-align: bottom; border: none !important; padding: 0 !important;">
                         <span style="display: inline-block; width: 145px; border-top: 1.4px dashed #64748B; padding-top: 5px; font-size: 10.5px; font-weight: 800; color: #0F1E2C; letter-spacing: 0.2px;">
@@ -1169,12 +1186,6 @@
                     </td>
                 </tr>
             </table>
-
-            <!-- Subtle Brand Footer Line -->
-            <div style="margin-top: 6px; border-top: 1px solid #E2E8F0; padding-top: 3px; font-size: 8px; color: #64748B; display: flex; justify-content: space-between; align-items: center;">
-                <span>MACS School Management System &bull; Financial Reports</span>
-                <span>Generated: {{ date('d M, Y h:i A') }}</span>
-            </div>
         </div>
     </div>
 </div>
@@ -1457,24 +1468,23 @@
             }
         }
 
-        // Screen-to-print scale factor: print typography & compact padding render at ~0.78 of screen height
-        const SCALE = 0.78;
-
-        // Measure row heights accurately under 200mm printable width
+        // Measure row heights accurately under 200mm printable width with print-calibration
         printable.classList.add('measuring-print');
-        const headerH = Math.round((headerBrand ? headerBrand.offsetHeight : 110) * SCALE);
-        const theadH = Math.round((thead ? thead.offsetHeight : 28) * SCALE);
-        const tfootH = Math.round((tfoot ? tfoot.offsetHeight : 0) * SCALE);
-        const sigH = Math.round(((sigElem && sigElem.offsetHeight > 0) ? sigElem.offsetHeight : 55) * SCALE);
-        const rowHeights = rows.map(r => Math.round((r.offsetHeight || 30) * SCALE));
+        // Screen-to-print typography calibration: subpixel text on screen measures ~1.07x print size
+        const PRINT_CALIB = 0.935;
+        const headerH = Math.ceil((headerBrand ? headerBrand.getBoundingClientRect().height : 95) * 0.90);
+        const theadH = Math.ceil((thead ? thead.getBoundingClientRect().height : 28) * 0.65);
+        const tfootH = Math.ceil((tfoot ? tfoot.getBoundingClientRect().height : 0) * 0.70);
+        const sigH = Math.ceil(((sigElem && sigElem.offsetHeight > 0) ? sigElem.getBoundingClientRect().height : 40) * 0.85);
+        const rowHeights = rows.map(r => Math.ceil((r.getBoundingClientRect().height || r.offsetHeight || 30) * PRINT_CALIB));
         printable.classList.remove('measuring-print');
 
-        // Printable height budget (A4: 289mm = 1092px; 1060px safely preserves bottom margin without wasting space)
-        const PAGE_H = 1060;
+        // Printable height budget (A4: 289mm = 1092px; 1065px safely fills page to 97% without spilling)
+        const PAGE_H = 1065;
 
-        const OVERHEAD_P1 = headerH + theadH + 6;
-        const OVERHEAD_PN = theadH + 6;
-        const SIG_ALLOWANCE = tfootH + sigH + 28; // Allowance for tfoot + margin + signatures + brand line
+        const OVERHEAD_P1 = headerH + theadH + 4;
+        const OVERHEAD_PN = theadH + 4;
+        const SIG_ALLOWANCE = tfootH + sigH + 18;
 
         // Partition rows across pages
         const pages = [];
@@ -1558,8 +1568,9 @@
         // Build DOM structure for each printed page
         const numPages = pages.length;
         pages.forEach((pRows, pageIdx) => {
+            const isFinalPage = (pageIdx === numPages - 1);
             const pageDiv = document.createElement('div');
-            pageDiv.className = 'print-page';
+            pageDiv.className = isFinalPage ? 'print-page print-page-final' : 'print-page';
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'print-page-content';
@@ -1606,7 +1617,6 @@
             pageTable.appendChild(tbody);
 
             // Totals row ONLY on final page
-            const isFinalPage = (pageIdx === numPages - 1);
             if (isFinalPage && tfoot) {
                 pageTable.appendChild(tfoot.cloneNode(true));
             }
@@ -1623,11 +1633,6 @@
                     const sigClone = sigElem.cloneNode(true);
                     sigClone.style.display = 'block';
                     footerDiv.appendChild(sigClone);
-                } else {
-                    const brandFoot = document.createElement('div');
-                    brandFoot.style.cssText = 'margin-top: 6px; border-top: 1px solid #E2E8F0; padding-top: 3px; font-size: 8px; color: #64748B; display: flex; justify-content: space-between; align-items: center; width: 100%;';
-                    brandFoot.innerHTML = `<span>MACS School Management System &bull; Financial Reports</span><span>Generated: {{ date('d M, Y h:i A') }}</span>`;
-                    footerDiv.appendChild(brandFoot);
                 }
 
                 pageDiv.appendChild(footerDiv);
