@@ -34,4 +34,36 @@ class Attendance extends Model
     public function teacher() {
         return $this->belongsTo(Teacher::class, 'teacher_id');
     }
+
+    // ৫. ব্রাঞ্চের সাথে রিলেশন
+    public function branch() {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
+    // ৬. সেশনের সাথে রিলেশন
+    public function sessionYear() {
+        return $this->belongsTo(SessionYear::class, 'session_year_id');
+    }
+
+    /**
+     * Parse swipe IN time from remarks string
+     */
+    public function getInTimeAttribute(): ?string
+    {
+        if (preg_match('/In:\s*([0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?)/i', $this->remarks ?? '', $matches)) {
+            return date('h:i A', strtotime($matches[1]));
+        }
+        return null;
+    }
+
+    /**
+     * Parse swipe OUT time from remarks string
+     */
+    public function getOutTimeAttribute(): ?string
+    {
+        if (preg_match('/Out:\s*([0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?)/i', $this->remarks ?? '', $matches)) {
+            return date('h:i A', strtotime($matches[1]));
+        }
+        return null;
+    }
 }

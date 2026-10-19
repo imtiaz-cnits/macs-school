@@ -42,6 +42,11 @@ class Student extends Model
         return $this->belongsTo(SessionYear::class, 'session_year_id');
     }
 
+    public function session_year()
+    {
+        return $this->sessionYear();
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -50,6 +55,11 @@ class Student extends Model
     public function academicHistories() 
     { 
         return $this->hasMany(StudentAcademicHistory::class); 
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class, 'student_id');
     }
 
     public function customFees()

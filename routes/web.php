@@ -269,9 +269,10 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
 
     // হাজিরা রিপোর্ট দেখার পেজ
     Route::get('/attendance/report', [AttendanceController::class, 'reportIndex'])->name('attendance.report');
+    Route::get('/attendance/report/export', [AttendanceController::class, 'exportReport'])->name('attendance.report.export');
 
     // রিপোর্ট ডাটা ফিল্টার করার AJAX রাউট
-    Route::get('/ajax/attendance/report-data', [AttendanceController::class, 'getReportData']);
+    Route::get('/ajax/attendance/report-data', [AttendanceController::class, 'getReportData'])->name('attendance.report.data');
 
     // Staff Biometric Attendance Management Routes
     Route::get('/staff-attendance', [\App\Http\Controllers\StaffAttendanceController::class, 'index'])->name('staff-attendance.index');

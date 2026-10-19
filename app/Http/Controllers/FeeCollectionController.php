@@ -380,7 +380,7 @@ class FeeCollectionController extends Controller
     public function printBulkIndividualPos($receipt_no)
     {
         // 'like' ব্যবহার করে এই মাস্টার রিসিটের আন্ডারে যতগুলো পেমেন্ট হয়েছে সব আনা হলো
-        $payments = FeePayment::with(['invoice.student.schoolClass', 'invoice.student.section', 'invoice.feeSetup.category', 'invoice.user'])
+        $payments = FeePayment::with(['invoice.student.schoolClass', 'invoice.student.section', 'invoice.student.sessionYear', 'invoice.feeSetup.category', 'invoice.user'])
                               ->where('receipt_no', 'like', $receipt_no . '%')
                               ->get();
 
@@ -457,7 +457,7 @@ class FeeCollectionController extends Controller
             return back()->with('error', 'Please select at least one receipt to print.');
         }
 
-        $payments = FeePayment::with(['invoice.student.schoolClass', 'invoice.student.section', 'invoice.feeSetup.category', 'invoice.user'])
+        $payments = FeePayment::with(['invoice.student.schoolClass', 'invoice.student.section', 'invoice.student.sessionYear', 'invoice.feeSetup.category', 'invoice.user'])
                               ->whereIn('id', $paymentIds)
                               ->get();
 

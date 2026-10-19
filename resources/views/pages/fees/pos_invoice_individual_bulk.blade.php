@@ -127,7 +127,7 @@
                             <div class="col-span-3"><span class="font-bold text-gray-600">Class       :</span> {{ $invoice->student->schoolClass->class_name ?? 'N/A' }} ({{ $invoice->student->section->section_name ?? 'N/A' }})</div>
                             <div class="col-span-2"><span class="font-bold text-gray-600">Roll No     :</span> {{ $invoice->student->roll_number ?? 'N/A' }}</div>
                             
-                            <div class="col-span-5"><span class="font-bold text-gray-600">Session     :</span> {{ $invoice->student->session_year->session_name ?? 'N/A' }}</div>
+                            <div class="col-span-5"><span class="font-bold text-gray-600">Session     :</span> {{ $invoice->student->sessionYear->session_name ?? $invoice->student->session_year->session_name ?? 'N/A' }}</div>
                         </div>
 
                         <div class="double-line"></div>

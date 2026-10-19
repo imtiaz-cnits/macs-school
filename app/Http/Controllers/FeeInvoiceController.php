@@ -188,7 +188,7 @@ class FeeInvoiceController extends Controller
     // POS (Thermal) মেশিনে ইনভয়েস প্রিন্ট করার জন্য
     public function printPos($id)
     {
-        $invoice = FeeInvoice::with(['student.schoolClass', 'student.section', 'feeSetup.category', 'user'])
+        $invoice = FeeInvoice::with(['student.schoolClass', 'student.section', 'student.sessionYear', 'feeSetup.category', 'user'])
                              ->findOrFail($id);
 
         return view('pages.fees.pos_invoice', compact('invoice'));
