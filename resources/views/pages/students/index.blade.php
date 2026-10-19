@@ -80,6 +80,48 @@
             }
         };
     };
+    window.areaDropdownState = function() {
+        return {
+            open: false,
+            search: '',
+            selectedLabel: 'All Areas',
+            selectedValue: '',
+            options: [],
+            get filteredOptions() {
+                if (!this.search.trim()) return this.options;
+                let q = this.search.toLowerCase().trim();
+                return this.options.filter(opt => opt.toLowerCase().includes(q));
+            },
+            async init() {
+                try {
+                    let res = await axios.get('/ajax/students/areas', getAuthHeaders());
+                    if (res.data && res.data.areas) {
+                        this.options = res.data.areas;
+                    }
+                } catch (e) {
+                    console.error('Failed to load areas', e);
+                }
+            },
+            select(label, val) {
+                this.selectedLabel = label;
+                this.selectedValue = val;
+                this.open = false;
+                let input = document.getElementById('filter_area');
+                if (input) {
+                    input.value = val;
+                    input.dispatchEvent(new Event('change'));
+                }
+            },
+            reset() {
+                this.selectedLabel = 'All Areas';
+                this.selectedValue = '';
+                this.search = '';
+                this.open = false;
+                let input = document.getElementById('filter_area');
+                if (input) input.value = '';
+            }
+        };
+    };
 </script>
 <style>
     [x-cloak] { display: none !important; }
@@ -447,6 +489,39 @@
             </div>
         </div>
 
+        <!-- Area / Village -->
+        <div x-data="areaDropdownState()" @reset-filters.window="reset()" class="relative">
+            <label class="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-1.5">Area / Village</label>
+            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-3 h-10 text-xs font-semibold bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <span class="truncate pr-1" x-text="selectedLabel">All Areas</span>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <input type="hidden" id="filter_area" value="">
+            
+            <div x-show="open" x-cloak @click.away="open = false" x-transition class="absolute z-50 w-64 sm:w-72 mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
+                <div class="p-2 border-b border-gray-100 dark:border-white/[0.06] sticky top-0 bg-white dark:bg-themeNavy z-10">
+                    <input type="text" x-model="search" placeholder="Search area..." @click.stop class="w-full px-2.5 py-1.5 text-xs bg-gray-50/70 dark:bg-themeDark border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:border-themeBlue text-gray-800 dark:text-gray-200">
+                </div>
+                <button type="button" @click="select('All Areas', '')" :class="selectedValue === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                    <span>All Areas</span>
+                    <template x-if="selectedValue === ''">
+                        <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </template>
+                </button>
+                <template x-for="item in filteredOptions" :key="item">
+                    <button type="button" @click="select(item, item)" :class="selectedValue === item ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                        <span x-text="item"></span>
+                        <template x-if="selectedValue === item">
+                            <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </template>
+                    </button>
+                </template>
+                <div x-show="filteredOptions.length === 0" class="px-4 py-3 text-xs text-gray-400 text-center">
+                    No matching area found
+                </div>
+            </div>
+        </div>
+
         <!-- Reset Button -->
         <div>
             <label class="block text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-550 uppercase mb-1.5">Reset</label>
@@ -777,6 +852,7 @@
         let gender = document.getElementById('filter_gender').value;
         let status = document.getElementById('filter_status') ? document.getElementById('filter_status').value : '';
         let rfid_status = document.getElementById('filter_rfid_status') ? document.getElementById('filter_rfid_status').value : '';
+        let area = document.getElementById('filter_area') ? document.getElementById('filter_area').value : '';
 
         let queryParams = new URLSearchParams({
             search: search_text,
@@ -788,6 +864,7 @@
             gender: gender,
             status: status,
             rfid_status: rfid_status,
+            area: area,
             page: page
         }).toString();
 
@@ -1004,6 +1081,7 @@
         let gender = document.getElementById('filter_gender').value;
         let status = document.getElementById('filter_status') ? document.getElementById('filter_status').value : '';
         let rfid_status = document.getElementById('filter_rfid_status') ? document.getElementById('filter_rfid_status').value : '';
+        let area = document.getElementById('filter_area') ? document.getElementById('filter_area').value : '';
 
         let queryParams = new URLSearchParams({
             search: search_text,
@@ -1014,7 +1092,8 @@
             shift_id: shift_id,
             gender: gender,
             status: status,
-            rfid_status: rfid_status
+            rfid_status: rfid_status,
+            area: area
         }).toString();
 
         window.location.href = `/ajax/students/export-excel?${queryParams}`;
@@ -1030,6 +1109,7 @@
         let gender = document.getElementById('filter_gender').value;
         let status = document.getElementById('filter_status') ? document.getElementById('filter_status').value : '';
         let rfid_status = document.getElementById('filter_rfid_status') ? document.getElementById('filter_rfid_status').value : '';
+        let area = document.getElementById('filter_area') ? document.getElementById('filter_area').value : '';
 
         let queryParams = new URLSearchParams({
             search: search_text,
@@ -1040,7 +1120,8 @@
             shift_id: shift_id,
             gender: gender,
             status: status,
-            rfid_status: rfid_status
+            rfid_status: rfid_status,
+            area: area
         }).toString();
 
         window.open(`/ajax/students/export-pdf?${queryParams}`, '_blank');
@@ -1053,7 +1134,7 @@
             searchInput.value = '';
         }
 
-        ['filter_branch', 'filter_class', 'filter_section', 'filter_session', 'filter_shift', 'filter_gender', 'filter_status', 'filter_rfid_status'].forEach(id => {
+        ['filter_branch', 'filter_class', 'filter_section', 'filter_session', 'filter_shift', 'filter_gender', 'filter_status', 'filter_rfid_status', 'filter_area'].forEach(id => {
             let el = document.getElementById(id);
             if (el) {
                 el.value = '';
@@ -1072,7 +1153,7 @@
         typingTimer = setTimeout(function () { window.fetchList(1); }, 400); 
     });
 
-    ['filter_branch', 'filter_class', 'filter_section', 'filter_session', 'filter_shift', 'filter_gender', 'filter_status', 'filter_rfid_status'].forEach(id => {
+    ['filter_branch', 'filter_class', 'filter_section', 'filter_session', 'filter_shift', 'filter_gender', 'filter_status', 'filter_rfid_status', 'filter_area'].forEach(id => {
         let el = document.getElementById(id);
         if (el) {
             el.addEventListener('change', function() { window.fetchList(1); });

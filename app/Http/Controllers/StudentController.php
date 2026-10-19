@@ -81,6 +81,16 @@ class StudentController extends Controller
                 }
             }
 
+            // 🔍 ৬. এরিয়া / ঠিকানা ফিল্টার
+            if ($request->filled('area')) {
+                $area = $request->area;
+                $query->where(function ($q) use ($area) {
+                    $q->where('present_village', 'LIKE', "%{$area}%")
+                      ->orWhere('permanent_village', 'LIKE', "%{$area}%")
+                      ->orWhere('present_post_office', 'LIKE', "%{$area}%");
+                });
+            }
+
             // পেজিনেশন
             $students = $query->paginate(15);
             
@@ -1033,6 +1043,35 @@ public function detectStudentInfo(Request $request)
     }
 
     /**
+     * স্টুডেন্টদের স্বতন্ত্র এরিয়া / গ্রামের তালিকা
+     */
+    public function getAreas(): JsonResponse
+    {
+        try {
+            $villages = Student::whereNotNull('present_village')
+                ->where('present_village', '!=', '')
+                ->pluck('present_village')
+                ->unique();
+
+            $areas = $villages->map(function ($v) {
+                $v = trim($v);
+                $v = preg_replace('/^গ্রাম\s*[:ঃ]?\s*/u', '', $v);
+                $parts = preg_split('/[,;\n।]|(?:\s*(?:ডাক|ডাকঘর|উপজেলা|থানা|জেলা)\s*[:ঃ])/u', $v);
+                return trim($parts[0] ?? '');
+            })->filter(function ($v) {
+                return !empty($v) && mb_strlen($v) > 1;
+            })->unique()->sort()->values();
+
+            return response()->json([
+                'status' => 'success',
+                'areas'  => $areas
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * স্টুডেন্ট লিস্ট এক্সেল (CSV) ডাউনলোড
      */
     public function exportExcel(Request $request)
@@ -1089,6 +1128,15 @@ public function detectStudentInfo(Request $request)
                           ->orWhere('card_number', 'N/A');
                     });
                 }
+            }
+
+            if ($request->filled('area')) {
+                $area = $request->area;
+                $query->where(function ($q) use ($area) {
+                    $q->where('present_village', 'LIKE', "%{$area}%")
+                      ->orWhere('permanent_village', 'LIKE', "%{$area}%")
+                      ->orWhere('present_post_office', 'LIKE', "%{$area}%");
+                });
             }
 
             $students = $query->get();
@@ -1205,6 +1253,15 @@ public function detectStudentInfo(Request $request)
                           ->orWhere('card_number', 'N/A');
                     });
                 }
+            }
+
+            if ($request->filled('area')) {
+                $area = $request->area;
+                $query->where(function ($q) use ($area) {
+                    $q->where('present_village', 'LIKE', "%{$area}%")
+                      ->orWhere('permanent_village', 'LIKE', "%{$area}%")
+                      ->orWhere('present_post_office', 'LIKE', "%{$area}%");
+                });
             }
 
             $students = $query->get()->sortBy(function ($student) {

@@ -29,6 +29,8 @@
                 border: 1px solid #ddd;
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                 box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
             }
         }
         @media print {
@@ -39,10 +41,13 @@
             }
             .statement-sheet {
                 width: 100%;
+                min-height: calc(297mm - 10mm);
                 padding: 10mm;
                 box-sizing: border-box;
                 border: none;
                 box-shadow: none;
+                display: flex;
+                flex-direction: column;
             }
             .no-print {
                 display: none !important;
@@ -75,7 +80,7 @@
         <!-- Header -->
         <div class="flex justify-between items-start border-b-2 border-black pb-3">
             <div class="flex items-center gap-3">
-                <img src="{{ asset('img/macs_logo.jpeg') }}" class="w-14 h-14 object-contain filter grayscale contrast-125" alt="MACS Logo">
+                <img src="{{ asset('img/macs_logo.jpeg') }}" class="w-14 h-14 object-contain" alt="MACS Logo">
                 <div>
                     <h1 class="text-xl font-black uppercase tracking-tight leading-none">MACS School and College</h1>
                     <p class="text-[10px] mt-1 font-semibold text-gray-700">Jalalpur, Pabna Sadar, Pabna</p>
@@ -242,8 +247,8 @@
         </div>
 
         <!-- Signatures Row -->
-        <div class="pt-16 mt-8">
-            <div class="grid grid-cols-4 gap-4 text-center text-[10px] font-bold">
+        <div class="mt-auto pt-8">
+            <div class="grid grid-cols-3 gap-6 text-center text-[10px] font-bold">
                 <div>
                     <div class="border-t border-black pt-1">Prepared By</div>
                     <div class="text-[8px] text-gray-500 font-normal mt-0.5">Accounts Officer</div>
@@ -255,10 +260,6 @@
                 <div>
                     <div class="border-t border-black pt-1">Headmaster / Principal</div>
                     <div class="text-[8px] text-gray-500 font-normal mt-0.5">MACS School & College</div>
-                </div>
-                <div>
-                    <div class="border-t border-black pt-1">Chairman / Governing Body</div>
-                    <div class="text-[8px] text-gray-500 font-normal mt-0.5">Approved Authority</div>
                 </div>
             </div>
 
