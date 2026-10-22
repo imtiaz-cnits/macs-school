@@ -1214,9 +1214,10 @@ class GeneralNoticeSmsFilterTest extends TestCase
         // 2. "configured rate of ৳... per segment" removed
         $this->assertStringNotContainsString('configured rate of ৳', $content);
 
-        // 3. Total estimated cost and characters/segments remain present
-        $this->assertStringContainsString('Est. Cost: ৳', $content);
-        $this->assertStringContainsString('Estimated Broadcast Cost', $content);
+        // 3. Total estimated cost, SMS rate, and balance displays are removed
+        $this->assertStringNotContainsString('Est. Cost: ৳', $content);
+        $this->assertStringNotContainsString('Estimated Broadcast Cost', $content);
+        $this->assertStringNotContainsString('Current SMS Balance', $content);
         $this->assertStringContainsString('SMS Segments:', $content);
         $this->assertStringContainsString('Characters:', $content);
 

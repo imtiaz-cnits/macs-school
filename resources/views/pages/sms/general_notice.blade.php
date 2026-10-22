@@ -23,21 +23,12 @@
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">Filter students and send SMS to eligible guardian contacts.</p>
         </div>
 
-        <!-- Current Balance & Mode Badges -->
+        <!-- Mode Badges -->
         <div class="flex items-center gap-3">
             @if($testMode)
                 <div class="px-3.5 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
                     Test Mode Active
-                </div>
-            @endif
-
-            @if($currentBalance !== null)
-                <div class="px-4 py-2 bg-themeNavy/5 dark:bg-themeNavy border border-gray-200/60 dark:border-white/[0.08] rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2 shadow-sm">
-                    <svg class="w-4 h-4 text-themeGreen" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Balance: <span class="font-black text-themeGreen dark:text-green-400">৳{{ number_format($currentBalance, 2) }}</span></span>
                 </div>
             @endif
         </div>
@@ -497,8 +488,8 @@
                         <span x-text="summary.unique_numbers_count * summary.sms_segments">0</span>
                         <span class="text-xs font-bold text-gray-400 font-normal">segments</span>
                     </div>
-                    <div class="text-[11px] font-bold text-themeGreen dark:text-green-400 mt-1">
-                        Est. Cost: ৳<span x-text="summary.estimated_cost">0.00</span>
+                    <div class="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-1">
+                        <span x-text="summary.unique_numbers_count">0</span> contacts × <span x-text="summary.sms_segments">0</span> seg
                     </div>
                 </div>
 
@@ -593,22 +584,143 @@
             <!-- Scheduled Date & Time Controls -->
             <div x-show="delivery_mode === 'schedule'" x-transition class="pt-4 border-t border-gray-200/60 dark:border-white/[0.06] space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Scheduled Date -->
-                    <div>
+                    <!-- Scheduled Date Custom Picker -->
+                    <div class="relative"
+                         x-data="datePicker(scheduled_date, todayDhakaDate)"
+                         x-effect="if (scheduled_date !== undefined && scheduled_date !== value) { value = scheduled_date; parseInitial(value); generateCalendar(); }"
+                         @date-selected="scheduled_date = $event.detail"
+                         @click.away="show = false; mOpen = false">
                         <label class="text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5 block">
                             Scheduled Date <span class="text-red-500">*</span>
                         </label>
-                        <input type="date" x-model="scheduled_date" :min="todayDhakaDate"
-                               class="w-full h-11 px-3.5 border-2 border-gray-150 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
+                        <button type="button" @click="show = !show"
+                                class="w-full h-11 px-3.5 border-2 border-gray-150 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all flex items-center justify-between text-left">
+                            <span :class="scheduled_date ? 'text-gray-800 dark:text-gray-200 font-bold' : 'text-gray-400 dark:text-gray-500 font-medium'"
+                                  x-text="formatDisplay(scheduled_date)"></span>
+                            <svg class="w-4 h-4 text-themeBlue shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </button>
+
+                        <!-- Calendar Dropdown Panel -->
+                        <div x-show="show" x-cloak
+                             class="absolute left-0 z-50 mt-1.5 w-72 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl p-3"
+                             x-transition>
+                            <!-- Calendar Top Bar -->
+                            <div class="flex items-center justify-between gap-1 mb-2 pb-2 border-b border-gray-100 dark:border-white/[0.06]">
+                                <!-- Month Dropdown Toggle -->
+                                <div class="relative">
+                                    <button type="button" @click="mOpen = !mOpen" class="text-xs font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1 hover:text-themeBlue">
+                                        <span x-text="monthNames[currentMonth]"></span>
+                                        <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <div x-show="mOpen" x-cloak class="absolute left-0 z-50 mt-1 w-32 bg-white dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto">
+                                        <template x-for="(m, mIdx) in monthNames" :key="mIdx">
+                                            <button type="button" @click="currentMonth = mIdx; mOpen = false; generateCalendar()" class="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-themeNavy font-bold" :class="currentMonth === mIdx ? 'text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" x-text="m"></button>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- Year Input Field -->
+                                <input type="number" x-model.number="currentYear" @input="generateCalendar()" class="w-16 h-7 text-xs font-black text-center bg-gray-50 dark:bg-themeDark border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:border-themeBlue [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+
+                                <!-- Month Navigation Arrows -->
+                                <div class="flex items-center gap-1">
+                                    <button type="button" @click="prevMonth()" class="p-1 hover:bg-gray-50 dark:hover:bg-themeDark/45 rounded-lg transition-colors text-gray-500 hover:text-themeBlue">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                                    </button>
+                                    <button type="button" @click="nextMonth()" class="p-1 hover:bg-gray-50 dark:hover:bg-themeDark/45 rounded-lg transition-colors text-gray-500 hover:text-themeBlue">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Days Header -->
+                            <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
+                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+
+                            <!-- Days Grid -->
+                            <div class="grid grid-cols-7 gap-1">
+                                <template x-for="(d, i) in days" :key="i">
+                                    <button type="button" @click="selectDay(d)"
+                                            class="h-7 w-7 text-[10px] font-bold rounded-lg flex items-center justify-center transition-all"
+                                            :class="!d.isCurrentMonth ? 'text-transparent cursor-default pointer-events-none' : (d.isPast ? 'text-gray-300 dark:text-gray-700 cursor-not-allowed opacity-50' : (scheduled_date === d.dateStr ? 'bg-themeBlue text-white font-black shadow-sm' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-themeDark/50'))"
+                                            :disabled="!d.isCurrentMonth || d.isPast">
+                                        <span x-text="d.day"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Scheduled Time -->
-                    <div>
+                    <!-- Scheduled Time Custom Picker -->
+                    <div class="relative"
+                         x-data="timePicker(scheduled_time)"
+                         x-effect="if (scheduled_time !== undefined && scheduled_time !== value) { value = scheduled_time; parseValue(value); }"
+                         @time-selected="scheduled_time = $event.detail"
+                         @click.away="show = false">
                         <label class="text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5 block">
                             Scheduled Time (Bangladesh Time) <span class="text-red-500">*</span>
                         </label>
-                        <input type="time" x-model="scheduled_time"
-                               class="w-full h-11 px-3.5 border-2 border-gray-150 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
+                        <button type="button" @click="show = !show"
+                                class="w-full h-11 px-3.5 border-2 border-gray-150 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all flex items-center justify-between text-left">
+                            <span :class="scheduled_time ? 'text-gray-800 dark:text-gray-200 font-bold' : 'text-gray-400 dark:text-gray-500 font-medium'"
+                                  x-text="formatDisplay(scheduled_time)"></span>
+                            <svg class="w-4 h-4 text-themeBlue shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+
+                        <!-- Time Picker Dropdown Panel -->
+                        <div x-show="show" x-cloak
+                             class="absolute left-0 z-50 mt-1.5 w-60 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl p-3 flex gap-2.5 justify-center"
+                             x-transition>
+                            <!-- Hours Column -->
+                            <div class="flex flex-col items-center">
+                                <span class="text-[9px] font-black text-gray-400 uppercase mb-1">Hr</span>
+                                <div class="flex flex-col gap-1 max-h-36 overflow-y-auto w-12 scrollbar-none">
+                                    <template x-for="h in [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]" :key="h">
+                                        <button type="button" @click="selectHour(h)"
+                                                class="h-7 text-xs font-bold rounded-lg transition-all"
+                                                :class="hour === h ? 'bg-themeBlue text-white font-black' : 'text-gray-700 dark:text-gray-250 hover:bg-gray-50 dark:hover:bg-themeDark/45'">
+                                            <span x-text="String(h).padStart(2, '0')"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                            <!-- Divider -->
+                            <div class="self-center font-black text-gray-300 dark:text-gray-700">:</div>
+                            <!-- Minutes Column -->
+                            <div class="flex flex-col items-center">
+                                <span class="text-[9px] font-black text-gray-400 uppercase mb-1">Min</span>
+                                <div class="flex flex-col gap-1 max-h-36 overflow-y-auto w-12 scrollbar-none">
+                                    <template x-for="m in [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]" :key="m">
+                                        <button type="button" @click="selectMinute(m)"
+                                                class="h-7 text-xs font-bold rounded-lg transition-all"
+                                                :class="minute === m ? 'bg-themeBlue text-white font-black' : 'text-gray-700 dark:text-gray-250 hover:bg-gray-50 dark:hover:bg-themeDark/45'">
+                                            <span x-text="String(m).padStart(2, '0')"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                            <!-- Divider -->
+                            <div class="self-center font-black text-gray-300 dark:text-gray-700">|</div>
+                            <!-- Period Column (AM/PM) -->
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <span class="text-[9px] font-black text-gray-400 uppercase mb-1">Period</span>
+                                <button type="button" @click="selectPeriod('AM')"
+                                        class="w-12 h-7 text-xs font-bold rounded-lg transition-all"
+                                        :class="period === 'AM' ? 'bg-themeGreen text-white font-black' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-themeDark/45'">
+                                    AM
+                                </button>
+                                <button type="button" @click="selectPeriod('PM')"
+                                        class="w-12 h-7 text-xs font-bold rounded-lg transition-all"
+                                        :class="period === 'PM' ? 'bg-themeGreen text-white font-black' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-themeDark/45'">
+                                    PM
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -731,10 +843,8 @@
                     <tr class="!bg-transparent">
                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Schedule Details</th>
                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Recipients</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Message</th>
                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Scheduled At (Dhaka)</th>
                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center">Status</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-right">Cost</th>
                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-right">Actions</th>
                     </tr>
                 </thead>
@@ -748,7 +858,6 @@
                                 <td class="py-3 px-3"><div class="h-4 w-48 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
                                 <td class="py-3 px-3"><div class="h-4 w-28 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
                                 <td class="py-3 px-3 text-center"><div class="h-5 w-16 mx-auto bg-gray-200 dark:bg-gray-700/60 rounded-full"></div></td>
-                                <td class="py-3 px-3 text-right"><div class="h-4 w-14 ml-auto bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
                                 <td class="py-3 px-3 text-right"><div class="h-7 w-20 ml-auto bg-gray-200 dark:bg-gray-700/60 rounded-lg"></div></td>
                             </tr>
                         </template>
@@ -757,7 +866,7 @@
                     <!-- Empty State -->
                     <template x-if="!loadingSchedules && schedulesList.length === 0">
                         <tr>
-                            <td colspan="7" class="py-12 text-center text-gray-400 dark:text-gray-500 text-xs font-bold">
+                            <td colspan="6" class="py-12 text-center text-gray-400 dark:text-gray-500 text-xs font-bold">
                                 <svg class="w-10 h-10 mx-auto mb-2 text-gray-300 dark:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 No scheduled SMS broadcasts match the current filters.
                             </td>
@@ -796,18 +905,10 @@
                                 <!-- Status Badge -->
                                 <td class="py-3 px-3 text-center">
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
-                                          :class="getStatusBadgeClass(item.status)">
+                                           :class="getStatusBadgeClass(item.status)">
                                         <span class="w-1.5 h-1.5 rounded-full" :class="getStatusDotClass(item.status)"></span>
                                         <span x-text="formatStatusLabel(item.status)"></span>
                                     </span>
-                                </td>
-
-                                <!-- Cost -->
-                                <td class="py-3 px-3 text-right">
-                                    <div class="text-sm font-black text-themeGreen dark:text-green-400">
-                                        ৳<span x-text="Number(item.actual_cost || item.estimated_cost).toFixed(2)"></span>
-                                    </div>
-                                    <div class="text-[10px] text-gray-400" x-text="item.actual_cost ? 'Actual' : 'Estimated'"></div>
                                 </td>
 
                                 <!-- Actions -->
@@ -1207,27 +1308,7 @@
                         <span class="text-gray-500 font-medium">Message Segments</span>
                         <span class="font-bold text-gray-800 dark:text-gray-200" x-text="summary.sms_segments + ' (' + summary.encoding + ', ' + summary.characters + ' chars)'"></span>
                     </div>
-
-                    <div class="py-2 flex justify-between items-center">
-                        <span class="text-gray-500 font-medium">Estimated Broadcast Cost</span>
-                        <span class="font-black text-themeGreen dark:text-green-400 text-sm">৳<span x-text="summary.estimated_cost"></span></span>
-                    </div>
-
-                    <template x-if="currentBalance !== null">
-                        <div class="py-2 flex justify-between items-center">
-                            <span class="text-gray-500 font-medium">Current SMS Balance</span>
-                            <span class="font-black text-themeBlue dark:text-blue-400">৳<span x-text="Number(currentBalance).toFixed(2)"></span></span>
-                        </div>
-                    </template>
                 </div>
-
-                <!-- Insufficient Balance Warning -->
-                <template x-if="currentBalance !== null && currentBalance < summary.estimated_cost">
-                    <div class="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-400 font-bold flex items-center gap-2">
-                        <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        <span>Insufficient balance to cover this broadcast. Please recharge your SMS balance before dispatching.</span>
-                    </div>
-                </template>
 
                 <!-- Message Preview Box -->
                 <div class="bg-gray-50/50 dark:bg-themeDark/40 border border-gray-100 dark:border-white/[0.06] rounded-xl p-3.5">
@@ -1254,7 +1335,7 @@
                 </button>
 
                 <button type="button" @click="delivery_mode === 'now' ? dispatchBroadcast() : saveSchedule()"
-                        :disabled="!confirmedCheck || sendingBroadcast || savingSchedule || (currentBalance !== null && currentBalance < summary.estimated_cost) || summary.unique_numbers_count === 0"
+                        :disabled="!confirmedCheck || sendingBroadcast || savingSchedule || summary.unique_numbers_count === 0"
                         class="h-11 px-8 bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0 disabled:cursor-not-allowed transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95">
                     <template x-if="sendingBroadcast || savingSchedule">
                         <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
@@ -1306,16 +1387,6 @@
                         <span class="text-gray-500 font-medium">Segments & Encoding</span>
                         <span class="font-bold text-gray-800 dark:text-gray-200" x-text="(activeScheduleDetails?.total_segments || 1) + ' seg (' + (activeScheduleDetails?.encoding || 'GSM') + ')'"></span>
                     </div>
-                    <div class="py-2 flex justify-between">
-                        <span class="text-gray-500 font-medium">Estimated Cost</span>
-                        <span class="font-black text-themeGreen dark:text-green-400">৳<span x-text="Number(activeScheduleDetails?.estimated_cost || 0).toFixed(2)"></span></span>
-                    </div>
-                    <template x-if="activeScheduleDetails?.actual_cost">
-                        <div class="py-2 flex justify-between">
-                            <span class="text-gray-500 font-medium">Actual Cost Incurred</span>
-                            <span class="font-black text-themeGreen dark:text-green-400">৳<span x-text="Number(activeScheduleDetails?.actual_cost).toFixed(2)"></span></span>
-                        </div>
-                    </template>
                     <template x-if="activeScheduleDetails?.dispatched_at">
                         <div class="py-2 flex justify-between">
                             <span class="text-gray-500 font-medium">Dispatched At</span>
@@ -1375,17 +1446,126 @@
                     <input type="text" x-model="editingSchedule.title"
                            class="w-full h-11 px-3.5 border-2 border-gray-150 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
                 </div>
-                <!-- Date & Time -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1 block">Date (Asia/Dhaka)</label>
-                        <input type="date" x-model="editingSchedule.scheduled_date" :min="todayDhakaDate"
-                               class="w-full h-11 px-3.5 border-2 border-gray-150 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
+                <!-- Date & Time (Custom Alpine.js Pickers) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- Date Picker in Edit Modal -->
+                    <div class="relative"
+                         x-data="datePicker(editingSchedule.scheduled_date, todayDhakaDate)"
+                         x-effect="if (editingSchedule.scheduled_date !== undefined && editingSchedule.scheduled_date !== value) { value = editingSchedule.scheduled_date; parseInitial(value); generateCalendar(); }"
+                         @date-selected="editingSchedule.scheduled_date = $event.detail"
+                         @click.away="show = false; mOpen = false">
+                        <label class="text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1 block">Date (Asia/Dhaka) <span class="text-red-500">*</span></label>
+                        <button type="button" @click="show = !show"
+                                class="w-full h-11 px-3.5 border-2 border-gray-150 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all flex items-center justify-between text-left">
+                            <span :class="editingSchedule.scheduled_date ? 'text-gray-800 dark:text-gray-200 font-bold' : 'text-gray-400 dark:text-gray-500 font-medium'"
+                                  x-text="formatDisplay(editingSchedule.scheduled_date)"></span>
+                            <svg class="w-4 h-4 text-themeBlue shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </button>
+
+                        <!-- Calendar Dropdown -->
+                        <div x-show="show" x-cloak
+                             class="absolute left-0 z-50 mt-1.5 w-72 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl p-3"
+                             x-transition>
+                            <div class="flex items-center justify-between gap-1 mb-2 pb-2 border-b border-gray-100 dark:border-white/[0.06]">
+                                <div class="relative">
+                                    <button type="button" @click="mOpen = !mOpen" class="text-xs font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1 hover:text-themeBlue">
+                                        <span x-text="monthNames[currentMonth]"></span>
+                                        <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <div x-show="mOpen" x-cloak class="absolute left-0 z-50 mt-1 w-32 bg-white dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto">
+                                        <template x-for="(m, mIdx) in monthNames" :key="mIdx">
+                                            <button type="button" @click="currentMonth = mIdx; mOpen = false; generateCalendar()" class="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-themeNavy font-bold" :class="currentMonth === mIdx ? 'text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'" x-text="m"></button>
+                                        </template>
+                                    </div>
+                                </div>
+                                <input type="number" x-model.number="currentYear" @input="generateCalendar()" class="w-16 h-7 text-xs font-black text-center bg-gray-50 dark:bg-themeDark border border-gray-200 dark:border-gray-700 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:border-themeBlue [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                                <div class="flex items-center gap-1">
+                                    <button type="button" @click="prevMonth()" class="p-1 hover:bg-gray-50 dark:hover:bg-themeDark/45 rounded-lg transition-colors text-gray-500 hover:text-themeBlue">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                                    </button>
+                                    <button type="button" @click="nextMonth()" class="p-1 hover:bg-gray-50 dark:hover:bg-themeDark/45 rounded-lg transition-colors text-gray-500 hover:text-themeBlue">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
+                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+                            <div class="grid grid-cols-7 gap-1">
+                                <template x-for="(d, i) in days" :key="i">
+                                    <button type="button" @click="selectDay(d)"
+                                            class="h-7 w-7 text-[10px] font-bold rounded-lg flex items-center justify-center transition-all"
+                                            :class="!d.isCurrentMonth ? 'text-transparent cursor-default pointer-events-none' : (d.isPast ? 'text-gray-300 dark:text-gray-700 cursor-not-allowed opacity-50' : (editingSchedule.scheduled_date === d.dateStr ? 'bg-themeBlue text-white font-black shadow-sm' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-themeDark/50'))"
+                                            :disabled="!d.isCurrentMonth || d.isPast">
+                                        <span x-text="d.day"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label class="text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1 block">Time</label>
-                        <input type="time" x-model="editingSchedule.scheduled_time"
-                               class="w-full h-11 px-3.5 border-2 border-gray-150 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
+
+                    <!-- Time Picker in Edit Modal -->
+                    <div class="relative"
+                         x-data="timePicker(editingSchedule.scheduled_time)"
+                         x-effect="if (editingSchedule.scheduled_time !== undefined && editingSchedule.scheduled_time !== value) { value = editingSchedule.scheduled_time; parseValue(value); }"
+                         @time-selected="editingSchedule.scheduled_time = $event.detail"
+                         @click.away="show = false">
+                        <label class="text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1 block">Time <span class="text-red-500">*</span></label>
+                        <button type="button" @click="show = !show"
+                                class="w-full h-11 px-3.5 border-2 border-gray-150 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all flex items-center justify-between text-left">
+                            <span :class="editingSchedule.scheduled_time ? 'text-gray-800 dark:text-gray-200 font-bold' : 'text-gray-400 dark:text-gray-500 font-medium'"
+                                  x-text="formatDisplay(editingSchedule.scheduled_time)"></span>
+                            <svg class="w-4 h-4 text-themeBlue shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+
+                        <!-- Dropdown -->
+                        <div x-show="show" x-cloak
+                             class="absolute right-0 z-50 mt-1.5 w-60 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl p-3 flex gap-2.5 justify-center"
+                             x-transition>
+                            <div class="flex flex-col items-center">
+                                <span class="text-[9px] font-black text-gray-400 uppercase mb-1">Hr</span>
+                                <div class="flex flex-col gap-1 max-h-36 overflow-y-auto w-12 scrollbar-none">
+                                    <template x-for="h in [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]" :key="h">
+                                        <button type="button" @click="selectHour(h)"
+                                                class="h-7 text-xs font-bold rounded-lg transition-all"
+                                                :class="hour === h ? 'bg-themeBlue text-white font-black' : 'text-gray-700 dark:text-gray-250 hover:bg-gray-50 dark:hover:bg-themeDark/45'">
+                                            <span x-text="String(h).padStart(2, '0')"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="self-center font-black text-gray-300 dark:text-gray-700">:</div>
+                            <div class="flex flex-col items-center">
+                                <span class="text-[9px] font-black text-gray-400 uppercase mb-1">Min</span>
+                                <div class="flex flex-col gap-1 max-h-36 overflow-y-auto w-12 scrollbar-none">
+                                    <template x-for="m in [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]" :key="m">
+                                        <button type="button" @click="selectMinute(m)"
+                                                class="h-7 text-xs font-bold rounded-lg transition-all"
+                                                :class="minute === m ? 'bg-themeBlue text-white font-black' : 'text-gray-700 dark:text-gray-250 hover:bg-gray-50 dark:hover:bg-themeDark/45'">
+                                            <span x-text="String(m).padStart(2, '0')"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="self-center font-black text-gray-300 dark:text-gray-700">|</div>
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <span class="text-[9px] font-black text-gray-400 uppercase mb-1">Period</span>
+                                <button type="button" @click="selectPeriod('AM')"
+                                        class="w-12 h-7 text-xs font-bold rounded-lg transition-all"
+                                        :class="period === 'AM' ? 'bg-themeGreen text-white font-black' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-themeDark/45'">
+                                    AM
+                                </button>
+                                <button type="button" @click="selectPeriod('PM')"
+                                        class="w-12 h-7 text-xs font-bold rounded-lg transition-all"
+                                        :class="period === 'PM' ? 'bg-themeGreen text-white font-black' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-themeDark/45'">
+                                    PM
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <!-- Message -->
@@ -1415,6 +1595,184 @@
 
 @push('scripts')
 <script>
+// Custom Alpine Date Picker Component Function (MACS School Design System)
+function datePicker(initialValue = '', minDate = '') {
+    return {
+        show: false,
+        mOpen: false,
+        value: initialValue || '',
+        minDate: minDate || '',
+        currentYear: new Date().getFullYear(),
+        currentMonth: new Date().getMonth(),
+        days: [],
+        monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+
+        init() {
+            if (this.value) {
+                this.parseInitial(this.value);
+            }
+            this.generateCalendar();
+            this.$watch('value', (val) => {
+                if (val) {
+                    this.parseInitial(val);
+                    this.generateCalendar();
+                }
+            });
+        },
+
+        parseInitial(val) {
+            if (!val) return;
+            const parts = val.split('-');
+            if (parts.length === 3) {
+                this.currentYear = parseInt(parts[0], 10);
+                this.currentMonth = parseInt(parts[1], 10) - 1;
+            }
+        },
+
+        generateCalendar() {
+            const firstDayIndex = new Date(this.currentYear, this.currentMonth, 1).getDay();
+            const totalDays = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
+
+            const days = [];
+            for (let i = 0; i < firstDayIndex; i++) {
+                days.push({ day: '', isCurrentMonth: false, isPast: false, dateStr: '' });
+            }
+            for (let i = 1; i <= totalDays; i++) {
+                const formattedMonth = String(this.currentMonth + 1).padStart(2, '0');
+                const formattedDay = String(i).padStart(2, '0');
+                const dateStr = `${this.currentYear}-${formattedMonth}-${formattedDay}`;
+                const isPast = this.minDate ? dateStr < this.minDate : false;
+
+                days.push({
+                    day: i,
+                    isCurrentMonth: true,
+                    dateStr: dateStr,
+                    isPast: isPast
+                });
+            }
+            this.days = days;
+        },
+
+        prevMonth() {
+            if (this.currentMonth === 0) {
+                this.currentMonth = 11;
+                this.currentYear--;
+            } else {
+                this.currentMonth--;
+            }
+            this.generateCalendar();
+        },
+
+        nextMonth() {
+            if (this.currentMonth === 11) {
+                this.currentMonth = 0;
+                this.currentYear++;
+            } else {
+                this.currentMonth++;
+            }
+            this.generateCalendar();
+        },
+
+        selectDay(dayObj) {
+            if (!dayObj || !dayObj.day || dayObj.isPast) return;
+            this.value = dayObj.dateStr;
+            this.show = false;
+            this.mOpen = false;
+            this.$dispatch('date-selected', this.value);
+        },
+
+        formatDisplay(val) {
+            if (!val) return 'Select Scheduled Date';
+            const parts = val.split('-');
+            if (parts.length === 3) {
+                const d = new Date(parts[0], parseInt(parts[1], 10) - 1, parts[2]);
+                if (!isNaN(d.getTime())) {
+                    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                }
+            }
+            return val;
+        }
+    };
+}
+
+// Custom Alpine Time Picker Component Function (MACS School Design System)
+function timePicker(initialValue = '') {
+    return {
+        show: false,
+        value: initialValue || '', // 24-hour format: "HH:mm"
+        hour: 9,
+        minute: 0,
+        period: 'AM',
+
+        init() {
+            if (this.value) {
+                this.parseValue(this.value);
+            } else {
+                this.hour = 10;
+                this.minute = 0;
+                this.period = 'AM';
+            }
+            this.$watch('value', (val) => {
+                if (val) this.parseValue(val);
+            });
+        },
+
+        parseValue(val) {
+            if (!val) return;
+            const parts = val.split(':');
+            let h = parseInt(parts[0], 10);
+            this.minute = parseInt(parts[1] || '0', 10);
+
+            if (h >= 12) {
+                this.period = 'PM';
+                this.hour = h === 12 ? 12 : h - 12;
+            } else {
+                this.period = 'AM';
+                this.hour = h === 0 ? 12 : h;
+            }
+        },
+
+        selectHour(h) {
+            this.hour = h;
+            this.updateValue();
+        },
+
+        selectMinute(m) {
+            this.minute = m;
+            this.updateValue();
+        },
+
+        selectPeriod(p) {
+            this.period = p;
+            this.updateValue();
+        },
+
+        updateValue() {
+            let h24 = this.hour;
+            if (this.period === 'PM') {
+                h24 = this.hour === 12 ? 12 : this.hour + 12;
+            } else {
+                h24 = this.hour === 12 ? 0 : this.hour;
+            }
+            const formattedHour = String(h24).padStart(2, '0');
+            const formattedMinute = String(this.minute).padStart(2, '0');
+            this.value = `${formattedHour}:${formattedMinute}`;
+            this.$dispatch('time-selected', this.value);
+        },
+
+        formatDisplay(val) {
+            if (!val) return 'Select Scheduled Time';
+            const parts = val.split(':');
+            let h = parseInt(parts[0], 10);
+            let m = parseInt(parts[1] || '0', 10);
+            let p = h >= 12 ? 'PM' : 'AM';
+            let displayHour = h % 12;
+            if (displayHour === 0) displayHour = 12;
+            return `${String(displayHour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${p}`;
+        }
+    };
+}
+
 function noticeBroadcastApp() {
     return {
         // Lookups from Server
@@ -1936,7 +2294,20 @@ function noticeBroadcastApp() {
 
         formatScheduledPreview() {
             if (!this.scheduled_date || !this.scheduled_time) return '';
-            return `${this.scheduled_date} ${this.scheduled_time} (Asia/Dhaka)`;
+            try {
+                const [year, month, day] = this.scheduled_date.split('-');
+                const [hour24, minute] = this.scheduled_time.split(':');
+                const h = parseInt(hour24, 10);
+                const m = parseInt(minute || '0', 10);
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const h12 = h % 12 || 12;
+                const d = new Date(year, parseInt(month, 10) - 1, day);
+                const formattedDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                const formattedTime = `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+                return `${formattedDate} at ${formattedTime} (Asia/Dhaka)`;
+            } catch (e) {
+                return `${this.scheduled_date} ${this.scheduled_time} (Asia/Dhaka)`;
+            }
         },
 
         formatDateTime(dtStr) {
