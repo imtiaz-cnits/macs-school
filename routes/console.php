@@ -11,3 +11,4 @@ use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('app:resolve-missing-out-punches')->dailyAt('23:59')->timezone('Asia/Dhaka');
 Schedule::command('fees:auto-generate')->dailyAt('00:05')->timezone('Asia/Dhaka');
+Schedule::command('sms:dispatch-scheduled')->everyMinute()->withoutOverlapping();

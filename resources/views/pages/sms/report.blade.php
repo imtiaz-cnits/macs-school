@@ -2,10 +2,153 @@
 
 @section('title', 'SMS Delivery Report')
 
+@push('meta')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @push('styles')
 <style>
     [x-cloak] { display: none !important; }
     .table th, .table td { padding: 0.75rem 1rem !important; }
+
+    .print-only {
+        display: none !important;
+    }
+
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 6mm 7mm 6mm 7mm;
+        }
+
+        html, body {
+            background: #ffffff !important;
+            color: #0F1E2C !important;
+            font-family: 'Figtree', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        body * {
+            visibility: hidden;
+        }
+
+        #printableReportArea, #printableReportArea * {
+            visibility: visible;
+        }
+
+        #printableReportArea {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            border: none !important;
+            box-shadow: none !important;
+            display: block !important;
+        }
+
+        .no-print, nav, aside, header, footer, .sidebar, .sidebar-container, .topbar, .admin-bar, .sidebar-overlay, #globalModal {
+            display: none !important;
+        }
+
+        .dashboard-layout, .main-content, .page-content {
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block !important;
+            width: 100% !important;
+            min-height: auto !important;
+            background: transparent !important;
+            border: none !important;
+        }
+
+        .print-only {
+            display: block !important;
+        }
+
+        /* Printable Table Formatting */
+        #printableReportArea table.report-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            page-break-inside: auto !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            border: 1px solid #475569 !important;
+        }
+
+        #printableReportArea thead {
+            display: table-header-group !important;
+        }
+
+        #printableReportArea tbody {
+            display: table-row-group !important;
+        }
+
+        #printableReportArea tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+
+        #printableReportArea th {
+            background-color: #008ED6 !important;
+            color: #ffffff !important;
+            font-size: 9.5px !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            padding: 5px 6px !important;
+            border: 1px solid #0072ad !important;
+            border-bottom: 1.5px solid #005a8c !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        #printableReportArea td {
+            border: 1px solid #CBD5E1 !important;
+            padding: 4px 5px !important;
+            font-size: 8.5px !important;
+            line-height: 1.25 !important;
+            color: #0F1E2C !important;
+            vertical-align: top !important;
+        }
+
+        #printableReportArea tbody tr:nth-child(even) td {
+            background-color: #F8FAFC !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        #printableReportArea tbody tr:nth-child(odd) td {
+            background-color: #FFFFFF !important;
+        }
+
+        .print-signatures {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin-top: 24px !important;
+            padding-top: 10px !important;
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
+            width: 100% !important;
+        }
+
+        .print-signatures table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            border: none !important;
+        }
+
+        .print-signatures td {
+            border: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+        }
+    }
 </style>
 @endpush
 
@@ -25,6 +168,14 @@
         </div>
         
         <div class="flex items-center gap-2.5">
+            <!-- Print Report Button -->
+            <button type="button" onclick="prepareAndPrintSmsReport()" id="printSmsReportBtn" title="Print Filtered SMS Delivery Report" class="h-10 px-4 bg-white dark:bg-themeNavy text-gray-700 dark:text-gray-200 border-2 border-gray-200 dark:border-gray-800 hover:border-themeBlue hover:text-themeBlue dark:hover:text-themeBlue rounded-xl hover:-translate-y-0.5 hover:shadow-md transition-all text-xs font-black uppercase tracking-wider flex items-center gap-2 group active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
+                <svg class="w-4 h-4 text-themeBlue group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                <span id="printSmsBtnText">Print Report</span>
+            </button>
+
             <!-- Refresh Gateway Balance Button -->
             <a href="{{ request()->fullUrlWithQuery(['refresh_balance' => 1]) }}" title="Sync Live Balance from Gateway" class="h-10 px-4 bg-white dark:bg-themeNavy text-themeBlue border-2 border-themeBlue/25 hover:border-themeBlue rounded-xl hover:bg-themeBlue/5 hover:-translate-y-0.5 hover:shadow-md transition-all text-xs font-black uppercase tracking-wider flex items-center gap-2 group">
                 <svg class="w-4 h-4 text-themeBlue group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -395,5 +546,355 @@
             </div>
         @endif
     </div>
+
+    <!-- Official Printable Report Area (Print Only) -->
+    @php
+        $macsLogoPath = public_path('img/macs_logo.jpeg');
+        $macsLogoSrc = file_exists($macsLogoPath) ? asset('img/macs_logo.jpeg') : (file_exists(public_path('img/logo.png')) ? asset('img/logo.png') : '');
+
+        $initialDateLabel = match(request('date_filter')) {
+            'today' => 'Today (' . Carbon\Carbon::today('Asia/Dhaka')->format('d M Y') . ')',
+            'yesterday' => 'Yesterday (' . Carbon\Carbon::yesterday('Asia/Dhaka')->format('d M Y') . ')',
+            'last_7_days' => 'Last 7 Days',
+            'this_month' => 'This Month (' . Carbon\Carbon::now('Asia/Dhaka')->format('F Y') . ')',
+            default => 'All Dates'
+        };
+        $initialStatusLabel = request('status', 'All');
+        if ($initialStatusLabel === 'All' || empty($initialStatusLabel)) $initialStatusLabel = 'All Status';
+
+        $initialTypeLabel = match(request('event_type')) {
+            'check_in' => 'Attendance Check-In',
+            'check_out' => 'Attendance Check-Out',
+            'general_notice' => 'General Notice',
+            'result' => 'Exam Result',
+            default => 'All Types'
+        };
+    @endphp
+
+    <div id="printableReportArea" class="print-only">
+        <!-- Header: Logo (Left), School Info & Title (Center), Print Date (Right) -->
+        <table style="width: 100%; border-collapse: collapse; border: none !important; margin-bottom: 3px;">
+            <tr style="border: none !important; background: transparent !important;">
+                <!-- Left: MACS Logo -->
+                <td style="width: 14%; text-align: left; vertical-align: middle; border: none !important; padding: 0 !important; background: transparent !important;">
+                    @if($macsLogoSrc)
+                    <img src="{{ $macsLogoSrc }}" style="width: 52px; height: 52px; object-fit: contain; border-radius: 50%; border: 1.5px solid #008ED6; padding: 2px;" alt="MACS Logo">
+                    @else
+                    <div style="width: 50px; height: 50px; border: 1.5px solid #008ED6; border-radius: 50%; text-align: center; line-height: 50px; font-weight: 900; color: #008ED6; font-size: 11px;">MACS</div>
+                    @endif
+                </td>
+
+                <!-- Center: School Details & Report Badge -->
+                <td style="width: 72%; text-align: center; vertical-align: middle; border: none !important; padding: 0 !important; background: transparent !important;">
+                    <div style="font-size: 20px; font-weight: 900; color: #0F1E2C; letter-spacing: -0.3px; text-transform: uppercase; line-height: 1.1;">
+                        MACS School &amp; College
+                    </div>
+                    <div style="font-size: 8.5px; font-weight: 600; color: #475569; margin-top: 1px;">
+                        Jalalpur, Pabna Sadar, Pabna &bull; Bangladesh
+                    </div>
+                    <div style="font-size: 8px; font-weight: 500; color: #64748B; margin-top: 0.5px;">
+                        Hotline: 01896-220299, 01896-220300 &bull; Web: macs.edu.bd
+                    </div>
+                    <div style="margin-top: 4px; margin-bottom: 4px;">
+                        <span style="display: inline-block; background-color: #008ED6; color: #ffffff; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; padding: 4px 18px; border-radius: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                            SMS DELIVERY REPORT
+                        </span>
+                    </div>
+                </td>
+
+                <!-- Right: Print Metadata -->
+                <td style="width: 14%; text-align: right; vertical-align: middle; border: none !important; padding: 0 !important; background: transparent !important;">
+                    <div style="font-size: 7.5px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.4px;">Date of Issue</div>
+                    <div id="printIssueDate" style="font-size: 9.5px; font-weight: 800; font-family: monospace; color: #0F1E2C; margin-top: 1px;">{{ Carbon\Carbon::now('Asia/Dhaka')->format('d M, Y') }}</div>
+                    <div id="printIssueTime" style="font-size: 7.5px; font-weight: 600; color: #94A3B8;">{{ Carbon\Carbon::now('Asia/Dhaka')->format('h:i A') }}</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Filter Meta & Summary Highlights Card (Matching MACS Standards) -->
+        <div style="background-color: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 4px; padding: 4px 8px; margin-top: 2px; margin-bottom: 6px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+            <table style="width: 100%; border: none !important; border-collapse: collapse; margin: 0 !important; padding: 0 !important; background: transparent !important;">
+                <tr style="border: none !important; background: transparent !important;">
+                    <td style="border: none !important; padding: 1px 2px !important; font-size: 9.5px; color: #334155; font-weight: 700; text-align: left; vertical-align: middle; background: transparent !important;">
+                        Date: <strong id="printCriteriaDate" style="color: #008ED6;">{{ $initialDateLabel }}</strong>
+                        &nbsp;&bull;&nbsp; Status: <strong id="printCriteriaStatus" style="color: #008ED6;">{{ $initialStatusLabel }}</strong>
+                        &nbsp;&bull;&nbsp; Type: <strong id="printCriteriaType" style="color: #008ED6;">{{ $initialTypeLabel }}</strong>
+                        <span id="printCriteriaSearchWrap" style="{{ request('search') ? 'display: inline;' : 'display: none;' }}">&nbsp;&bull;&nbsp; Search: <strong id="printCriteriaSearch" style="color: #0F1E2C;">"{{ request('search') }}"</strong></span>
+                    </td>
+                    <td style="border: none !important; padding: 1px 2px !important; font-size: 9.5px; color: #334155; font-weight: 700; text-align: right; white-space: nowrap; vertical-align: middle; background: transparent !important;">
+                        Total SMS: <strong id="printStatTotal" style="color: #0F1E2C; font-family: monospace; font-size: 11px;">{{ number_format($logs->total()) }}</strong>
+                        &nbsp;&bull;&nbsp; Sent: <strong id="printStatSent" style="color: #009A49; font-family: monospace; font-size: 11px;">{{ number_format($totalSent ?? 0) }}</strong>
+                        &nbsp;&bull;&nbsp; Failed: <strong id="printStatFailed" style="color: #E11D48; font-family: monospace; font-size: 11px;">{{ number_format($totalFailed ?? 0) }}</strong>
+                        <span id="printStatOtherWrap" style="display: none;">&nbsp;&bull;&nbsp; Other: <strong id="printStatOther" style="color: #D97706; font-family: monospace; font-size: 11px;">0</strong></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- SMS Details Table (8 Columns) -->
+        <table class="report-table" style="width: 100%; border-collapse: collapse; margin: 0; padding: 0;">
+            <thead>
+                <tr>
+                    <th style="width: 4%; text-align: center;">#</th>
+                    <th style="width: 11%; text-align: left;">Date &amp; Time</th>
+                    <th style="width: 15%; text-align: left;">Recipient Name</th>
+                    <th style="width: 11%; text-align: left;">Student ID</th>
+                    <th style="width: 11%; text-align: left;">Mobile Number</th>
+                    <th style="width: 9%; text-align: center;">SMS Type</th>
+                    <th style="width: 31%; text-align: left;">Message Content</th>
+                    <th style="width: 8%; text-align: center;">Status</th>
+                </tr>
+            </thead>
+            <tbody id="printTableBody">
+                @forelse($logs as $index => $log)
+                <tr>
+                    <td style="text-align: center; font-weight: 800; font-family: monospace; font-size: 8.5px; color: #475569;">{{ $logs->firstItem() ? ($logs->firstItem() + $index) : ($index + 1) }}</td>
+                    <td style="white-space: nowrap; line-height: 1.25;">
+                        <div style="font-weight: 700; color: #0F1E2C; font-size: 8.5px;">{{ \Carbon\Carbon::parse($log->created_at, 'Asia/Dhaka')->format('d M, Y') }}</div>
+                        <div style="font-family: monospace; font-size: 8px; color: #64748B;">{{ \Carbon\Carbon::parse($log->created_at, 'Asia/Dhaka')->format('h:i:s A') }}</div>
+                    </td>
+                    <td style="line-height: 1.25;">
+                        <div style="font-weight: 700; color: #0F1E2C; font-size: 9px;">{{ $log->student ? $log->student->student_name : 'General Recipient' }}</div>
+                    </td>
+                    <td style="line-height: 1.2;">
+                        @if($log->student)
+                            <div style="font-family: monospace; font-weight: 700; color: #0F1E2C; font-size: 9px;">{{ $log->student->student_identity }}</div>
+                            @if($log->student->schoolClass)
+                                <div style="font-size: 8px; color: #64748B;">{{ $log->student->schoolClass->class_name }}</div>
+                            @endif
+                        @else
+                            <span style="color: #94A3B8; font-size: 8.5px;">N/A</span>
+                        @endif
+                    </td>
+                    <td style="font-family: monospace; font-weight: 700; color: #0F1E2C; font-size: 8.5px; white-space: nowrap;">
+                        {{ $log->mobile_number }}
+                    </td>
+                    <td style="text-align: center; white-space: nowrap;">
+                        @if($log->event_type === 'check_in')
+                            <span style="display: inline-block; padding: 1.5px 5px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #EFF6FF; color: #1D4ED8;">Check-In</span>
+                        @elseif($log->event_type === 'check_out')
+                            <span style="display: inline-block; padding: 1.5px 5px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #FAF5FF; color: #7E22CE;">Check-Out</span>
+                        @elseif($log->event_type === 'result')
+                            <span style="display: inline-block; padding: 1.5px 5px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #EEF2FF; color: #4338CA;">Result</span>
+                        @else
+                            <span style="display: inline-block; padding: 1.5px 5px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #F1F5F9; color: #475569;">Notice</span>
+                        @endif
+                    </td>
+                    <td style="word-break: break-word; overflow-wrap: break-word; font-size: 8px; line-height: 1.3; color: #1E293B;">
+                        {{ $log->message }}
+                    </td>
+                    <td style="text-align: center; white-space: nowrap;">
+                        @if(strtolower($log->status) === 'sent')
+                            <span style="display: inline-block; padding: 2px 7px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">Sent</span>
+                        @elseif(strtolower($log->status) === 'failed')
+                            <span style="display: inline-block; padding: 2px 7px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #FFF1F2; color: #BE123C; border: 1px solid #FECDD3;">Failed</span>
+                        @elseif(str_contains(strtolower($log->status), 'blocked'))
+                            <span style="display: inline-block; padding: 2px 7px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #FFFBEB; color: #B45309; border: 1px solid #FDE68A;">Blocked</span>
+                        @else
+                            <span style="display: inline-block; padding: 2px 7px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #F3E8FF; color: #7E22CE; border: 1px solid #E9D5FF;">{{ $log->status }}</span>
+                        @endif
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 24px; color: #64748B; font-size: 11px; font-weight: 600;">
+                        No SMS records found matching the selected criteria.
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+
+        <!-- Official Printable Signatures Block (Only On Final Page) -->
+        <div class="print-signatures">
+            <table style="width: 100%; border-collapse: collapse; border: none !important; margin-bottom: 0 !important;">
+                <tr style="border: none !important; background: transparent !important;">
+                    <td style="width: 50%; text-align: center; vertical-align: bottom; border: none !important; padding: 0 !important; background: transparent !important;">
+                        <span style="display: inline-block; width: 160px; border-top: 1.4px dashed #64748B; padding-top: 5px; font-size: 10px; font-weight: 800; color: #0F1E2C; letter-spacing: 0.2px;">
+                            Prepared By
+                        </span>
+                    </td>
+                    <td style="width: 50%; text-align: center; vertical-align: bottom; border: none !important; padding: 0 !important; background: transparent !important;">
+                        <span style="display: inline-block; width: 160px; border-top: 1.4px dashed #64748B; padding-top: 5px; font-size: 10px; font-weight: 800; color: #0F1E2C; letter-spacing: 0.2px;">
+                            Authorized By
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    let isSmsPrinting = false;
+
+    async function prepareAndPrintSmsReport() {
+        if (isSmsPrinting) return;
+        isSmsPrinting = true;
+
+        const btn = document.getElementById('printSmsReportBtn');
+        const btnText = document.getElementById('printSmsBtnText');
+        const origText = btnText ? btnText.textContent : 'Print Report';
+
+        if (btnText) btnText.textContent = 'Preparing...';
+        if (btn) btn.disabled = true;
+
+        try {
+            const queryParams = window.location.search;
+            const printDataUrl = "{{ route('sms.report.ajax-print-data') }}" + queryParams;
+
+            const response = await fetch(printDataUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server returned HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // 1. Update Criteria Summary
+            if (data.criteria) {
+                document.getElementById('printCriteriaDate').textContent = data.criteria.date_range || 'All Dates';
+                document.getElementById('printCriteriaStatus').textContent = data.criteria.status || 'All Status';
+                document.getElementById('printCriteriaType').textContent = data.criteria.event_type || 'All Types';
+
+                const searchWrap = document.getElementById('printCriteriaSearchWrap');
+                const searchElem = document.getElementById('printCriteriaSearch');
+                if (data.criteria.search) {
+                    searchElem.textContent = `"${data.criteria.search}"`;
+                    searchWrap.style.display = 'inline';
+                } else {
+                    searchWrap.style.display = 'none';
+                }
+            }
+
+            // 2. Update Metrics Summary
+            if (data.stats) {
+                document.getElementById('printStatTotal').textContent = Number(data.stats.total || 0).toLocaleString();
+                document.getElementById('printStatSent').textContent = Number(data.stats.sent || 0).toLocaleString();
+                document.getElementById('printStatFailed').textContent = Number(data.stats.failed || 0).toLocaleString();
+
+                const otherWrap = document.getElementById('printStatOtherWrap');
+                const otherElem = document.getElementById('printStatOther');
+                if (data.stats.other > 0) {
+                    otherElem.textContent = Number(data.stats.other).toLocaleString();
+                    otherWrap.style.display = 'inline';
+                } else {
+                    otherWrap.style.display = 'none';
+                }
+            }
+
+            // 3. Update Generation Date & Time
+            if (data.generated_at) {
+                document.getElementById('printIssueDate').textContent = data.generated_at.date;
+                document.getElementById('printIssueTime').textContent = data.generated_at.time;
+            }
+
+            // 4. Populate All Matching Table Rows
+            const tbody = document.getElementById('printTableBody');
+            tbody.innerHTML = '';
+
+            if (!data.records || data.records.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="8" style="text-align: center; padding: 24px; color: #64748B; font-size: 11px; font-weight: 600;">No SMS records found matching the selected criteria.</td>`;
+                tbody.appendChild(tr);
+            } else {
+                const fragment = document.createDocumentFragment();
+                data.records.forEach((row, idx) => {
+                    const tr = document.createElement('tr');
+
+                    // Status styling
+                    let statusBadge = '';
+                    const st = (row.status || '').toLowerCase();
+                    if (st === 'sent') {
+                        statusBadge = `<span style="display: inline-block; padding: 2px 7px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">Sent</span>`;
+                    } else if (st === 'failed') {
+                        statusBadge = `<span style="display: inline-block; padding: 2px 7px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #FFF1F2; color: #BE123C; border: 1px solid #FECDD3;">Failed</span>`;
+                    } else if (st.includes('blocked')) {
+                        statusBadge = `<span style="display: inline-block; padding: 2px 7px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #FFFBEB; color: #B45309; border: 1px solid #FDE68A;">Blocked</span>`;
+                    } else {
+                        statusBadge = `<span style="display: inline-block; padding: 2px 7px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #F3E8FF; color: #7E22CE; border: 1px solid #E9D5FF;">${escapeHtml(row.status || '')}</span>`;
+                    }
+
+                    // SMS Type badge
+                    let typeBadge = '';
+                    const evt = (row.event_type || '').toLowerCase();
+                    if (evt === 'check_in') {
+                        typeBadge = `<span style="display: inline-block; padding: 1.5px 5px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #EFF6FF; color: #1D4ED8;">Check-In</span>`;
+                    } else if (evt === 'check_out') {
+                        typeBadge = `<span style="display: inline-block; padding: 1.5px 5px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #FAF5FF; color: #7E22CE;">Check-Out</span>`;
+                    } else if (evt === 'result') {
+                        typeBadge = `<span style="display: inline-block; padding: 1.5px 5px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #EEF2FF; color: #4338CA;">Result</span>`;
+                    } else {
+                        typeBadge = `<span style="display: inline-block; padding: 1.5px 5px; font-size: 8px; font-weight: 800; text-transform: uppercase; border-radius: 4px; background-color: #F1F5F9; color: #475569;">${escapeHtml(row.event_type_label || 'Notice')}</span>`;
+                    }
+
+                    const studentIdInfo = row.student_identity ? `
+                        <div style="font-family: monospace; font-weight: 700; color: #0F1E2C; font-size: 9px;">${escapeHtml(row.student_identity)}</div>
+                        ${row.class_name ? `<div style="font-size: 8px; color: #64748B;">${escapeHtml(row.class_name)}${row.section_name ? ` (${escapeHtml(row.section_name)})` : ''}</div>` : ''}
+                    ` : `<span style="color: #94A3B8; font-size: 8.5px;">N/A</span>`;
+
+                    tr.innerHTML = `
+                        <td style="text-align: center; font-weight: 800; font-family: monospace; font-size: 8.5px; color: #475569;">${row.sl || (idx + 1)}</td>
+                        <td style="white-space: nowrap; line-height: 1.25;">
+                            <div style="font-weight: 700; color: #0F1E2C; font-size: 8.5px;">${escapeHtml(row.date)}</div>
+                            <div style="font-family: monospace; font-size: 8px; color: #64748B;">${escapeHtml(row.time)}</div>
+                        </td>
+                        <td style="line-height: 1.25;">
+                            <div style="font-weight: 700; color: #0F1E2C; font-size: 9px;">${escapeHtml(row.recipient_name || 'General Recipient')}</div>
+                        </td>
+                        <td style="line-height: 1.2;">
+                            ${studentIdInfo}
+                        </td>
+                        <td style="font-family: monospace; font-weight: 700; color: #0F1E2C; font-size: 8.5px; white-space: nowrap;">
+                            ${escapeHtml(row.mobile_number || '')}
+                        </td>
+                        <td style="text-align: center; white-space: nowrap;">
+                            ${typeBadge}
+                        </td>
+                        <td style="word-break: break-word; overflow-wrap: break-word; font-size: 8px; line-height: 1.3; color: #1E293B;">
+                            ${escapeHtml(row.message || '')}
+                        </td>
+                        <td style="text-align: center; white-space: nowrap;">
+                            ${statusBadge}
+                        </td>
+                    `;
+                    fragment.appendChild(tr);
+                });
+                tbody.appendChild(fragment);
+            }
+
+            // 5. Trigger Browser Print
+            window.print();
+
+        } catch (err) {
+            console.error('Failed to prepare SMS print report data:', err);
+            if (typeof showAlert === 'function') {
+                showAlert('Could not prepare print report data. Please check your network connection and try again.', 'Print Error');
+            } else {
+                alert('Could not prepare print report data. Please try again.');
+            }
+        } finally {
+            if (btnText) btnText.textContent = origText;
+            if (btn) btn.disabled = false;
+            isSmsPrinting = false;
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+</script>
+@endpush

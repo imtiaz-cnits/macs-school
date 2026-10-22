@@ -347,11 +347,24 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
 
     // SMS Management Routes
     Route::prefix('sms')->name('sms.')->group(function () {
+        // General Notice SMS Broadcast
         Route::get('/general-notice', [SmsController::class, 'generalNotice'])->name('general-notice');
+        Route::match(['GET', 'POST'], '/general-notice/recipient-summary', [SmsController::class, 'recipientSummary'])->name('general-notice.recipient-summary');
+        Route::match(['GET', 'POST'], '/general-notice/preview-recipients', [SmsController::class, 'previewRecipients'])->name('general-notice.preview-recipients');
         Route::post('/general-notice/send', [SmsController::class, 'sendGeneralNotice'])->name('general-notice.send');
+
+        // Scheduled Notice SMS Management
+        Route::get('/general-notice/schedules', [SmsController::class, 'listSchedules'])->name('general-notice.schedules');
+        Route::post('/general-notice/schedule', [SmsController::class, 'storeSchedule'])->name('general-notice.schedule.store');
+        Route::put('/general-notice/schedules/{id}', [SmsController::class, 'updateSchedule'])->name('general-notice.schedules.update');
+        Route::put('/general-notice/schedule/{id}', [SmsController::class, 'updateSchedule'])->name('general-notice.schedule.update');
+        Route::post('/general-notice/schedules/{id}/cancel', [SmsController::class, 'cancelSchedule'])->name('general-notice.schedules.cancel');
+        Route::post('/general-notice/schedule/{id}/cancel', [SmsController::class, 'cancelSchedule'])->name('general-notice.schedule.cancel');
         
         // SMS Delivery Report
         Route::get('/report', [SmsController::class, 'report'])->name('report');
+        Route::get('/report/print-data', [SmsController::class, 'reportPrintData'])->name('report.print-data');
+        Route::get('/ajax/report-print-data', [SmsController::class, 'reportPrintData'])->name('report.ajax-print-data');
         
         // Result SMS
         Route::get('/result', [SmsController::class, 'resultSms'])->name('result');
