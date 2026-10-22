@@ -23,6 +23,7 @@ class SmsSchedule extends Model
         'total_segments'     => 'integer',
         'sent_count'         => 'integer',
         'failed_count'       => 'integer',
+        'blocked_count'      => 'integer',
     ];
 
     public function user()

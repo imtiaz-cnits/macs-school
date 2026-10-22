@@ -578,6 +578,7 @@ class SmsController extends Controller
             $broadcastBatchId = 'nb_' . Str::random(8) . '_' . time();
             $sentCount = 0;
             $failedCount = 0;
+            $blockedCount = 0;
             $siblingSharedCount = 0;
             $customSentCount = 0;
 
@@ -595,9 +596,8 @@ class SmsController extends Controller
                 );
 
                 $logStatus = SmsLog::where('event_key', $eventKey)->value('status');
-                $isProcessed = $sent || ($logStatus === 'Blocked (Test Mode)');
 
-                if ($isProcessed) {
+                if ($sent || $logStatus === 'Sent') {
                     $sentCount++;
 
                     // Log sibling student deliveries so academic records reflect the notice
@@ -621,6 +621,8 @@ class SmsController extends Controller
                             }
                         }
                     }
+                } elseif ($logStatus === 'Blocked (Test Mode)') {
+                    $blockedCount++;
                 } else {
                     $failedCount++;
                 }
@@ -639,11 +641,12 @@ class SmsController extends Controller
                 );
 
                 $logStatus = SmsLog::where('event_key', $eventKey)->value('status');
-                $isProcessed = $sent || ($logStatus === 'Blocked (Test Mode)');
 
-                if ($isProcessed) {
+                if ($sent || $logStatus === 'Sent') {
                     $sentCount++;
                     $customSentCount++;
+                } elseif ($logStatus === 'Blocked (Test Mode)') {
+                    $blockedCount++;
                 } else {
                     $failedCount++;
                 }
@@ -688,6 +691,9 @@ class SmsController extends Controller
             }
 
             $successMsg = "Success! Notice SMS broadcast dispatched to {$sentCount} unique recipient numbers.";
+            if ($blockedCount > 0) {
+                $successMsg .= " ({$blockedCount} recipient(s) blocked by SMS Test Mode).";
+            }
             if ($siblingSharedCount > 0) {
                 $successMsg .= " ({$siblingSharedCount} sibling duplicate messages avoided).";
             }
@@ -706,6 +712,7 @@ class SmsController extends Controller
                     'stats' => [
                         'sent_count'                 => $sentCount,
                         'failed_count'               => $failedCount,
+                        'blocked_count'              => $blockedCount,
                         'total_students'             => count($students),
                         'sibling_shared_count'       => $siblingSharedCount,
                         'custom_numbers_count'       => $customParsed['tokens_count'],

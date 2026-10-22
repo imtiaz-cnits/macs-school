@@ -1285,4 +1285,333 @@ class GeneralNoticeSmsFilterTest extends TestCase
         $this->assertEquals('completed', $dueSchedule->status);
         $this->assertEquals(2, $dueSchedule->sent_count);
     }
+
+    /**
+     * Test Scheduled SMS with mixed Sent and Blocked (Test Mode) recipients.
+     * Verifies that Blocked (Test Mode) does not increment sent_count and is not billed.
+     */
+    public function test_dispatch_scheduled_sms_mixed_sent_and_blocked_test_mode()
+    {
+        $student = $this->makeStudent(['session_year_id' => $this->session1->id, 'guardian_mobile' => '01711111111']);
+
+        $dueSchedule = SmsSchedule::create([
+            'schedule_uuid'      => (string) \Illuminate\Support\Str::uuid(),
+            'user_id'            => $this->adminUser->id,
+            'title'              => 'Mixed Sent and Blocked Test',
+            'message'            => 'Notice.',
+            'recipient_source'   => 'both',
+            'recipient_snapshot' => [
+                'students_map'             => ['8801711111111' => [$student->id]],
+                'standalone_custom_phones' => ['8801722222222'],
+                'total_unique'             => 2,
+            ],
+            'scheduled_at'       => Carbon::now('Asia/Dhaka')->subMinutes(5),
+            'status'             => 'pending',
+            'total_recipients'   => 2,
+            'total_segments'     => 1,
+            'encoding'           => 'GSM',
+            'estimated_cost'     => 0.66,
+        ]);
+
+        $mockSmsService = $this->createMock(SmsService::class);
+        $mockSmsService->expects($this->exactly(2))
+            ->method('sendSms')
+            ->willReturnCallback(function ($phone, $message, $studentId, $eventKey, $eventType) {
+                if ($phone === '8801711111111') {
+                    SmsLog::create([
+                        'student_id'    => $studentId,
+                        'event_key'     => $eventKey,
+                        'event_type'    => $eventType,
+                        'mobile_number' => $phone,
+                        'message'       => $message,
+                        'status'        => 'Sent',
+                        'created_at'    => Carbon::now('Asia/Dhaka'),
+                        'updated_at'    => Carbon::now('Asia/Dhaka'),
+                    ]);
+                    return true;
+                } else {
+                    SmsLog::create([
+                        'student_id'    => null,
+                        'event_key'     => $eventKey,
+                        'event_type'    => $eventType,
+                        'mobile_number' => $phone,
+                        'message'       => $message,
+                        'status'        => 'Blocked (Test Mode)',
+                        'created_at'    => Carbon::now('Asia/Dhaka'),
+                        'updated_at'    => Carbon::now('Asia/Dhaka'),
+                    ]);
+                    return false;
+                }
+            });
+
+        $this->app->instance(SmsService::class, $mockSmsService);
+
+        \Illuminate\Support\Facades\Artisan::call('sms:dispatch-scheduled', ['--id' => $dueSchedule->id]);
+
+        $dueSchedule->refresh();
+        $this->assertEquals('completed', $dueSchedule->status);
+        $this->assertEquals(1, $dueSchedule->sent_count, 'Only the whitelisted recipient must increment sent_count');
+        $this->assertEquals(1, $dueSchedule->blocked_count, 'Blocked recipient must be recorded in blocked_count');
+        $this->assertEquals(0, $dueSchedule->failed_count);
+        $this->assertEquals(0.33, (float)$dueSchedule->actual_cost, 'Only the sent recipient must be billed (0.33, not 0.66)');
+        $this->assertEquals(1, $dueSchedule->recipient_snapshot['dispatch_summary']['blocked_count']);
+    }
+
+    /**
+     * Test Scheduled SMS where all recipients are Blocked (Test Mode).
+     * Verifies sent_count is 0, cost is 0.00, and blocked_count is 2.
+     */
+    public function test_dispatch_scheduled_sms_all_blocked_in_test_mode()
+    {
+        $dueSchedule = SmsSchedule::create([
+            'schedule_uuid'      => (string) \Illuminate\Support\Str::uuid(),
+            'user_id'            => $this->adminUser->id,
+            'title'              => 'All Blocked Test',
+            'message'            => 'Notice.',
+            'recipient_source'   => 'custom',
+            'recipient_snapshot' => [
+                'standalone_custom_phones' => ['8801711111111', '8801722222222'],
+                'total_unique'             => 2,
+            ],
+            'scheduled_at'       => Carbon::now('Asia/Dhaka')->subMinutes(5),
+            'status'             => 'pending',
+            'total_recipients'   => 2,
+            'total_segments'     => 1,
+            'estimated_cost'     => 0.66,
+        ]);
+
+        $mockSmsService = $this->createMock(SmsService::class);
+        $mockSmsService->expects($this->exactly(2))
+            ->method('sendSms')
+            ->willReturnCallback(function ($phone, $message, $studentId, $eventKey, $eventType) {
+                SmsLog::create([
+                    'student_id'    => null,
+                    'event_key'     => $eventKey,
+                    'event_type'    => $eventType,
+                    'mobile_number' => $phone,
+                    'message'       => $message,
+                    'status'        => 'Blocked (Test Mode)',
+                    'created_at'    => Carbon::now('Asia/Dhaka'),
+                    'updated_at'    => Carbon::now('Asia/Dhaka'),
+                ]);
+                return false;
+            });
+
+        $this->app->instance(SmsService::class, $mockSmsService);
+
+        \Illuminate\Support\Facades\Artisan::call('sms:dispatch-scheduled', ['--id' => $dueSchedule->id]);
+
+        $dueSchedule->refresh();
+        $this->assertEquals('completed', $dueSchedule->status);
+        $this->assertEquals(0, $dueSchedule->sent_count);
+        $this->assertEquals(2, $dueSchedule->blocked_count);
+        $this->assertEquals(0, $dueSchedule->failed_count);
+        $this->assertEquals(0.00, (float)$dueSchedule->actual_cost);
+    }
+
+    /**
+     * Test Scheduled SMS with a genuine gateway failure.
+     * Verifies partial_failure status, failed_count is 1, and sent_count is 1.
+     */
+    public function test_dispatch_scheduled_sms_genuine_gateway_failure()
+    {
+        $dueSchedule = SmsSchedule::create([
+            'schedule_uuid'      => (string) \Illuminate\Support\Str::uuid(),
+            'user_id'            => $this->adminUser->id,
+            'title'              => 'Gateway Failure Test',
+            'message'            => 'Notice.',
+            'recipient_source'   => 'custom',
+            'recipient_snapshot' => [
+                'standalone_custom_phones' => ['8801711111111', '8801722222222'],
+                'total_unique'             => 2,
+            ],
+            'scheduled_at'       => Carbon::now('Asia/Dhaka')->subMinutes(5),
+            'status'             => 'pending',
+            'total_recipients'   => 2,
+            'total_segments'     => 1,
+            'estimated_cost'     => 0.66,
+        ]);
+
+        $mockSmsService = $this->createMock(SmsService::class);
+        $mockSmsService->expects($this->exactly(2))
+            ->method('sendSms')
+            ->willReturnCallback(function ($phone, $message, $studentId, $eventKey, $eventType) {
+                if ($phone === '8801711111111') {
+                    SmsLog::create([
+                        'student_id'    => null,
+                        'event_key'     => $eventKey,
+                        'event_type'    => $eventType,
+                        'mobile_number' => $phone,
+                        'message'       => $message,
+                        'status'        => 'Sent',
+                        'created_at'    => Carbon::now('Asia/Dhaka'),
+                        'updated_at'    => Carbon::now('Asia/Dhaka'),
+                    ]);
+                    return true;
+                } else {
+                    SmsLog::create([
+                        'student_id'    => null,
+                        'event_key'     => $eventKey,
+                        'event_type'    => $eventType,
+                        'mobile_number' => $phone,
+                        'message'       => $message,
+                        'status'        => 'Failed',
+                        'created_at'    => Carbon::now('Asia/Dhaka'),
+                        'updated_at'    => Carbon::now('Asia/Dhaka'),
+                    ]);
+                    return false;
+                }
+            });
+
+        $this->app->instance(SmsService::class, $mockSmsService);
+
+        \Illuminate\Support\Facades\Artisan::call('sms:dispatch-scheduled', ['--id' => $dueSchedule->id]);
+
+        $dueSchedule->refresh();
+        $this->assertEquals('partial_failure', $dueSchedule->status);
+        $this->assertEquals(1, $dueSchedule->sent_count);
+        $this->assertEquals(0, $dueSchedule->blocked_count);
+        $this->assertEquals(1, $dueSchedule->failed_count);
+        $this->assertEquals(0.33, (float)$dueSchedule->actual_cost);
+    }
+
+    /**
+     * Test crash recovery with pre-existing Sent and Blocked (Test Mode) logs.
+     * Verifies that neither Sent nor Blocked counts inflate, and unsent recipients are processed.
+     */
+    public function test_dispatch_scheduled_sms_crash_recovery_with_mixed_sent_and_blocked()
+    {
+        $dueSchedule = SmsSchedule::create([
+            'schedule_uuid'      => 'recovery_uuid_456',
+            'user_id'            => $this->adminUser->id,
+            'title'              => 'Crash Recovery Mixed',
+            'message'            => 'Notice.',
+            'recipient_source'   => 'custom',
+            'recipient_snapshot' => [
+                'standalone_custom_phones' => ['8801711111111', '8801722222222', '8801733333333'],
+                'total_unique'             => 3,
+            ],
+            'scheduled_at'       => Carbon::now('Asia/Dhaka')->subMinutes(15),
+            'status'             => 'processing',
+            'dispatched_at'      => Carbon::now('Asia/Dhaka')->subMinutes(15),
+            'total_recipients'   => 3,
+            'total_segments'     => 1,
+            'estimated_cost'     => 0.99,
+        ]);
+
+        // Recipient 1 was already Sent
+        SmsLog::create([
+            'student_id'    => null,
+            'event_key'     => 'sch_recovery_uuid_456_scust_8801711111111',
+            'event_type'    => 'scheduled_notice',
+            'mobile_number' => '8801711111111',
+            'message'       => 'Notice.',
+            'status'        => 'Sent',
+            'created_at'    => Carbon::now('Asia/Dhaka')->subMinutes(15),
+            'updated_at'    => Carbon::now('Asia/Dhaka')->subMinutes(15),
+        ]);
+
+        // Recipient 2 was already Blocked (Test Mode)
+        SmsLog::create([
+            'student_id'    => null,
+            'event_key'     => 'sch_recovery_uuid_456_scust_8801722222222',
+            'event_type'    => 'scheduled_notice',
+            'mobile_number' => '8801722222222',
+            'message'       => 'Notice.',
+            'status'        => 'Blocked (Test Mode)',
+            'created_at'    => Carbon::now('Asia/Dhaka')->subMinutes(15),
+            'updated_at'    => Carbon::now('Asia/Dhaka')->subMinutes(15),
+        ]);
+
+        // Recipient 3 is unsent. sendSms should ONLY be called once for Recipient 3!
+        $mockSmsService = $this->createMock(SmsService::class);
+        $mockSmsService->expects($this->once())
+            ->method('sendSms')
+            ->with('8801733333333', 'Notice.', null, 'sch_recovery_uuid_456_scust_8801733333333', 'scheduled_notice')
+            ->willReturnCallback(function ($phone, $message, $studentId, $eventKey, $eventType) {
+                SmsLog::create([
+                    'student_id'    => null,
+                    'event_key'     => $eventKey,
+                    'event_type'    => $eventType,
+                    'mobile_number' => $phone,
+                    'message'       => $message,
+                    'status'        => 'Sent',
+                    'created_at'    => Carbon::now('Asia/Dhaka'),
+                    'updated_at'    => Carbon::now('Asia/Dhaka'),
+                ]);
+                return true;
+            });
+
+        $this->app->instance(SmsService::class, $mockSmsService);
+
+        \Illuminate\Support\Facades\Artisan::call('sms:dispatch-scheduled', ['--id' => $dueSchedule->id]);
+
+        $dueSchedule->refresh();
+        $this->assertEquals('completed', $dueSchedule->status);
+        $this->assertEquals(2, $dueSchedule->sent_count, 'Recipient 1 + Recipient 3 = 2 sent');
+        $this->assertEquals(1, $dueSchedule->blocked_count, 'Recipient 2 = 1 blocked');
+        $this->assertEquals(0, $dueSchedule->failed_count);
+        $this->assertEquals(0.66, (float)$dueSchedule->actual_cost, 'Only 2 sent messages billed (2 * 0.33 = 0.66)');
+    }
+
+    /**
+     * Test immediate normal SMS broadcast with mixed Sent and Blocked (Test Mode) recipients.
+     * Verifies that stats.sent_count is 1, stats.blocked_count is 1, and response message indicates blocked count.
+     */
+    public function test_send_general_notice_immediate_broadcast_mixed_sent_and_blocked()
+    {
+        $this->actingAs($this->adminUser);
+
+        $mockSmsService = $this->createMock(SmsService::class);
+        $mockSmsService->method('getBalance')->willReturn(['balance' => 100.0, 'status' => 'success']);
+        $mockSmsService->expects($this->exactly(2))
+            ->method('sendSms')
+            ->willReturnCallback(function ($phone, $message, $studentId, $eventKey, $eventType) {
+                if ($phone === '8801711111111') {
+                    SmsLog::create([
+                        'student_id'    => null,
+                        'event_key'     => $eventKey,
+                        'event_type'    => $eventType,
+                        'mobile_number' => $phone,
+                        'message'       => $message,
+                        'status'        => 'Sent',
+                        'created_at'    => Carbon::now('Asia/Dhaka'),
+                        'updated_at'    => Carbon::now('Asia/Dhaka'),
+                    ]);
+                    return true;
+                } else {
+                    SmsLog::create([
+                        'student_id'    => null,
+                        'event_key'     => $eventKey,
+                        'event_type'    => $eventType,
+                        'mobile_number' => $phone,
+                        'message'       => $message,
+                        'status'        => 'Blocked (Test Mode)',
+                        'created_at'    => Carbon::now('Asia/Dhaka'),
+                        'updated_at'    => Carbon::now('Asia/Dhaka'),
+                    ]);
+                    return false;
+                }
+            });
+
+        $this->app->instance(SmsService::class, $mockSmsService);
+
+        $response = $this->postJson(route('sms.general-notice.send'), [
+            'recipient_source' => 'custom',
+            'custom_numbers'   => '01711111111, 01722222222',
+            'message'          => 'Instant alert.',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'stats'   => [
+                'sent_count'    => 1,
+                'blocked_count' => 1,
+                'failed_count'  => 0,
+            ],
+        ]);
+        $this->assertStringContainsString('1 recipient(s) blocked by SMS Test Mode', $response->json('message'));
+    }
 }
+

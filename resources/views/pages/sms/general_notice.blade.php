@@ -1397,8 +1397,11 @@
                         <div class="py-2 flex justify-between">
                             <span class="text-gray-500 font-medium">Delivery Results</span>
                             <span class="font-bold text-gray-800 dark:text-gray-200">
-                                Sent: <span class="text-themeGreen font-black" x-text="activeScheduleDetails?.sent_count || 0"></span> |
-                                Failed: <span class="text-red-500 font-black" x-text="activeScheduleDetails?.failed_count || 0"></span>
+                                Sent: <span class="text-themeGreen font-black" x-text="activeScheduleDetails?.sent_count || 0"></span>
+                                <template x-if="(activeScheduleDetails?.blocked_count || activeScheduleDetails?.recipient_snapshot?.dispatch_summary?.blocked_count || 0) > 0">
+                                    <span> | Blocked (Test): <span class="text-amber-500 font-black" x-text="activeScheduleDetails?.blocked_count || activeScheduleDetails?.recipient_snapshot?.dispatch_summary?.blocked_count"></span></span>
+                                </template>
+                                | Failed: <span class="text-red-500 font-black" x-text="activeScheduleDetails?.failed_count || 0"></span>
                             </span>
                         </div>
                     </template>

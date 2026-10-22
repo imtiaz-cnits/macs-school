@@ -10,6 +10,7 @@ use App\Services\SmsService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class DispatchScheduledSms extends Command
@@ -107,6 +108,7 @@ class DispatchScheduledSms extends Command
 
                 $sentCount = 0;
                 $failedCount = 0;
+                $blockedCount = 0;
                 $siblingSharedCount = 0;
 
                 // 1. Dispatch student guardian phones
@@ -125,11 +127,15 @@ class DispatchScheduledSms extends Command
                     $primaryStudent = $eligibleStudents->first();
                     $eventKey = $batchId . '_sstd_' . $primaryStudent->id;
 
-                    // Idempotency pre-check: skip if already sent or ambiguous in a prior attempt
+                    // Idempotency pre-check: skip if already sent, blocked, or ambiguous in a prior attempt
                     $existingLog = SmsLog::where('event_key', $eventKey)->first();
                     if ($existingLog) {
-                        if (in_array($existingLog->status, ['Sent', 'Blocked (Test Mode)'], true)) {
+                        if ($existingLog->status === 'Sent') {
                             $sentCount++;
+                            continue;
+                        }
+                        if ($existingLog->status === 'Blocked (Test Mode)') {
+                            $blockedCount++;
                             continue;
                         }
                         if ($existingLog->status === 'Ambiguous') {
@@ -148,9 +154,8 @@ class DispatchScheduledSms extends Command
                     );
 
                     $logStatus = SmsLog::where('event_key', $eventKey)->value('status');
-                    $isProcessed = $sent || in_array($logStatus, ['Sent', 'Blocked (Test Mode)'], true);
 
-                    if ($isProcessed) {
+                    if ($sent || $logStatus === 'Sent') {
                         $sentCount++;
 
                         // Record sibling shared logs
@@ -174,6 +179,8 @@ class DispatchScheduledSms extends Command
                                 }
                             }
                         }
+                    } elseif ($logStatus === 'Blocked (Test Mode)') {
+                        $blockedCount++;
                     } else {
                         $failedCount++;
                     }
@@ -183,11 +190,15 @@ class DispatchScheduledSms extends Command
                 foreach ($standaloneCustom as $cPhone) {
                     $eventKey = $batchId . '_scust_' . $cPhone;
 
-                    // Idempotency pre-check: skip if already sent or ambiguous in a prior attempt
+                    // Idempotency pre-check: skip if already sent, blocked, or ambiguous in a prior attempt
                     $existingLog = SmsLog::where('event_key', $eventKey)->first();
                     if ($existingLog) {
-                        if (in_array($existingLog->status, ['Sent', 'Blocked (Test Mode)'], true)) {
+                        if ($existingLog->status === 'Sent') {
                             $sentCount++;
+                            continue;
+                        }
+                        if ($existingLog->status === 'Blocked (Test Mode)') {
+                            $blockedCount++;
                             continue;
                         }
                         if ($existingLog->status === 'Ambiguous') {
@@ -206,10 +217,11 @@ class DispatchScheduledSms extends Command
                     );
 
                     $logStatus = SmsLog::where('event_key', $eventKey)->value('status');
-                    $isProcessed = $sent || in_array($logStatus, ['Sent', 'Blocked (Test Mode)'], true);
 
-                    if ($isProcessed) {
+                    if ($sent || $logStatus === 'Sent') {
                         $sentCount++;
+                    } elseif ($logStatus === 'Blocked (Test Mode)') {
+                        $blockedCount++;
                     } else {
                         $failedCount++;
                     }
@@ -224,17 +236,31 @@ class DispatchScheduledSms extends Command
                 } elseif ($failedCount > 0 && $sentCount === 0) {
                     $finalStatus = 'failed';
                 } elseif ($sentCount === 0 && $failedCount === 0) {
-                    $finalStatus = 'completed'; // No deliverable recipients remained
+                    $finalStatus = 'completed'; // Either all blocked in test mode or no deliverable recipients remained
                 }
 
-                $schedule->update([
-                    'status'       => $finalStatus,
-                    'sent_count'   => $sentCount,
-                    'failed_count' => $failedCount,
-                    'actual_cost'  => $actualCost,
-                ]);
+                $snapshot = $schedule->recipient_snapshot ?? [];
+                $snapshot['dispatch_summary'] = [
+                    'sent_count'    => $sentCount,
+                    'failed_count'  => $failedCount,
+                    'blocked_count' => $blockedCount,
+                ];
 
-                $this->info("Schedule #{$schedule->id} finished with status: {$finalStatus} (Sent: {$sentCount}, Failed: {$failedCount}, Sibling Deduplicated: {$siblingSharedCount}).");
+                $updateData = [
+                    'status'             => $finalStatus,
+                    'sent_count'         => $sentCount,
+                    'failed_count'       => $failedCount,
+                    'actual_cost'        => $actualCost,
+                    'recipient_snapshot' => $snapshot,
+                ];
+
+                if (Schema::hasColumn('sms_schedules', 'blocked_count')) {
+                    $updateData['blocked_count'] = $blockedCount;
+                }
+
+                $schedule->update($updateData);
+
+                $this->info("Schedule #{$schedule->id} finished with status: {$finalStatus} (Sent: {$sentCount}, Blocked: {$blockedCount}, Failed: {$failedCount}, Sibling Deduplicated: {$siblingSharedCount}).");
 
             } catch (\Throwable $e) {
                 Log::error("Scheduled SMS dispatch failed for Schedule #{$schedule->id}: " . $e->getMessage(), [
