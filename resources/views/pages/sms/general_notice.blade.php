@@ -2305,7 +2305,7 @@ function noticeBroadcastApp() {
 
             this.loadingSummary = true;
             try {
-                const response = await fetch("{{ route('sms.general-notice.recipient-summary') }}", {
+                const response = await fetch("{{ route('sms.general-notice.recipient-summary', [], false) }}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2358,7 +2358,7 @@ function noticeBroadcastApp() {
         async fetchPreview(page = 1) {
             this.loadingPreview = true;
             try {
-                const response = await fetch("{{ route('sms.general-notice.preview-recipients') }}", {
+                const response = await fetch("{{ route('sms.general-notice.preview-recipients', [], false) }}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2533,7 +2533,7 @@ function noticeBroadcastApp() {
 
         async fetchScheduleCounts() {
             try {
-                const response = await fetch("{{ route('sms.general-notice.schedules') }}", {
+                const response = await fetch("{{ route('sms.general-notice.schedules', [], false) }}", {
                     headers: { 'Accept': 'application/json' }
                 });
                 const data = await response.json();
@@ -2553,7 +2553,7 @@ function noticeBroadcastApp() {
                     status: this.scheduleFilterStatus,
                     search: this.scheduleSearch || ''
                 });
-                const response = await fetch(`{{ route('sms.general-notice.schedules') }}?${params.toString()}`, {
+                const response = await fetch(`{{ route('sms.general-notice.schedules', [], false) }}?${params.toString()}`, {
                     headers: { 'Accept': 'application/json' }
                 });
                 const data = await response.json();
@@ -2649,7 +2649,7 @@ function noticeBroadcastApp() {
 
             this.sendingBroadcast = true;
             try {
-                const response = await fetch("{{ route('sms.general-notice.send') }}", {
+                const response = await fetch("{{ route('sms.general-notice.send', [], false) }}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2702,7 +2702,7 @@ function noticeBroadcastApp() {
 
             this.savingSchedule = true;
             try {
-                const response = await fetch("{{ route('sms.general-notice.schedule.store') }}", {
+                const response = await fetch("{{ route('sms.general-notice.schedule.store', [], false) }}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2786,7 +2786,7 @@ function noticeBroadcastApp() {
 
             this.savingEditSchedule = true;
             try {
-                const url = `{{ url('/sms/general-notice/schedules') }}/${this.editingSchedule.id}`;
+                const url = `{{ route('sms.general-notice.schedules', [], false) }}/${this.editingSchedule.id}`;
                 const response = await fetch(url, {
                     method: 'PUT',
                     headers: {
@@ -2826,7 +2826,7 @@ function noticeBroadcastApp() {
             if (!confirmed) return;
 
             try {
-                const url = `{{ url('/sms/general-notice/schedules') }}/${item.id}/cancel`;
+                const url = `{{ route('sms.general-notice.schedules', [], false) }}/${item.id}/cancel`;
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {

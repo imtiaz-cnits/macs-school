@@ -1852,5 +1852,51 @@ class GeneralNoticeSmsFilterTest extends TestCase
         $this->assertEquals(2, $fresh->sent_count);
         $this->assertEquals(0, $fresh->failed_count);
     }
+
+    public function test_general_notice_send_endpoint_rejects_get_and_accepts_valid_post()
+    {
+        // 1. Verify GET on general notice main page loads successfully (200 OK)
+        $pageResponse = $this->get(route('sms.general-notice'));
+        $pageResponse->assertStatus(200);
+        $pageResponse->assertSee('/sms/general-notice/send');
+        $pageResponse->assertSee('/sms/general-notice/recipient-summary');
+        $pageResponse->assertSee('/sms/general-notice/preview-recipients');
+
+        // 2. Verify GET on send endpoint strictly rejected with 405 Method Not Allowed
+        $getResponse = $this->get(route('sms.general-notice.send'));
+        $getResponse->assertStatus(405);
+
+        $getJsonResponse = $this->getJson(route('sms.general-notice.send'));
+        $getJsonResponse->assertStatus(405);
+        $getJsonResponse->assertJsonFragment([
+            'message' => 'The GET method is not supported for route sms/general-notice/send. Supported methods: POST.',
+        ]);
+
+        // 3. Verify valid POST request to send endpoint succeeds (200 OK)
+        $this->makeStudent([
+            'session_year_id' => $this->session1->id,
+            'class_id'        => $this->class1->id,
+            'section_id'      => $this->sectionA->id,
+            'guardian_mobile' => '01710999888',
+        ]);
+
+        $mockSmsService = $this->createMock(SmsService::class);
+        $mockSmsService->method('getBalance')->willReturn(['status' => 'success', 'balance' => '100.00']);
+        $mockSmsService->method('sendSms')->willReturn(true);
+        $this->app->instance(SmsService::class, $mockSmsService);
+
+        $postResponse = $this->postJson(route('sms.general-notice.send'), [
+            'recipient_source' => 'students',
+            'session_year_id'  => $this->session1->id,
+            'class_ids'        => [$this->class1->id],
+            'message'          => 'Important regression test notice',
+        ]);
+
+        $postResponse->assertStatus(200);
+        $postResponse->assertJson([
+            'success' => true,
+        ]);
+    }
 }
+
 
