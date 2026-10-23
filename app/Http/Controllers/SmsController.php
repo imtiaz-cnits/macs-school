@@ -72,12 +72,42 @@ class SmsController extends Controller
             $query->where('session_year_id', $request->session_year_id);
         }
 
-        // 2. Class filter: can be 'all' or specific class id
-        if ($request->filled('class_id') && $request->class_id !== 'all') {
-            if (is_array($request->class_id)) {
-                $query->whereIn('class_id', $request->class_id);
+        // 2. Class filter: supports multiple class IDs (union of students), single class ID, or 'all'
+        $rawClassInput = $request->input('class_ids') ?? $request->input('class_id');
+        $targetClassIds = [];
+
+        if (!empty($rawClassInput) && $rawClassInput !== 'all') {
+            if (is_string($rawClassInput)) {
+                $trimmed = trim($rawClassInput);
+                if (str_starts_with($trimmed, '[') && str_ends_with($trimmed, ']')) {
+                    $decoded = json_decode($trimmed, true);
+                    $rawClassInput = is_array($decoded) ? $decoded : explode(',', $trimmed);
+                } else {
+                    $rawClassInput = explode(',', $trimmed);
+                }
+            }
+
+            if (is_array($rawClassInput)) {
+                foreach ($rawClassInput as $cid) {
+                    if (is_numeric($cid) && (int)$cid > 0) {
+                        $targetClassIds[] = (int)$cid;
+                    }
+                }
+            } elseif (is_numeric($rawClassInput) && (int)$rawClassInput > 0) {
+                $targetClassIds[] = (int)$rawClassInput;
+            }
+
+            $targetClassIds = array_values(array_unique($targetClassIds));
+        }
+
+        if (!empty($targetClassIds)) {
+            // Verify against existing classes table to safely reject non-existent / invalid IDs
+            $existingClassIds = Classes::withoutGlobalScopes()->whereIn('id', $targetClassIds)->pluck('id')->all();
+            if (!empty($existingClassIds)) {
+                $query->whereIn('class_id', $existingClassIds);
             } else {
-                $query->where('class_id', $request->class_id);
+                // Specific class IDs were provided but none exist in DB -> empty result safely
+                $query->whereRaw('1 = 0');
             }
         }
 
@@ -1343,6 +1373,7 @@ class SmsController extends Controller
             'recipient_source'   => $recipientSource,
             'filter_criteria'    => [
                 'session_year_id'      => $request->session_year_id,
+                'class_ids'            => $request->input('class_ids', is_array($request->class_id) ? $request->class_id : ($request->filled('class_id') && $request->class_id !== 'all' ? [$request->class_id] : [])),
                 'class_id'             => $request->class_id,
                 'section_id'           => $request->section_id,
                 'gender'               => $request->gender,

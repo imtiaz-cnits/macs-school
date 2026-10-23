@@ -1613,5 +1613,244 @@ class GeneralNoticeSmsFilterTest extends TestCase
         ]);
         $this->assertStringContainsString('1 recipient(s) blocked by SMS Test Mode', $response->json('message'));
     }
+
+    /**
+     * Test selecting multiple classes returns the union of eligible students,
+     * while completely excluding students from unselected classes.
+     */
+    public function test_recipient_summary_multiple_classes_returns_union_of_students()
+    {
+        $class3 = Classes::firstOrCreate(['id' => 3], ['class_name' => 'Class Three', 'user_id' => $this->adminUser->id]);
+
+        $st1 = $this->makeStudent(['class_id' => $this->class1->id, 'session_year_id' => $this->session1->id]);
+        $st2 = $this->makeStudent(['class_id' => $this->class2->id, 'session_year_id' => $this->session1->id]);
+        $st3 = $this->makeStudent(['class_id' => $class3->id, 'session_year_id' => $this->session1->id]);
+
+        $response = $this->postJson(route('sms.general-notice.recipient-summary'), [
+            'session_year_id' => $this->session1->id,
+            'class_ids'       => [$this->class1->id, $this->class2->id],
+            'message'         => 'Multi-class test notice.',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success'               => true,
+            'total_students'        => 2,
+            'unique_numbers_count'  => 2,
+            'valid_numbers_count'   => 2,
+            'missing_invalid_count' => 0,
+        ]);
+    }
+
+    /**
+     * Test recipient preview with multiple classes paginates correctly
+     * and excludes students outside the selected classes.
+     */
+    public function test_recipient_preview_multiple_classes_pagination_and_exclusion()
+    {
+        $class3 = Classes::firstOrCreate(['id' => 3], ['class_name' => 'Class Three', 'user_id' => $this->adminUser->id]);
+
+        $st1 = $this->makeStudent(['class_id' => $this->class1->id, 'student_name' => 'Alpha Class 1']);
+        $st2 = $this->makeStudent(['class_id' => $this->class2->id, 'student_name' => 'Beta Class 2']);
+        $st3 = $this->makeStudent(['class_id' => $class3->id, 'student_name' => 'Gamma Class 3']);
+
+        $response = $this->postJson(route('sms.general-notice.preview-recipients'), [
+            'session_year_id' => $this->session1->id,
+            'class_ids'       => [$this->class1->id, $class3->id],
+        ]);
+
+        $response->assertStatus(200);
+        $data = $response->json('data');
+        $this->assertCount(2, $data);
+
+        $returnedStudentIds = collect($data)->pluck('id')->all();
+        $this->assertContains($st1->id, $returnedStudentIds);
+        $this->assertContains($st3->id, $returnedStudentIds);
+        $this->assertNotContains($st2->id, $returnedStudentIds);
+    }
+
+    /**
+     * Test multiple class selection combined with section and gender filters.
+     * Enforces that section and gender apply across all selected classes.
+     */
+    public function test_multiple_classes_combined_with_section_and_gender_filters()
+    {
+        $class3 = Classes::firstOrCreate(['id' => 3], ['class_name' => 'Class Three', 'user_id' => $this->adminUser->id]);
+
+        // Class 1 matches
+        $stA = $this->makeStudent(['class_id' => $this->class1->id, 'section_id' => $this->sectionA->id, 'gender' => 'Male']);
+        // Class 1 wrong section
+        $stB = $this->makeStudent(['class_id' => $this->class1->id, 'section_id' => $this->sectionB->id, 'gender' => 'Male']);
+        // Class 1 wrong gender
+        $stC = $this->makeStudent(['class_id' => $this->class1->id, 'section_id' => $this->sectionA->id, 'gender' => 'Female']);
+
+        // Class 2 matches
+        $stD = $this->makeStudent(['class_id' => $this->class2->id, 'section_id' => $this->sectionA->id, 'gender' => 'Male']);
+        // Class 2 wrong gender
+        $stE = $this->makeStudent(['class_id' => $this->class2->id, 'section_id' => $this->sectionA->id, 'gender' => 'Female']);
+
+        // Class 3 matches section & gender but unselected class
+        $stF = $this->makeStudent(['class_id' => $class3->id, 'section_id' => $this->sectionA->id, 'gender' => 'Male']);
+
+        $response = $this->postJson(route('sms.general-notice.recipient-summary'), [
+            'session_year_id' => $this->session1->id,
+            'class_ids'       => [$this->class1->id, $this->class2->id],
+            'section_id'      => $this->sectionA->id,
+            'gender'          => 'Male',
+            'message'         => 'Notice for Class 1 & 2 Section A Boys.',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success'        => true,
+            'total_students' => 2,
+        ]);
+    }
+
+    /**
+     * Test invalid or non-existent class IDs are safely rejected without throwing exceptions.
+     */
+    public function test_invalid_or_non_existent_class_ids_rejected_safely()
+    {
+        $st1 = $this->makeStudent(['class_id' => $this->class1->id]);
+
+        $response = $this->postJson(route('sms.general-notice.recipient-summary'), [
+            'session_year_id' => $this->session1->id,
+            'class_ids'       => [99999, 88888],
+            'message'         => 'Test non-existent classes.',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success'        => true,
+            'total_students' => 0,
+        ]);
+    }
+
+    /**
+     * Test sibling deduplication across multiple classes.
+     * Siblings in Class 1 and Class 2 sharing a guardian phone are only counted once.
+     */
+    public function test_sibling_deduplication_across_multiple_classes()
+    {
+        $sharedPhone = '01711223344';
+        $stSibling1 = $this->makeStudent(['class_id' => $this->class1->id, 'guardian_mobile' => $sharedPhone]);
+        $stSibling2 = $this->makeStudent(['class_id' => $this->class2->id, 'guardian_mobile' => $sharedPhone]);
+        $stOther    = $this->makeStudent(['class_id' => $this->class2->id, 'guardian_mobile' => '01799887766']);
+
+        $response = $this->postJson(route('sms.general-notice.recipient-summary'), [
+            'session_year_id' => $this->session1->id,
+            'class_ids'       => [$this->class1->id, $this->class2->id],
+            'message'         => 'Multi-class sibling test notice.',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success'               => true,
+            'total_students'        => 3,
+            'unique_numbers_count'  => 2,
+            'duplicate_phone_count' => 1,
+        ]);
+    }
+
+    /**
+     * Test immediate normal broadcast with multiple classes dispatches to union
+     * and creates audit logs only for eligible recipients.
+     */
+    public function test_send_general_notice_with_multiple_classes()
+    {
+        $class3 = Classes::firstOrCreate(['id' => 3], ['class_name' => 'Class Three', 'user_id' => $this->adminUser->id]);
+
+        $st1 = $this->makeStudent(['class_id' => $this->class1->id, 'guardian_mobile' => '01711000001']);
+        $st2 = $this->makeStudent(['class_id' => $this->class2->id, 'guardian_mobile' => '01711000002']);
+        $st3 = $this->makeStudent(['class_id' => $class3->id, 'guardian_mobile' => '01711000003']);
+
+        $dispatchedPhones = [];
+
+        $mockSmsService = $this->createMock(SmsService::class);
+        $mockSmsService->method('getBalance')->willReturn(['status' => 'success', 'balance' => '500.00']);
+        $mockSmsService->method('sendSms')->willReturnCallback(function ($phone, $message) use (&$dispatchedPhones) {
+            $dispatchedPhones[] = $phone;
+            return true;
+        });
+
+        $this->app->instance(SmsService::class, $mockSmsService);
+
+        $response = $this->postJson(route('sms.general-notice.send'), [
+            'session_year_id'  => $this->session1->id,
+            'class_ids'        => [$this->class1->id, $this->class2->id],
+            'recipient_source' => 'students',
+            'message'          => 'Multiple class broadcast test.',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'stats'   => [
+                'sent_count'    => 2,
+                'blocked_count' => 0,
+                'failed_count'  => 0,
+            ],
+        ]);
+
+        $this->assertContains('8801711000001', $dispatchedPhones);
+        $this->assertContains('8801711000002', $dispatchedPhones);
+        $this->assertNotContains('8801711000003', $dispatchedPhones);
+    }
+
+    /**
+     * Test scheduled SMS broadcast with multiple classes stores snapshot
+     * and dispatches accurately via artisan command.
+     */
+    public function test_store_and_dispatch_sms_schedule_with_multiple_classes()
+    {
+        $class3 = Classes::firstOrCreate(['id' => 3], ['class_name' => 'Class Three', 'user_id' => $this->adminUser->id]);
+
+        $st1 = $this->makeStudent(['class_id' => $this->class1->id, 'guardian_mobile' => '01722000001']);
+        $st2 = $this->makeStudent(['class_id' => $this->class2->id, 'guardian_mobile' => '01722000002']);
+        $st3 = $this->makeStudent(['class_id' => $class3->id, 'guardian_mobile' => '01722000003']);
+
+        $future = Carbon::now('Asia/Dhaka')->addHour();
+
+        $response = $this->postJson(route('sms.general-notice.schedule.store'), [
+            'session_year_id'  => $this->session1->id,
+            'class_ids'        => [$this->class1->id, $this->class2->id],
+            'recipient_source' => 'students',
+            'message'          => 'Scheduled multiple class broadcast.',
+            'scheduled_date'   => $future->format('Y-m-d'),
+            'scheduled_time'   => $future->format('H:i'),
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        $schedule = SmsSchedule::latest('id')->first();
+        $this->assertNotNull($schedule);
+        $this->assertEquals(2, $schedule->total_recipients);
+        $this->assertEquals([$this->class1->id, $this->class2->id], $schedule->filter_criteria['class_ids'] ?? null);
+
+        // Snapshot recipient phone check
+        $snapshot = $schedule->recipient_snapshot;
+        $this->assertArrayHasKey('8801722000001', $snapshot['students_map']);
+        $this->assertArrayHasKey('8801722000002', $snapshot['students_map']);
+        $this->assertArrayNotHasKey('8801722000003', $snapshot['students_map']);
+
+        // Make schedule due and dispatch
+        $schedule->update(['scheduled_at' => Carbon::now('Asia/Dhaka')->subMinute()]);
+
+        $mockSmsService = $this->createMock(SmsService::class);
+        $mockSmsService->method('getBalance')->willReturn(['status' => 'success', 'balance' => '500.00']);
+        $mockSmsService->method('sendSms')->willReturn(true);
+
+        $this->app->instance(SmsService::class, $mockSmsService);
+
+        $exitCode = \Illuminate\Support\Facades\Artisan::call('sms:dispatch-scheduled', ['--id' => $schedule->id]);
+        $this->assertEquals(0, $exitCode);
+
+        $fresh = $schedule->fresh();
+        $this->assertEquals('completed', $fresh->status);
+        $this->assertEquals(2, $fresh->sent_count);
+        $this->assertEquals(0, $fresh->failed_count);
+    }
 }
 

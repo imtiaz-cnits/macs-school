@@ -242,36 +242,101 @@
                     </div>
                 </div>
 
-                <!-- 3. Class Filter Custom Dropdown (Always Accessible) -->
+                <!-- 3. Class Filter Searchable Multi-Select Dropdown (Always Accessible) -->
                 <div class="relative" :class="dropdownOpen === 'class' ? 'z-40' : 'z-10'" @click.away="if(dropdownOpen === 'class') dropdownOpen = null">
-                    <label class="text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-2 block">
-                        Class
-                    </label>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase block">
+                            Class
+                        </label>
+                        <template x-if="filters.class_ids && filters.class_ids.length > 0">
+                            <span class="text-[10px] font-bold text-themeBlue dark:text-blue-400" x-text="filters.class_ids.length + ' selected'"></span>
+                        </template>
+                    </div>
+
+                    <!-- Trigger Button -->
                     <button @click="toggleDropdown('class')" @keydown.escape.window="dropdownOpen = null" type="button"
-                            class="w-full h-11 flex items-center justify-between px-3 text-sm font-semibold bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                            class="w-full min-h-11 flex items-center justify-between px-3 py-2 text-sm font-semibold bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="getClassLabel()"></span>
-                        <svg class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200" :class="dropdownOpen === 'class' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        <svg class="w-4 h-4 text-gray-400 shrink-0 ml-2 transition-transform duration-200" :class="dropdownOpen === 'class' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
-                    <div x-show="dropdownOpen === 'class'" x-cloak x-transition
-                         class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto">
-                        <button type="button" @click="onClassChange('all'); dropdownOpen = null"
-                                :class="filters.class_id === 'all' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200 font-semibold'"
-                                class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
-                            <span>All classes</span>
-                            <template x-if="filters.class_id === 'all'">
-                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+
+                    <!-- Removable Selected Class Chips -->
+                    <template x-if="filters.class_ids && filters.class_ids.length > 0">
+                        <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                            <template x-for="cid in filters.class_ids" :key="cid">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-themeBlue/10 dark:bg-themeBlue/20 text-themeBlue dark:text-blue-400 border border-themeBlue/20 text-xs font-bold">
+                                    <span x-text="getClassName(cid)"></span>
+                                    <button type="button" @click.stop="removeClass(cid)" class="hover:text-red-500 focus:outline-none transition-colors ml-0.5" title="Remove class">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                </span>
                             </template>
-                        </button>
-                        @foreach($classes as $class)
-                            <button type="button" @click="onClassChange('{{ $class->id }}'); dropdownOpen = null"
-                                    :class="filters.class_id == '{{ $class->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200 font-semibold'"
-                                    class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
-                                <span>{{ $class->class_name }}</span>
-                                <template x-if="filters.class_id == '{{ $class->id }}'">
-                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                </template>
+                            <button type="button" @click="clearAllClasses()" class="text-[10px] font-bold text-gray-400 hover:text-red-500 transition-colors ml-1" title="Clear all selected classes">
+                                Clear all
                             </button>
-                        @endforeach
+                        </div>
+                    </template>
+
+                    <!-- Dropdown Card -->
+                    <div x-show="dropdownOpen === 'class'" x-cloak x-transition
+                         class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl overflow-hidden flex flex-col">
+                        
+                        <!-- Search & Quick Actions -->
+                        <div class="p-2.5 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/50 dark:bg-themeDark/40">
+                            <div class="relative">
+                                <input type="text" x-model="classSearch" placeholder="Search classes..."
+                                       class="w-full h-8 pl-8 pr-7 text-xs bg-white dark:bg-themeNavy border border-gray-200 dark:border-gray-800 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:border-themeBlue focus:ring-1 focus:ring-themeBlue/20">
+                                <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                <button type="button" x-show="classSearch" @click="classSearch = ''" class="absolute right-2 top-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            
+                            <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-gray-100 dark:border-white/[0.06] text-[10px] font-bold">
+                                <button type="button" @click="selectAllClasses()" class="text-themeBlue hover:underline">Select all</button>
+                                <button type="button" @click="clearAllClasses()" class="text-gray-400 hover:text-red-500">Clear all</button>
+                            </div>
+                        </div>
+
+                        <!-- Class Options List -->
+                        <div class="overflow-y-auto max-h-56 py-1">
+                            <!-- All Classes Option -->
+                            <button type="button" @click="onAllClassesClick()"
+                                    :class="(filters.class_ids.length === 0 || filters.class_id === 'all') ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200 font-semibold'"
+                                    class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-4 h-4 rounded border flex items-center justify-center transition-colors"
+                                          :class="(filters.class_ids.length === 0 || filters.class_id === 'all') ? 'bg-themeBlue border-themeBlue text-white' : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-themeDark'">
+                                        <template x-if="filters.class_ids.length === 0 || filters.class_id === 'all'">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                        </template>
+                                    </span>
+                                    <span>All classes</span>
+                                </div>
+                            </button>
+
+                            <!-- Filtered Class List -->
+                            <template x-for="cls in filteredClassesList()" :key="cls.id">
+                                <button type="button" @click="toggleClass(cls.id)"
+                                        :class="isClassSelected(cls.id) ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200 font-semibold'"
+                                        class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="w-4 h-4 rounded border flex items-center justify-center transition-colors"
+                                              :class="isClassSelected(cls.id) ? 'bg-themeBlue border-themeBlue text-white' : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-themeDark'">
+                                            <template x-if="isClassSelected(cls.id)">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            </template>
+                                        </span>
+                                        <span x-text="cls.name"></span>
+                                    </div>
+                                </button>
+                            </template>
+                            <template x-if="filteredClassesList().length === 0">
+                                <div class="px-4 py-3 text-center text-xs text-gray-400">
+                                    No classes found
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
 
@@ -1804,6 +1869,7 @@ function noticeBroadcastApp() {
 
         // Unified Dropdown State to ensure only 1 dropdown is open at a time
         dropdownOpen: null,
+        classSearch: '',
 
         // Filter States
         filters: {
@@ -1812,6 +1878,7 @@ function noticeBroadcastApp() {
             session_year_id: '{{ $sessions->first()->id ?? "" }}',
             recipient_group: 'all',
             class_id: 'all',
+            class_ids: [],
             section_id: 'all',
             gender: 'all',
             recipient_selection: 'all',
@@ -1967,10 +2034,103 @@ function noticeBroadcastApp() {
             const g = this.recipientGroups.find(x => x.id === this.filters.recipient_group);
             return g ? g.name : 'All active students';
         },
+        getClassName(id) {
+            const c = this.classesList.find(x => String(x.id) === String(id));
+            return c ? c.name : `Class #${id}`;
+        },
+        isClassSelected(id) {
+            return Array.isArray(this.filters.class_ids) && this.filters.class_ids.some(x => String(x) === String(id));
+        },
+        filteredClassesList() {
+            if (!this.classSearch || !this.classSearch.trim()) {
+                return this.classesList;
+            }
+            const q = this.classSearch.trim().toLowerCase();
+            return this.classesList.filter(c => c.name.toLowerCase().includes(q));
+        },
+        toggleClass(id) {
+            const sId = String(id);
+            if (!Array.isArray(this.filters.class_ids)) {
+                this.filters.class_ids = [];
+            }
+            const idx = this.filters.class_ids.findIndex(x => String(x) === sId);
+            if (idx > -1) {
+                this.filters.class_ids.splice(idx, 1);
+            } else {
+                this.filters.class_ids.push(sId);
+            }
+            this.syncClassFilterState();
+        },
+        removeClass(id) {
+            const sId = String(id);
+            if (Array.isArray(this.filters.class_ids)) {
+                this.filters.class_ids = this.filters.class_ids.filter(x => String(x) !== sId);
+                this.syncClassFilterState();
+            }
+        },
+        selectAllClasses() {
+            this.filters.class_ids = this.classesList.map(c => String(c.id));
+            this.syncClassFilterState();
+        },
+        clearAllClasses() {
+            this.filters.class_ids = [];
+            this.syncClassFilterState();
+        },
+        onAllClassesClick() {
+            this.clearAllClasses();
+        },
+        syncClassFilterState() {
+            if (!this.filters.class_ids || this.filters.class_ids.length === 0) {
+                this.filters.class_ids = [];
+                this.filters.class_id = 'all';
+                if (this.filters.section_id === 'all' && this.filters.recipient_selection === 'all') {
+                    this.filters.recipient_group = 'all';
+                }
+            } else if (this.filters.class_ids.length === 1) {
+                this.filters.class_id = this.filters.class_ids[0];
+                if (this.filters.recipient_group === 'all') {
+                    this.filters.recipient_group = 'class_wise';
+                }
+            } else {
+                this.filters.class_id = [...this.filters.class_ids];
+                if (this.filters.recipient_group === 'all') {
+                    this.filters.recipient_group = 'class_wise';
+                }
+            }
+
+            // Check if current section_id is still valid for selected classes
+            if (this.filters.section_id !== 'all') {
+                const available = this.getAvailableSections();
+                const isValid = available.some(sec => String(sec.id) === String(this.filters.section_id));
+                if (!isValid) {
+                    this.filters.section_id = 'all';
+                }
+            }
+
+            if (this.filters.selected_student_ids && this.filters.selected_student_ids.length > 0) {
+                this.filters.selected_student_ids = [];
+            }
+
+            this.onFilterChange();
+        },
         getClassLabel() {
-            if (this.filters.class_id === 'all') return 'All classes';
-            const c = this.classesList.find(x => String(x.id) === String(this.filters.class_id));
-            return c ? c.name : 'All classes';
+            if (!this.filters.class_ids || this.filters.class_ids.length === 0 || this.filters.class_id === 'all') {
+                return 'All classes';
+            }
+            if (this.filters.class_ids.length === 1) {
+                const c = this.classesList.find(x => String(x.id) === String(this.filters.class_ids[0]));
+                return c ? c.name : '1 class selected';
+            }
+            if (this.filters.class_ids.length <= 3) {
+                const names = this.filters.class_ids
+                    .map(cid => {
+                        const c = this.classesList.find(x => String(x.id) === String(cid));
+                        return c ? c.name : `#${cid}`;
+                    })
+                    .filter(Boolean);
+                return names.join(', ');
+            }
+            return `${this.filters.class_ids.length} classes selected`;
         },
         getSectionLabel() {
             if (this.filters.section_id === 'all') return 'All sections';
@@ -1986,18 +2146,21 @@ function noticeBroadcastApp() {
             return m ? m.name : 'All matching students';
         },
 
-        // Dependent Dropdown: Available Sections based on selected Class
+        // Dependent Dropdown: Available Sections based on selected Class(es)
         getAvailableSections() {
-            if (this.filters.class_id === 'all') {
+            if (!this.filters.class_ids || this.filters.class_ids.length === 0 || this.filters.class_id === 'all') {
                 return this.sectionsList;
             }
-            const validSectionIds = this.classSectionsMap[this.filters.class_id] || [];
-            if (!validSectionIds.length) {
+            const allValidSectionIds = new Set();
+            this.filters.class_ids.forEach(cid => {
+                const secIds = this.classSectionsMap[cid] || [];
+                secIds.forEach(id => allValidSectionIds.add(String(id)));
+            });
+
+            if (allValidSectionIds.size === 0) {
                 return this.sectionsList;
             }
-            return this.sectionsList.filter(sec => 
-                validSectionIds.some(v => String(v) === String(sec.id))
-            );
+            return this.sectionsList.filter(sec => allValidSectionIds.has(String(sec.id)));
         },
 
         // Control Visibility based on Recipient Group
@@ -2023,36 +2186,19 @@ function noticeBroadcastApp() {
         },
 
         onClassChange(newClassId) {
-            this.filters.class_id = newClassId;
-            // Sync recipient group
-            if (newClassId !== 'all') {
-                if (this.filters.recipient_group === 'all') {
-                    this.filters.recipient_group = 'class_wise';
-                }
+            if (newClassId === 'all') {
+                this.filters.class_ids = [];
             } else {
-                if (this.filters.section_id === 'all' && this.filters.recipient_selection === 'all') {
-                    this.filters.recipient_group = 'all';
-                }
+                this.filters.class_ids = [String(newClassId)];
             }
-            // Check if current section_id is still valid for this class
-            if (this.filters.section_id !== 'all') {
-                const available = this.getAvailableSections();
-                const isValid = available.some(sec => String(sec.id) === String(this.filters.section_id));
-                if (!isValid) {
-                    this.filters.section_id = 'all'; // Reset invalid dependent selection
-                }
-            }
-            if (this.filters.selected_student_ids.length > 0) {
-                this.filters.selected_student_ids = [];
-            }
-            this.onFilterChange();
+            this.syncClassFilterState();
         },
 
         onSectionChange(newSectionId) {
             this.filters.section_id = newSectionId;
             if (newSectionId !== 'all') {
                 this.filters.recipient_group = 'section_wise';
-            } else if (this.filters.class_id !== 'all') {
+            } else if (this.filters.class_id !== 'all' || (this.filters.class_ids && this.filters.class_ids.length > 0)) {
                 this.filters.recipient_group = 'class_wise';
             }
             if (this.filters.selected_student_ids.length > 0) {
@@ -2074,6 +2220,7 @@ function noticeBroadcastApp() {
 
             // Reset only invalid dependent controls, strictly preserving Gender!
             if (newGroupId === 'all') {
+                this.filters.class_ids = [];
                 this.filters.class_id = 'all';
                 this.filters.section_id = 'all';
                 this.filters.recipient_selection = 'all';
@@ -2089,6 +2236,7 @@ function noticeBroadcastApp() {
                 this.filters.selected_student_ids = [];
                 // Gender is preserved within section!
             } else if (newGroupId === 'gender_wise') {
+                this.filters.class_ids = [];
                 this.filters.class_id = 'all';
                 this.filters.section_id = 'all';
                 this.filters.recipient_selection = 'all';
@@ -2109,7 +2257,7 @@ function noticeBroadcastApp() {
                 this.filters.selected_student_ids = [];
                 if (this.filters.section_id !== 'all') {
                     this.filters.recipient_group = 'section_wise';
-                } else if (this.filters.class_id !== 'all') {
+                } else if (this.filters.class_id !== 'all' || (this.filters.class_ids && this.filters.class_ids.length > 0)) {
                     this.filters.recipient_group = 'class_wise';
                 } else {
                     this.filters.recipient_group = 'all';
@@ -2166,6 +2314,7 @@ function noticeBroadcastApp() {
                     },
                     body: JSON.stringify({
                         session_year_id: this.filters.session_year_id,
+                        class_ids: this.filters.class_ids,
                         class_id: this.filters.class_id,
                         section_id: this.filters.section_id,
                         gender: this.filters.gender,
@@ -2218,6 +2367,7 @@ function noticeBroadcastApp() {
                     },
                     body: JSON.stringify({
                         session_year_id: this.filters.session_year_id,
+                        class_ids: this.filters.class_ids,
                         class_id: this.filters.class_id,
                         section_id: this.filters.section_id,
                         gender: this.filters.gender,
@@ -2287,7 +2437,9 @@ function noticeBroadcastApp() {
 
         resetFilters() {
             this.filters.recipient_group = 'all';
+            this.filters.class_ids = [];
             this.filters.class_id = 'all';
+            this.classSearch = '';
             this.filters.section_id = 'all';
             this.filters.gender = 'all';
             this.filters.recipient_selection = 'all';
@@ -2506,6 +2658,7 @@ function noticeBroadcastApp() {
                     },
                     body: JSON.stringify({
                         session_year_id: this.filters.session_year_id,
+                        class_ids: this.filters.class_ids,
                         class_id: this.filters.class_id,
                         section_id: this.filters.section_id,
                         gender: this.filters.gender,
@@ -2558,6 +2711,7 @@ function noticeBroadcastApp() {
                     },
                     body: JSON.stringify({
                         session_year_id: this.filters.session_year_id,
+                        class_ids: this.filters.class_ids,
                         class_id: this.filters.class_id,
                         section_id: this.filters.section_id,
                         gender: this.filters.gender,
