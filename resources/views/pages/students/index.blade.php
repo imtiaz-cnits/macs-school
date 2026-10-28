@@ -578,6 +578,134 @@
 <div id="pagination-container" class="mt-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
 </div>
 
+@php
+    $exportColumns = \App\Http\Controllers\StudentController::EXPORT_COLUMNS;
+    $defaultExportColumns = \App\Http\Controllers\StudentController::DEFAULT_EXPORT_COLUMNS;
+    $groupedColumns = [];
+    foreach ($exportColumns as $colKey => $colDef) {
+        $groupName = $colDef['group'] ?? 'Other Information';
+        $groupedColumns[$groupName][$colKey] = $colDef['label'];
+    }
+@endphp
+
+<!-- Configurable Student Export Modal -->
+<div x-data="studentExportModal()"
+     x-show="isOpen"
+     x-cloak
+     @open-student-export-modal.window="openModal()"
+     @keydown.escape.window="closeModal()"
+     class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-md p-4 overflow-y-auto">
+    <div @click.away="closeModal()"
+         class="bg-white dark:bg-themeNavy w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden border border-gray-150 dark:border-white/[0.08] my-8 flex flex-col">
+        
+        <!-- Modal Header -->
+        <div class="px-6 py-5 border-b border-gray-150 dark:border-white/[0.08] flex items-center justify-between bg-gray-50/50 dark:bg-themeDark/40">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-450">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                        Export Students (Excel / CSV)
+                    </h3>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
+                        Select the information columns to include in your export file.
+                    </p>
+                </div>
+            </div>
+            <button type="button" @click="closeModal()" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-themeDark/60 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Action Bar: Selection Controls & Count -->
+        <div class="px-6 py-3 bg-gray-50/80 dark:bg-themeDark/20 border-b border-gray-150 dark:border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold px-3 py-1 rounded-full bg-themeBlue/10 text-themeBlue border border-themeBlue/20"
+                      x-text="selectedColumns.length + ' column' + (selectedColumns.length === 1 ? '' : 's') + ' selected'"></span>
+                <span class="text-[11px] text-gray-500 dark:text-gray-400">Total available: {{ count($exportColumns) }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" @click="selectAll()" class="px-3 py-1 text-xs font-bold rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-themeNavy text-gray-700 dark:text-gray-300 transition-colors">
+                    Select All
+                </button>
+                <button type="button" @click="clearAll()" class="px-3 py-1 text-xs font-bold rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-themeNavy text-gray-700 dark:text-gray-300 transition-colors">
+                    Clear All
+                </button>
+                <button type="button" @click="resetToDefault()" class="px-3 py-1 text-xs font-bold rounded-lg bg-themeBlue/10 hover:bg-themeBlue/20 text-themeBlue transition-colors">
+                    Reset to Default
+                </button>
+            </div>
+        </div>
+
+        <!-- Modal Body: Categorized Columns -->
+        <div class="p-6 space-y-5 max-h-[55vh] overflow-y-auto">
+            <!-- Validation Message -->
+            <div x-show="errorMessage" x-cloak class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <span x-text="errorMessage"></span>
+            </div>
+
+            @foreach ($groupedColumns as $groupName => $cols)
+                <div class="bg-gray-50/50 dark:bg-themeDark/30 border border-gray-100 dark:border-white/[0.05] rounded-2xl p-4">
+                    <div class="flex items-center justify-between mb-3 border-b border-gray-150 dark:border-white/[0.06] pb-2">
+                        <h4 class="text-[11px] font-black tracking-widest text-themeBlue uppercase flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-themeBlue"></span>
+                            {{ $groupName }}
+                        </h4>
+                        <span class="text-[10px] font-bold text-gray-400">({{ count($cols) }} fields)</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        @foreach ($cols as $colKey => $colLabel)
+                            <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-white dark:hover:bg-themeNavy/60 border border-transparent hover:border-gray-200 dark:hover:border-white/[0.08] cursor-pointer transition-all select-none">
+                                <input type="checkbox"
+                                       value="{{ $colKey }}"
+                                       :checked="selectedColumns.includes('{{ $colKey }}')"
+                                       @change="toggleColumn('{{ $colKey }}')"
+                                       class="w-4 h-4 rounded text-themeBlue focus:ring-themeBlue/20 dark:bg-themeNavy border-gray-300 dark:border-gray-700 cursor-pointer">
+                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-200 leading-tight">
+                                    {{ $colLabel }}
+                                </span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 bg-gray-50/50 dark:bg-themeDark/40 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-gray-150 dark:border-white/[0.08]">
+            <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Export includes all filtered records across all pages.
+            </p>
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <button type="button" @click="closeModal()" class="h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-100 dark:hover:bg-themeDark transition-colors">
+                    Cancel
+                </button>
+                <button type="button"
+                        @click="downloadCsv()"
+                        :disabled="selectedColumns.length === 0"
+                        :class="selectedColumns.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-themeDark'"
+                        class="h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-xs font-bold transition-all flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download CSV
+                </button>
+                <button type="button"
+                        @click="downloadXlsx()"
+                        :disabled="selectedColumns.length === 0"
+                        :class="selectedColumns.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:shadow-lg'"
+                        class="h-10 px-5 rounded-xl bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black tracking-widest uppercase transition-all flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Download Excel (.xlsx)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Delete Modal -->
 <div id="deleteModal" class="hidden fixed inset-0 z-[9999] items-center justify-center bg-black/40 backdrop-blur-md p-4">
     <div class="bg-white dark:bg-themeNavy w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-white/[0.08] text-center">
@@ -1071,32 +1199,95 @@
         } catch (e) { showAlert("Delete Failed!", "Error"); }
     };
 
+    window.studentExportModal = function() {
+        const defaultCols = @json($defaultExportColumns);
+        const allCols = @json(array_keys($exportColumns));
+
+        return {
+            isOpen: false,
+            selectedColumns: [...defaultCols],
+            errorMessage: '',
+
+            openModal() {
+                this.errorMessage = '';
+                this.isOpen = true;
+            },
+            closeModal() {
+                this.isOpen = false;
+            },
+            selectAll() {
+                this.selectedColumns = [...allCols];
+                this.errorMessage = '';
+            },
+            clearAll() {
+                this.selectedColumns = [];
+                this.errorMessage = 'Please select at least one column to export.';
+            },
+            resetToDefault() {
+                this.selectedColumns = [...defaultCols];
+                this.errorMessage = '';
+            },
+            toggleColumn(colKey) {
+                if (this.selectedColumns.includes(colKey)) {
+                    this.selectedColumns = this.selectedColumns.filter(c => c !== colKey);
+                } else {
+                    this.selectedColumns.push(colKey);
+                }
+                if (this.selectedColumns.length === 0) {
+                    this.errorMessage = 'Please select at least one column to export.';
+                } else {
+                    this.errorMessage = '';
+                }
+            },
+            download(format = 'xlsx') {
+                if (this.selectedColumns.length === 0) {
+                    this.errorMessage = 'Please select at least one column to export.';
+                    return;
+                }
+
+                let search_text = document.getElementById('filter_search') ? document.getElementById('filter_search').value : '';
+                let branch_id = document.getElementById('filter_branch') ? document.getElementById('filter_branch').value : '';
+                let class_id = document.getElementById('filter_class') ? document.getElementById('filter_class').value : '';
+                let section_id = document.getElementById('filter_section') ? document.getElementById('filter_section').value : '';
+                let session_id = document.getElementById('filter_session') ? document.getElementById('filter_session').value : '';
+                let shift_id = document.getElementById('filter_shift') ? document.getElementById('filter_shift').value : ''; 
+                let gender = document.getElementById('filter_gender') ? document.getElementById('filter_gender').value : '';
+                let status = document.getElementById('filter_status') ? document.getElementById('filter_status').value : '';
+                let rfid_status = document.getElementById('filter_rfid_status') ? document.getElementById('filter_rfid_status').value : '';
+                let area = document.getElementById('filter_area') ? document.getElementById('filter_area').value : '';
+
+                let params = new URLSearchParams({
+                    format: format,
+                    search: search_text,
+                    branch_id: branch_id,
+                    class_id: class_id,
+                    section_id: section_id,
+                    session_year_id: session_id,
+                    shift_id: shift_id,
+                    gender: gender,
+                    status: status,
+                    rfid_status: rfid_status,
+                    area: area
+                });
+
+                this.selectedColumns.forEach(col => {
+                    params.append('columns[]', col);
+                });
+
+                window.location.href = `/ajax/students/export-excel?${params.toString()}`;
+                this.closeModal();
+            },
+            downloadXlsx() {
+                this.download('xlsx');
+            },
+            downloadCsv() {
+                this.download('csv');
+            }
+        };
+    };
+
     window.exportToExcel = function() {
-        let search_text = document.getElementById('filter_search').value;
-        let branch_id = document.getElementById('filter_branch').value;
-        let class_id = document.getElementById('filter_class').value;
-        let section_id = document.getElementById('filter_section').value;
-        let session_id = document.getElementById('filter_session').value;
-        let shift_id = document.getElementById('filter_shift').value; 
-        let gender = document.getElementById('filter_gender').value;
-        let status = document.getElementById('filter_status') ? document.getElementById('filter_status').value : '';
-        let rfid_status = document.getElementById('filter_rfid_status') ? document.getElementById('filter_rfid_status').value : '';
-        let area = document.getElementById('filter_area') ? document.getElementById('filter_area').value : '';
-
-        let queryParams = new URLSearchParams({
-            search: search_text,
-            branch_id: branch_id,
-            class_id: class_id,
-            section_id: section_id,
-            session_year_id: session_id,
-            shift_id: shift_id,
-            gender: gender,
-            status: status,
-            rfid_status: rfid_status,
-            area: area
-        }).toString();
-
-        window.location.href = `/ajax/students/export-excel?${queryParams}`;
+        window.dispatchEvent(new CustomEvent('open-student-export-modal'));
     };
 
     window.exportToPDF = function() {

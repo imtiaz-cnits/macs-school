@@ -14,82 +14,300 @@ use Exception;
 
 class StudentController extends Controller
 {
-  /**
+    /**
+     * Strict server-side allowlist for configurable student export columns.
+     */
+    public const EXPORT_COLUMNS = [
+        // 1. Core Defaults
+        'student_name' => [
+            'label' => 'Student Name',
+            'group' => 'Basic Information',
+        ],
+        'student_id' => [
+            'label' => 'Student ID',
+            'group' => 'Basic Information',
+        ],
+        'mobile' => [
+            'label' => 'Mobile Number',
+            'group' => 'Parents & Guardian',
+        ],
+        'class' => [
+            'label' => 'Class',
+            'group' => 'Academic Information',
+        ],
+        'roll' => [
+            'label' => 'Roll',
+            'group' => 'Academic Information',
+        ],
+        'section' => [
+            'label' => 'Section',
+            'group' => 'Academic Information',
+        ],
+
+        // 2. Additional Basic Information
+        'name_in_bangla' => [
+            'label' => 'Name (Bengali)',
+            'group' => 'Basic Information',
+        ],
+        'gender' => [
+            'label' => 'Gender',
+            'group' => 'Basic Information',
+        ],
+        'dob' => [
+            'label' => 'Date of Birth',
+            'group' => 'Basic Information',
+        ],
+        'blood_group' => [
+            'label' => 'Blood Group',
+            'group' => 'Basic Information',
+        ],
+        'religion' => [
+            'label' => 'Religion',
+            'group' => 'Basic Information',
+        ],
+        'birth_certificate' => [
+            'label' => 'Birth Certificate No',
+            'group' => 'Basic Information',
+        ],
+        'email' => [
+            'label' => 'Email',
+            'group' => 'Basic Information',
+        ],
+
+        // 3. Additional Academic Information
+        'admission_number' => [
+            'label' => 'Admission No',
+            'group' => 'Academic Information',
+        ],
+        'admission_date' => [
+            'label' => 'Admission Date',
+            'group' => 'Academic Information',
+        ],
+        'branch' => [
+            'label' => 'Branch',
+            'group' => 'Academic Information',
+        ],
+        'session' => [
+            'label' => 'Session',
+            'group' => 'Academic Information',
+        ],
+        'shift' => [
+            'label' => 'Shift',
+            'group' => 'Academic Information',
+        ],
+        'card_number' => [
+            'label' => 'RFID Card No',
+            'group' => 'Academic Information',
+        ],
+        'status' => [
+            'label' => 'Status',
+            'group' => 'Academic Information',
+        ],
+        'sms_status' => [
+            'label' => 'SMS Status',
+            'group' => 'Academic Information',
+        ],
+        'device_id' => [
+            'label' => 'Device ID',
+            'group' => 'Academic Information',
+        ],
+
+        // 4. Parents & Guardian Information
+        'father_name' => [
+            'label' => 'Father Name',
+            'group' => 'Parents & Guardian',
+        ],
+        'father_name_bn' => [
+            'label' => 'Father Name (Bengali)',
+            'group' => 'Parents & Guardian',
+        ],
+        'father_mobile' => [
+            'label' => 'Father Mobile',
+            'group' => 'Parents & Guardian',
+        ],
+        'father_nid' => [
+            'label' => 'Father NID',
+            'group' => 'Parents & Guardian',
+        ],
+        'father_occupation' => [
+            'label' => 'Father Occupation',
+            'group' => 'Parents & Guardian',
+        ],
+        'mother_name' => [
+            'label' => 'Mother Name',
+            'group' => 'Parents & Guardian',
+        ],
+        'mother_name_bn' => [
+            'label' => 'Mother Name (Bengali)',
+            'group' => 'Parents & Guardian',
+        ],
+        'mother_mobile' => [
+            'label' => 'Mother Mobile',
+            'group' => 'Parents & Guardian',
+        ],
+        'mother_nid' => [
+            'label' => 'Mother NID',
+            'group' => 'Parents & Guardian',
+        ],
+        'mother_occupation' => [
+            'label' => 'Mother Occupation',
+            'group' => 'Parents & Guardian',
+        ],
+        'guardian_name' => [
+            'label' => 'Guardian Name',
+            'group' => 'Parents & Guardian',
+        ],
+        'guardian_mobile' => [
+            'label' => 'Guardian Mobile',
+            'group' => 'Parents & Guardian',
+        ],
+        'guardian_occupation' => [
+            'label' => 'Guardian Occupation',
+            'group' => 'Parents & Guardian',
+        ],
+
+        // 5. Address Details
+        'present_village' => [
+            'label' => 'Present Village/Area',
+            'group' => 'Address Details',
+        ],
+        'present_post_office' => [
+            'label' => 'Present Post Office',
+            'group' => 'Address Details',
+        ],
+        'present_post_code' => [
+            'label' => 'Present Post Code',
+            'group' => 'Address Details',
+        ],
+        'present_district' => [
+            'label' => 'Present District',
+            'group' => 'Address Details',
+        ],
+        'present_division' => [
+            'label' => 'Present Division',
+            'group' => 'Address Details',
+        ],
+        'permanent_village' => [
+            'label' => 'Permanent Village/Area',
+            'group' => 'Address Details',
+        ],
+        'permanent_post_office' => [
+            'label' => 'Permanent Post Office',
+            'group' => 'Address Details',
+        ],
+        'permanent_post_code' => [
+            'label' => 'Permanent Post Code',
+            'group' => 'Address Details',
+        ],
+        'permanent_district' => [
+            'label' => 'Permanent District',
+            'group' => 'Address Details',
+        ],
+        'permanent_division' => [
+            'label' => 'Permanent Division',
+            'group' => 'Address Details',
+        ],
+    ];
+
+    /**
+     * Default selected columns for export.
+     */
+    public const DEFAULT_EXPORT_COLUMNS = [
+        'student_name',
+        'student_id',
+        'mobile',
+        'class',
+        'roll',
+        'section',
+    ];
+
+    /**
+     * Build the filtered Student query based on request parameters
+     */
+    public function buildFilteredStudentQuery(Request $request): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = Student::with(['branch', 'schoolClass', 'section', 'shift', 'sessionYear']);
+
+        // 🔍 ১. টেক্সট সার্চ লজিক
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('student_name', 'LIKE', "%{$search}%")
+                  ->orWhere('student_identity', 'LIKE', "%{$search}%")
+                  ->orWhere('roll_number', 'LIKE', "%{$search}%")
+                  ->orWhere('father_mobile', 'LIKE', "%{$search}%")
+                  ->orWhere('guardian_mobile', 'LIKE', "%{$search}%")
+                  ->orWhere('id', 'LIKE', "%{$search}%");
+                if (is_numeric($search)) {
+                    $q->orWhere('id', $search);
+                }
+            });
+        }
+
+        // 🔍 ২. ড্রপডাউন ফিল্টার (সবগুলো AND কন্ডিশন হিসেবে কাজ করবে)
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+        if ($request->filled('class_id')) {
+            $query->where('class_id', $request->class_id);
+        }
+        if ($request->filled('section_id')) {
+            $query->where('section_id', $request->section_id);
+        }
+        if ($request->filled('session_year_id')) {
+            $query->where('session_year_id', $request->session_year_id);
+        }
+        if ($request->filled('shift_id')) {
+            $query->where('shift_id', $request->shift_id);
+        }
+        
+        // 🚨 ৩. জেন্ডার ফিল্টার 🚨
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->gender);
+        }
+
+        // 🔍 ৪. স্ট্যাটাস ফিল্টার (Active / Inactive)
+        if ($request->filled('status') && $request->status !== 'All') {
+            $query->where('status', $request->status);
+        }
+
+        // 🔍 ৫. RFID Card Status ফিল্টার (synced vs not_synced)
+        if ($request->filled('rfid_status')) {
+            if ($request->rfid_status === 'synced') {
+                $query->whereNotNull('card_number')
+                      ->where('card_number', '!=', '')
+                      ->where('card_number', '!=', '0')
+                      ->where('card_number', '!=', 'N/A');
+            } elseif ($request->rfid_status === 'not_synced') {
+                $query->where(function ($q) {
+                    $q->whereNull('card_number')
+                      ->orWhere('card_number', '')
+                      ->orWhere('card_number', '0')
+                      ->orWhere('card_number', 'N/A');
+                });
+            }
+        }
+
+        // 🔍 ৬. এরিয়া / ঠিকানা ফিল্টার
+        if ($request->filled('area')) {
+            $area = $request->area;
+            $query->where(function ($q) use ($area) {
+                $q->where('present_village', 'LIKE', "%{$area}%")
+                  ->orWhere('permanent_village', 'LIKE', "%{$area}%")
+                  ->orWhere('present_post_office', 'LIKE', "%{$area}%");
+            });
+        }
+
+        return $query;
+    }
+
+    /**
      * স্টুডেন্ট লিস্ট এবং সার্চ ফিল্টার
      */
-  public function index(Request $request): \Illuminate\Http\JsonResponse
+    public function index(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
-            $query = \App\Models\Student::with(['branch', 'schoolClass', 'section', 'shift', 'sessionYear'])->orderByRaw('CAST(roll_number AS UNSIGNED) ASC');
-
-            // 🔍 ১. টেক্সট সার্চ লজিক
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('student_name', 'LIKE', "%{$search}%")
-                      ->orWhere('student_identity', 'LIKE', "%{$search}%") // Student ID Search
-                      ->orWhere('roll_number', 'LIKE', "%{$search}%")
-                      ->orWhere('father_mobile', 'LIKE', "%{$search}%");
-                      if (is_numeric($search)) {
-                        $q->orWhere('id', $search);
-                      }
-                });
-            }
-
-            // 🔍 ২. ড্রপডাউন ফিল্টার (সবগুলো AND কন্ডিশন হিসেবে কাজ করবে)
-            if ($request->filled('branch_id')) {
-                $query->where('branch_id', $request->branch_id);
-            }
-            if ($request->filled('class_id')) {
-                $query->where('class_id', $request->class_id);
-            }
-            if ($request->filled('section_id')) {
-                $query->where('section_id', $request->section_id);
-            }
-            if ($request->filled('session_year_id')) {
-                $query->where('session_year_id', $request->session_year_id);
-            }
-            if ($request->filled('shift_id')) {
-                $query->where('shift_id', $request->shift_id);
-            }
-            
-            // 🚨 ৩. জেন্ডার ফিল্টার 🚨
-            // (চেক করুন আপনার ডাটাবেস টেবিলের কলামের নাম 'gender' কি না)
-            if ($request->filled('gender')) {
-                $query->where('gender', $request->gender);
-            }
-
-            // 🔍 ৪. স্ট্যাটাস ফিল্টার (Active / Inactive)
-            if ($request->filled('status') && $request->status !== 'All') {
-                $query->where('status', $request->status);
-            }
-
-            // 🔍 ৫. RFID Card Status ফিল্টার (synced vs not_synced)
-            if ($request->filled('rfid_status')) {
-                if ($request->rfid_status === 'synced') {
-                    $query->whereNotNull('card_number')
-                          ->where('card_number', '!=', '')
-                          ->where('card_number', '!=', '0')
-                          ->where('card_number', '!=', 'N/A');
-                } elseif ($request->rfid_status === 'not_synced') {
-                    $query->where(function ($q) {
-                        $q->whereNull('card_number')
-                          ->orWhere('card_number', '')
-                          ->orWhere('card_number', '0')
-                          ->orWhere('card_number', 'N/A');
-                    });
-                }
-            }
-
-            // 🔍 ৬. এরিয়া / ঠিকানা ফিল্টার
-            if ($request->filled('area')) {
-                $area = $request->area;
-                $query->where(function ($q) use ($area) {
-                    $q->where('present_village', 'LIKE', "%{$area}%")
-                      ->orWhere('permanent_village', 'LIKE', "%{$area}%")
-                      ->orWhere('present_post_office', 'LIKE', "%{$area}%");
-                });
-            }
+            $query = $this->buildFilteredStudentQuery($request)->orderByRaw('CAST(roll_number AS UNSIGNED) ASC');
 
             // পেজিনেশন
             $students = $query->paginate(15);
@@ -97,7 +315,6 @@ class StudentController extends Controller
             return response()->json(['status' => 'success', 'studentData' => $students], 200);
             
         } catch (\Exception $e) {
-            // যদি কোনো কলাম না মেলে বা এরর হয়, তাহলে আপনি ব্রাউজারের Network ট্যাবে আসল এররটা দেখতে পাবেন
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
@@ -1072,124 +1289,189 @@ public function detectStudentInfo(Request $request)
     }
 
     /**
-     * স্টুডেন্ট লিস্ট এক্সেল (CSV) ডাউনলোড
+     * Configurable Student List CSV Export (Excel Compatible)
      */
     public function exportExcel(Request $request)
     {
         try {
-            $query = Student::with(['branch', 'schoolClass', 'section', 'shift', 'sessionYear'])->latest();
+            // 1. Column Selection & Validation
+            $requestedColumns = $request->input('columns');
 
-            // apply filters
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('student_name', 'LIKE', "%{$search}%")
-                      ->orWhere('student_identity', 'LIKE', "%{$search}%")
-                      ->orWhere('roll_number', 'LIKE', "%{$search}%")
-                      ->orWhere('father_mobile', 'LIKE', "%{$search}%")
-                      ->orWhere('id', 'LIKE', "%{$search}%"); // 👈 Device ID Search Added
-                      if (is_numeric($search)) {
-                        $q->orWhere('id', $search);
-                      }
-                });
+            if (is_string($requestedColumns)) {
+                $requestedColumns = array_filter(array_map('trim', explode(',', $requestedColumns)));
             }
-            if ($request->filled('branch_id')) {
-                $query->where('branch_id', $request->branch_id);
+
+            // If parameter 'columns' was passed explicitly but is empty
+            if ($request->has('columns') && empty($requestedColumns)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Please select at least one column to export.'
+                ], 422);
             }
-            if ($request->filled('class_id')) {
-                $query->where('class_id', $request->class_id);
+
+            // Fallback to default columns if omitted
+            if (empty($requestedColumns)) {
+                $requestedColumns = self::DEFAULT_EXPORT_COLUMNS;
             }
-            if ($request->filled('section_id')) {
-                $query->where('section_id', $request->section_id);
+
+            // Validate requested columns against allowlist
+            $invalidColumns = array_diff($requestedColumns, array_keys(self::EXPORT_COLUMNS));
+            if (!empty($invalidColumns)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid export column(s) requested: ' . implode(', ', $invalidColumns)
+                ], 422);
             }
-            if ($request->filled('session_year_id')) {
-                $query->where('session_year_id', $request->session_year_id);
+
+            // 2. Headings
+            $headings = array_map(function ($colKey) {
+                return self::EXPORT_COLUMNS[$colKey]['label'];
+            }, $requestedColumns);
+
+            // 3. Query using unified filter logic
+            $query = $this->buildFilteredStudentQuery($request)->orderByRaw('CAST(roll_number AS UNSIGNED) ASC');
+
+            $format = strtolower((string) $request->input('format', 'xlsx'));
+
+            // 4. CSV Export Format (backward-compatible)
+            if ($format === 'csv') {
+                $filename = "student_list_" . date('Ymd_His') . ".csv";
+
+                $headers = [
+                    "Content-Type"        => "text/csv; charset=UTF-8",
+                    "Content-Disposition" => "attachment; filename=\"{$filename}\"",
+                    "Pragma"              => "no-cache",
+                    "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+                    "Expires"             => "0"
+                ];
+
+                $callback = function () use ($query, $requestedColumns, $headings) {
+                    $file = fopen('php://output', 'w');
+                    // UTF-8 BOM for Excel to recognize Bangla characters
+                    fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+                    fputcsv($file, $headings);
+
+                    foreach ($query->cursor() as $student) {
+                        $row = [];
+                        foreach ($requestedColumns as $colKey) {
+                            $val = $this->resolveStudentColumnValue($student, $colKey);
+                            $row[] = $this->sanitizeCsvValue($val);
+                        }
+                        fputcsv($file, $row);
+                    }
+
+                    fclose($file);
+                };
+
+                return response()->stream($callback, 200, $headers);
             }
-            if ($request->filled('shift_id')) {
-                $query->where('shift_id', $request->shift_id);
-            }
-            if ($request->filled('gender')) {
-                $query->where('gender', $request->gender);
-            }
-            if ($request->filled('status') && $request->status !== 'All') {
-                $query->where('status', $request->status);
-            }
-            if ($request->filled('rfid_status')) {
-                if ($request->rfid_status === 'synced') {
-                    $query->whereNotNull('card_number')
-                          ->where('card_number', '!=', '')
-                          ->where('card_number', '!=', '0')
-                          ->where('card_number', '!=', 'N/A');
-                } elseif ($request->rfid_status === 'not_synced') {
-                    $query->where(function ($q) {
-                        $q->whereNull('card_number')
-                          ->orWhere('card_number', '')
-                          ->orWhere('card_number', '0')
-                          ->orWhere('card_number', 'N/A');
-                    });
+
+            // 5. Genuine XLSX Excel Export Format (stores mobile, IDs, and rolls as Text cells)
+            $rows = [$headings];
+
+            foreach ($query->cursor() as $student) {
+                $row = [];
+                foreach ($requestedColumns as $colKey) {
+                    $val = $this->resolveStudentColumnValue($student, $colKey);
+                    $row[] = $this->sanitizeCsvValue($val);
                 }
+                $rows[] = $row;
             }
 
-            if ($request->filled('area')) {
-                $area = $request->area;
-                $query->where(function ($q) use ($area) {
-                    $q->where('present_village', 'LIKE', "%{$area}%")
-                      ->orWhere('permanent_village', 'LIKE', "%{$area}%")
-                      ->orWhere('present_post_office', 'LIKE', "%{$area}%");
-                });
-            }
+            $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($rows, 'Students');
+            $xlsxContent = (string) $xlsx;
 
-            $students = $query->get();
+            $filename = "student_list_" . date('Ymd_His') . ".xlsx";
 
-            $filename = "student_list_" . date('Ymd_His') . ".csv";
-            
-            $headers = [
-                "Content-type"        => "text/csv; charset=UTF-8",
-                "Content-Disposition" => "attachment; filename=$filename",
+            return response($xlsxContent, 200, [
+                "Content-Type"        => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "Content-Disposition" => "attachment; filename=\"{$filename}\"",
                 "Pragma"              => "no-cache",
                 "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
                 "Expires"             => "0"
-            ];
-
-            $columns = [
-                'SL', 'Student ID', 'Student Name', 'Class', 'Roll', 
-                'Section', 'Shift', 'Branch', 'Session', 'Gender', 
-                'Guardian Mobile', 'Father Mobile', 'Mother Mobile', 'Date of Birth'
-            ];
-
-            $callback = function() use($students, $columns) {
-                $file = fopen('php://output', 'w');
-                // UTF-8 BOM for Excel to recognize Bangla characters
-                fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-                fputcsv($file, $columns);
-
-                foreach ($students as $key => $student) {
-                    fputcsv($file, [
-                        $key + 1,
-                        $student->student_identity,
-                        $student->student_name,
-                        $student->schoolClass->class_name ?? 'N/A',
-                        $student->roll_number ?? 'N/A',
-                        $student->section->section_name ?? 'N/A',
-                        $student->shift->shift_name ?? 'N/A',
-                        $student->branch->branch_name ?? 'N/A',
-                        $student->sessionYear->session_name ?? 'N/A',
-                        $student->gender ?? 'N/A',
-                        $student->guardian_mobile ?? 'N/A',
-                        $student->father_mobile ?? 'N/A',
-                        $student->mother_mobile ?? 'N/A',
-                        $student->dob ? date('d-m-Y', strtotime($student->dob)) : 'N/A',
-                    ]);
-                }
-
-                fclose($file);
-            };
-
-            return response()->stream($callback, 200, $headers);
+            ]);
 
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Resolve a column value from a Student model instance.
+     */
+    public function resolveStudentColumnValue(Student $student, string $columnKey): string
+    {
+        return match ($columnKey) {
+            'student_name' => (string) ($student->student_name ?? ''),
+            'student_id' => (string) ($student->student_identity ?? ''),
+            'mobile' => (string) ($student->guardian_mobile ?: ($student->father_mobile ?: '')),
+            'class' => (string) ($student->schoolClass->class_name ?? 'N/A'),
+            'roll' => (string) ($student->roll_number ?? 'N/A'),
+            'section' => (string) ($student->section->section_name ?? 'N/A'),
+
+            'name_in_bangla' => (string) ($student->name_in_bangla ?? ''),
+            'gender' => (string) ($student->gender ?? ''),
+            'dob' => $student->dob ? date('d-m-Y', strtotime($student->dob)) : '',
+            'blood_group' => (string) ($student->blood_group ?? ''),
+            'religion' => (string) ($student->religion ?? ''),
+            'birth_certificate' => (string) ($student->birth_certificate ?? ''),
+            'email' => (string) ($student->email ?? ''),
+
+            'admission_number' => (string) ($student->admission_number ?? ''),
+            'admission_date' => $student->admission_date ? date('d-m-Y', strtotime($student->admission_date)) : '',
+            'branch' => (string) ($student->branch->branch_name ?? 'N/A'),
+            'session' => (string) ($student->sessionYear->session_name ?? 'N/A'),
+            'shift' => (string) ($student->shift->shift_name ?? 'N/A'),
+            'card_number' => (string) ($student->card_number ?? ''),
+            'status' => (string) ($student->status ?? ''),
+            'sms_status' => (string) ($student->sms_status ?? ''),
+            'device_id' => (string) ($student->id ?? ''),
+
+            'father_name' => (string) ($student->father_name ?? ''),
+            'father_name_bn' => (string) ($student->father_name_bn ?? ''),
+            'father_mobile' => (string) ($student->father_mobile ?? ''),
+            'father_nid' => (string) ($student->father_nid ?? ''),
+            'father_occupation' => (string) ($student->father_occupation ?? ''),
+            'mother_name' => (string) ($student->mother_name ?? ''),
+            'mother_name_bn' => (string) ($student->mother_name_bn ?? ''),
+            'mother_mobile' => (string) ($student->mother_mobile ?? ''),
+            'mother_nid' => (string) ($student->mother_nid ?? ''),
+            'mother_occupation' => (string) ($student->mother_occupation ?? ''),
+            'guardian_name' => (string) ($student->guardian_name ?? ''),
+            'guardian_mobile' => (string) ($student->guardian_mobile ?? ''),
+            'guardian_occupation' => (string) ($student->guardian_occupation ?? ''),
+
+            'present_village' => (string) ($student->present_village ?? ''),
+            'present_post_office' => (string) ($student->present_post_office ?? ''),
+            'present_post_code' => (string) ($student->present_post_code ?? ''),
+            'present_district' => (string) ($student->present_district ?? ''),
+            'present_division' => (string) ($student->present_division ?? ''),
+            'permanent_village' => (string) ($student->permanent_village ?? ''),
+            'permanent_post_office' => (string) ($student->permanent_post_office ?? ''),
+            'permanent_post_code' => (string) ($student->permanent_post_code ?? ''),
+            'permanent_district' => (string) ($student->permanent_district ?? ''),
+            'permanent_division' => (string) ($student->permanent_division ?? ''),
+
+            default => '',
+        };
+    }
+
+    /**
+     * Protect CSV fields against formula injection.
+     */
+    public function sanitizeCsvValue(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        $str = (string) $value;
+
+        if ($str !== '' && in_array($str[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+            return "'" . $str;
+        }
+
+        return $str;
     }
 
     /**
