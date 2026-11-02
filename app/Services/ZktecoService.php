@@ -107,7 +107,9 @@ class ZktecoService
 
         // Live connection logic using ZKTeco library
         try {
-            $zk = new \Jmrashed\Zkteco\Lib\ZKTeco($this->ip, $this->port);
+            $zk = app()->bound(\Jmrashed\Zkteco\Lib\ZKTeco::class)
+                ? app(\Jmrashed\Zkteco\Lib\ZKTeco::class)
+                : new \Jmrashed\Zkteco\Lib\ZKTeco($this->ip, $this->port);
             
             if (!$zk->connect()) {
                 throw new \Exception("Unable to establish connection with Biometric Device at {$this->ip}:{$this->port}");
@@ -149,16 +151,33 @@ class ZktecoService
             }
             
             $synced = 0;
+            $registryService = app(\App\Services\BiometricRegistryService::class);
+            $deviceId = config('services.zkteco.device_id', 'k60_main');
             
             foreach ($groupedLogs as $biometricId => $times) {
-                // Find teacher matching biometric ID
-                $teacher = Teacher::where('biometric_id', $biometricId)->first();
-                if (!$teacher) {
-                    // Fallback: match teacher directly by ID (if biometricId - 10000 is a valid ID)
-                    if ($biometricId > 10000) {
-                        $teacherId = $biometricId - 10000;
+                $pin = (string) $biometricId;
+                $res = $registryService->resolvePersonByPin($deviceId, $pin);
+                $teacher = null;
+
+                if ($res->isActive()) {
+                    if ($res->personType() === 'teacher') {
+                        $teacher = $res->person();
+                    } else {
+                        // Belongs to active student or other non-staff profile; do not create staff attendance
+                        continue;
+                    }
+                } elseif ($res->canUseLegacyFallback()) {
+                    // Legacy Fallback: Only permitted when registry has NO record for this PIN (STATUS_MISSING)
+                    $teacher = Teacher::where('biometric_id', $biometricId)->first();
+                    if (!$teacher && (int)$biometricId > 10000) {
+                        $teacherId = (int)$biometricId - 10000;
                         $teacher = Teacher::find($teacherId);
                     }
+                } else {
+                    // Known non-active mapping: UNRESOLVED, RESERVED, RETIRED, INACTIVE, AMBIGUOUS
+                    // Legacy fallback is strictly prohibited to prevent false attendance assignment.
+                    \Illuminate\Support\Facades\Log::info("Staff attendance sync skipped for terminal PIN '{$pin}': " . $res->reason());
+                    continue;
                 }
                 
                 if (!$teacher) {
@@ -310,13 +329,17 @@ class ZktecoService
                     }
                     $checkIn = Carbon::create($date->year, $date->month, $date->day, $checkInHour, $checkInMin, 0)->format('H:i:s');
                     $cards[$student->card_number] = [$checkIn];
+                    $cards["card:{$student->card_number}"] = [$checkIn];
+                    $cards["student:{$student->id}"] = [$checkIn];
                 }
             }
             return $cards;
         }
 
         try {
-            $zk = new \Jmrashed\Zkteco\Lib\ZKTeco($this->ip, $this->port);
+            $zk = app()->bound(\Jmrashed\Zkteco\Lib\ZKTeco::class)
+                ? app(\Jmrashed\Zkteco\Lib\ZKTeco::class)
+                : new \Jmrashed\Zkteco\Lib\ZKTeco($this->ip, $this->port);
             
             if (!$zk->connect()) {
                 throw new \Exception("Unable to establish connection with Biometric Device at {$this->ip}:{$this->port}");
@@ -341,26 +364,51 @@ class ZktecoService
             
             $targetDateStr = $date->format('Y-m-d');
             $cards = [];
+            $registryService = app(\App\Services\BiometricRegistryService::class);
+            $deviceId = config('services.zkteco.device_id', 'k60_main');
             
             foreach ($allLogs as $log) {
                 if (isset($log['timestamp']) && str_starts_with($log['timestamp'], $targetDateStr)) {
-                    $uid = $log['id'];
+                    $uid = (string) $log['id'];
                     $time = Carbon::parse($log['timestamp'])->format('H:i:s');
                     
-                    // 1. Always map by direct user ID key (fallback/fingerprint support)
-                    $idKey = "id:{$uid}";
-                    if (!isset($cards[$idKey])) {
-                        $cards[$idKey] = [];
+                    // 1. PIN Resolution via Centralized Biometric Registry
+                    $pinRes = $registryService->resolvePersonByPin($deviceId, $uid);
+                    if ($pinRes->isActive()) {
+                        if ($pinRes->personType() === 'student') {
+                            $studentId = $pinRes->personId();
+                            $cards["student:{$studentId}"][] = $time;
+                        }
+                        // Active staff PINs (e.g. 569, 10006) are intentionally excluded from student cards
+                    } elseif ($pinRes->canUseLegacyFallback()) {
+                        // Legacy fallback for student ID punch ONLY if completely missing from registry and NOT staff 569
+                        if ((int)$uid !== 569) {
+                            $cards["id:{$uid}"][] = $time;
+                        }
+                    } else {
+                        // Unresolved (PIN 21), retired (217, 218), inactive, or reserved PINs are strictly suppressed
+                        \Illuminate\Support\Facades\Log::info("Student log skipped for terminal PIN '{$uid}': " . $pinRes->reason());
                     }
-                    $cards[$idKey][] = $time;
                     
-                    // 2. Map by card number if present and not zero (RFID support)
+                    // 2. RFID Card Resolution via Centralized Biometric Registry
                     if (isset($userCardMap[$uid]) && trim($userCardMap[$uid]) !== '' && trim($userCardMap[$uid]) !== '0') {
                         $cardNo = trim($userCardMap[$uid]);
-                        if (!isset($cards[$cardNo])) {
-                            $cards[$cardNo] = [];
+
+                        $cardRes = $registryService->resolvePersonByCard($deviceId, $cardNo);
+                        if ($cardRes->isActive()) {
+                            if ($cardRes->personType() === 'student') {
+                                $studentId = $cardRes->personId();
+                                $cards["student:{$studentId}"][] = $time;
+                                $cards["card:{$cardNo}"][] = $time;
+                                $cards[$cardNo][] = $time;
+                            }
+                            // Active staff RFID card (e.g. Imtiaz Ahmed card) is excluded from student attendance
+                        } elseif ($cardRes->canUseLegacyFallback()) {
+                            $cards["card:{$cardNo}"][] = $time;
+                            $cards[$cardNo][] = $time;
+                        } else {
+                            \Illuminate\Support\Facades\Log::info("Student card punch skipped for Card '{$cardNo}': " . $cardRes->reason());
                         }
-                        $cards[$cardNo][] = $time;
                     }
                 }
             }

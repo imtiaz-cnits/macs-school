@@ -152,9 +152,20 @@ class AttendanceController extends Controller
                 $remarks = 'Absent (Biometric Check)';
                 
                 $times = null;
-                if (!empty($student->card_number) && isset($cardSwipes[$student->card_number])) {
+                // 1. Registry-resolved student ID key (covers verified student PIN & Card punches)
+                if (isset($cardSwipes["student:{$student->id}"])) {
+                    $times = $cardSwipes["student:{$student->id}"];
+                }
+                // 2. Registry-resolved card key
+                elseif (!empty($student->card_number) && isset($cardSwipes["card:{$student->card_number}"])) {
+                    $times = $cardSwipes["card:{$student->card_number}"];
+                }
+                // 3. Raw card key (backward compatibility with legacy and simulation)
+                elseif (!empty($student->card_number) && isset($cardSwipes[$student->card_number])) {
                     $times = $cardSwipes[$student->card_number];
-                } elseif (isset($cardSwipes["id:{$student->id}"])) {
+                }
+                // 4. Raw ID key (fallback for non-reserved student IDs)
+                elseif ((int)$student->id !== 569 && isset($cardSwipes["id:{$student->id}"])) {
                     $times = $cardSwipes["id:{$student->id}"];
                 }
 

@@ -1665,6 +1665,13 @@ public function detectStudentInfo(Request $request)
     public function syncRfidCard(Request $request, $id): JsonResponse
     {
         try {
+            if ((int)$id === 569) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Device ID 569 is reserved for staff biometric identity and cannot be synced to a student.'
+                ], 422);
+            }
+
             $student = Student::find($id);
             if (!$student) {
                 return response()->json([
@@ -1813,6 +1820,9 @@ public function detectStudentInfo(Request $request)
             
             foreach ($students as $student) {
                 $studentId = (int)$student->id;
+                if ($studentId === 569) {
+                    continue; // Skip reserved staff ID
+                }
                 if (isset($userCardMap[$studentId])) {
                     $cardNo = $userCardMap[$studentId];
                     if ($student->card_number !== $cardNo) {
@@ -1845,6 +1855,14 @@ public function detectStudentInfo(Request $request)
     public function pushToDevice($id): JsonResponse
     {
         try {
+            // Task 1: Protected ID Guard - Never send a CMD_SET_USER packet for Student ID 569
+            if ((int)$id === 569) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Device ID 569 is reserved for staff biometric identity and cannot be overwritten by a student.'
+                ], 422);
+            }
+
             $student = Student::find($id);
             if (!$student) {
                 return response()->json([
@@ -1856,12 +1874,17 @@ public function detectStudentInfo(Request $request)
             $zkService = app(\App\Services\ZktecoService::class);
             if ($zkService->getMode() === 'simulation') {
                 return response()->json([
-                    'status' => 'success',
-                    'message' => "[Simulation] Student {$student->student_name} (Device ID: {$student->id}) pushed to device successfully!"
+                    'status'    => 'success',
+                    'verified'  => true,
+                    'device_id' => $student->id,
+                    'message'   => "[Simulation] Student {$student->student_name} (Device ID: {$student->id}) pushed to device successfully!"
                 ], 200);
             }
 
-            $zk = new \Jmrashed\Zkteco\Lib\ZKTeco($zkService->getIp(), $zkService->getPort());
+            $zk = app()->bound(\Jmrashed\Zkteco\Lib\ZKTeco::class)
+                ? app(\Jmrashed\Zkteco\Lib\ZKTeco::class)
+                : new \Jmrashed\Zkteco\Lib\ZKTeco($zkService->getIp(), $zkService->getPort());
+
             if (!$zk->connect()) {
                 return response()->json([
                     'status' => 'error',
@@ -1870,30 +1893,84 @@ public function detectStudentInfo(Request $request)
             }
 
             $zk->disableDevice();
-            
-            // Clean name for ZKTeco compatibility (alphanumeric only, max 24 chars)
-            $cleanName = substr(preg_replace('/[^A-Za-z0-9\s]/', '', $student->student_name), 0, 24);
+
+            // Clean name for ZKTeco compatibility (ASCII alphanumeric, dots, spaces, hyphens, max 24 chars)
+            $cleanName = trim(preg_replace('/[^A-Za-z0-9\s\.\-]/', '', (string)$student->student_name));
+            $cleanName = substr(preg_replace('/\s+/', ' ', $cleanName), 0, 24);
+
+            $isFallbackName = false;
             if (empty($cleanName)) {
-                $cleanName = "Student " . $student->id;
+                $isFallbackName = true;
+                // Safe ASCII fallback when name is entirely in Bengali or non-ASCII script
+                $cleanName = "Student " . ($student->roll_number ? "R" . $student->roll_number : $student->id);
+                $cleanName = substr($cleanName, 0, 24);
             }
 
             $cardno = 0;
             if (!empty($student->card_number)) {
-                $cardno = preg_replace('/[^0-9]/', '', $student->card_number);
+                $cardno = (int) preg_replace('/[^0-9]/', '', (string)$student->card_number);
             }
 
-            // setUser($uid, $userid, $name, $password, $role, $cardno)
-            $zk->setUser($student->id, $student->id, $cleanName, '', 0, $cardno);
-            
+            // 1. Execute setUser and validate response
+            $pushSuccess = $zk->setUser($student->id, $student->id, $cleanName, '', 0, $cardno);
+
+            if (!$pushSuccess) {
+                $zk->enableDevice();
+                $zk->disconnect();
+
+                Log::error("ZKTeco pushToDevice failed: Device rejected setUser payload for student ID {$student->id}", [
+                    'student_id' => $student->id,
+                    'clean_name' => $cleanName,
+                    'card_no'    => $cardno,
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "Biometric device rejected user payload for Student {$student->student_name} (Device ID: {$student->id})."
+                ], 422);
+            }
+
+            // 2. Read-Back Verification Step
+            $verified = false;
+            try {
+                $users = $zk->getUser();
+                if (is_array($users)) {
+                    foreach ($users as $u) {
+                        if (
+                            (isset($u['uid']) && (int)$u['uid'] === (int)$student->id) ||
+                            (isset($u['userid']) && (int)$u['userid'] === (int)$student->id)
+                        ) {
+                            $verified = true;
+                            break;
+                        }
+                    }
+                }
+            } catch (\Throwable $readEx) {
+                Log::warning("ZKTeco pushToDevice read-back warning for student ID {$student->id}: " . $readEx->getMessage());
+            }
+
             $zk->enableDevice();
             $zk->disconnect();
 
+            $statusMessage = $verified
+                ? "Student {$student->student_name} (Device ID: {$student->id}) successfully pushed and verified on biometric device."
+                : "Student {$student->student_name} (Device ID: {$student->id}) pushed to device, but read-back verification was unconfirmed.";
+
+            if ($isFallbackName) {
+                $statusMessage .= " (Note: Bengali name used fallback '{$cleanName}' for device screen compatibility).";
+            }
+
             return response()->json([
-                'status' => 'success',
-                'message' => "Student {$student->student_name} (Device ID: {$student->id}) successfully pushed to biometric device."
+                'status'         => 'success',
+                'verified'       => $verified,
+                'device_id'      => $student->id,
+                'name_on_device' => $cleanName,
+                'card_on_device' => $cardno,
+                'message'        => $statusMessage
             ], 200);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            Log::error("ZKTeco pushToDevice exception: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to push student to device: ' . $e->getMessage()

@@ -47,8 +47,12 @@ class User
             str_pad($userid, 9, chr(0)),
             str_repeat(chr(0), 15)
         ]);
-//        die($command_string);
-        return $self->_command($command, $command_string);
+        $res = $self->_command($command, $command_string);
+        if ($res === false) {
+            return false;
+        }
+
+        return Util::checkValid($self->_data_recv);
     }
 
     /**

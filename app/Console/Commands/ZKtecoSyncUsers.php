@@ -41,13 +41,25 @@ class ZKtecoSyncUsers extends Command
         $this->info("Device Mode:   " . strtoupper($mode));
         $this->info("--------------------------------------------------");
 
+        $studentId = $this->option('student-id');
+        $staffId = $this->option('staff-id');
+
+        // Immediate Guard: Student ID 569 is permanently reserved for staff biometric identity
+        if ($studentId && (int)$studentId === 569) {
+            $this->error("❌ Student ID 569 is reserved for staff biometric identity and cannot be synced.");
+            return;
+        }
+
         if ($mode === 'simulation') {
             $this->warn("Device is in SIMULATION mode. Sync skipped.");
             return;
         }
 
         try {
-            $zk = new \Jmrashed\Zkteco\Lib\ZKTeco($ip, $port);
+            $zk = app()->bound(\Jmrashed\Zkteco\Lib\ZKTeco::class)
+                ? app(\Jmrashed\Zkteco\Lib\ZKTeco::class)
+                : new \Jmrashed\Zkteco\Lib\ZKTeco($ip, $port);
+
             if (!$zk->connect()) {
                 $this->error("❌ Unable to connect to biometric device.");
                 return;
@@ -56,8 +68,6 @@ class ZKtecoSyncUsers extends Command
             $zk->disableDevice();
 
             $this->info("Fetching database records...");
-            $studentId = $this->option('student-id');
-            $staffId = $this->option('staff-id');
 
             if ($studentId) {
                 $students = Student::where('id', $studentId)->get();
@@ -97,6 +107,12 @@ class ZKtecoSyncUsers extends Command
             $studentCount = 0;
             $studentDbUpdates = 0;
             foreach ($students as $student) {
+                // Protected ID Guard: Student ID 569 is reserved for staff biometric identity
+                if ((int)$student->id === 569) {
+                    $this->warn("⚠️ Skipping Student ID 569: ID is reserved for Staff Biometric Registration.");
+                    continue;
+                }
+
                 $uid = $student->id;
                 $userid = $student->id;
                 
