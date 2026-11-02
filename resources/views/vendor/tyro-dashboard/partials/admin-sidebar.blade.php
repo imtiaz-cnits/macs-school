@@ -296,6 +296,9 @@
                     <a href="{{ route('fees.reports.summary') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
                         <span>Category Summary</span>
                     </a>
+                    <a href="{{ route('accounts.reports.class_wise') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
+                        <span>Class-wise Financial Report</span>
+                    </a>
                 </div>
             </div>
             @endif
@@ -628,7 +631,7 @@
             <div class="sidebar-section-heading group-[.collapsed]/sidebar:hidden px-3 pt-3 pb-1 text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase border-t border-gray-100 dark:border-white/[0.05] mt-2">
                 Financial Reports
             </div>
-            <a href="{{ route('accounts.reports.index') }}" class="sidebar-link {{ request()->routeIs('accounts.reports.*') ? 'active' : '' }}" title="Financial Statement">
+            <a href="{{ route('accounts.reports.index') }}" class="sidebar-link {{ request()->routeIs('accounts.reports.index', 'accounts.reports.print') ? 'active' : '' }}" title="Financial Statement">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
                 <span class="sidebar-text">Financial Statement</span>
             </a>
@@ -639,6 +642,10 @@
             <a href="{{ route('fees.reports.summary') }}" class="sidebar-link {{ request()->routeIs('fees.reports.summary') ? 'active' : '' }}" title="Category Summary">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/></svg>
                 <span class="sidebar-text">Category Summary</span>
+            </a>
+            <a href="{{ route('accounts.reports.class_wise') }}" class="sidebar-link {{ request()->routeIs('accounts.reports.class_wise*') ? 'active' : '' }}" title="Class-wise Financial Report">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><rect x="2" y="2" width="20" height="20" rx="3"/></svg>
+                <span class="sidebar-text">Class-wise Financial Report</span>
             </a>
         </div>
 

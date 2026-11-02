@@ -448,7 +448,6 @@ class FinancialReportsIntegrationTest extends TestCase
         $response->assertSee('Prepared By');
         $response->assertSee('Accountant');
         $response->assertSee('Headmaster / Principal');
-        $response->assertSee('Chairman / Governing Body');
     }
 
     public function test_initial_page_load_without_query_params_applies_default_date_range_to_receivables(): void

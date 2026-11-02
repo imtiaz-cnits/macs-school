@@ -32,6 +32,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpenseReceiptController;
 use App\Http\Controllers\ExpenseVendorController;
 use App\Http\Controllers\FinancialReportController;
+use App\Http\Controllers\ClassWiseFinancialReportController;
 use App\Http\Controllers\PayableManagementController;
 use App\Http\Controllers\VendorPaymentController;
 
@@ -489,5 +490,11 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
         // Financial Reports & Statements
         Route::get('/reports', [FinancialReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/print', [FinancialReportController::class, 'printStatement'])->name('reports.print');
+
+        // Class-wise Financial Report
+        Route::get('/reports/class-wise', [ClassWiseFinancialReportController::class, 'index'])->name('reports.class_wise');
+        Route::get('/reports/class-wise/print', [ClassWiseFinancialReportController::class, 'printReport'])->name('reports.class_wise_print');
+        Route::get('/reports/class-wise/export-excel', [ClassWiseFinancialReportController::class, 'exportExcel'])->name('reports.class_wise_excel');
+        Route::get('/reports/class-wise/export-pdf', [ClassWiseFinancialReportController::class, 'exportPdf'])->name('reports.class_wise_pdf');
     });
 });
