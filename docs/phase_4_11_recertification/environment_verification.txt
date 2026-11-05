@@ -1,0 +1,39 @@
+====================================================================
+MACS SCHOOL — PHASE 4.11 TEST ENVIRONMENT VERIFICATION AUDIT
+Timestamp: 2026-11-05 06:18:25 +06
+====================================================================
+
+[PHP RUNTIME ENVIRONMENT]
+PHP CLI Executable:          C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe
+PHP CLI Version:             8.3.30 (cli) (built: Jan 13 2026 22:50:40) (ZTS Visual C++ 2019 x64)
+PHP Zend Engine:             v4.3.30, Copyright (c) Zend Technologies
+Operating System:            Windows 10 / Windows 11 x64 (Build 26100)
+
+[TARGET TEST DATABASE INSTANCE (ISOLATED SANDBOX)]
+Server Engine:               MySQL Community Server - GPL
+Server Engine Version:       8.0.45
+Server Daemon Binary:        C:\laragon\bin\mysql\mysql-8.0.45-winx64\bin\mysqld.exe
+Server Host:                 127.0.0.1 (Strict Loopback)
+Server Port:                 3308 (Dedicated Isolated Test Port)
+Server Hostname (@@hostname):BLACK_BUDDY
+Default Isolation Level:     REPEATABLE-READ
+Active Database:             macs_school_ph411_test
+Active Connection User:      root@localhost
+Sandbox Character Set:       utf8mb4
+Sandbox Collation:           utf8mb4_unicode_ci
+
+[SOURCE SEED DATABASE INSTANCE (LOCAL HOST REPOSITORY)]
+Source Host:                 127.0.0.1
+Source Port:                 3306 (Laragon Local Development MySQL)
+Source Version:              8.4.3
+Source Database:             macs_school (Local offline snapshot)
+Source Connection User:      root@localhost
+Local Proof:                 Server host is local loopback (127.0.0.1), no internet/WAN route.
+
+[CRITICAL DATABASE INTEGRITY AUDIT]
+Preserved DB Name:           macsinjaazhdb_restore_test_20261104
+Preserved DB Status:         EXCLUDED & PROTECTED (Never touched, dropped, or modified)
+Production Access:           STRICTLY PROHIBITED (Zero Production Mutations, Zero Remote Connections)
+Production Safety Status:    HOLD (Live execution prohibited)
+====================================================================
+

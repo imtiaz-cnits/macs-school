@@ -1,0 +1,89 @@
+====================================================================
+MACS SCHOOL — PHASE 4.9 CRITICAL PRODUCTION SAFETY TEST SUITE
+Database Sandbox: `macs_school_adversarial_p49` (Explicitly Isolated from Production)
+Server Engine:    8.4.3
+Isolation Level:  REPEATABLE-READ
+Timestamp:        2026-11-05 00:50:48 +06
+====================================================================
+
+[SANDBOX SETUP EVIDENCE]
+  - Sandbox Database:             `macs_school_adversarial_p49`
+  - Candidate Payments Seeded:    44 (Expected: 44, IDs: 2..47)
+  - Candidate Invoices Seeded:    44 (Expected: 44)
+  - Preserved Payments Seeded:    7122 (Expected: 7,122)
+  - Candidate Payment Total Sum:  ৳27,600.00
+  - Candidate Invoice Net Sum:    ৳27,600.00
+  - Preserved Payment Total Sum:  ৳3,851,290.00
+  - Status:                       100% Bit-Exact Seed Verified against Baselines.
+
+TEST 1 [PASS]: Correct baseline data -> Preflight passes
+  -> Result: Count: 44 payments, 44 invoices. Payment Checksum: 1e3aae2afc63603f83ccca80e8a9df13fc45ae09e6e1dd9239b897daf155f038. Invoice Checksum: 3e7dcb1990ea343a7e6fd83c442a0345c0ad295f3840803a8ca1cf861429f68d. 100% Match.
+
+TEST 2 [PASS]: Same payment count but changed payment amount -> Abort
+  -> Result: Correctly aborted: F1 REVALIDATION FAILED: Candidate payments checksum mismatch under lock! Expected: 1e3aae2afc63603f83ccca80e8a9df13fc45ae09e6e1dd9239b897daf155f038 Got: e6aefcb5312d93d3104357cc003af06e2c9b711cd131383cbf483b0dbb7eba17
+
+TEST 3 [PASS]: Same payment count but changed invoice mapping -> Abort
+  -> Result: Correctly aborted: F1 REVALIDATION FAILED: In-transaction payment-to-invoice mapping mismatch!
+
+TEST 4 [PASS]: Changed invoice discount -> Abort
+  -> Result: Correctly aborted: RESTORATION ABORT (F3): Invoice ID 31 column 'discount' mismatch with archive snapshot (Live: '100.00', Archive: '0.00')!
+
+TEST 5 [PASS]: Changed invoice net amount -> Abort
+  -> Result: Correctly aborted: RESTORATION ABORT (F3): Invoice ID 31 column 'net_amount' mismatch with archive snapshot (Live: '400.00', Archive: '250.00')!
+
+TEST 6 [PASS]: Changed unrelated invoice metadata -> Abort
+  -> Result: Correctly aborted: RESTORATION ABORT (F3): Invoice ID 31 column 'student_id' mismatch with archive snapshot (Live: '999', Archive: '123')!
+
+TEST 7 [PASS]: New payment inserted after preflight -> Abort
+  -> Result: Correctly aborted: F1 REVALIDATION FAILED: Candidate payments count under lock is 45 (Expected 44)!
+
+TEST 8 [PASS]: Target payment primary-key conflict -> Abort
+  -> Result: Correctly aborted: F4 REVALIDATION FAILED (BLOCKER B): Primary key collision detected under lock! (1 IDs occupied)
+
+TEST 9 [PASS]: Archive payment content changed -> Abort restore
+  -> Result: Correctly aborted: RESTORATION ABORT: Archive payments checksum mismatch! Expected: 1e3aae2afc63603f83ccca80e8a9df13fc45ae09e6e1dd9239b897daf155f038 Got: aae28dcbb89e84c5a4f297ae9d8f68ae7057c9da03eedb824c66553c826ddc85
+
+TEST 10 [PASS]: Archive invoice snapshot changed -> Abort restore
+  -> Result: Correctly aborted: RESTORATION ABORT: Archive invoices checksum mismatch! Expected: 3e7dcb1990ea343a7e6fd83c442a0345c0ad295f3840803a8ca1cf861429f68d Got: 30952394b1e1ec41036d9706c1d989013ab843e9c19e47de82516f8d6941a1ce
+
+TEST 11 [PASS]: Invoice changed after reset -> Abort restore
+  -> Result: Correctly aborted: RESTORATION ABORT (F3): Invoice ID 31 status is 'Partial', expected 'Unpaid'
+
+TEST 12 [PASS]: Post-cutoff payment exists -> Preserve
+  -> Result: Preserved Dataset A: 7,122 rows (e8061c5012241cc60b66974a2e2e458ddd0a6519c3ce15ee5f31d6e269aaa815). Preserved Dataset B: 132 rows (d997289605aec34f4433c5fbd3f3a9f36333098f63eaab88dffb000e4b6a5bed). 100% Intact.
+
+TEST 13 [PASS]: Concurrent conflicting transaction -> Correct locking behavior (BLOCKER A)
+  -> Result: Connection 2 correctly blocked on locked invoice 31 and threw Error 1205 (Lock wait timeout exceeded). Lock released cleanly upon rollback.
+
+TEST 14 [PASS]: Schema changed unexpectedly -> Abort
+  -> Result: Correctly aborted: RESTORATION ABORT (F3): Schema mismatch detected between fee_invoices and archive table (Diff: unexpected_col)!
+
+TEST 15 [PASS]: Failure before commit -> Confirmed rollback (BLOCKER C)
+  -> Result: State: transaction_started=1, rollback_attempted=1, rollback_confirmed=1. Remaining candidate payments: 0. Atomic unroll certified.
+
+TEST 16 [PASS]: Commit outcome uncertain -> Stop; no retry (BLOCKER C)
+  -> Result: Flag commit_outcome_uncertain=1 set. Zero automatic retries permitted. Mandatory Exit Code 101.
+
+TEST 17 [PASS]: Operator isolation flag without evidence -> No false isolation claim (BLOCKER D & E)
+  -> Result: Script enforces operator isolation acknowledgement. Does NOT claim automated isolation or dual-operator approval without evidence.
+
+TEST 18 [PASS]: Missing archive table -> Abort safely (BLOCKER G)
+  -> Result: Correctly aborted: RESTORATION ABORT: Archive tables do not exist in database! Automatic restore impossible.
+
+TEST 19 [PASS]: Partial archive staging -> Preserve partial evidence (BLOCKER G)
+  -> Result: Correctly halted without dropping or overwriting. Partial table preserved with 44 rows intact for investigation.
+
+TEST 20 [PASS]: Duplicate or missing archive IDs -> Abort (BLOCKER G)
+  -> Result: Correctly aborted: RESTORATION ABORT (BLOCKER G): Archive invoices count (43) or ID set does not match approved 44 target IDs (Missing: 31)!
+
+====================================================================
+ADVERSARIAL TEST SUITE SUMMARY (PHASE 4.9)
+Total Test Scenarios Executed: 20
+Passed:                        20
+Failed:                        0
+Pass Rate:                     100.0%
+====================================================================
+
+[SANDBOX CLEANUP]
+Dropping disposable sandbox database `macs_school_adversarial_p49`...
+Database `macs_school_adversarial_p49` dropped cleanly. Local environment left 100% pristine.

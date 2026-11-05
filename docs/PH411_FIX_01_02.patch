@@ -1,0 +1,207 @@
+--- scripts/execute_fee_collection_reset_atomic.php
++++ scripts/execute_fee_collection_reset_atomic.php
+@@ -31,6 +31,42 @@
+ // -----------------------------------------------------------------------------
++// PH411-FIX-01: STRICT NULL-SAFE VALUE COMPARISON HELPER
++// -----------------------------------------------------------------------------
++if (!function_exists('valuesMatchExactly')) {
++    function valuesMatchExactly(mixed $a, mixed $b): bool {
++        if ($a === null || $b === null) {
++            return $a === $b;
++        }
++        return (string)$a === (string)$b;
++    }
++}
++
++// -----------------------------------------------------------------------------
++// PH411-FIX-02: RUNTIME TEST-ONLY FAILURE INJECTION SAFETY GUARD
++// -----------------------------------------------------------------------------
++if (!function_exists('isTestFailureInjectionAllowed')) {
++    function isTestFailureInjectionAllowed(PDO $pdo, string $dbHost, int|string $dbPort, string $dbName): bool {
++        if (app()->environment('production')) {
++            return false;
++        }
++        if ($dbHost !== '127.0.0.1' && $dbHost !== 'localhost') {
++            return false;
++        }
++        if ((int)$dbPort !== 3308 && !str_contains($dbName, 'test') && !str_contains($dbName, 'sandbox') && !str_contains($dbName, 'adversarial')) {
++            return false;
++        }
++        if ($dbName === 'macs_school' || $dbName === 'macsinjaazhdb') {
++            return false;
++        }
++        if ($dbName === 'macsinjaazhdb_restore_test_20261104') {
++            return false;
++        }
++        return true;
++    }
++}
++
++// -----------------------------------------------------------------------------
+ // R2: BYTE-EXACT DETERMINISTIC LENGTH-PREFIXED ROW SERIALIZER
+ // -----------------------------------------------------------------------------
+@@ -588,9 +624,11 @@
+-                // Verify schema-aware non-reset-controlled columns remain 100% UNCHANGED (F2/R5)
++                // Verify schema-aware non-reset-controlled columns remain 100% UNCHANGED (F2/R5/PH411-FIX-01)
+                 foreach ($invoiceColumns as $col) {
+                     if (in_array($col, $resetControlledFields, true)) {
+                         continue;
+                     }
+-                    if ((string)$inv[$col] !== (string)$pre[$col]) {
+-                        throw new RuntimeException("INVARIANT FAILURE: Invoice ID {$id} column '{$col}' mutated from '{$pre[$col]}' to '{$inv[$col]}'!");
++                    if (!valuesMatchExactly($inv[$col], $pre[$col])) {
++                        $preValStr = $pre[$col] === null ? 'NULL' : "'{$pre[$col]}'";
++                        $invValStr = $inv[$col] === null ? 'NULL' : "'{$inv[$col]}'";
++                        throw new RuntimeException("INVARIANT FAILURE: Invoice ID {$id} column '{$col}' mutated from {$preValStr} to {$invValStr}!");
+                     }
+                 }
+@@ -620,6 +658,20 @@
+             // Step 6: Commit Transaction (BLOCKER C: Explicit State Tracking)
++            // PH411-FIX-02: Isolated Test-Only Failure Injection Point
++            $testFailurePoint = getenv('MACS_TEST_FAILURE_POINT');
++            if (!empty($testFailurePoint)) {
++                if (!isTestFailureInjectionAllowed($pdo, $dbHost, $dbPort, $dbName)) {
++                    fwrite(STDERR, "SECURITY ALERT: MACS_TEST_FAILURE_POINT is strictly forbidden in this environment/database!\n");
++                    exit(100);
++                }
++                if ($testFailurePoint === 'reset_before_commit') {
++                    throw new RuntimeException("[TEST-FAILURE-INJECTION] Injected failure before commit in Reset controller (TEST-01)");
++                }
++                if ($testFailurePoint === 'reset_commit_uncertainty') {
++                    $txState['commit_attempted'] = true;
++                    throw new PDOException("[TEST-FAILURE-INJECTION] Simulated commit transport failure / lost acknowledgement (TEST-05)", 40001);
++                }
++            }
++
+             echo "  -> Committing transaction...\n";
+@@ -744,9 +796,11 @@
+-        // Schema-aware check: all non-reset-controlled columns must match archive snapshot
++        // Schema-aware check: all non-reset-controlled columns must match archive snapshot (F2/PH411-FIX-01)
+         foreach ($invoiceColumns as $col) {
+             if (in_array($col, $resetControlledFields, true)) {
+                 continue;
+             }
+-            if ((string)$postInv[$col] !== (string)$archInv[$col]) {
+-                fwrite(STDERR, "CRITICAL ALERT (F2): Post-commit invoice ID {$id} column '{$col}' mutated from archive '{$archInv[$col]}' to '{$postInv[$col]}'!\n");
++            if (!valuesMatchExactly($postInv[$col], $archInv[$col])) {
++                $archValStr = $archInv[$col] === null ? 'NULL' : "'{$archInv[$col]}'";
++                $postValStr = $postInv[$col] === null ? 'NULL' : "'{$postInv[$col]}'";
++                fwrite(STDERR, "CRITICAL ALERT (F2): Post-commit invoice ID {$id} column '{$col}' mutated from archive {$archValStr} to {$postValStr}!\n");
+                 exit(107);
+             }
+         }
+
+--- scripts/restore_fee_collection_reset_atomic.php
++++ scripts/restore_fee_collection_reset_atomic.php
+@@ -30,6 +30,42 @@
+ // -----------------------------------------------------------------------------
++// PH411-FIX-01: STRICT NULL-SAFE VALUE COMPARISON HELPER
++// -----------------------------------------------------------------------------
++if (!function_exists('valuesMatchExactly')) {
++    function valuesMatchExactly(mixed $a, mixed $b): bool {
++        if ($a === null || $b === null) {
++            return $a === $b;
++        }
++        return (string)$a === (string)$b;
++    }
++}
++
++// -----------------------------------------------------------------------------
++// PH411-FIX-02: RUNTIME TEST-ONLY FAILURE INJECTION SAFETY GUARD
++// -----------------------------------------------------------------------------
++if (!function_exists('isTestFailureInjectionAllowed')) {
++    function isTestFailureInjectionAllowed(PDO $pdo, string $dbHost, int|string $dbPort, string $dbName): bool {
++        if (app()->environment('production')) {
++            return false;
++        }
++        if ($dbHost !== '127.0.0.1' && $dbHost !== 'localhost') {
++            return false;
++        }
++        if ((int)$dbPort !== 3308 && !str_contains($dbName, 'test') && !str_contains($dbName, 'sandbox') && !str_contains($dbName, 'adversarial')) {
++            return false;
++        }
++        if ($dbName === 'macs_school' || $dbName === 'macsinjaazhdb') {
++            return false;
++        }
++        if ($dbName === 'macsinjaazhdb_restore_test_20261104') {
++            return false;
++        }
++        return true;
++    }
++}
++
++// -----------------------------------------------------------------------------
+ // R2: BYTE-EXACT DETERMINISTIC LENGTH-PREFIXED ROW SERIALIZER
+ // -----------------------------------------------------------------------------
+@@ -98,6 +134,10 @@
+ ];
+
++const CANDIDATE_PAYMENT_IDS = [
++    2, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
++];
++
+ // -----------------------------------------------------------------------------
+ // BLOCKER D & E: COMMAND-LINE EXECUTION & OPERATOR AUTHORIZATION VALIDATION
+ // -----------------------------------------------------------------------------
+@@ -320,7 +360,9 @@
+-        // Schema-Aware Check (F3): ALL columns outside the 4 reset-controlled fields must match archive exactly
++        // Schema-Aware Check (F3/PH411-FIX-01): ALL columns outside the 4 reset-controlled fields must match archive exactly
+         foreach ($liveColumns as $col) {
+             if (in_array($col, $resetControlledFields, true)) {
+                 continue;
+             }
+-            if ((string)$liveInv[$col] !== (string)$archInv[$col]) {
+-                throw new RuntimeException("RESTORATION ABORT (F3): Invoice ID {$id} column '{$col}' mismatch with archive snapshot (Live: '{$liveInv[$col]}', Archive: '{$archInv[$col]}')!");
++            if (!valuesMatchExactly($liveInv[$col], $archInv[$col])) {
++                $liveValStr = $liveInv[$col] === null ? 'NULL' : "'{$liveInv[$col]}'";
++                $archValStr = $archInv[$col] === null ? 'NULL' : "'{$archInv[$col]}'";
++                throw new RuntimeException("RESTORATION ABORT (F3): Invoice ID {$id} column '{$col}' mismatch with archive snapshot (Live: {$liveValStr}, Archive: {$archValStr})!");
+             }
+         }
+@@ -464,7 +506,9 @@
+         foreach ($liveColumns as $col) {
+             if (in_array($col, $resetControlledFields, true)) {
+                 continue;
+             }
+-            if ((string)$tLive[$col] !== (string)$tArch[$col]) {
+-                throw new RuntimeException("F4 REVALIDATION FAILED: Invoice ID {$tId} column '{$col}' mutated under lock!");
++            if (!valuesMatchExactly($tLive[$col], $tArch[$col])) {
++                $tLiveValStr = $tLive[$col] === null ? 'NULL' : "'{$tLive[$col]}'";
++                $tArchValStr = $tArch[$col] === null ? 'NULL' : "'{$tArch[$col]}'";
++                throw new RuntimeException("F4 REVALIDATION FAILED: Invoice ID {$tId} column '{$col}' mutated under lock (Live: {$tLiveValStr}, Archive: {$tArchValStr})!");
+             }
+         }
+@@ -550,7 +594,9 @@
+-        // Every column must match archive
++        // Every column must match archive (F5/PH411-FIX-01)
+         foreach ($liveColumns as $col) {
+-            if ((string)$rInv[$col] !== (string)$aInv[$col]) {
+-                throw new RuntimeException("F5 PRE-COMMIT FAILED: Invoice ID {$rId} column '{$col}' does not match archive original!");
++            if (!valuesMatchExactly($rInv[$col], $aInv[$col])) {
++                $rValStr = $rInv[$col] === null ? 'NULL' : "'{$rInv[$col]}'";
++                $aValStr = $aInv[$col] === null ? 'NULL' : "'{$aInv[$col]}'";
++                throw new RuntimeException("F5 PRE-COMMIT FAILED: Invoice ID {$rId} column '{$col}' does not match archive original (Restored: {$rValStr}, Archive: {$aValStr})!");
+             }
+         }
+@@ -582,6 +628,19 @@
+     // COMMIT TRANSACTION (BLOCKER C: Explicit State Tracking)
+     // -------------------------------------------------------------------------
++    // PH411-FIX-02: Isolated Test-Only Failure Injection Point
++    $testFailurePoint = getenv('MACS_TEST_FAILURE_POINT');
++    if (!empty($testFailurePoint)) {
++        if (!isTestFailureInjectionAllowed($pdo, $dbHost, $dbPort, $dbName)) {
++            fwrite(STDERR, "SECURITY ALERT: MACS_TEST_FAILURE_POINT is strictly forbidden in this environment/database!\n");
++            exit(100);
++        }
++        if ($testFailurePoint === 'restore_before_commit') {
++            throw new RuntimeException("[TEST-FAILURE-INJECTION] Injected failure before commit in Restore controller (TEST-02)");
++        }
++    }
++
+     $restorationCommitted = false;
+     $txState['commit_attempted'] = true;
+     try {
++        if (!empty($testFailurePoint) && $testFailurePoint === 'restore_commit_uncertainty') {
++            throw new PDOException("[TEST-FAILURE-INJECTION] Simulated commit transport failure / lost acknowledgement (TEST-06)", 40001);
++        }
+         $pdo->commit();

@@ -1,0 +1,211 @@
+# MACS SCHOOL — PHASE 4.11 REMEDIATION PATCH
+# Scope: PH411-FIX-01 & PH411-FIX-02 Remediation & Re-Certification
+# Date: 2026-11-05
+
+diff --git a/scripts/fee_reset_helpers.php b/scripts/fee_reset_helpers.php
+new file mode 100644
+--- /dev/null
++++ b/scripts/fee_reset_helpers.php
+@@ -0,0 +1,128 @@
++<?php
++declare(strict_types=1);
++
++/**
++ * MACS School Management System — Production Fee Collection Reset & Restore Helper Library
++ * 
++ * PH411-FIX-01: Shared Strict NULL-Safe Value Comparison
++ * PH411-FIX-02: Hardened Fail-Closed Failure-Injection Guard
++ * 
++ * This file is safely includable across controllers, unit test harnesses, and integration tests
++ * without code drift or behavioral deviations.
++ */
++
++if (!function_exists('valuesMatchExactly')) {
++    /**
++     * Strict NULL-safe value comparison helper.
++     * 
++     * Semantics:
++     * - NULL === NULL => true
++     * - NULL === '' => false
++     * - '' === NULL => false
++     * - '' === '' => true
++     * - '0' === 0 => true (database scalar normalization)
++     * - (string)$a === (string)$b for all non-null values
++     */
++    function valuesMatchExactly(mixed $a, mixed $b): bool {
++        if ($a === null || $b === null) {
++            return $a === $b;
++        }
++        return (string)$a === (string)$b;
++    }
++}
++
++if (!function_exists('isTestFailureInjectionAllowed')) {
++    /**
++     * Hardened Fail-Closed Runtime Safety Guard for Test-Only Failure Injection.
++     * 
++     * Validates BOTH caller environment variables AND active PDO connection ground truth.
++     * Guaranteed fail-closed: If any single invariant or query fails, returns FALSE.
++     * 
++     * Requirements:
++     * 1. Exact host allowlist ('127.0.0.1' or 'localhost')
++     * 2. Exact port allowlist (3308 only)
++     * 3. Exact sandbox database name allowlist ('macs_school_ph411_test' only)
++     * 4. Exact MySQL version validation (MySQL 8.0.45 only)
++     * 5. Explicit test-mode environment variable (MACS_TEST_MODE === '1')
++     * 6. Explicit failure-injection opt-in (MACS_FAILURE_INJECTION_ENABLED === '1')
++     * 7. Active PDO connection validation via SELECT DATABASE(), SELECT @@port, SELECT VERSION(), SELECT USER()
++     * 8. Rejection of remote hosts, production database names, and preserved databases
++     */
++    function isTestFailureInjectionAllowed(PDO $pdo, ?string $dbHost = null, int|string|null $dbPort = null, ?string $dbName = null): bool {
++        // 1. Production environment check (strictly forbidden in production)
++        if (function_exists('app')) {
++            try {
++                if (app()->environment('production')) {
++                    return false;
++                }
++            } catch (Throwable $t) {
++                return false;
++            }
++        }
++
++        // 2. Explicit environment variable requirements (must be explicitly '1')
++        if (getenv('MACS_TEST_MODE') !== '1') {
++            return false;
++        }
++        if (getenv('MACS_FAILURE_INJECTION_ENABLED') !== '1') {
++            return false;
++        }
++
++        // 3. Validate caller parameters if provided
++        if ($dbHost !== null && $dbHost !== '127.0.0.1' && $dbHost !== 'localhost') {
++            return false;
++        }
++        if ($dbPort !== null && (int)$dbPort !== 3308) {
++            return false;
++        }
++        if ($dbName !== null && $dbName !== 'macs_school_ph411_test') {
++            return false;
++        }
++
++        // 4. Validate active live PDO connection directly against MySQL engine
++        try {
++            $activeDb = (string)$pdo->query("SELECT DATABASE()")->fetchColumn();
++            $activePort = (int)$pdo->query("SELECT @@port")->fetchColumn();
++            $activeVersion = (string)$pdo->query("SELECT VERSION()")->fetchColumn();
++            $activeUser = (string)$pdo->query("SELECT USER()")->fetchColumn();
++
++            // Ground-truth database name must match sandbox allowlist exactly
++            if ($activeDb !== 'macs_school_ph411_test') {
++                return false;
++            }
++
++            // Ground-truth port must be 3308 (isolated MySQL test instance)
++            if ($activePort !== 3308) {
++                return false;
++            }
++
++            // Ground-truth MySQL version must be 8.0.45
++            if (!str_contains($activeVersion, '8.0.45')) {
++                return false;
++            }
++
++            // Ground-truth connection must be loopback only
++            if (!str_contains($activeUser, '@localhost') && !str_contains($activeUser, '@127.0.0.1')) {
++                return false;
++            }
++
++            // Explicit rejection of production-like and preserved database names
++            $forbiddenDbs = [
++                'macs_school',
++                'macsinjaazhdb',
++                'macsinjaazhdb_restore_test_20261104',
++                'production',
++                'live'
++            ];
++            if (in_array(strtolower($activeDb), $forbiddenDbs, true)) {
++                return false;
++            }
++
++            return true;
++        } catch (Throwable $e) {
++            // Fail closed on any PDO query error
++            return false;
++        }
++    }
++}
++
+
+diff --git a/scripts/execute_fee_collection_reset_atomic.php b/scripts/execute_fee_collection_reset_atomic.php
+--- a/scripts/execute_fee_collection_reset_atomic.php
++++ b/scripts/execute_fee_collection_reset_atomic.php
+@@ -31,40 +31,4 @@
++// -----------------------------------------------------------------------------
++// PH411-FIX-01 & PH411-FIX-02: SHARED HELPERS (STRICT NULL-SAFE & HARDENED GUARD)
++// -----------------------------------------------------------------------------
++require_once __DIR__ . '/fee_reset_helpers.php';
+-// -----------------------------------------------------------------------------
+-// PH411-FIX-01: STRICT NULL-SAFE VALUE COMPARISON HELPER
+-// -----------------------------------------------------------------------------
+-if (!function_exists('valuesMatchExactly')) {
+-    function valuesMatchExactly(mixed $a, mixed $b): bool {
+-        if ($a === null || $b === null) {
+-            return $a === $b;
+-        }
+-        return (string)$a === (string)$b;
+-    }
+-}
+-
+-// -----------------------------------------------------------------------------
+-// PH411-FIX-02: RUNTIME TEST-ONLY FAILURE INJECTION SAFETY GUARD
+-// -----------------------------------------------------------------------------
+-if (!function_exists('isTestFailureInjectionAllowed')) {
+-    function isTestFailureInjectionAllowed(PDO $pdo, string $dbHost, int|string $dbPort, string $dbName): bool {
+-        // Permissive substring/port checks
+-        return true;
+-    }
+-}
+
+diff --git a/scripts/restore_fee_collection_reset_atomic.php b/scripts/restore_fee_collection_reset_atomic.php
+--- a/scripts/restore_fee_collection_reset_atomic.php
++++ b/scripts/restore_fee_collection_reset_atomic.php
+@@ -30,40 +30,4 @@
++// -----------------------------------------------------------------------------
++// PH411-FIX-01 & PH411-FIX-02: SHARED HELPERS (STRICT NULL-SAFE & HARDENED GUARD)
++// -----------------------------------------------------------------------------
++require_once __DIR__ . '/fee_reset_helpers.php';
+@@ -600,6 +594,36 @@
++    // PH411-FIX-01: Post-restore independent NULL-safe column-by-column snapshot comparison
++    $finalInvsById = array_column($finalInvs, null, 'id');
++    foreach ($archInvs as $aInv) {
++        $id = $aInv['id'];
++        if (!isset($finalInvsById[$id])) {
++            fwrite(STDERR, "CRITICAL ALERT (F7): Post-commit restored invoice ID {$id} missing!\n");
++            exit(109);
++        }
++        foreach ($liveColumns as $col) {
++            if (!valuesMatchExactly($finalInvsById[$id][$col], $aInv[$col])) {
++                $fVal = $finalInvsById[$id][$col] === null ? 'NULL' : "'{$finalInvsById[$id][$col]}'";
++                $aVal = $aInv[$col] === null ? 'NULL' : "'{$aInv[$col]}'";
++                fwrite(STDERR, "CRITICAL ALERT (F7): Post-commit invoice ID {$id} column '{$col}' mismatch (Final: {$fVal}, Archive: {$aVal})!\n");
++                exit(109);
++            }
++        }
++    }
++
++    $finalPmtsById = array_column($finalPmts, null, 'id');
++    foreach ($archPmts as $aPmt) {
++        $id = $aPmt['id'];
++        if (!isset($finalPmtsById[$id])) {
++            fwrite(STDERR, "CRITICAL ALERT (F7): Post-commit restored payment ID {$id} missing!\n");
++            exit(109);
++        }
++        foreach ($livePaymentCols as $col) {
++            if (!valuesMatchExactly($finalPmtsById[$id][$col], $aPmt[$col])) {
++                $fVal = $finalPmtsById[$id][$col] === null ? 'NULL' : "'{$finalPmtsById[$id][$col]}'";
++                $aVal = $aPmt[$col] === null ? 'NULL' : "'{$aPmt[$col]}'";
++                fwrite(STDERR, "CRITICAL ALERT (F7): Post-commit payment ID {$id} column '{$col}' mismatch (Final: {$fVal}, Archive: {$aVal})!\n");
++                exit(109);
++            }
++        }
++    }

@@ -1,0 +1,151 @@
+====================================================================
+MACS SCHOOL — PHASE 4.11 COMPLETE RAW TEST OUTPUT MANIFEST
+Tested on: MySQL 8.0.45 Community Server (Port 3308)
+PHP Version: PHP 8.3.30 (cli)
+Timestamp: 2026-11-05 06:22:16 +06
+====================================================================
+
+### SECTION 1: PH411-FIX-01 STRICT NULL-SAFE VALUE COMPARISON UNIT TEST HARNESS
+Command: php scratch/test_ph411_fix01_unit_retest.php
+Result:
+====================================================================
+PH411-FIX-01: STRICT NULL-SAFE VALUE COMPARISON UNIT TEST HARNESS
+Timestamp: 2026-11-05 00:16:15 UTC
+Helper File: scripts/fee_reset_helpers.php
+====================================================================
+
+INTEGRATION-01 [PASS]: Reset controller requires scripts/fee_reset_helpers.php
+INTEGRATION-02 [PASS]: Restore controller requires scripts/fee_reset_helpers.php
+
+--- UNIT TEST MATRIX EXECUTION ---
+CASE 1 [PASS]: NULL vs NULL = MATCH
+CASE 2 [PASS]: NULL vs empty string = MISMATCH
+  -> REMEDIATION PROVEN: Legacy logic collapsed to TRUE; valuesMatchExactly() correctly returned FALSE
+CASE 3 [PASS]: empty string vs NULL = MISMATCH
+  -> REMEDIATION PROVEN: Legacy logic collapsed to TRUE; valuesMatchExactly() correctly returned FALSE
+CASE 4 [PASS]: empty string vs empty string = MATCH
+CASE 5 [PASS]: integer 0 vs string "0" = MATCH (database scalar normalization)
+CASE 6 [PASS]: string "0" vs integer 0 = MATCH (database scalar normalization)
+CASE 7 [PASS]: decimal string comparisons (identical: "27600.00" vs "27600.00") = MATCH
+CASE 8 [PASS]: decimal string comparisons (unequal: "27600.00" vs "27600.01") = MISMATCH
+CASE 9 [PASS]: ordinary equal values ("Paid" vs "Paid") = MATCH
+CASE 10 [PASS]: ordinary unequal values ("Paid" vs "Unpaid") = MISMATCH
+CASE 11 [PASS]: NULL vs 0 = MISMATCH
+CASE 12 [PASS]: NULL vs "0" = MISMATCH
+CASE 13 [PASS]: NULL vs "0.00" = MISMATCH
+CASE 14 [PASS]: empty string vs "0" = MISMATCH
+CASE 15 [PASS]: "0" vs "1" = MISMATCH
+CASE 16 [PASS]: integer PK 31 vs string PK "31" = MATCH
+CASE 17 [PASS]: discount "450.00" vs "450.00" = MATCH
+CASE 18 [PASS]: gross "28050.00" vs "28050.00" = MATCH
+CASE 19 [PASS]: NULL vs "Paid" = MISMATCH
+CASE 20 [PASS]: datetime timestamp match = MATCH
+CASE 21 [PASS]: datetime timestamp mismatch = MISMATCH
+CASE 22 [PASS]: NULL vs datetime timestamp = MISMATCH
+
+--- STATIC AUDIT OF CONTROLLER SOURCES ---
+STATIC-01 [PASS]: Zero weak comparisons remaining in invoice/payment snapshot loops across both controllers.
+STATIC-02 [INFO]: valuesMatchExactly() invocations in Reset: 2, Restore: 5
+STATIC-02 [PASS]: All snapshot loops in Reset and Restore use valuesMatchExactly().
+
+====================================================================
+PH411-FIX-01 UNIT TEST SUMMARY: 26 PASSED, 0 FAILED
+====================================================================
+
+
+### SECTION 2: PH411-FIX-02 HARDENED FAILURE-INJECTION GUARD SECURITY AUDIT HARNESS
+Command: php scratch/test_ph411_guard_unit.php
+Result:
+====================================================================
+PH411-FIX-02: FAILURE-INJECTION GUARD SECURITY AUDIT HARNESS
+Timestamp: 2026-11-05 06:16:39 +06
+====================================================================
+
+GUARD-01 [PASS]: Missing test environment variables against port 3306 (macs_school) -> Correctly REJECTED (FAIL-CLOSED)
+GUARD-02 [PASS]: Port 3306 with spoofed env vars against macs_school -> Correctly REJECTED (FAIL-CLOSED)
+GUARD-03 [PASS]: Spoofed caller arguments (3308) but active PDO on port 3306 -> Correctly REJECTED (FAIL-CLOSED)
+GUARD-04 [PASS]: Database name macsinjaazhdb -> Correctly REJECTED (FAIL-CLOSED)
+GUARD-05 [PASS]: Preserved database macsinjaazhdb_restore_test_20261104 -> Correctly REJECTED (FAIL-CLOSED)
+GUARD-06 [PASS]: Remote host IP 192.168.1.50 -> Correctly REJECTED (FAIL-CLOSED)
+GUARD-07 [PASS]: Port 3308 but active database is not macs_school_ph411_test -> Correctly REJECTED (FAIL-CLOSED)
+GUARD-08 [PASS]: Active 3308 sandbox DB but MACS_TEST_MODE missing -> Correctly REJECTED (FAIL-CLOSED)
+GUARD-09 [PASS]: Active 3308 sandbox DB but MACS_FAILURE_INJECTION_ENABLED missing -> Correctly REJECTED (FAIL-CLOSED)
+GUARD-10 [PASS]: Active 3308 sandbox DB with MySQL 8.0.45 and verified test env vars -> Correctly ALLOWED
+
+====================================================================
+FAILURE-INJECTION GUARD AUDIT SUMMARY: 10 PASSED, 0 FAILED
+====================================================================
+
+
+### SECTION 3: PH411-FIX-02 REAL ROLLBACK & FAILURE-INJECTION INTEGRATION SUITE
+Command: php scratch/test_phase411_integration_suite_retest.php
+Result:
+====================================================================
+MACS SCHOOL — PHASE 4.11 REMEDIATION & RE-CERTIFICATION SUITE
+Database Server Engine:  MySQL 8.0.45 (Port 3308)
+Server Hostname:         BLACK_BUDDY
+Target Database Sandbox: `macs_school_ph411_test`
+PHP CLI Executable:      C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe
+PHP Version:             8.3.30
+Default Isolation Level: REPEATABLE-READ
+Timestamp:               2026-11-05 06:22:16 +06
+====================================================================
+
+[PRESERVATION AUDIT] Preserved database `macsinjaazhdb_restore_test_20261104` existence: NOT PRESENT
+TEST-01 [PASS]: Reset rollback after actual transactional DML (PH411-FIX-02)
+  -> Result: CLI Exit: 102 (Expected 102). Injected failure before commit reached. Pre-test Candidate Count: 44, Post-Rollback Candidate Count: 44 (MUST BE 44, NOT 0). Checksums 100% bit-exact across candidate payments (1e3aae2afc63603f83ccca80e8a9df13fc45ae09e6e1dd9239b897daf155f038), target invoices (3e7dcb1990ea343a7e6fd83c442a0345c0ad295f3840803a8ca1cf861429f68d), and 7,122 preserved payments. Invoices verified column-by-column with NULL-safe matcher.
+
+TEST-02 [PASS]: Restore rollback after actual payment insertion (PH411-FIX-02)
+  -> Result: CLI Exit: 107 (Expected 107). Injected failure before commit triggered rollback. Payment PKs remain 100% vacant (Count: 0). Target invoices remain in post-reset Unpaid state. Zero lingering inserted rows.
+
+TEST-03 [PASS]: Archive preservation after Reset rollback (Redesigned Clean Path)
+  -> Result: Clean initial sandbox verified (no pre-existing archive tables). Reset controller created & populated archive tables during Stage A/B. Stage C DML rolled back successfully on injected failure (Exit: 102). Live candidate payments (44) and invoices (44) restored 100%. Archive tables independently persisted due to MySQL DDL implicit commit with 44 payments (Checksum: 1e3aae2afc63603f83ccca80e8a9df13fc45ae09e6e1dd9239b897daf155f038) and 44 invoices (Checksum: 3e7dcb1990ea343a7e6fd83c442a0345c0ad295f3840803a8ca1cf861429f68d). Full-row NULL-safe comparison verified.
+
+TEST-04 [PASS]: Complete Restore rollback state preservation (Full NULL-Safe Comparison)
+  -> Result: Both invoices (44 rows) and payments (7,122 rows) verified row-by-row and column-by-column using strict valuesMatchExactly(). Dataset checksums identical before and after. Candidate PKs remain 0. Post-reset invoice statuses (Unpaid, Due=Net, Paid=0) fully preserved. Zero lingering rows.
+
+TEST-05A [PASS]: Reset COMMIT invocation failure handling (Level A)
+  -> Result: CLI Exit Code: 101 (Expected 101). Commit attempt explicitly recorded. Commit outcome marked uncertain. Zero retries enforced. Clear manual inspection directive displayed.
+
+TEST-05B [PARTIALLY TESTED]: Reset Commit acknowledgement uncertainty (Level B: Transport Loss)
+  -> Result: COMMIT ACKNOWLEDGEMENT UNCERTAINTY: PARTIALLY TESTED. Transport-level commit invocation failure verified (Level A, Exit 101). Asynchronous OS/kernel TCP packet loss following engine commit cannot be deterministically injected without low-level network packet filtering (e.g. iptables/tc). Documented limitation per Section 5.
+
+TEST-06A [PASS]: Restore COMMIT invocation failure handling (Level A)
+  -> Result: CLI Exit Code: 101 (Expected 101). Commit attempt explicitly recorded. Commit outcome marked uncertain. Zero retries enforced. Clear manual inspection directive displayed.
+
+TEST-06B [PARTIALLY TESTED]: Restore Commit acknowledgement uncertainty (Level B: Transport Loss)
+  -> Result: COMMIT ACKNOWLEDGEMENT UNCERTAINTY: PARTIALLY TESTED. Transport-level commit invocation failure verified (Level A, Exit 101). Asynchronous OS/kernel TCP packet loss following engine commit cannot be deterministically injected without low-level network packet filtering. Documented limitation per Section 5.
+
+TEST-07 [PASS]: Full Reset -> Restore Lifecycle Round-Trip Verification
+  -> Result: Reset Exit: 0, Restore Exit: 0. Candidate payments deleted to 0 during reset, then restored to 44. Target invoices transitioned from Paid -> Unpaid -> Paid. Preserved payments (7,122 rows, ৳3,851,290.00) completely untouched throughout. Final checksums match 100% bit-exact with pre-reset state. Full row-by-row & column-by-column NULL-safe comparison certified.
+
+
+====================================================================
+PHASE 4.11 INTEGRATION SUITE SUMMARY
+PASSED:           7
+PARTIALLY TESTED: 2
+FAILED:           0
+TOTAL EVALUATED:  9
+====================================================================
+
+
+### SECTION 4: PHASE 4.10 REGRESSION & CLASSIFICATION SUITE
+Command: php scratch/test_phase410_adversarial_suite.php
+Result:
+====================================================================
+PHASE 4.10 AUDIT TEST SUITE SUMMARY (ON MYSQL 8.0.45)
+Target MySQL Server Version:   8.0.45
+Total Test Scenarios Executed: 24
+Passed:                        24
+Failed:                        0
+Pass Rate:                     100.0%
+====================================================================
+Classification of 24 Regression Tests:
+- Real Controller Integration Subprocess Tests: Test 22, Test 23, Test 24 (3 Tests)
+- Database Locking & Concurrency Tests: Test 13, Test 21 (2 Tests)
+- In-Transaction State-Machine & Invariant Tests: Test 1, Test 2, Test 3, Test 7, Test 8, Test 12, Test 14 (7 Tests)
+- Archive Integrity & Staging Safety Tests: Test 9, Test 10, Test 18, Test 19, Test 20 (5 Tests)
+- Snapshot Verification & Schema-Aware Tests: Test 4, Test 5, Test 6, Test 11 (4 Tests)
+- CLI Guard & Authorization Tests: Test 17 (1 Test)
+- Simulated Failure Branch Tests: Test 15 (Restore Rollback), Test 16 (Commit Uncertainty Flag) (2 Tests)
+
