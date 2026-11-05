@@ -59,18 +59,10 @@ class FeeReportController extends Controller
         $payments = $paymentsQuery->orderBy('created_at', 'desc')->get();
         $dues = $duesQuery->orderBy('due_date', 'asc')->get();
 
-        // মাস বের করার স্ট্যান্ডার্ড হেল্পার ফাংশন
+        // মাস বের করার স্ট্যান্ডার্ড হেল্পার ফাংশন (FeeInvoice এর সেন্ট্রাল month_name ব্যবহার করে)
         $resolveMonth = function ($inv) {
-            if ($inv && $inv->feeSetup && $inv->feeSetup->fee_month && !in_array(strtolower(trim($inv->feeSetup->fee_month)), ['monthly', 'one time', 'one_time', ''])) {
-                return ucfirst(trim($inv->feeSetup->fee_month));
-            }
-            if ($inv && $inv->due_date) {
-                return date('F', strtotime($inv->due_date));
-            }
-            if ($inv && $inv->created_at) {
-                return date('F', strtotime($inv->created_at));
-            }
-            return 'General';
+            if (!$inv) return 'General';
+            return $inv->month_name ?: 'General';
         };
 
         // রিসিট নম্বর থেকে কমন মাস্টার রিসিট প্রিফিক্স বের করার হেল্পার ফাংশন
