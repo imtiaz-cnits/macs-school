@@ -160,6 +160,9 @@ $pdo = new PDO($dsn, $dbUser, $dbPass, [
     PDO::MYSQL_ATTR_FOUND_ROWS   => true,
 ]);
 
+// Enforce canonical application timezone (Asia/Dhaka / +06:00) for deterministic TIMESTAMP retrieval
+$pdo->exec("SET time_zone = '+06:00'");
+
 $targetInvoicesList = implode(',', TARGET_INVOICE_IDS);
 $expectedTargetInvoiceIds = TARGET_INVOICE_IDS;
 sort($expectedTargetInvoiceIds);

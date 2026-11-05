@@ -183,6 +183,9 @@ $pdo = new PDO($dsn, $dbUser, $dbPass, [
     PDO::MYSQL_ATTR_FOUND_ROWS   => true, // Matches rows instead of changed rows
 ]);
 
+// Enforce canonical application timezone (Asia/Dhaka / +06:00) for deterministic TIMESTAMP retrieval
+$pdo->exec("SET time_zone = '+06:00'");
+
 $targetInvoicesList = implode(',', TARGET_INVOICE_IDS);
 $candidateStudentsList = implode(',', CANDIDATE_STUDENT_IDS);
 $hasAdvisoryLock = false;

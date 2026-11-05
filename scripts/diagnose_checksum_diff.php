@@ -28,6 +28,9 @@ $pdo = new PDO($dsn, $dbUser, $dbPass, [
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 ]);
 
+// Enforce canonical application timezone (Asia/Dhaka / +06:00) for deterministic TIMESTAMP retrieval
+$pdo->exec("SET time_zone = '+06:00'");
+
 echo "====================================================================\n";
 echo "MACS FEE COLLECTION LIVE DIAGNOSTIC TOOL\n";
 echo "Active Database: {$dbName} on {$dbHost}:{$dbPort}\n";
@@ -131,3 +134,4 @@ if ($presCount > 0) {
         echo sprintf("    %-18s: (%-7s) %s\n", $k, $type, $valDisplay);
     }
 }
+
