@@ -10,6 +10,7 @@
 <style>
     .modal-active { display: flex !important; animation: fadeIn 0.2s ease-in-out; }
     @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .table th, .table td { padding: 0.625rem 1rem !important; }
 </style>
 @endpush
 
@@ -36,30 +37,28 @@
         </button>
     </div>
 
-    <!-- Data Table Card -->
-    <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
-        <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-            <table class="w-full text-left border-collapse table">
-                <thead>
-                    <tr class="!bg-transparent">
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center w-20">SL</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Session Year</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center w-56">Fee Status</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-48">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="tableList">
-                    <tr>
-                        <td colspan="4" class="py-12">
-                            <div class="flex flex-col items-center gap-3 animate-pulse justify-center">
-                                <div class="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded-md"></div>
-                                <span class="text-xs text-gray-450 dark:text-gray-500 font-bold uppercase tracking-widest">Loading Sessions...</span>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+    <!-- Standardized Borderless Table Directory Layout -->
+    <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
+        <table class="w-full text-left border-collapse table">
+            <thead>
+                <tr class="!bg-transparent">
+                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center w-20">SL</th>
+                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Session Year</th>
+                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center w-64">Fee Status</th>
+                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-48">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableList" class="divide-y divide-gray-150 dark:divide-white/[0.06]">
+                <tr>
+                    <td colspan="4" class="py-12">
+                        <div class="flex flex-col items-center gap-3 animate-pulse justify-center">
+                            <div class="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded-md"></div>
+                            <span class="text-xs text-gray-450 dark:text-gray-500 font-bold uppercase tracking-widest">Loading Sessions...</span>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -103,6 +102,89 @@
         </div>
     </div>
 </div>
+
+<!-- Fee Generation Status Details Modal -->
+<div id="feeStatusModal" class="hidden fixed inset-0 z-[9999] items-center justify-center bg-black/40 dark:bg-themeDark/40 backdrop-blur-md p-4">
+    <div class="bg-white dark:bg-themeNavy w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-white/[0.08] transition-all">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.05] flex justify-between items-center bg-gray-50/50 dark:bg-themeDark/30">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-themeBlue/10 flex items-center justify-center text-themeBlue">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-gray-900 dark:text-white" id="modalSessionTitle">Fee Status Details</h3>
+                    <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Annual monthly billing coverage and diagnostic breakdown</p>
+                </div>
+            </div>
+            <button onclick="window.closeModal('feeStatusModal')" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/[0.05] transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+            <!-- Status Alert Banner -->
+            <div id="modalStatusBanner" class="p-4 rounded-2xl flex items-start gap-3 border">
+            </div>
+
+            <!-- Key Metric Cards Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div class="bg-gray-50/70 dark:bg-themeDark/50 border border-gray-100 dark:border-white/[0.05] rounded-2xl p-3">
+                    <div class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase">Target</div>
+                    <div class="text-lg font-black text-gray-900 dark:text-white mt-0.5" id="modalExpectedInvoices">0</div>
+                    <div class="text-[10px] text-gray-400">12 Mo Invoices</div>
+                </div>
+                <div class="bg-gray-50/70 dark:bg-themeDark/50 border border-gray-100 dark:border-white/[0.05] rounded-2xl p-3">
+                    <div class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase">Existing</div>
+                    <div class="text-lg font-black text-themeGreen mt-0.5" id="modalExistingInvoices">0</div>
+                    <div class="text-[10px] text-gray-400" id="modalCoveragePercent">0% Covered</div>
+                </div>
+                <div class="bg-gray-50/70 dark:bg-themeDark/50 border border-gray-100 dark:border-white/[0.05] rounded-2xl p-3">
+                    <div class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase">Missing</div>
+                    <div class="text-lg font-black text-amber-600 mt-0.5" id="modalMissingInvoices">0</div>
+                    <div class="text-[10px] text-gray-400">To Generate</div>
+                </div>
+                <div class="bg-gray-50/70 dark:bg-themeDark/50 border border-gray-100 dark:border-white/[0.05] rounded-2xl p-3">
+                    <div class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-550 uppercase">Students</div>
+                    <div class="text-lg font-black text-themeBlue mt-0.5" id="modalEligibleStudents">0</div>
+                    <div class="text-[10px] text-gray-400">Eligible Enrolled</div>
+                </div>
+            </div>
+
+            <!-- Diagnostic Breakdown List -->
+            <div class="bg-gray-50/50 dark:bg-themeDark/30 border border-gray-100 dark:border-white/[0.05] rounded-2xl p-4 divide-y divide-gray-100 dark:divide-white/[0.05] text-xs font-semibold">
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-gray-500 dark:text-gray-400">Active Monthly Fee Setups:</span>
+                    <span class="font-bold text-gray-800 dark:text-gray-200" id="modalSetupsCount">0 setup(s)</span>
+                </div>
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-gray-500 dark:text-gray-400">Total Invoices in Database (Inc. Cancelled):</span>
+                    <span class="font-bold text-gray-800 dark:text-gray-200" id="modalTotalInvoices">0</span>
+                </div>
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-gray-500 dark:text-gray-400">Cancelled Invoices (Restorable):</span>
+                    <span class="font-bold text-gray-800 dark:text-gray-200" id="modalCancelledInvoices">0</span>
+                </div>
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-gray-500 dark:text-gray-400">Extra / Unscoped Invoices:</span>
+                    <span class="font-bold text-gray-800 dark:text-gray-200" id="modalExtraInvoices">0</span>
+                </div>
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-gray-500 dark:text-gray-400">Duplicate Invoices:</span>
+                    <span class="font-bold text-gray-800 dark:text-gray-200" id="modalDuplicateInvoices">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 bg-gray-50/80 dark:bg-themeDark/60 flex justify-between items-center border-t border-gray-100 dark:border-white/[0.05]">
+            <button onclick="window.closeModal('feeStatusModal')" class="h-10 px-5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all">Close</button>
+            <div id="modalActionContainer">
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -129,12 +211,15 @@
         };
     }
 
+    window.sessionDataCache = {};
+
     window.fetchList = async function() {
         let list = document.getElementById('tableList');
         try {
             let res = await axios.get("/ajax/sessions", getAuthHeaders());
             list.innerHTML = ''; 
             let data = res.data.sessionData || res.data.data || res.data;
+            window.sessionDataCache = {};
 
             if (!data || data.length === 0) {
                 list.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-gray-500 font-bold uppercase tracking-wider">No sessions found. Add a new session.</td></tr>`;
@@ -142,28 +227,33 @@
             }
 
             data.forEach((item, index) => {
+                window.sessionDataCache[item.id] = item;
                 let badgeHtml = '';
                 let status = item.generation_status || 'pending';
                 if (status === 'completed') {
-                    badgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-emerald-50 dark:bg-themeGreen/10 text-themeGreen border border-emerald-200/50 dark:border-themeGreen/20">
+                    badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-emerald-50 dark:bg-themeGreen/10 text-themeGreen border border-emerald-200/50 dark:border-themeGreen/20 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                         Completed
-                    </span>`;
+                        <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                    </button>`;
                 } else if (status === 'partial') {
                     let missing = (item.status_details && item.status_details.missing_invoices) ? `${item.status_details.missing_invoices} missing` : 'Partial';
-                    badgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20" title="${missing}">
+                    badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                         Partial (${missing})
-                    </span>`;
+                        <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                    </button>`;
                 } else if (status === 'pending_fee_setup') {
-                    badgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-blue-50 dark:bg-themeBlue/10 text-themeBlue border border-blue-200/50 dark:border-themeBlue/20">
+                    badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-blue-50 dark:bg-themeBlue/10 text-themeBlue border border-blue-200/50 dark:border-themeBlue/20 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         Pending Setup
-                    </span>`;
+                        <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                    </button>`;
                 } else {
-                    badgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                    badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
                         Pending
-                    </span>`;
+                        <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                    </button>`;
                 }
 
                 let row = `
@@ -191,6 +281,80 @@
                 list.innerHTML += row;
             });
         } catch (e) { list.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-red-500">Error loading data.</td></tr>`; }
+    };
+
+    window.showFeeStatusModal = function(id) {
+        let item = window.sessionDataCache[id];
+        if (!item) return;
+
+        let details = item.status_details || {};
+        let status = item.generation_status || 'pending';
+
+        document.getElementById('modalSessionTitle').innerText = `Session ${item.session_name} — Fee Status Details`;
+        document.getElementById('modalExpectedInvoices').innerText = (details.expected_invoices ?? 0).toLocaleString();
+        document.getElementById('modalExistingInvoices').innerText = (details.existing_invoices ?? 0).toLocaleString();
+        document.getElementById('modalMissingInvoices').innerText = (details.missing_invoices ?? 0).toLocaleString();
+        document.getElementById('modalEligibleStudents').innerText = (details.eligible_students_count ?? details.active_students_count ?? 0).toLocaleString();
+        document.getElementById('modalSetupsCount').innerText = `${details.monthly_setups_count ?? 0} active setup(s)`;
+        document.getElementById('modalTotalInvoices').innerText = (details.total_invoices ?? 0).toLocaleString();
+        document.getElementById('modalCancelledInvoices').innerText = (details.cancelled_invoices ?? 0).toLocaleString();
+        document.getElementById('modalExtraInvoices').innerText = (details.extra_invoices ?? 0).toLocaleString();
+        document.getElementById('modalDuplicateInvoices').innerText = (details.duplicate_invoices ?? 0).toLocaleString();
+
+        let pct = details.expected_invoices > 0 
+            ? Math.min(100, Math.round(((details.matched_invoices || details.existing_invoices || 0) / details.expected_invoices) * 100)) 
+            : 0;
+        document.getElementById('modalCoveragePercent').innerText = `${pct}% Generated`;
+
+        let banner = document.getElementById('modalStatusBanner');
+        let actionContainer = document.getElementById('modalActionContainer');
+
+        if (status === 'completed') {
+            banner.className = "p-4 rounded-2xl flex items-start gap-3 border bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-200";
+            banner.innerHTML = `
+                <svg class="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                    <div class="text-xs font-black uppercase tracking-wider">Full Annual Coverage Completed</div>
+                    <div class="text-xs font-medium mt-0.5 opacity-90">${details.reason || 'All 12 monthly invoices have been successfully generated for all eligible students.'}</div>
+                </div>`;
+            actionContainer.innerHTML = '';
+        } else if (status === 'partial') {
+            banner.className = "p-4 rounded-2xl flex items-start gap-3 border bg-amber-50/80 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-200";
+            banner.innerHTML = `
+                <svg class="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <div>
+                    <div class="text-xs font-black uppercase tracking-wider">Partial Annual Coverage (${details.missing_invoices ?? 0} Invoices Missing)</div>
+                    <div class="text-xs font-medium mt-0.5 opacity-90">${details.reason || 'Some monthly fee slots have not yet been generated.'}</div>
+                </div>`;
+            actionContainer.innerHTML = `
+                <button type="button" onclick="window.closeModal('feeStatusModal'); window.GenerateAnnualFees(${item.id}, '${item.session_name}');" class="h-10 px-5 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center gap-2 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    Generate Missing Invoices Now
+                </button>`;
+        } else if (status === 'pending_fee_setup') {
+            banner.className = "p-4 rounded-2xl flex items-start gap-3 border bg-blue-50/80 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/40 text-blue-800 dark:text-blue-200";
+            banner.innerHTML = `
+                <svg class="w-5 h-5 text-themeBlue mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <div>
+                    <div class="text-xs font-black uppercase tracking-wider">Monthly Fee Setup Required</div>
+                    <div class="text-xs font-medium mt-0.5 opacity-90">${details.reason || 'Please configure Monthly Fee setups for classes in this session to begin generation.'}</div>
+                </div>`;
+            actionContainer.innerHTML = `
+                <a href="/fees/setup" class="h-10 px-5 bg-themeBlue text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center gap-2">
+                    Go to Fee Setup
+                </a>`;
+        } else {
+            banner.className = "p-4 rounded-2xl flex items-start gap-3 border bg-gray-50/80 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300";
+            banner.innerHTML = `
+                <svg class="w-5 h-5 text-gray-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                    <div class="text-xs font-black uppercase tracking-wider">Generation Status: ${status}</div>
+                    <div class="text-xs font-medium mt-0.5 opacity-90">${details.reason || 'Pending student enrollment and fee configuration.'}</div>
+                </div>`;
+            actionContainer.innerHTML = '';
+        }
+
+        window.openModal('feeStatusModal');
     };
 
     window.SaveData = async function() {
