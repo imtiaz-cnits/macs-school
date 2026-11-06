@@ -42,7 +42,7 @@
         <table class="w-full text-left border-collapse table">
             <thead>
                 <tr class="!bg-transparent">
-                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center w-20">SL</th>
+                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center w-20">SL</th>
                     <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Session Year</th>
                     <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center w-64">Fee Status</th>
                     <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-48">Actions</th>
@@ -59,6 +59,10 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+
+    <!-- Pagination Footer (Floating directly below table) -->
+    <div id="pagination-container" class="mt-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
     </div>
 </div>
 
@@ -235,75 +239,171 @@
     }
 
     window.sessionDataCache = {};
+    window.allSessionsData = [];
+    window.currentPage = 1;
+    window.perPage = 15;
+
+    window.goToPage = function(page) {
+        window.currentPage = page;
+        window.renderSessionTable();
+    };
 
     window.fetchList = async function() {
         let list = document.getElementById('tableList');
         try {
             let res = await axios.get("/ajax/sessions", getAuthHeaders());
-            list.innerHTML = ''; 
             let data = res.data.sessionData || res.data.data || res.data;
-            window.sessionDataCache = {};
+            window.allSessionsData = Array.isArray(data) ? data : [];
+            window.renderSessionTable();
+        } catch (e) {
+            list.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-red-500 font-bold">Error loading data.</td></tr>`;
+            let container = document.getElementById('pagination-container');
+            if (container) container.innerHTML = '';
+        }
+    };
 
-            if (!data || data.length === 0) {
-                list.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-gray-500 font-bold uppercase tracking-wider">No sessions found. Add a new session.</td></tr>`;
-                return;
+    window.renderSessionTable = function() {
+        let list = document.getElementById('tableList');
+        if (!list) return;
+
+        let total = window.allSessionsData.length;
+        window.sessionDataCache = {};
+
+        if (total === 0) {
+            list.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-gray-500 font-bold uppercase tracking-wider">No sessions found. Add a new session.</td></tr>`;
+            window.renderPagination({ total: 0, current_page: 1, last_page: 1, from: 0, to: 0 });
+            return;
+        }
+
+        let lastPage = Math.max(1, Math.ceil(total / window.perPage));
+        if (window.currentPage > lastPage) window.currentPage = lastPage;
+        if (window.currentPage < 1) window.currentPage = 1;
+
+        let start = (window.currentPage - 1) * window.perPage;
+        let end = Math.min(start + window.perPage, total);
+        let pageData = window.allSessionsData.slice(start, end);
+
+        list.innerHTML = '';
+        pageData.forEach((item, index) => {
+            let sl = start + index + 1;
+            window.sessionDataCache[item.id] = item;
+            let badgeHtml = '';
+            let status = item.generation_status || 'pending';
+            if (status === 'completed') {
+                badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-emerald-50 dark:bg-themeGreen/10 text-themeGreen border border-emerald-200/50 dark:border-themeGreen/20 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    Completed
+                    <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                </button>`;
+            } else if (status === 'partial') {
+                let missing = (item.status_details && item.status_details.missing_invoices) ? `${item.status_details.missing_invoices} missing` : 'Partial';
+                badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    Partial (${missing})
+                    <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                </button>`;
+            } else if (status === 'pending_fee_setup') {
+                badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-blue-50 dark:bg-themeBlue/10 text-themeBlue border border-blue-200/50 dark:border-themeBlue/20 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Pending Setup
+                    <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                </button>`;
+            } else {
+                badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
+                    Pending
+                    <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                </button>`;
             }
 
-            data.forEach((item, index) => {
-                window.sessionDataCache[item.id] = item;
-                let badgeHtml = '';
-                let status = item.generation_status || 'pending';
-                if (status === 'completed') {
-                    badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-emerald-50 dark:bg-themeGreen/10 text-themeGreen border border-emerald-200/50 dark:border-themeGreen/20 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        Completed
-                        <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                    </button>`;
-                } else if (status === 'partial') {
-                    let missing = (item.status_details && item.status_details.missing_invoices) ? `${item.status_details.missing_invoices} missing` : 'Partial';
-                    badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        Partial (${missing})
-                        <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                    </button>`;
-                } else if (status === 'pending_fee_setup') {
-                    badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-blue-50 dark:bg-themeBlue/10 text-themeBlue border border-blue-200/50 dark:border-themeBlue/20 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        Pending Setup
-                        <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                    </button>`;
-                } else {
-                    badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
-                        Pending
-                        <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                    </button>`;
-                }
+            let row = `
+                <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
+                    <td class="py-4 px-4 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm">${sl}</td>
+                    <td class="py-4 px-4 text-sm font-bold text-gray-900 dark:text-gray-100">${item.session_name}</td>
+                    <td class="py-4 px-4 text-center">${badgeHtml}</td>
+                    <td class="py-4 px-4">
+                        <div class="flex items-center justify-end gap-2.5">
+                            <!-- Generate / Retry Annual Fees Button -->
+                            <button onclick="window.GenerateAnnualFees(${item.id}, '${item.session_name}')" class="action-btn text-emerald-600 hover:text-emerald-700 hover:border-emerald-600" title="Generate / Retry Annual Fees">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                            </button>
+                            <!-- Edit Button -->
+                            <button onclick="window.FillUpdateForm(${item.id})" class="action-btn text-themeBlue hover:text-themeBlue hover:border-themeBlue" title="Edit Session">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </button>
+                            <!-- Delete Button -->
+                            <button onclick="window.DeleteID(${item.id})" class="action-btn text-red-650 hover:text-red-800 hover:border-red-600" title="Delete Session">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            list.innerHTML += row;
+        });
 
-                let row = `
-                    <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
-                        <td class="py-4 px-4 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm">${index + 1}</td>
-                        <td class="py-4 px-4 text-sm font-bold text-gray-900 dark:text-gray-100">${item.session_name}</td>
-                        <td class="py-4 px-4 text-center">${badgeHtml}</td>
-                        <td class="py-4 px-4">
-                            <div class="flex items-center justify-end gap-2.5">
-                                <!-- Generate / Retry Annual Fees Button -->
-                                <button onclick="window.GenerateAnnualFees(${item.id}, '${item.session_name}')" class="action-btn text-emerald-600 hover:text-emerald-700 hover:border-emerald-600" title="Generate / Retry Annual Fees">
-                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
-                                </button>
-                                <!-- Edit Button -->
-                                <button onclick="window.FillUpdateForm(${item.id})" class="action-btn text-themeBlue hover:text-themeBlue hover:border-themeBlue" title="Edit Session">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                </button>
-                                <!-- Delete Button -->
-                                <button onclick="window.DeleteID(${item.id})" class="action-btn text-red-650 hover:text-red-800 hover:border-red-600" title="Delete Session">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>`;
-                list.innerHTML += row;
-            });
-        } catch (e) { list.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-red-500">Error loading data.</td></tr>`; }
+        window.renderPagination({
+            total: total,
+            per_page: window.perPage,
+            current_page: window.currentPage,
+            last_page: lastPage,
+            from: start + 1,
+            to: end
+        });
+    };
+
+    window.renderPagination = function(paginator) {
+        let container = document.getElementById('pagination-container');
+        if (!container) return;
+
+        if (!paginator || paginator.total === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        if (paginator.last_page <= 1) {
+            container.innerHTML = `
+                <div class="text-xs font-semibold text-gray-400 dark:text-gray-555 uppercase tracking-wider">
+                    Showing <span class="font-black text-gray-750 dark:text-gray-300">${paginator.from || 1}</span> to <span class="font-black text-gray-750 dark:text-gray-300">${paginator.to || paginator.total}</span> of <span class="font-black text-gray-750 dark:text-gray-300">${paginator.total}</span> entries
+                </div>
+            `;
+            return;
+        }
+
+        let html = `
+            <div class="text-xs font-semibold text-gray-400 dark:text-gray-555 uppercase tracking-wider mb-4 md:mb-0">
+                Showing <span class="font-black text-gray-750 dark:text-gray-300">${paginator.from}</span> to <span class="font-black text-gray-750 dark:text-gray-300">${paginator.to}</span> of <span class="font-black text-gray-750 dark:text-gray-300">${paginator.total}</span> entries
+            </div>
+            <div class="flex items-center space-x-1.5">
+        `;
+
+        // Prev Button
+        if (paginator.current_page > 1) {
+            html += `<button type="button" onclick="window.goToPage(${paginator.current_page - 1})" class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs uppercase font-black tracking-wider transition-all">Prev</button>`;
+        } else {
+            html += `<button disabled class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs opacity-50 cursor-not-allowed uppercase font-black tracking-wider">Prev</button>`;
+        }
+
+        // Page Numbers
+        for (let i = 1; i <= paginator.last_page; i++) {
+            if (i === 1 || i === paginator.last_page || Math.abs(paginator.current_page - i) <= 1) {
+                if (i === paginator.current_page) {
+                    html += `<button class="btn-xs btn-primary !h-9 !w-9 !p-0 !rounded-lg !text-xs font-black shadow-sm">${i}</button>`;
+                } else {
+                    html += `<button type="button" onclick="window.goToPage(${i})" class="btn-xs btn-secondary !h-9 !w-9 !p-0 !rounded-lg !text-xs font-black transition-all">${i}</button>`;
+                }
+            } else if (Math.abs(paginator.current_page - i) === 2) {
+                html += `<span class="px-2 text-gray-400 font-bold">...</span>`;
+            }
+        }
+
+        // Next Button
+        if (paginator.current_page < paginator.last_page) {
+            html += `<button type="button" onclick="window.goToPage(${paginator.current_page + 1})" class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs uppercase font-black tracking-wider transition-all">Next</button>`;
+        } else {
+            html += `<button disabled class="btn-xs btn-secondary !h-9 !py-0 !px-3 !rounded-lg !text-xs opacity-50 cursor-not-allowed uppercase font-black tracking-wider">Next</button>`;
+        }
+
+        html += `</div>`;
+        container.innerHTML = html;
     };
 
     window.showFeeStatusModal = function(id) {
