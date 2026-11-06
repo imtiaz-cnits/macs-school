@@ -20,8 +20,11 @@
     <div class="mb-8 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
         <div>
             <h1 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
-                <svg class="w-8 h-8 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17" />
+                <svg class="w-8 h-8 text-themeBlue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                    <path d="M16 16h5v5"/>
                 </svg>
                 Session Management
             </h1>
@@ -41,12 +44,13 @@
                     <tr class="!bg-transparent">
                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center w-20">SL</th>
                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Session Year</th>
+                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center w-56">Fee Status</th>
                         <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-48">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="tableList">
                     <tr>
-                        <td colspan="3" class="py-12">
+                        <td colspan="4" class="py-12">
                             <div class="flex flex-col items-center gap-3 animate-pulse justify-center">
                                 <div class="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded-md"></div>
                                 <span class="text-xs text-gray-450 dark:text-gray-500 font-bold uppercase tracking-widest">Loading Sessions...</span>
@@ -133,15 +137,40 @@
             let data = res.data.sessionData || res.data.data || res.data;
 
             if (!data || data.length === 0) {
-                list.innerHTML = `<tr><td colspan="3" class="py-12 text-center text-gray-500 font-bold uppercase tracking-wider">No sessions found. Add a new session.</td></tr>`;
+                list.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-gray-500 font-bold uppercase tracking-wider">No sessions found. Add a new session.</td></tr>`;
                 return;
             }
 
             data.forEach((item, index) => {
+                let badgeHtml = '';
+                let status = item.generation_status || 'pending';
+                if (status === 'completed') {
+                    badgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-emerald-50 dark:bg-themeGreen/10 text-themeGreen border border-emerald-200/50 dark:border-themeGreen/20">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        Completed
+                    </span>`;
+                } else if (status === 'partial') {
+                    let missing = (item.status_details && item.status_details.missing_invoices) ? `${item.status_details.missing_invoices} missing` : 'Partial';
+                    badgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20" title="${missing}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        Partial (${missing})
+                    </span>`;
+                } else if (status === 'pending_fee_setup') {
+                    badgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-blue-50 dark:bg-themeBlue/10 text-themeBlue border border-blue-200/50 dark:border-themeBlue/20">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Pending Setup
+                    </span>`;
+                } else {
+                    badgeHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                        Pending
+                    </span>`;
+                }
+
                 let row = `
                     <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
                         <td class="py-4 px-4 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm">${index + 1}</td>
                         <td class="py-4 px-4 text-sm font-bold text-gray-900 dark:text-gray-100">${item.session_name}</td>
+                        <td class="py-4 px-4 text-center">${badgeHtml}</td>
                         <td class="py-4 px-4">
                             <div class="flex items-center justify-end gap-2.5">
                                 <!-- Generate / Retry Annual Fees Button -->
@@ -161,7 +190,7 @@
                     </tr>`;
                 list.innerHTML += row;
             });
-        } catch (e) { list.innerHTML = `<tr><td colspan="3" class="py-12 text-center text-red-500">Error loading data.</td></tr>`; }
+        } catch (e) { list.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-red-500">Error loading data.</td></tr>`; }
     };
 
     window.SaveData = async function() {
@@ -214,10 +243,13 @@
                 let res = await axios.post(`/ajax/sessions/${id}/generate-annual-fees`, {}, getAuthHeaders());
                 if (res.data.status === 'success') {
                     showSuccess(res.data.message || 'Annual invoices generated successfully.');
+                    window.fetchList();
                 } else if (res.data.status === 'pending') {
                     showAlert(res.data.message || 'Prerequisites missing. Invoices will be automatically generated once students and monthly fee setups are configured.', 'Generation Pending');
+                    window.fetchList();
                 } else {
                     showAlert(res.data.message || 'Generation could not be completed.', 'Notice');
+                    window.fetchList();
                 }
             } catch (e) {
                 let msg = e.response && e.response.data && e.response.data.message ? e.response.data.message : 'Failed to trigger annual fee generation.';

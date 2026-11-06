@@ -15,6 +15,18 @@ class SessionYearController extends Controller
     {
         try {
             $sessions = SessionYear::latest()->get();
+            $service = app(FeeGenerationService::class);
+            $sessions->transform(function ($s) use ($service) {
+                try {
+                    $statusInfo = $service->getSessionGenerationStatus((int)$s->id);
+                    $s->generation_status = $statusInfo['status'] ?? 'pending';
+                    $s->status_details = $statusInfo;
+                } catch (\Throwable $e) {
+                    $s->generation_status = 'pending';
+                    $s->status_details = null;
+                }
+                return $s;
+            });
             return response()->json(['status' => 'success', 'sessionData' => $sessions], 200);
         } catch (Exception $e) {
             return response()->json(['status' => 'error', 'message' => 'Failed to fetch data'], 500);
