@@ -110,7 +110,7 @@
         <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.05] flex justify-between items-center bg-gray-50/50 dark:bg-themeDark/30">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl bg-themeBlue/10 flex items-center justify-center text-themeBlue">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <svg class="w-5 h-5 text-themeBlue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
                 </div>
                 <div>
                     <h3 class="text-sm font-black text-gray-900 dark:text-white" id="modalSessionTitle">Fee Status Details</h3>
@@ -191,15 +191,38 @@
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
     window.openModal = function(id) {
-        document.getElementById(id).classList.remove('hidden');
-        document.getElementById(id).classList.add('modal-active');
+        let el = document.getElementById(id);
+        if (!el) return;
+        el.classList.remove('hidden');
+        el.classList.add('modal-active');
+        document.body.classList.add('overflow-hidden');
         if(id === 'createModal') document.getElementById('SessionName').value = '';
     };
 
     window.closeModal = function(id) {
-        document.getElementById(id).classList.remove('modal-active');
-        document.getElementById(id).classList.add('hidden');
+        let el = document.getElementById(id);
+        if (!el) return;
+        el.classList.remove('modal-active');
+        el.classList.add('hidden');
+        if (!document.querySelector('.modal-active')) {
+            document.body.classList.remove('overflow-hidden');
+        }
     };
+
+    // Close modal on backdrop click
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList && e.target.classList.contains('modal-active')) {
+            window.closeModal(e.target.id);
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            let active = document.querySelector('.modal-active');
+            if (active) window.closeModal(active.id);
+        }
+    });
 
     function getAuthHeaders() {
         return { 
@@ -265,7 +288,7 @@
                             <div class="flex items-center justify-end gap-2.5">
                                 <!-- Generate / Retry Annual Fees Button -->
                                 <button onclick="window.GenerateAnnualFees(${item.id}, '${item.session_name}')" class="action-btn text-emerald-600 hover:text-emerald-700 hover:border-emerald-600" title="Generate / Retry Annual Fees">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
                                 </button>
                                 <!-- Edit Button -->
                                 <button onclick="window.FillUpdateForm(${item.id})" class="action-btn text-themeBlue hover:text-themeBlue hover:border-themeBlue" title="Edit Session">
@@ -328,7 +351,7 @@
                 </div>`;
             actionContainer.innerHTML = `
                 <button type="button" onclick="window.closeModal('feeStatusModal'); window.GenerateAnnualFees(${item.id}, '${item.session_name}');" class="h-10 px-5 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center gap-2 cursor-pointer">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
                     Generate Missing Invoices Now
                 </button>`;
         } else if (status === 'pending_fee_setup') {
