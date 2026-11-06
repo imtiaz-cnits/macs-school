@@ -17,22 +17,26 @@ class FeeReportController extends Controller
         $endDate = $request->end_date ?? date('Y-m-d');
         $classId = $request->class_id;
         $branchId = $request->branch_id;
+        $dueType = $request->input('due_type', 'period'); // 'period' (Monthly Due) | 'cumulative' (Cumulative Arrears)
 
-        // ১. পেমেন্ট বা কালেকশনের কোয়েরি
+        // ১. পেমেন্ট বা কালেকশনের কোয়েরি (Payment Collection Report: strictly by payment_date)
         $paymentsQuery = FeePayment::with(['student.schoolClass', 'student.branch', 'invoice.feeSetup.category', 'collector'])
             ->whereBetween('payment_date', [$startDate, $endDate]);
 
-        // ২. বকেয়া বা ডিউ এর কোয়েরি
+        // ২. বকেয়া বা ডিউ এর কোয়েরি (Due / Arrears Report)
         $duesQuery = FeeInvoice::with(['student.schoolClass', 'student.branch', 'feeSetup.category'])
             ->where('status', '!=', 'Cancelled')
             ->where('due_amount', '>', 0);
 
-        // যদি নির্দিষ্ট তারিখ রেঞ্জ ফিল্টার করা হয়
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $duesQuery->where(function ($q) use ($startDate, $endDate) {
-                $q->whereBetween('due_date', [$startDate, $endDate])
-                    ->orWhereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
-            });
+        // Phase 3 Fix: Eliminate created_at fallback and support distinct business logic for Period Due vs Cumulative Arrears
+        if ($dueType === 'cumulative') {
+            // Cumulative Arrears: All outstanding dues up to selected end_date
+            // Excludes future-dated invoices (due_date > $endDate)
+            $duesQuery->where('due_date', '<=', $endDate);
+        } else {
+            // Monthly / Period Due: Dues strictly falling within selected date range (due_date)
+            // Future months generated in advance are strictly excluded
+            $duesQuery->whereBetween('due_date', [$startDate, $endDate]);
         }
 
         // যদি নির্দিষ্ট ব্রাঞ্চ ফিল্টার থাকে
@@ -264,6 +268,35 @@ class FeeReportController extends Controller
             ];
         });
 
+        // পরিপূরক সামারি মেট্রিক (উভয় রিপোর্টের সারাংশ ভিউ-তে প্রদর্শনের জন্য)
+        // ১. কিউমুলেটিভ বকেয়া সারাংশ (Cumulative Arrears up to $endDate)
+        $cumulativeQuery = FeeInvoice::where('status', '!=', 'Cancelled')
+            ->where('due_amount', '>', 0)
+            ->where('due_date', '<=', $endDate);
+        if ($branchId) {
+            $cumulativeQuery->whereHas('student', fn($q) => $q->where('branch_id', $branchId));
+        }
+        if ($classId) {
+            $cumulativeQuery->whereHas('student', fn($q) => $q->where('class_id', $classId));
+        }
+        $cumulativeTotalDue = (float) $cumulativeQuery->sum('due_amount');
+        $cumulativeDueInvoicesCount = (int) $cumulativeQuery->count();
+        $cumulativeDefaulterCount = (int) $cumulativeQuery->distinct('student_id')->count('student_id');
+
+        // ২. পিরিয়ড বকেয়া সারাংশ (Period Due strictly between $startDate and $endDate)
+        $periodQuery = FeeInvoice::where('status', '!=', 'Cancelled')
+            ->where('due_amount', '>', 0)
+            ->whereBetween('due_date', [$startDate, $endDate]);
+        if ($branchId) {
+            $periodQuery->whereHas('student', fn($q) => $q->where('branch_id', $branchId));
+        }
+        if ($classId) {
+            $periodQuery->whereHas('student', fn($q) => $q->where('class_id', $classId));
+        }
+        $periodTotalDue = (float) $periodQuery->sum('due_amount');
+        $periodDueInvoicesCount = (int) $periodQuery->count();
+        $periodDefaulterCount = (int) $periodQuery->distinct('student_id')->count('student_id');
+
         // ড্রপডাউনের জন্য ব্রাঞ্চ ও ক্লাসের লিস্ট
         $branches = \App\Models\Branch::all();
         $classes = Classes::all();
@@ -328,7 +361,14 @@ class FeeReportController extends Controller
             'branches',
             'classes',
             'collectionExportData',
-            'defaultersExportData'
+            'defaultersExportData',
+            'dueType',
+            'cumulativeTotalDue',
+            'cumulativeDueInvoicesCount',
+            'cumulativeDefaulterCount',
+            'periodTotalDue',
+            'periodDueInvoicesCount',
+            'periodDefaulterCount'
         ));
     }
 

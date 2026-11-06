@@ -559,8 +559,9 @@
         <form action="{{ route('fees.reports.index') }}" method="GET" id="reportFilterForm">
             <input type="hidden" name="branch_id" :value="form.branch_id">
             <input type="hidden" name="class_id" :value="form.class_id">
+            <input type="hidden" name="due_type" :value="form.due_type">
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
 
                 <!-- Branch Dropdown (Rule 7) -->
                 <div class="relative" @click.away="if(activeDropdown === 'branch') activeDropdown = null">
@@ -621,6 +622,35 @@
                             </template>
                         </button>
                         @endforeach
+                    </div>
+                </div>
+
+                <!-- Due Filter Mode Dropdown (Rule 7) -->
+                <div class="relative" @click.away="if(activeDropdown === 'due_type') activeDropdown = null">
+                    <label class="block text-[10px] font-black tracking-widest text-gray-450 dark:text-gray-400 uppercase mb-1.5 ml-1">Due Filter Mode</label>
+                    <button type="button" @click="activeDropdown = activeDropdown === 'due_type' ? null : 'due_type'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span class="truncate" x-text="dueTypeText"></span>
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div x-show="activeDropdown === 'due_type'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                        <button type="button" @click="selectDueType('period', 'Selected Period Only (Monthly Due)')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.due_type === 'period' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>Selected Period (Monthly Due)</span>
+                            <template x-if="form.due_type === 'period'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </template>
+                        </button>
+                        <button type="button" @click="selectDueType('cumulative', 'Cumulative Arrears (Up to End Date)')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.due_type === 'cumulative' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>Cumulative Arrears (Up to Date)</span>
+                            <template x-if="form.due_type === 'cumulative'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </template>
+                        </button>
                     </div>
                 </div>
 
@@ -794,8 +824,17 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <div>
-                <p class="text-red-100 font-bold uppercase tracking-wider text-[10px] mb-1">Total Pending Dues</p>
+                <p class="text-red-100 font-bold uppercase tracking-wider text-[10px] mb-1">
+                    {{ ($dueType ?? 'period') === 'cumulative' ? 'Total Cumulative Arrears' : 'Total Period Pending Dues' }}
+                </p>
                 <h3 class="text-3xl font-black font-mono tracking-tight">৳ {{ number_format($totalDue, 2) }}</h3>
+                <p class="text-[10px] text-red-200 font-semibold mt-1">
+                    @if(($dueType ?? 'period') === 'cumulative')
+                    Period Due (Range): <span class="font-mono font-bold text-white">৳ {{ number_format($periodTotalDue ?? 0, 0) }}</span>
+                    @else
+                    Cumulative Arrears: <span class="font-mono font-bold text-white">৳ {{ number_format($cumulativeTotalDue ?? 0, 0) }}</span>
+                    @endif
+                </p>
             </div>
             <div class="flex items-center justify-between text-[11px] text-red-200 mt-4 pt-3 border-t border-white/10 font-medium">
                 <span>{{ $uniqueDefaulterStudentsCount }} Defaulter(s)</span>
@@ -908,7 +947,7 @@
                                 Hotline: 01896-220299, 01896-220300 &bull; Web: macs.edu.bd
                             </div>
                             <div style="margin-top: 4px; margin-bottom: 4px;">
-                                <span style="display: inline-block; background-color: #008ED6; color: #ffffff; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; padding: 5px 18px; border-radius: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact;" x-text="activeTab === 'collection' ? 'FEE COLLECTION HISTORY REPORT' : 'STUDENT DEFAULTERS & PENDING DUES REPORT'">
+                                <span style="display: inline-block; background-color: #008ED6; color: #ffffff; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; padding: 5px 18px; border-radius: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact;" x-text="activeTab === 'collection' ? 'FEE COLLECTION HISTORY REPORT' : ('{{ ($dueType ?? 'period') === 'cumulative' ? 'STUDENT CUMULATIVE ARREARS REPORT' : 'STUDENT MONTHLY / PERIOD DUES REPORT' }}')">
                                     FEE COLLECTION HISTORY REPORT
                                 </span>
                             </div>
@@ -947,7 +986,7 @@
                             <td style="border: none !important; padding: 0.5px 2px !important; font-size: 10px; color: #334155; font-weight: 700; white-space: nowrap;">
                                 Branch: <strong style="color: #008ED6;">{{ $selectedBranchName }}</strong>
                                 &nbsp;&bull;&nbsp; Class: <strong style="color: #008ED6;">{{ $selectedClassName }}</strong>
-                                &nbsp;&bull;&nbsp; Period: <strong style="color: #0F1E2C;">{{ date('d M Y', strtotime($startDate)) }} - {{ date('d M Y', strtotime($endDate)) }}</strong>
+                                &nbsp;&bull;&nbsp; Period: <strong style="color: #0F1E2C;">{{ ($dueType ?? 'period') === 'cumulative' ? 'All Unpaid Arrears up to ' . date('d M Y', strtotime($endDate)) : date('d M Y', strtotime($startDate)) . ' - ' . date('d M Y', strtotime($endDate)) }}</strong>
                             </td>
                             <td style="border: none !important; padding: 0.5px 2px !important; font-size: 10px; color: #334155; font-weight: 700; text-align: right; white-space: nowrap;">
                                 Defaulters: <strong style="color: #DC2626;">{{ $uniqueDefaulterStudentsCount }}</strong>
@@ -1077,6 +1116,28 @@
 
                 <!-- Defaulters List Tab (Student-Wise with Total Due Months & Month Names) -->
                 <div id="tab-dues" class="tab-content" :class="{ 'active': activeTab === 'dues' }">
+                    <!-- Quick Mode Switcher Pills (Rule 2) -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50/70 dark:bg-themeDark/60 rounded-2xl border border-gray-150 dark:border-white/[0.06] no-print">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-gray-450 dark:text-gray-400 ml-1">Arrears Filter Mode:</span>
+                            <a href="{{ request()->fullUrlWithQuery(['due_type' => 'period']) }}" class="px-3 py-1.5 text-xs rounded-xl transition-all uppercase tracking-wider flex items-center gap-1.5 {{ ($dueType ?? 'period') === 'period' ? 'bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-300 font-bold hover:text-themeBlue' }}">
+                                <span>Period Due</span>
+                                <span class="font-mono text-[11px] opacity-90">(৳ {{ number_format($periodTotalDue ?? 0, 0) }})</span>
+                            </a>
+                            <a href="{{ request()->fullUrlWithQuery(['due_type' => 'cumulative']) }}" class="px-3 py-1.5 text-xs rounded-xl transition-all uppercase tracking-wider flex items-center gap-1.5 {{ ($dueType ?? 'period') === 'cumulative' ? 'bg-gradient-to-r from-red-600 to-red-800 text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-300 font-bold hover:text-red-600' }}">
+                                <span>Cumulative Arrears</span>
+                                <span class="font-mono text-[11px] opacity-90">(৳ {{ number_format($cumulativeTotalDue ?? 0, 0) }})</span>
+                            </a>
+                        </div>
+                        <div class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mr-2">
+                            @if(($dueType ?? 'period') === 'cumulative')
+                            Showing all unpaid balances due on or before <span class="font-bold text-gray-800 dark:text-gray-200">{{ date('d M Y', strtotime($endDate)) }}</span>
+                            @else
+                            Showing only invoices due between <span class="font-bold text-gray-800 dark:text-gray-200">{{ date('d M Y', strtotime($startDate)) }}</span> and <span class="font-bold text-gray-800 dark:text-gray-200">{{ date('d M Y', strtotime($endDate)) }}</span>
+                            @endif
+                        </div>
+                    </div>
+
                     <div class="table-container bg-transparent !border-none !shadow-none print:!mt-0 !mt-2 !mb-0 overflow-x-auto">
                         <table class="w-full text-left border-collapse table">
                             <thead>
@@ -1199,12 +1260,12 @@
             activeDropdown: null,
             branchText: '{{ $selectedBranchName }}',
             classText: '{{ $selectedClassName }}',
+            dueTypeText: '{{ ($dueType ?? 'period') === 'cumulative' ? 'Cumulative Arrears (Up to End Date)' : 'Selected Period (Monthly Due)' }}',
 
             form: {
-                branch_id: '{{ request('
-                branch_id ') }}',
-                class_id: '{{ request('
-                class_id ') }}'
+                branch_id: '{{ request('branch_id') }}',
+                class_id: '{{ request('class_id') }}',
+                due_type: '{{ request('due_type', $dueType ?? 'period') }}'
             },
 
             selectBranch(id, name) {
@@ -1215,6 +1276,11 @@
             selectClass(id, name) {
                 this.form.class_id = id;
                 this.classText = name;
+                this.activeDropdown = null;
+            },
+            selectDueType(type, text) {
+                this.form.due_type = type;
+                this.dueTypeText = text;
                 this.activeDropdown = null;
             }
         };

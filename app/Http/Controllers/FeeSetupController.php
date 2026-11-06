@@ -102,6 +102,13 @@ class FeeSetupController extends Controller
             'user_id' => Auth::id(),
         ]);
 
+        // Evaluate readiness for target session after Monthly Fee setup creation
+        try {
+            app(\App\Services\FeeGenerationService::class)->evaluateAndGenerateForSession((int)$request->session_year_id, Auth::id());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Fee generation evaluation after fee setup creation failed: " . $e->getMessage());
+        }
+
         return back()->with('success', 'Fee Setup Completed Successfully!');
     }
 
@@ -167,6 +174,13 @@ class FeeSetupController extends Controller
             'amount' => $request->amount,
             'fee_month' => $request->fee_month,
         ]);
+
+        // Evaluate readiness for target session after Monthly Fee setup update
+        try {
+            app(\App\Services\FeeGenerationService::class)->evaluateAndGenerateForSession((int)$request->session_year_id, Auth::id());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Fee generation evaluation after fee setup update failed: " . $e->getMessage());
+        }
 
         return back()->with('success', 'Fee Setup Updated Successfully!');
     }

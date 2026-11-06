@@ -17,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Services\FeeGenerationService;
 use Exception;
 
 class FeeInvoiceController extends Controller
@@ -47,8 +48,7 @@ class FeeInvoiceController extends Controller
     }
 
     // বাল্ক ইনভয়েস জেনারেট করার লজিক (একসাথে পুরো ক্লাসের বিল)
-   // বাল্ক ইনভয়েস জেনারেট করার লজিক (একসাথে পুরো ক্লাসের বিল)
-    public function generate(Request $request)
+    public function generate(Request $request, FeeGenerationService $generationService)
     {
         $request->validate([
             'branch_id' => 'required|exists:branches,id',
@@ -59,129 +59,29 @@ class FeeInvoiceController extends Controller
             'due_date' => 'required|date'
         ]);
 
-        // ১. চেক করা হচ্ছে এই ক্যাটাগরির ফি সেটআপ করা আছে কিনা (নির্দিষ্ট মাস OR 'Monthly' সেটআপ)
-        $feeSetup = FeeSetup::where([
-            'branch_id' => $request->branch_id,
-            'class_id' => $request->class_id,
-            'session_year_id' => $request->session_year_id,
-            'fee_category_id' => $request->fee_category_id,
-        ])
-        ->where(function ($query) use ($request) {
-            $query->where('fee_month', $request->fee_month)
-                  ->orWhere('fee_month', 'Monthly');
-        })
-        ->first();
-
-        if (!$feeSetup) {
-            return back()->with('error', 'Error: No Fee Setup found! Please set up the fee amount for this class and month first.');
-        }
-
-        // ==========================================
-        // সিরিয়াল ইনভয়েস নম্বর তৈরি ও টার্গেট পিরিয়ড হিসাব (INV-YYYYMM-XXXX)
-        // ==========================================
-        $monthsMap = [
-            'january' => '01', 'february' => '02', 'march' => '03',
-            'april' => '04', 'may' => '05', 'june' => '06',
-            'july' => '07', 'august' => '08', 'september' => '09',
-            'october' => '10', 'november' => '11', 'december' => '12'
+        $params = [
+            'branch_id'       => (int) $request->branch_id,
+            'class_id'        => (int) $request->class_id,
+            'session_year_id' => (int) $request->session_year_id,
+            'fee_category_id' => (int) $request->fee_category_id,
+            'fee_month'       => $request->fee_month,
+            'due_date'        => $request->due_date,
+            'user_id'         => Auth::id(),
         ];
-        $selectedMonthKey = strtolower(trim($request->fee_month ?? ''));
-        $paddedMonth = $monthsMap[$selectedMonthKey] ?? date('m', strtotime($request->due_date));
-        $targetYear = date('Y', strtotime($request->due_date));
-        $prefix = "INV-{$targetYear}{$paddedMonth}-";
 
-        // ২. এই ক্লাসের সকল এলিজিবল স্টুডেন্টদের খুঁজে বের করা (সেন্ট্রাল রুল)
-        $students = Student::eligibleForBilling((int) $targetYear, $paddedMonth)
-            ->where([
-                'branch_id' => $request->branch_id,
-                'class_id' => $request->class_id,
-                'session_year_id' => $request->session_year_id,
-            ])->get();
+        $result = $generationService->generate($params);
 
-        if ($students->isEmpty()) {
-            return back()->with('error', 'Error: No eligible students found in this class for the selected billing period!');
+        if (!$result['success']) {
+            if (!empty($result['lock_failed'])) {
+                return back()->with('error', 'Notice: Invoice generation is currently locked by another active process. Please wait a moment and try again.');
+            }
+            return back()->with('error', 'Generation Error: ' . ($result['error'] ?? 'Failed to generate invoices.'));
         }
 
-        $generatedCount = 0;
-
-        // ডাটাবেস থেকে এই প্রিফিক্সের সর্বশেষ ইনভয়েসটি বের করা
-        $lastInvoice = FeeInvoice::where('invoice_no', 'like', $prefix . '%')
-                                 ->orderBy('id', 'desc')
-                                 ->first();
-
-        $lastSerial = 0;
-        if ($lastInvoice) {
-            // যদি আগে ইনভয়েস থাকে, তবে শেষের সিরিয়াল নম্বরটি (যেমন: 0045) আলাদা করে ইন্টিজারে রূপান্তর করা
-            $lastSerial = (int) str_replace($prefix, '', $lastInvoice->invoice_no);
-        }
-        // ==========================================
-
-        $isMonthlyRecurring = strtolower(trim($feeSetup->fee_month ?? '')) === 'monthly';
-
-        // ডাটাবেস ট্রানজেকশন
-        DB::beginTransaction();
-        try {
-            foreach ($students as $student) {
-                // ৩. চেক করা হচ্ছে এই স্টুডেন্টের নামে অলরেডি এই বিলটি করা আছে কিনা
-                if ($isMonthlyRecurring) {
-                    $exists = FeeInvoice::where('student_id', $student->id)
-                                        ->where('fee_setup_id', $feeSetup->id)
-                                        ->where('invoice_no', 'like', $prefix . '%')
-                                        ->exists();
-                } else {
-                    // নির্দিষ্ট মাসের ফি সেটআপের জন্য শিক্ষার্থীর শুধুমাত্র ১টি ইনভয়েস থাকবে
-                    $exists = FeeInvoice::where('student_id', $student->id)
-                                        ->where('fee_setup_id', $feeSetup->id)
-                                        ->exists();
-                }
-
-                if (!$exists) {
-                    
-                    // ৪. প্রতিবার নতুন ইনভয়েসের জন্য সিরিয়াল ১ করে বাড়ানো হচ্ছে
-                    $lastSerial++;
-                    // নতুন ইনভয়েস নম্বর তৈরি (যেমন: INV-202603-0001)
-                    $invoiceNo = $prefix . str_pad($lastSerial, 4, '0', STR_PAD_LEFT);
-
-                    // Check if the student has a customized fee for this category
-                    $customFee = \App\Models\StudentCustomFee::where('student_id', $student->id)
-                                                             ->where('fee_category_id', $feeSetup->fee_category_id)
-                                                             ->first();
-                    
-                    $amount = $feeSetup->amount;
-                    $discount = 0;
-                    
-                    if ($customFee) {
-                        $amount = $customFee->amount;
-                        $discount = max(0, $feeSetup->amount - $customFee->amount);
-                    }
-
-                    FeeInvoice::create([
-                        'invoice_no' => $invoiceNo,
-                        'student_id' => $student->id,
-                        'fee_setup_id' => $feeSetup->id,
-                        'amount' => $feeSetup->amount,
-                        'discount' => $discount,
-                        'net_amount' => $amount,
-                        'due_amount' => $amount,
-                        'status' => 'Unpaid',
-                        'due_date' => $request->due_date,
-                        'user_id' => Auth::id()
-                    ]);
-                    
-                    $generatedCount++;
-                }
-            }
-            DB::commit();
-            
-            if ($generatedCount > 0) {
-                return back()->with('success', "Success! Generated {$generatedCount} new invoices for this class.");
-            } else {
-                return back()->with('error', 'Notice: Invoices were already generated for all students in this class.');
-            }
-            
-        } catch (Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'System Error: ' . $e->getMessage());
+        if ($result['total_generated'] > 0) {
+            return back()->with('success', "Success! Generated {$result['total_generated']} new invoices for this selection.");
+        } else {
+            return back()->with('error', 'Notice: Invoices were already generated for all eligible students in this selection.');
         }
     }
 

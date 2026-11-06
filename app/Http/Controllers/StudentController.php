@@ -479,6 +479,13 @@ class StudentController extends Controller
                 'user_id'               => Auth::id() ?? 1,
             ]);
 
+            // Evaluate readiness for target session after new admission
+            try {
+                app(\App\Services\FeeGenerationService::class)->evaluateAndGenerateForSession((int)$request->session_year_id, Auth::id());
+            } catch (\Throwable $e) {
+                Log::warning("Fee generation evaluation after student admission failed: " . $e->getMessage());
+            }
+
             return response()->json(['status' => 'success', 'identity' => $studentIdentity], 201);
             
         } catch (Exception $e) {
@@ -1199,6 +1206,14 @@ class StudentController extends Controller
             }
 
             \Illuminate\Support\Facades\DB::commit();
+
+            // Evaluate readiness for target session after successful promotion
+            try {
+                app(\App\Services\FeeGenerationService::class)->evaluateAndGenerateForSession((int)$request->to_session, auth()->id());
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("Fee generation evaluation after student promotion failed: " . $e->getMessage());
+            }
+
             return response()->json(['status' => 'success', 'message' => 'Students successfully promoted!'], 200);
 
         } catch (\Exception $e) {

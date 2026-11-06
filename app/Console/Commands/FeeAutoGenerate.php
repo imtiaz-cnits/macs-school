@@ -3,174 +3,92 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Services\FeeGenerationService;
 
 class FeeAutoGenerate extends Command
 {
+    /**
+     * Canonical Global Advisory Lock Name (Forwarded to FeeGenerationService).
+     */
+    public const ADVISORY_LOCK_NAME = FeeGenerationService::ADVISORY_LOCK_NAME;
+    public const ADVISORY_LOCK_TIMEOUT = FeeGenerationService::ADVISORY_LOCK_TIMEOUT;
+
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'fees:auto-generate {--month= : Specific month to generate (e.g. January)} {--year= : Specific year to generate} {--all-past : Generate missing invoices for all past months of the current year}';
+    protected $signature = 'fees:auto-generate 
+                            {--month= : Specific month to generate (e.g. January)} 
+                            {--year= : Specific 4-digit calendar year to generate} 
+                            {--session= : Specific academic session year ID or session name} 
+                            {--class= : Optional class ID to limit generation} 
+                            {--all-year : Generate monthly invoices for all 12 months (January-December) of the session} 
+                            {--all-past : Generate missing invoices for all past months of the current year} 
+                            {--dry-run : Preview generation without writing invoices to database}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Automatically generate monthly fee invoices for active students based on active fee setups.';
+    protected $description = 'Generate monthly fee invoices for active students using the unified FeeGenerationService.';
 
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(FeeGenerationService $generationService): int
     {
-        $this->info("==================================================");
-        $this->info("   Monthly Automated Fee Invoice Generator        ");
-        $this->info("==================================================");
+        $this->info("====================================================================");
+        $this->info("   MACS School — Monthly / Annual Fee Invoice Generator             ");
+        $this->info("====================================================================");
 
-        $targetYear = $this->option('year') ?: now()->format('Y');
-        
-        $monthsToProcess = [];
-        if ($this->option('all-past')) {
-            $allMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-            $currentMonthName = now()->format('F');
-            foreach ($allMonths as $m) {
-                $monthsToProcess[] = $m;
-                if ($m === $currentMonthName) {
+        $isDryRun = (bool) $this->option('dry-run');
+        if ($isDryRun) {
+            $this->warn("NOTICE: DRY-RUN MODE ACTIVE. Zero database rows will be created.");
+        }
+
+        $params = [
+            'session_year_id' => $this->option('session'),
+            'year'            => $this->option('year'),
+            'class_id'        => $this->option('class'),
+            'fee_month'       => $this->option('all-year') ? 'all' : ($this->option('all-past') ? 'all-past' : $this->option('month')),
+            'all_year'        => (bool) $this->option('all-year'),
+            'all_past'        => (bool) $this->option('all-past'),
+            'dry_run'         => $isDryRun,
+            'user_id'         => null, // Resolved via FeeGenerationService::resolveActorUserId() policy
+        ];
+
+        // Real-time output callback to pipe service output to CLI
+        $callback = function (string $type, string $message, array $context = []) {
+            switch ($type) {
+                case 'error':
+                    $this->error($message);
                     break;
-                }
+                case 'warn':
+                    $this->warn($message);
+                    break;
+                case 'line':
+                    $this->line($message);
+                    break;
+                case 'info':
+                default:
+                    $this->info($message);
+                    break;
             }
-        } elseif ($this->option('month')) {
-            $monthsToProcess[] = ucfirst(strtolower($this->option('month')));
-        } else {
-            $monthsToProcess[] = now()->format('F');
+        };
+
+        $result = $generationService->generate($params, $callback);
+
+        if (!$result['success']) {
+            $this->error("\nGENERATION FAILED: " . ($result['error'] ?? 'Unknown error occurred.'));
+            return 1;
         }
 
-        $totalGenerated = 0;
-
-        foreach ($monthsToProcess as $currentMonth) {
-            $this->info("--------------------------------------------------");
-            $this->info("Processing Month: {$currentMonth} | Year: {$targetYear}");
-            $this->info("--------------------------------------------------");
-
-            // Find all active fee setups for the target month (strictly matching specific month OR marked as 'Monthly')
-            $feeSetups = \App\Models\FeeSetup::where(function ($query) use ($currentMonth) {
-                $query->whereRaw('LOWER(TRIM(fee_month)) = ?', [strtolower($currentMonth)])
-                      ->orWhere('fee_month', 'Monthly');
-            })
-            ->where('status', 'Active')
-            ->get();
-
-            if ($feeSetups->isEmpty()) {
-                $this->warn("No active Fee Setups found for {$currentMonth}.");
-                continue;
-            }
-
-            $this->info("Found " . $feeSetups->count() . " active Fee Setups. Starting generation...");
-
-            foreach ($feeSetups as $feeSetup) {
-                $this->info("Processing: Branch ID {$feeSetup->branch_id} | Class ID {$feeSetup->class_id} | Session ID {$feeSetup->session_year_id} | Category ID {$feeSetup->fee_category_id}");
-
-                // Determine serials, padded month and invoice prefix
-                $monthIndex = array_search($currentMonth, ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']);
-                $paddedMonth = str_pad($monthIndex + 1, 2, '0', STR_PAD_LEFT);
-                $prefix = "INV-{$targetYear}{$paddedMonth}-";
-
-                // Find all eligible students for this branch, class, session, and target billing month
-                $students = \App\Models\Student::eligibleForBilling((int) $targetYear, $paddedMonth)
-                    ->where([
-                        'branch_id' => $feeSetup->branch_id,
-                        'class_id' => $feeSetup->class_id,
-                        'session_year_id' => $feeSetup->session_year_id,
-                    ])->get();
-
-                if ($students->isEmpty()) {
-                    $this->line(" - No eligible students found in this group.");
-                    continue;
-                }
-
-                // Find the last invoice for the prefix to compute serial
-                $lastInvoice = \App\Models\FeeInvoice::where('invoice_no', 'like', $prefix . '%')
-                                                     ->orderBy('id', 'desc')
-                                                     ->first();
-
-                $lastSerial = 0;
-                if ($lastInvoice) {
-                    $lastSerial = (int) str_replace($prefix, '', $lastInvoice->invoice_no);
-                }
-
-                // Set due date to 10th of that month and year
-                $dueDate = \Carbon\Carbon::parse("10 {$currentMonth} {$targetYear}")->toDateString();
-
-                $isMonthlyRecurring = strtolower(trim($feeSetup->fee_month ?? '')) === 'monthly';
-
-                \DB::beginTransaction();
-                try {
-                    $generatedCount = 0;
-                    foreach ($students as $student) {
-                        // Check if invoice already exists
-                        if ($isMonthlyRecurring) {
-                            // Monthly recurring fee: 1 invoice per month prefix
-                            $exists = \App\Models\FeeInvoice::where('student_id', $student->id)
-                                                            ->where('fee_setup_id', $feeSetup->id)
-                                                            ->where('invoice_no', 'like', $prefix . '%')
-                                                            ->exists();
-                        } else {
-                            // Specific month fee (e.g. March / July / October Exam Fee): strictly 1 invoice for this setup
-                            $exists = \App\Models\FeeInvoice::where('student_id', $student->id)
-                                                            ->where('fee_setup_id', $feeSetup->id)
-                                                            ->exists();
-                        }
-
-                        if (!$exists) {
-                            $lastSerial++;
-                            $invoiceNo = $prefix . str_pad($lastSerial, 4, '0', STR_PAD_LEFT);
-
-                            // Check customized fee
-                            $customFee = \App\Models\StudentCustomFee::where('student_id', $student->id)
-                                                                     ->where('fee_category_id', $feeSetup->fee_category_id)
-                                                                     ->first();
-
-                            $amount = $feeSetup->amount;
-                            $discount = 0;
-
-                            if ($customFee) {
-                                $amount = $customFee->amount;
-                                  $discount = max(0, $feeSetup->amount - $customFee->amount);
-                            }
-
-                            \App\Models\FeeInvoice::create([
-                                'invoice_no' => $invoiceNo,
-                                'student_id' => $student->id,
-                                'fee_setup_id' => $feeSetup->id,
-                                'amount' => $feeSetup->amount,
-                                'discount' => $discount,
-                                'net_amount' => $amount,
-                                'due_amount' => $amount,
-                                'status' => 'Unpaid',
-                                'due_date' => $dueDate,
-                                'user_id' => 1 // Default to admin / system user ID
-                            ]);
-
-                            $generatedCount++;
-                        }
-                    }
-                    \DB::commit();
-                    if ($generatedCount > 0) {
-                        $this->info(" - Generated {$generatedCount} invoices successfully.");
-                    }
-                    $totalGenerated += $generatedCount;
-                } catch (\Exception $e) {
-                    \DB::rollBack();
-                    $this->error(" - Error occurred: " . $e->getMessage());
-                }
-            }
-        }
-
-        $this->info("==================================================");
-        $this->info("Generation complete. Total invoices created: {$totalGenerated}");
-        $this->info("==================================================");
+        $this->info("\n====================================================================");
+        $finalLabel = $isDryRun ? "Simulated Invoices Created" : "Total Invoices Created";
+        $this->info("{$finalLabel}: {$result['total_generated']} | Invoices Skipped (Existing): {$result['total_skipped']}");
+        $this->info("====================================================================");
 
         return 0;
     }

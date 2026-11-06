@@ -102,6 +102,7 @@ Route::middleware(['auth', 'roles:editor, admin, super-admin'])->group(function 
         return view('pages.sessions.index');
     })->name('sessions.index');
 
+    Route::post('ajax/sessions/{id}/generate-annual-fees', [SessionYearController::class, 'generateAnnualFees']);
     Route::resource('ajax/sessions', SessionYearController::class);
     
 });

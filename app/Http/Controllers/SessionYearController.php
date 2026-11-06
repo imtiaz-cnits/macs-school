@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\SessionYear;
+use App\Services\FeeGenerationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Exception;
 
 class SessionYearController extends Controller
@@ -23,13 +25,74 @@ class SessionYearController extends Controller
     {
         $request->validate(['session_name' => 'required|string|max:255']);
         try {
-            SessionYear::create([
+            $actorId = $request->user()?->id ?? \Illuminate\Support\Facades\Auth::id();
+            $session = SessionYear::create([
                 'session_name' => $request->session_name,
-                'user_id' => $request->user()->id,
+                'user_id' => $actorId,
             ]);
-            return response()->json(['status' => 'success', 'message' => 'Session Created'], 201);
+
+            // Readiness-aware generation evaluation
+            $evalResult = null;
+            try {
+                $evalResult = app(FeeGenerationService::class)->evaluateAndGenerateForSession((int)$session->id, $actorId);
+            } catch (\Throwable $e) {
+                Log::warning("Fee generation initial evaluation failed for session {$session->id}: " . $e->getMessage());
+                $evalResult = ['evaluated' => false, 'status' => 'failed', 'reason' => $e->getMessage()];
+            }
+
+            return response()->json([
+                'status'             => 'success',
+                'message'            => 'Session Created',
+                'id'                 => $session->id,
+                'generation_status'  => $evalResult['status'] ?? 'pending',
+                'generation_details' => $evalResult,
+            ], 201);
         } catch (Exception $e) {
             return response()->json(['status' => 'error', 'message' => 'Creation Failed'], 500);
+        }
+    }
+
+    public function generateAnnualFees(Request $request, $id): JsonResponse
+    {
+        try {
+            $session = SessionYear::findOrFail($id);
+            $userId = $request->user()?->id ?? \Illuminate\Support\Facades\Auth::id();
+            $result = app(FeeGenerationService::class)->evaluateAndGenerateForSession((int)$session->id, $userId);
+
+            if (!$result['evaluated']) {
+                return response()->json([
+                    'status'  => 'pending',
+                    'message' => $result['reason'] ?? 'Prerequisites not met for annual invoice generation.',
+                    'details' => $result,
+                ], 200);
+            }
+
+            if (isset($result['result']) && !($result['result']['success'] ?? false)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => $result['result']['error'] ?? 'Invoice generation failed.',
+                    'details' => $result,
+                ], 500);
+            }
+
+            $generated = $result['generated'] ?? 0;
+            $skipped   = $result['skipped'] ?? 0;
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => "Annual Fee Generation completed for session '{$session->session_name}'. Generated: {$generated}, Skipped: {$skipped}.",
+                'details' => $result,
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status'  => 'not_found',
+                'message' => "Academic session ID {$id} was not found.",
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Failed to process annual fee generation: ' . $e->getMessage(),
+            ], 500);
         }
     }
 

@@ -144,6 +144,10 @@
                         <td class="py-4 px-4 text-sm font-bold text-gray-900 dark:text-gray-100">${item.session_name}</td>
                         <td class="py-4 px-4">
                             <div class="flex items-center justify-end gap-2.5">
+                                <!-- Generate / Retry Annual Fees Button -->
+                                <button onclick="window.GenerateAnnualFees(${item.id}, '${item.session_name}')" class="action-btn text-emerald-600 hover:text-emerald-700 hover:border-emerald-600" title="Generate / Retry Annual Fees">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                </button>
                                 <!-- Edit Button -->
                                 <button onclick="window.FillUpdateForm(${item.id})" class="action-btn text-themeBlue hover:text-themeBlue hover:border-themeBlue" title="Edit Session">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -200,6 +204,24 @@
                 }
             } catch (e) { 
                 showAlert("Delete Failed!", "Error"); 
+            }
+        }
+    };
+
+    window.GenerateAnnualFees = async function(id, name) {
+        if (await showConfirm('Generate Annual Fees', `Are you sure you want to trigger 12-month annual fee generation for session '${name}'? Existing invoices will be preserved.`)) {
+            try {
+                let res = await axios.post(`/ajax/sessions/${id}/generate-annual-fees`, {}, getAuthHeaders());
+                if (res.data.status === 'success') {
+                    showSuccess(res.data.message || 'Annual invoices generated successfully.');
+                } else if (res.data.status === 'pending') {
+                    showAlert(res.data.message || 'Prerequisites missing. Invoices will be automatically generated once students and monthly fee setups are configured.', 'Generation Pending');
+                } else {
+                    showAlert(res.data.message || 'Generation could not be completed.', 'Notice');
+                }
+            } catch (e) {
+                let msg = e.response && e.response.data && e.response.data.message ? e.response.data.message : 'Failed to trigger annual fee generation.';
+                showAlert(msg, 'Error');
             }
         }
     };

@@ -207,6 +207,7 @@
                         value: '', 
                         label: '-- One Time / Yearly Fee --',
                         items: [
+                            { value: 'all', label: 'All Months (Full Session)' },
                             { value: '', label: '-- One Time / Yearly Fee --' },
                             @foreach(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
                                 { value: '{{ $month }}', label: '{{ $month }}' },
