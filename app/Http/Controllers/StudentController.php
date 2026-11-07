@@ -358,6 +358,8 @@ class StudentController extends Controller
             'student_identity'      => 'nullable|string|max:255|unique:students,student_identity',
         ]);
 
+        \Illuminate\Support\Facades\DB::beginTransaction();
+
         try {
             if ($request->filled('student_identity') && 
                 !str_contains($request->student_identity, 'YYYY') && 
@@ -479,16 +481,33 @@ class StudentController extends Controller
                 'user_id'               => Auth::id() ?? 1,
             ]);
 
-            // Evaluate readiness for target session after new admission
+            // Point-of-Admission: Generate Admission Fee invoice within the safe transaction
+            $admFeeResult = app(\App\Services\FeeGenerationService::class)->generateAdmissionFeeForNewStudent(
+                $student,
+                Auth::id() ?? 1
+            );
+
+            if (!$admFeeResult['success']) {
+                throw new Exception("Student admission fee invoice generation failed: " . ($admFeeResult['message'] ?? 'Unknown error'));
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            // After transaction commit: evaluate scheduled annual/monthly fees for target session
             try {
                 app(\App\Services\FeeGenerationService::class)->evaluateAndGenerateForSession((int)$request->session_year_id, Auth::id());
             } catch (\Throwable $e) {
                 Log::warning("Fee generation evaluation after student admission failed: " . $e->getMessage());
             }
 
-            return response()->json(['status' => 'success', 'identity' => $studentIdentity], 201);
+            return response()->json([
+                'status'            => 'success',
+                'identity'          => $studentIdentity,
+                'admission_invoice' => $admFeeResult['invoice']?->invoice_no ?? null,
+            ], 201);
             
         } catch (Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
             Log::error("Admission Error: " . $e->getMessage());
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }

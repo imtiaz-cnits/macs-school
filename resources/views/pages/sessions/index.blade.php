@@ -11,6 +11,18 @@
     .modal-active { display: flex !important; animation: fadeIn 0.2s ease-in-out; }
     @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     .table th, .table td { padding: 0.625rem 1rem !important; }
+
+    /* Page-scoped Borderless Table Overrides (Scoped strictly to Sessions page) */
+    .table-container {
+        border: none !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+    }
+    .table th {
+        background-color: transparent !important;
+    }
 </style>
 @endpush
 
@@ -137,7 +149,7 @@
                 <div class="bg-gray-50/70 dark:bg-themeDark/50 border border-gray-100 dark:border-white/[0.05] rounded-2xl p-3">
                     <div class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase">Target</div>
                     <div class="text-lg font-black text-gray-900 dark:text-white mt-0.5" id="modalExpectedInvoices">0</div>
-                    <div class="text-[10px] text-gray-400">12 Mo Invoices</div>
+                    <div class="text-[10px] text-gray-400">Total Invoices</div>
                 </div>
                 <div class="bg-gray-50/70 dark:bg-themeDark/50 border border-gray-100 dark:border-white/[0.05] rounded-2xl p-3">
                     <div class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase">Existing</div>
@@ -159,7 +171,7 @@
             <!-- Diagnostic Breakdown List -->
             <div class="bg-gray-50/50 dark:bg-themeDark/30 border border-gray-100 dark:border-white/[0.05] rounded-2xl p-4 divide-y divide-gray-100 dark:divide-white/[0.05] text-xs font-semibold">
                 <div class="flex justify-between items-center py-2">
-                    <span class="text-gray-500 dark:text-gray-400">Active Monthly Fee Setups:</span>
+                    <span class="text-gray-500 dark:text-gray-400">Active Fee Setups:</span>
                     <span class="font-bold text-gray-800 dark:text-gray-200" id="modalSetupsCount">0 setup(s)</span>
                 </div>
                 <div class="flex justify-between items-center py-2">
@@ -289,7 +301,15 @@
             window.sessionDataCache[item.id] = item;
             let badgeHtml = '';
             let status = item.generation_status || 'pending';
-            if (status === 'completed') {
+            let isConflict = (status === 'setup_conflict' || (item.status_details && (item.status_details.has_setup_conflict || (item.status_details.reason && item.status_details.reason.includes('Conflict Detected')))));
+
+            if (isConflict) {
+                badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-500/20 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    Inspection Required
+                    <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                </button>`;
+            } else if (status === 'completed') {
                 badgeHtml = `<button type="button" onclick="window.showFeeStatusModal(${item.id})" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-emerald-50 dark:bg-themeGreen/10 text-themeGreen border border-emerald-200/50 dark:border-themeGreen/20 hover:scale-105 hover:shadow-xs transition-all cursor-pointer group" title="Click to view details">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     Completed
@@ -418,7 +438,7 @@
         document.getElementById('modalExistingInvoices').innerText = (details.existing_invoices ?? 0).toLocaleString();
         document.getElementById('modalMissingInvoices').innerText = (details.missing_invoices ?? 0).toLocaleString();
         document.getElementById('modalEligibleStudents').innerText = (details.eligible_students_count ?? details.active_students_count ?? 0).toLocaleString();
-        document.getElementById('modalSetupsCount').innerText = `${details.monthly_setups_count ?? 0} active setup(s)`;
+        document.getElementById('modalSetupsCount').innerText = `${details.active_setups_count ?? details.monthly_setups_count ?? 0} active setup(s)`;
         document.getElementById('modalTotalInvoices').innerText = (details.total_invoices ?? 0).toLocaleString();
         document.getElementById('modalCancelledInvoices').innerText = (details.cancelled_invoices ?? 0).toLocaleString();
         document.getElementById('modalExtraInvoices').innerText = (details.extra_invoices ?? 0).toLocaleString();
@@ -431,14 +451,27 @@
 
         let banner = document.getElementById('modalStatusBanner');
         let actionContainer = document.getElementById('modalActionContainer');
+        let hasConflict = (status === 'setup_conflict' || details.has_setup_conflict || (details.reason && details.reason.includes('Conflict Detected')));
 
-        if (status === 'completed') {
+        if (hasConflict) {
+            banner.className = "p-4 rounded-2xl flex items-start gap-3 border bg-rose-50/80 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/40 text-rose-800 dark:text-rose-200";
+            banner.innerHTML = `
+                <svg class="w-5 h-5 text-rose-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <div>
+                    <div class="text-xs font-black uppercase tracking-wider">Inspection Required: Play Setup Conflict Detected</div>
+                    <div class="text-xs font-medium mt-0.5 opacity-90">${details.reason || 'Overlapping active setups detected for Class Play (Setups 6, 90, 92). Automated bulk generation is locked until resolved.'}</div>
+                </div>`;
+            actionContainer.innerHTML = `
+                <a href="/fees/setup" class="h-10 px-5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center gap-2">
+                    Review Fee Setups
+                </a>`;
+        } else if (status === 'completed') {
             banner.className = "p-4 rounded-2xl flex items-start gap-3 border bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-200";
             banner.innerHTML = `
                 <svg class="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <div>
-                    <div class="text-xs font-black uppercase tracking-wider">Full Annual Coverage Completed</div>
-                    <div class="text-xs font-medium mt-0.5 opacity-90">${details.reason || 'All 12 monthly invoices have been successfully generated for all eligible students.'}</div>
+                    <div class="text-xs font-black uppercase tracking-wider">Full Session Coverage Completed</div>
+                    <div class="text-xs font-medium mt-0.5 opacity-90">${details.reason || 'All applicable invoices have been successfully generated for all eligible students.'}</div>
                 </div>`;
             actionContainer.innerHTML = '';
         } else if (status === 'partial') {
@@ -446,8 +479,8 @@
             banner.innerHTML = `
                 <svg class="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 <div>
-                    <div class="text-xs font-black uppercase tracking-wider">Partial Annual Coverage (${details.missing_invoices ?? 0} Invoices Missing)</div>
-                    <div class="text-xs font-medium mt-0.5 opacity-90">${details.reason || 'Some monthly fee slots have not yet been generated.'}</div>
+                    <div class="text-xs font-black uppercase tracking-wider">Partial Session Coverage (${details.missing_invoices ?? 0} Invoices Missing)</div>
+                    <div class="text-xs font-medium mt-0.5 opacity-90">${details.reason || 'Some fee slots have not yet been generated.'}</div>
                 </div>`;
             actionContainer.innerHTML = `
                 <button type="button" onclick="window.closeModal('feeStatusModal'); window.GenerateAnnualFees(${item.id}, '${item.session_name}');" class="h-10 px-5 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center gap-2 cursor-pointer">
@@ -459,8 +492,8 @@
             banner.innerHTML = `
                 <svg class="w-5 h-5 text-themeBlue mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 <div>
-                    <div class="text-xs font-black uppercase tracking-wider">Monthly Fee Setup Required</div>
-                    <div class="text-xs font-medium mt-0.5 opacity-90">${details.reason || 'Please configure Monthly Fee setups for classes in this session to begin generation.'}</div>
+                    <div class="text-xs font-black uppercase tracking-wider">Fee Setup Required</div>
+                    <div class="text-xs font-medium mt-0.5 opacity-90">${details.reason || 'Please configure fee setups for classes in this session to begin generation.'}</div>
                 </div>`;
             actionContainer.innerHTML = `
                 <a href="/fees/setup" class="h-10 px-5 bg-themeBlue text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center gap-2">
@@ -525,7 +558,13 @@
     };
 
     window.GenerateAnnualFees = async function(id, name) {
-        if (await showConfirm('Generate Annual Fees', `Are you sure you want to trigger 12-month annual fee generation for session '${name}'? Existing invoices will be preserved.`)) {
+        let item = window.sessionDataCache[id];
+        let hasConflict = (item && (item.generation_status === 'setup_conflict' || item.status_details?.has_setup_conflict || (item.status_details?.reason && item.status_details.reason.includes('Conflict Detected'))));
+        if (hasConflict) {
+            return showAlert("Generation is locked: An active setup conflict was detected for Class Play (Setups 6, 90, 92). Automated generation cannot proceed until conflicting setups are resolved in Fee Setup.", "Inspection Required");
+        }
+
+        if (await showConfirm('Generate Session Fees', `Are you sure you want to trigger session-wide fee invoice generation for session '${name}'? Existing invoices will be preserved.`)) {
             try {
                 let res = await axios.post(`/ajax/sessions/${id}/generate-annual-fees`, {}, getAuthHeaders());
                 if (res.data.status === 'success') {

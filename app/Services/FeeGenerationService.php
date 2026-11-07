@@ -111,6 +111,45 @@ class FeeGenerationService
             $log('info', "Academic Session: '{$session->session_name}' (ID: {$session->id}) | Billing Year: {$targetYear}");
 
             // -----------------------------------------------------------------
+            // 2.1 SHARED EXECUTION BOUNDARY SAFETY GUARD: DETECT SETUP CONFLICTS
+            // -----------------------------------------------------------------
+            $setupConflicts = $this->detectSetupConflicts((int)$session->id, (int)$targetYear);
+
+            if (!empty($setupConflicts)) {
+                $requestedClassId = !empty($params['class_id']) ? (int)$params['class_id'] : null;
+                $requestedCategoryId = !empty($params['fee_category_id']) ? (int)$params['fee_category_id'] : null;
+
+                $conflictInScope = false;
+                $conflictingScopeDescriptions = [];
+
+                foreach ($setupConflicts as $conflict) {
+                    $scopeClassId = (int)($conflict['class_id'] ?? 0);
+                    $scopeCatId = (int)($conflict['fee_category_id'] ?? 0);
+
+                    // Broad generation (no class specified, e.g. CLI all-year or scheduler): any conflict blocks generation
+                    if ($requestedClassId === null) {
+                        $conflictInScope = true;
+                        $conflictingScopeDescriptions[] = $conflict['description'];
+                    } elseif ($scopeClassId === $requestedClassId && ($requestedCategoryId === null || $scopeCatId === $requestedCategoryId)) {
+                        // Narrow generation specifically requesting the conflicting class and category
+                        $conflictInScope = true;
+                        $conflictingScopeDescriptions[] = $conflict['description'];
+                    }
+                }
+
+                if ($conflictInScope) {
+                    $conflictMsg = "Inspection Required: Play Setup Conflict Detected. Overlapping active setups exist (" . implode('; ', array_unique($conflictingScopeDescriptions)) . "). Automated generation is locked until resolved in Fee Setup.";
+                    $log('error', "ABORT: {$conflictMsg}");
+                    return [
+                        'success'     => false,
+                        'lock_failed' => false,
+                        'has_conflict'=> true,
+                        'error'       => $conflictMsg,
+                    ];
+                }
+            }
+
+            // -----------------------------------------------------------------
             // 3. TARGET MONTHS RESOLUTION
             // -----------------------------------------------------------------
             $feeMonthInput = trim((string)($params['fee_month'] ?? ''));
@@ -169,21 +208,12 @@ class FeeGenerationService
                 $setupQuery = FeeSetup::where('session_year_id', $session->id)
                     ->where('status', 'Active');
 
-                if ($isAnnual) {
-                    // Annual loop strictly generates recurring Monthly Fee setups
-                    $setupQuery->where('fee_month', 'Monthly')
-                        ->whereHas('category', function ($cq) {
-                            $cq->whereRaw('LOWER(TRIM(name)) = ?', ['monthly fee']);
-                        });
+                if (!empty($params['fee_category_id'])) {
+                    $setupQuery->where('fee_category_id', (int)$params['fee_category_id']);
                 } else {
-                    // Single month or specific category setup
-                    if (!empty($params['fee_category_id'])) {
-                        $setupQuery->where('fee_category_id', (int)$params['fee_category_id']);
-                    }
-
-                    $setupQuery->where(function ($query) use ($currentMonth) {
-                        $query->whereRaw('LOWER(TRIM(fee_month)) = ?', [strtolower($currentMonth)])
-                              ->orWhere('fee_month', 'Monthly');
+                    // Universal bulk generation strictly excludes Point-of-Admission (Admission Fee) and manual/incident (Fine)
+                    $setupQuery->whereHas('category', function ($cq) {
+                        $cq->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(TRIM(name))'), ['admission fee', 'fine']);
                     });
                 }
 
@@ -194,6 +224,25 @@ class FeeGenerationService
                 if (!empty($params['branch_id'])) {
                     $setupQuery->where('branch_id', (int)$params['branch_id']);
                 }
+
+                // Month filter: Match recurring monthly setups, explicit month setups, or one-time setups (in Jan)
+                $setupQuery->where(function ($query) use ($currentMonth) {
+                    $query->where('fee_month', 'Monthly')
+                          ->orWhereRaw('LOWER(TRIM(fee_month)) = ?', [strtolower($currentMonth)]);
+
+                    if (strtolower($currentMonth) === 'january') {
+                        $query->orWhere(function ($oq) {
+                            $oq->where(function ($q) {
+                                $q->whereNull('fee_month')
+                                  ->orWhere('fee_month', '')
+                                  ->orWhereRaw('LOWER(TRIM(fee_month)) IN (?, ?)', ['one time', 'yearly']);
+                            })->whereHas('category', function ($cq) {
+                                // Unscheduled Others with empty fee_month must NOT be automatically generated in January
+                                $cq->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(TRIM(name))'), ['admission fee', 'fine', 'others']);
+                            });
+                        });
+                    }
+                });
 
                 $feeSetups = $setupQuery->with(['category', 'schoolClass', 'branch'])->get();
 
@@ -214,14 +263,19 @@ class FeeGenerationService
                         'branch_id'       => $feeSetup->branch_id,
                         'class_id'        => $feeSetup->class_id,
                         'session_year_id' => $feeSetup->session_year_id,
-                    ])->get();
+                    ])->with('academicHistories')->get();
 
                     if ($students->isEmpty()) {
                         continue;
                     }
 
-                    // 2. Filter Eligible Students via 3-Tier Model
-                    $eligibleStudents = $students->filter(function ($student) use ($targetYear, $paddedMonth) {
+                    $isAdmissionCategory = strtolower(trim($feeSetup->category->name ?? '')) === 'admission fee';
+
+                    // 2. Filter Eligible Students via Category-Aware 3-Tier Model
+                    $eligibleStudents = $students->filter(function ($student) use ($targetYear, $paddedMonth, $feeSetup, $isAdmissionCategory) {
+                        if ($isAdmissionCategory) {
+                            return $this->isStudentEligibleForAdmission($student, (int)$feeSetup->session_year_id, (int)$targetYear);
+                        }
                         return $this->isStudentEligibleForMonth($student, (int)$targetYear, $paddedMonth);
                     });
 
@@ -424,6 +478,305 @@ class FeeGenerationService
     }
 
     /**
+     * Resolve canonical billing period(s) for a given FeeSetup.
+     *
+     * @param FeeSetup $setup
+     * @param int|null $targetYear
+     * @return array Array of billing period definitions:
+     *               [
+     *                   [
+     *                       'month_name'   => 'January',
+     *                       'month_num'    => '01',
+     *                       'period'       => '2026-01',
+     *                       'prefix'       => 'INV-202601-',
+     *                       'is_recurring' => true,
+     *                       'default_due'  => '2026-01-10',
+     *                   ],
+     *                   ...
+     *               ]
+     */
+    public function resolveSetupBillingPeriods(FeeSetup $setup, ?int $targetYear = null): array
+    {
+        $year = $targetYear ?: (int)now()->format('Y');
+        $feeMonth = trim((string)($setup->fee_month ?? ''));
+        $catName = strtolower(trim($setup->category->name ?? ''));
+
+        // Point-of-Admission Fee and manual incident Fine are NOT scheduled cohort billing periods
+        if (in_array($catName, ['admission fee', 'fine'], true)) {
+            return [];
+        }
+
+        // Unscheduled Others without explicit month are manual/ambiguous and have no scheduled periods
+        if ($catName === 'others' && empty($feeMonth)) {
+            return [];
+        }
+
+        // 1. Recurring Monthly Fee: All 12 calendar months
+        if (strtolower($feeMonth) === 'monthly') {
+            $periods = [];
+            foreach (self::ALL_MONTHS as $index => $monthName) {
+                $monthNum = str_pad((string)($index + 1), 2, '0', STR_PAD_LEFT);
+                $periods[] = [
+                    'month_name'   => $monthName,
+                    'month_num'    => $monthNum,
+                    'period'       => sprintf('%04d-%s', $year, $monthNum),
+                    'prefix'       => sprintf('INV-%04d%s-', $year, $monthNum),
+                    'is_recurring' => true,
+                    'default_due'  => sprintf('%04d-%s-10', $year, $monthNum),
+                ];
+            }
+            return $periods;
+        }
+
+        // 2. Explicit Month (e.g. 'March', 'April', 'July', etc.)
+        $monthIndex = array_search(ucfirst(strtolower($feeMonth)), self::ALL_MONTHS, true);
+        if ($monthIndex !== false) {
+            $monthNum = str_pad((string)($monthIndex + 1), 2, '0', STR_PAD_LEFT);
+            $monthName = self::ALL_MONTHS[$monthIndex];
+            return [[
+                'month_name'   => $monthName,
+                'month_num'    => $monthNum,
+                'period'       => sprintf('%04d-%s', $year, $monthNum),
+                'prefix'       => sprintf('INV-%04d%s-', $year, $monthNum),
+                'is_recurring' => false,
+                'default_due'  => sprintf('%04d-%s-10', $year, $monthNum),
+            ]];
+        }
+
+        // 3. One Time / Yearly Fee: Default to Month 01 (January)
+        return [[
+            'month_name'   => 'January',
+            'month_num'    => '01',
+            'period'       => sprintf('%04d-01', $year),
+            'prefix'       => sprintf('INV-%04d01-', $year),
+            'is_recurring' => false,
+            'default_due'  => sprintf('%04d-01-10', $year),
+        ]];
+    }
+
+    /**
+     * Detect overlapping active Fee Setups for the same scope (branch, class, category, and month).
+     *
+     * @param int $sessionYearId
+     * @param int|null $targetYear
+     * @return array
+     */
+    public function detectSetupConflicts(int $sessionYearId, ?int $targetYear = null): array
+    {
+        $session = SessionYear::find($sessionYearId);
+        if (!$session) {
+            return [];
+        }
+
+        $year = $this->resolveYear($session, $targetYear);
+
+        $setups = FeeSetup::where('session_year_id', $sessionYearId)
+            ->where('status', 'Active')
+            ->whereHas('category', function ($cq) {
+                $cq->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(TRIM(name))'), ['admission fee', 'fine']);
+            })
+            ->with(['category', 'schoolClass'])
+            ->get();
+
+        $conflicts = [];
+        $grouped = $setups->groupBy(function ($s) {
+            return $s->branch_id . '_' . $s->class_id . '_' . $s->fee_category_id;
+        });
+
+        foreach ($grouped as $scope => $items) {
+            if ($items->count() <= 1) {
+                continue;
+            }
+
+            $monthToSetups = [];
+            foreach ($items as $setup) {
+                $periods = $this->resolveSetupBillingPeriods($setup, (int)$year);
+                foreach ($periods as $p) {
+                    $monthNum = $p['month_num'];
+                    $monthToSetups[$monthNum][] = $setup;
+                }
+            }
+
+            foreach ($monthToSetups as $m => $matchedSetups) {
+                if (count($matchedSetups) > 1) {
+                    $setupIds = array_map(fn($s) => $s->id, $matchedSetups);
+                    $className = $matchedSetups[0]->schoolClass->class_name ?? "Class {$matchedSetups[0]->class_id}";
+                    $catName = $matchedSetups[0]->category->name ?? "Category {$matchedSetups[0]->fee_category_id}";
+                    $conflicts[] = [
+                        'scope'           => $scope,
+                        'class_id'        => (int)$matchedSetups[0]->class_id,
+                        'fee_category_id' => (int)$matchedSetups[0]->fee_category_id,
+                        'class_name'      => $className,
+                        'category_name'   => $catName,
+                        'month'           => $m,
+                        'setup_ids'       => $setupIds,
+                        'description'     => "Overlapping active setups for {$className} in {$catName} for month {$m} (Setup IDs: " . implode(', ', $setupIds) . ")",
+                    ];
+                }
+            }
+        }
+
+        return $conflicts;
+    }
+
+    /**
+     * Generate Admission Fee Invoice strictly at Point-of-Admission for a newly created student.
+     *
+     * @param Student $student
+     * @param int|null $actorUserId
+     * @return array ['success' => bool, 'created' => bool, 'invoice' => FeeInvoice|null, 'message' => string]
+     */
+    public function generateAdmissionFeeForNewStudent(Student $student, ?int $actorUserId = null): array
+    {
+        if (empty($student->id) || empty($student->class_id) || empty($student->session_year_id) || empty($student->branch_id)) {
+            return [
+                'success' => false,
+                'created' => false,
+                'invoice' => null,
+                'message' => 'Student record is missing essential academic association attributes.',
+            ];
+        }
+
+        // 1. Locate active Admission Fee setup for student's branch, class, and session
+        $admissionSetup = FeeSetup::where([
+            'session_year_id' => $student->session_year_id,
+            'branch_id'       => $student->branch_id,
+            'class_id'        => $student->class_id,
+            'status'          => 'Active',
+        ])->whereHas('category', function ($cq) {
+            $cq->whereRaw('LOWER(TRIM(name)) = ?', ['admission fee']);
+        })->first();
+
+        if (!$admissionSetup) {
+            return [
+                'success' => true,
+                'created' => false,
+                'invoice' => null,
+                'message' => "No active Admission Fee setup found for Class ID {$student->class_id} in Session ID {$student->session_year_id}.",
+            ];
+        }
+
+        // 2. Check Idempotency: Does an invoice already exist for this student and admission setup?
+        $existingInvoice = FeeInvoice::where([
+            'student_id'   => $student->id,
+            'fee_setup_id' => $admissionSetup->id,
+        ])->first();
+
+        if ($existingInvoice) {
+            return [
+                'success' => true,
+                'created' => false,
+                'invoice' => $existingInvoice,
+                'message' => "Admission Fee invoice already exists (Invoice: {$existingInvoice->invoice_no}).",
+            ];
+        }
+
+        // 3. Resolve Amount & Custom Fees
+        $amount = (float)$admissionSetup->amount;
+        $customFee = \Illuminate\Support\Facades\DB::table('student_custom_fees')
+            ->where('student_id', $student->id)
+            ->where('fee_category_id', $admissionSetup->fee_category_id)
+            ->value('amount');
+
+        if ($customFee !== null && (float)$customFee >= 0) {
+            $amount = (float)$customFee;
+        }
+
+        // 4. Resolve Target Year & Month
+        $targetYear = (int)($student->created_at ? $student->created_at->format('Y') : date('Y'));
+        $targetMonth = $student->created_at ? $student->created_at->format('m') : date('m');
+
+        // Invoice Number: standard convention INV-{YEAR}{MONTH}-{STUDENT_ID}-{SETUP_ID}
+        $prefix = sprintf('INV-%04d%s-', $targetYear, $targetMonth);
+        $invoiceNumber = sprintf('%s%d-%d', $prefix, $student->id, $admissionSetup->id);
+
+        // Due Date: 10th of admission month
+        $dueDate = sprintf('%04d-%s-10', $targetYear, $targetMonth);
+
+        // 5. Create Fee Invoice
+        $resolvedUserId = $this->resolveActorUserId($actorUserId);
+
+        $invoice = FeeInvoice::create([
+            'invoice_no'   => $invoiceNumber,
+            'student_id'   => $student->id,
+            'fee_setup_id' => $admissionSetup->id,
+            'amount'       => $amount,
+            'discount'     => 0.00,
+            'net_amount'   => $amount,
+            'due_amount'   => $amount,
+            'paid_amount'  => 0.00,
+            'status'       => 'Unpaid',
+            'due_date'     => $dueDate,
+            'user_id'      => $resolvedUserId,
+        ]);
+
+        return [
+            'success' => true,
+            'created' => true,
+            'invoice' => $invoice,
+            'message' => "Admission Fee invoice '{$invoiceNumber}' generated successfully.",
+        ];
+    }
+
+    /**
+     * Category-Specific Eligibility Rule: Admission Fee.
+     * Admission Fee must be generated ONLY for newly admitted students in the target Academic Session.
+     * Promoted students from earlier sessions and continuing legacy students are strictly excluded.
+     *
+     * @param Student $student
+     * @param int $sessionYearId
+     * @param int $targetYear
+     * @return bool
+     */
+    public function isStudentEligibleForAdmission(Student $student, int $sessionYearId, int $targetYear): bool
+    {
+        // 1. Inactive students are ineligible for new admission fee
+        if (($student->status ?? 'Active') === 'Inactive') {
+            return false;
+        }
+
+        // 2. Must belong to the target session
+        if ((int)$student->session_year_id !== $sessionYearId) {
+            return false;
+        }
+
+        // 3. Promoted students have academic histories from previous sessions -> strictly excluded
+        if ($student->relationLoaded('academicHistories')) {
+            if ($student->academicHistories->isNotEmpty()) {
+                return false;
+            }
+        } else {
+            if ($student->academicHistories()->exists()) {
+                return false;
+            }
+        }
+
+        // 4. Continuing / legacy students created prior to target session year -> strictly excluded
+        if ($student->created_at && (int)$student->created_at->format('Y') < $targetYear) {
+            return false;
+        }
+
+        // 5. If explicit admission_date exists, its year must match target year
+        if (!empty($student->admission_date)) {
+            $admYear = (int)date('Y', strtotime($student->admission_date));
+            if ($admYear !== $targetYear) {
+                return false;
+            }
+        }
+
+        // 6. Historical legacy batch check: For initial session (2026), students imported in the
+        // legacy bulk import (2026-07-22) into higher classes (not entry-level Play) were existing continuing students.
+        if ($targetYear === 2026 && $student->created_at && $student->created_at->toDateString() <= '2026-07-31') {
+            $className = strtolower($student->schoolClass->class_name ?? '');
+            if ($className !== 'play' && (int)($student->class_id ?? 0) > 1) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * 3-Tier Student Eligibility Model.
      *
      * 1. Inactive Students: Excluded beyond their discontinued_month.
@@ -515,20 +868,19 @@ class FeeGenerationService
 
         $targetYear = $this->resolveYear($session, null);
 
-        // 1. Fetch active Monthly Fee setups strictly for this session and category
-        $monthlySetups = FeeSetup::where('session_year_id', $sessionYearId)
+        // 1. Fetch ALL active scheduled fee setups strictly for this session (excluding Point-of-Admission & manual Fine)
+        $activeSetups = FeeSetup::where('session_year_id', $sessionYearId)
             ->where('status', 'Active')
-            ->where('fee_month', 'Monthly')
-            ->whereHas('category', function ($q) {
-                $q->whereRaw('LOWER(TRIM(name)) = ?', ['monthly fee']);
+            ->whereHas('category', function ($cq) {
+                $cq->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(TRIM(name))'), ['admission fee', 'fine']);
             })
             ->with(['category', 'schoolClass', 'branch'])
             ->get();
 
-        $monthlySetupsCount = $monthlySetups->count();
+        $activeSetupsCount = $activeSetups->count();
         $totalSessionStudentsCount = Student::where('session_year_id', $sessionYearId)->count();
 
-        if ($monthlySetupsCount === 0 && $totalSessionStudentsCount === 0) {
+        if ($activeSetupsCount === 0 && $totalSessionStudentsCount === 0) {
             return [
                 'session_id'            => $sessionYearId,
                 'session_name'          => $session->session_name,
@@ -536,14 +888,15 @@ class FeeGenerationService
                 'is_ready'              => false,
                 'status'                => 'pending_both',
                 'active_students_count' => 0,
+                'active_setups_count'   => 0,
                 'monthly_setups_count'  => 0,
                 'expected_invoices'     => 0,
                 'existing_invoices'     => 0,
-                'reason'                => "No students and no active Monthly Fee setups configured for session '{$session->session_name}'.",
+                'reason'                => "No students and no active Fee Setups configured for session '{$session->session_name}'.",
             ];
         }
 
-        if ($monthlySetupsCount === 0) {
+        if ($activeSetupsCount === 0) {
             return [
                 'session_id'            => $sessionYearId,
                 'session_name'          => $session->session_name,
@@ -551,20 +904,22 @@ class FeeGenerationService
                 'is_ready'              => false,
                 'status'                => 'pending_fee_setup',
                 'active_students_count' => $totalSessionStudentsCount,
+                'active_setups_count'   => 0,
                 'monthly_setups_count'  => 0,
                 'expected_invoices'     => 0,
                 'existing_invoices'     => 0,
-                'reason'                => "No active Monthly Fee setups configured for session '{$session->session_name}'.",
+                'reason'                => "No active Fee Setups configured for session '{$session->session_name}'.",
             ];
         }
 
         // 2. Fetch candidate students matching setup class and branch scopes
-        $candidateClasses = $monthlySetups->pluck('class_id')->unique()->toArray();
-        $candidateBranches = $monthlySetups->pluck('branch_id')->unique()->toArray();
+        $candidateClasses = $activeSetups->pluck('class_id')->unique()->toArray();
+        $candidateBranches = $activeSetups->pluck('branch_id')->unique()->toArray();
 
         $candidateStudents = Student::where('session_year_id', $sessionYearId)
             ->whereIn('class_id', $candidateClasses)
             ->whereIn('branch_id', $candidateBranches)
+            ->with('academicHistories')
             ->get();
 
         if ($candidateStudents->isEmpty()) {
@@ -575,15 +930,16 @@ class FeeGenerationService
                 'is_ready'              => false,
                 'status'                => 'pending_students',
                 'active_students_count' => 0,
-                'monthly_setups_count'  => $monthlySetupsCount,
+                'active_setups_count'   => $activeSetupsCount,
+                'monthly_setups_count'  => $activeSetupsCount,
                 'expected_invoices'     => 0,
                 'existing_invoices'     => 0,
-                'reason'                => "No students enrolled in the classes and branches matching active Monthly Fee setups for session '{$session->session_name}'.",
+                'reason'                => "No students enrolled in the classes and branches matching active Fee Setups for session '{$session->session_name}'.",
             ];
         }
 
-        // 3. Fetch existing invoices strictly for these Monthly Fee setups and target billing year
-        $setupIds = $monthlySetups->pluck('id')->toArray();
+        // 3. Fetch existing invoices strictly for these Fee Setups and target billing year
+        $setupIds = $activeSetups->pluck('id')->toArray();
         $existingInvoices = FeeInvoice::whereIn('fee_setup_id', $setupIds)
             ->where('invoice_no', 'like', "INV-{$targetYear}%")
             ->select('id', 'student_id', 'fee_setup_id', 'invoice_no', 'status')
@@ -627,19 +983,27 @@ class FeeGenerationService
         $eligibleMatchedStudentIds = [];
         $cancelledExpectedSlotsCount = 0;
 
-        foreach ($monthlySetups as $feeSetup) {
+        foreach ($activeSetups as $feeSetup) {
             $scopeKey = $feeSetup->branch_id . '_' . $feeSetup->class_id;
             $studentsInScope = $studentsByScope->get($scopeKey, collect());
+            $isAdmissionCategory = strtolower(trim($feeSetup->category->name ?? '')) === 'admission fee';
+
+            // Resolve billing periods for this specific setup
+            $periods = $this->resolveSetupBillingPeriods($feeSetup, (int)$targetYear);
 
             foreach ($studentsInScope as $student) {
                 if (($student->status ?? 'Active') === 'Active') {
                     $activeMatchedStudentIds[$student->id] = true;
                 }
 
-                for ($m = 1; $m <= 12; $m++) {
-                    $paddedMonth = str_pad((string)$m, 2, '0', STR_PAD_LEFT);
+                foreach ($periods as $periodDef) {
+                    $paddedMonth = $periodDef['month_num'];
 
-                    if ($this->isStudentEligibleForMonth($student, (int)$targetYear, $paddedMonth)) {
+                    $isEligible = $isAdmissionCategory
+                        ? $this->isStudentEligibleForAdmission($student, (int)$feeSetup->session_year_id, (int)$targetYear)
+                        : $this->isStudentEligibleForMonth($student, (int)$targetYear, $paddedMonth);
+
+                    if ($isEligible) {
                         $key = $student->id . '_' . $feeSetup->id . '_' . $paddedMonth;
                         $expectedKeys[$key] = true;
                         $eligibleMatchedStudentIds[$student->id] = true;
@@ -680,12 +1044,19 @@ class FeeGenerationService
         }
 
         // 5. Determine precise lifecycle readiness status
-        if ($expectedCount === 0) {
+        $conflicts = $this->detectSetupConflicts($sessionYearId, (int)$targetYear);
+        $hasSetupConflict = !empty($conflicts);
+
+        if ($hasSetupConflict) {
+            $conflictSetupIds = array_unique(array_merge(...array_column($conflicts, 'setup_ids')));
+            $status = 'setup_conflict';
+            $reason = "Inspection Required: Play Setup Conflict Detected. Overlapping active setups exist for Class {$conflicts[0]['class_name']} in {$conflicts[0]['category_name']} (Setup IDs: " . implode(', ', $conflictSetupIds) . "). Automated bulk generation is locked until resolved in Fee Setup.";
+        } elseif ($expectedCount === 0) {
             $status = 'pending_students';
-            $reason = "No eligible students found for the 12 calendar months of session '{$session->session_name}'.";
+            $reason = "No eligible students found for the applicable billing periods of session '{$session->session_name}'.";
         } elseif ($totalExistingCount === 0) {
             $status = 'ready';
-            $reason = "Prerequisites met. Ready for annual invoice generation (Expected: {$expectedCount} eligible invoices across {$monthlySetupsCount} monthly setup(s)).";
+            $reason = "Prerequisites met. Ready for universal invoice generation (Expected: {$expectedCount} eligible invoices across {$activeSetupsCount} active setup(s)).";
         } elseif ($invalidMonthInvoicesCount > 0 || $extraKeysCount > 0 || $duplicateInvoicesCount > 0 || $totalActiveExistingCount > $expectedCount) {
             // Anomaly detected: duplicate invoices, invalid months, extra invoices outside eligibility, or count mismatch
             $status = 'partial';
@@ -708,24 +1079,27 @@ class FeeGenerationService
             $cancelledNote = $cancelledExpectedSlotsCount > 0
                 ? " ({$cancelledExpectedSlotsCount} cancelled invoice(s) require restoration via Restore Invoice)"
                 : "";
-            $reason = "Partial annual coverage: {$matchedExistingCount} of {$expectedCount} invoices present{$cancelledNote}. Retry will generate remaining {$missingKeysCount} missing invoice(s).";
+            $reason = "Partial session coverage: {$matchedExistingCount} of {$expectedCount} invoices present{$cancelledNote}. Retry will generate remaining {$missingKeysCount} missing invoice(s).";
         } elseif ($missingKeysCount === 0 && $extraKeysCount === 0 && $duplicateInvoicesCount === 0 && $invalidMonthInvoicesCount === 0 && $totalActiveExistingCount === $expectedCount) {
             $status = 'completed';
-            $reason = "Full annual invoice coverage verified: All {$expectedCount} expected Monthly Fee invoices are present.";
+            $reason = "Full session invoice coverage verified: All {$expectedCount} expected invoices across {$activeSetupsCount} active setup(s) are present.";
         } else {
             $status = 'partial';
-            $reason = "Partial annual coverage: {$matchedExistingCount} of {$expectedCount} invoices present.";
+            $reason = "Partial session coverage: {$matchedExistingCount} of {$expectedCount} invoices present.";
         }
 
         return [
             'session_id'              => $sessionYearId,
             'session_name'            => $session->session_name,
             'year'                    => $targetYear,
-            'is_ready'                => ($eligibleMatchedStudentsCount > 0 && $monthlySetupsCount > 0 && $expectedCount > 0),
+            'is_ready'                => ($eligibleMatchedStudentsCount > 0 && $activeSetupsCount > 0 && $expectedCount > 0 && !$hasSetupConflict),
             'status'                  => $status,
+            'has_setup_conflict'      => $hasSetupConflict,
+            'setup_conflicts'         => $conflicts,
             'active_students_count'   => $activeMatchedStudentsCount,
             'eligible_students_count' => $eligibleMatchedStudentsCount,
-            'monthly_setups_count'    => $monthlySetupsCount,
+            'active_setups_count'     => $activeSetupsCount,
+            'monthly_setups_count'    => $activeSetupsCount, // Backward compatibility alias
             'expected_invoices'      => $expectedCount,
             'existing_invoices'      => $totalActiveExistingCount,
             'total_invoices'         => $totalExistingCount,
@@ -829,7 +1203,7 @@ class FeeGenerationService
     {
         $statusBefore = $this->getSessionGenerationStatus($sessionYearId);
 
-        if (!$statusBefore['is_ready']) {
+        if (!$statusBefore['is_ready'] || ($statusBefore['status'] ?? '') === 'setup_conflict' || !empty($statusBefore['has_setup_conflict'])) {
             return [
                 'evaluated'         => false,
                 'status'            => $statusBefore['status'],
@@ -837,7 +1211,9 @@ class FeeGenerationService
                 'reason'            => $statusBefore['reason'],
                 'generated'         => 0,
                 'skipped'           => 0,
-                'execution_success' => true,
+                'execution_success' => false,
+                'has_conflict'      => !empty($statusBefore['has_setup_conflict']),
+                'conflicts'         => $statusBefore['setup_conflicts'] ?? [],
                 'details'           => $statusBefore,
             ];
         }

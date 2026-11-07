@@ -71,6 +71,14 @@ class SessionYearController extends Controller
             $userId = $request->user()?->id ?? \Illuminate\Support\Facades\Auth::id();
             $result = app(FeeGenerationService::class)->evaluateAndGenerateForSession((int)$session->id, $userId);
 
+            if (($result['status'] ?? '') === 'setup_conflict' || ($result['has_conflict'] ?? false)) {
+                return response()->json([
+                    'status'  => 'conflict',
+                    'message' => $result['reason'] ?? 'Inspection Required: Play Setup Conflict Detected. Generation rejected.',
+                    'details' => $result,
+                ], 422);
+            }
+
             if (!$result['evaluated']) {
                 return response()->json([
                     'status'  => 'pending',

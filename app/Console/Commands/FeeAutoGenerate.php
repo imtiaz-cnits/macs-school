@@ -23,7 +23,8 @@ class FeeAutoGenerate extends Command
                             {--year= : Specific 4-digit calendar year to generate} 
                             {--session= : Specific academic session year ID or session name} 
                             {--class= : Optional class ID to limit generation} 
-                            {--all-year : Generate monthly invoices for all 12 months (January-December) of the session} 
+                            {--category= : Optional fee category name or ID to limit generation}
+                            {--all-year : Generate invoices for all applicable fee setups of the session}
                             {--all-past : Generate missing invoices for all past months of the current year} 
                             {--dry-run : Preview generation without writing invoices to database}';
 
@@ -32,7 +33,7 @@ class FeeAutoGenerate extends Command
      *
      * @var string
      */
-    protected $description = 'Generate monthly fee invoices for active students using the unified FeeGenerationService.';
+    protected $description = 'Generate fee invoices for active students across applicable categories using the unified FeeGenerationService.';
 
     /**
      * Execute the console command.
@@ -40,7 +41,7 @@ class FeeAutoGenerate extends Command
     public function handle(FeeGenerationService $generationService): int
     {
         $this->info("====================================================================");
-        $this->info("   MACS School — Monthly / Annual Fee Invoice Generator             ");
+        $this->info("   MACS School — Universal Fee Invoice Generator                    ");
         $this->info("====================================================================");
 
         $isDryRun = (bool) $this->option('dry-run');
@@ -48,10 +49,27 @@ class FeeAutoGenerate extends Command
             $this->warn("NOTICE: DRY-RUN MODE ACTIVE. Zero database rows will be created.");
         }
 
+        $categoryId = null;
+        $categoryInput = $this->option('category');
+        if (!empty($categoryInput)) {
+            if (is_numeric($categoryInput)) {
+                $categoryId = (int)$categoryInput;
+            } else {
+                $cat = \App\Models\FeeCategory::whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($categoryInput))])->first();
+                if ($cat) {
+                    $categoryId = (int)$cat->id;
+                } else {
+                    $this->error("Fee Category '{$categoryInput}' not found.");
+                    return 1;
+                }
+            }
+        }
+
         $params = [
             'session_year_id' => $this->option('session'),
             'year'            => $this->option('year'),
             'class_id'        => $this->option('class'),
+            'fee_category_id' => $categoryId,
             'fee_month'       => $this->option('all-year') ? 'all' : ($this->option('all-past') ? 'all-past' : $this->option('month')),
             'all_year'        => (bool) $this->option('all-year'),
             'all_past'        => (bool) $this->option('all-past'),
