@@ -366,6 +366,65 @@ class FeeCollectionController extends Controller
             abort(404, 'Receipt not found');
         }
 
+        // Chronological month sorting mapping (January = 1 ... December = 12, Non-monthly = 99)
+        $monthMap = [
+            'january' => 1, 'february' => 2, 'march' => 3, 'april' => 4,
+            'may' => 5, 'june' => 6, 'july' => 7, 'august' => 8,
+            'september' => 9, 'october' => 10, 'november' => 11, 'december' => 12
+        ];
+
+        $resolveMonthOrder = function ($pay) use ($monthMap) {
+            $invoice = $pay->invoice;
+            if (!$invoice) {
+                return 99;
+            }
+
+            // 1. Authoritative explicit month on fee setup
+            $setupMonth = strtolower(trim($invoice->feeSetup->fee_month ?? ''));
+            if ($setupMonth && isset($monthMap[$setupMonth])) {
+                return $monthMap[$setupMonth];
+            }
+
+            // 2. Canonical month segment from invoice number (e.g. INV-YYYYMM-XXXX -> MM)
+            if ($invoice->invoice_no && preg_match('/INV-\d{4}(0[1-9]|1[0-2])-/i', $invoice->invoice_no, $matches)) {
+                return (int) $matches[1];
+            }
+
+            // 3. Fallback to invoice month_name accessor if valid month name
+            $monthName = strtolower(trim($invoice->month_name ?? ''));
+            if ($monthName && isset($monthMap[$monthName])) {
+                return $monthMap[$monthName];
+            }
+
+            // 4. Non-monthly or genuinely monthless items placed deterministically at the end
+            return 99;
+        };
+
+        // Deterministic chronological sorting before passing to Blade view
+        $payments = $payments->sort(function ($a, $b) use ($resolveMonthOrder) {
+            $monthA = $resolveMonthOrder($a);
+            $monthB = $resolveMonthOrder($b);
+            if ($monthA !== $monthB) {
+                return $monthA <=> $monthB;
+            }
+
+            // Secondary sort: Fee Category name alphabetically
+            $catA = strtolower(trim($a->invoice->feeSetup->category->name ?? ''));
+            $catB = strtolower(trim($b->invoice->feeSetup->category->name ?? ''));
+            if ($catA !== $catB) {
+                return $catA <=> $catB;
+            }
+
+            // Stable final tie-breakers: invoice ID, then payment ID
+            $invA = $a->fee_invoice_id ?? ($a->invoice->id ?? 0);
+            $invB = $b->fee_invoice_id ?? ($b->invoice->id ?? 0);
+            if ($invA !== $invB) {
+                return $invA <=> $invB;
+            }
+
+            return ($a->id ?? 0) <=> ($b->id ?? 0);
+        })->values();
+
         $student = $payments->first()->student;
         $collector = $payments->first()->collector;
         $date = $payments->first()->created_at;
