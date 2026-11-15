@@ -150,11 +150,32 @@ class FeeReportController extends Controller
             'september' => 9, 'october' => 10, 'november' => 11, 'december' => 12
         ];
 
+        // Priority order for fee categories: Monthly Fee (1), Monthly Exam Fee (2), Term Exam Fee (3), others (4, alphabetical)
+        $categoryPriorityMap = [
+            'monthly fee' => 1,
+            'monthly exam fee' => 2,
+            'term exam fee' => 3,
+        ];
+
+        $categorySortComparator = function ($catA, $catB) use ($categoryPriorityMap) {
+            $normA = strtolower(trim((string) $catA));
+            $normB = strtolower(trim((string) $catB));
+
+            $prioA = $categoryPriorityMap[$normA] ?? 4;
+            $prioB = $categoryPriorityMap[$normB] ?? 4;
+
+            if ($prioA !== $prioB) {
+                return $prioA <=> $prioB;
+            }
+
+            return strcasecmp($normA, $normB);
+        };
+
         // কালেকশনগুলোকে স্টুডেন্ট ও মাস্টার রিসিট অনুযায়ী গ্রুপ করা হচ্ছে (Single Transaction / Bulk Collection Consolidated)
         $collections = $payments->groupBy(function ($item) use ($resolveMasterReceipt) {
             $masterReceipt = $resolveMasterReceipt($item->receipt_no);
             return $item->student_id . '_' . $masterReceipt;
-        })->map(function ($items) use ($resolveMasterReceipt, $resolveMonth, $monthOrderMap, $resolveCollectionDate) {
+        })->map(function ($items) use ($resolveMasterReceipt, $resolveMonth, $monthOrderMap, $resolveCollectionDate, $categorySortComparator) {
             $first = $items->first();
             $masterReceipt = $resolveMasterReceipt($first->receipt_no);
             $totalAmount = $items->sum('paid_amount');
@@ -162,13 +183,13 @@ class FeeReportController extends Controller
 
             $categories = $items->map(function ($i) {
                 return $i->invoice->feeSetup->category->name ?? 'Fee';
-            })->unique()->filter()->values();
+            })->unique()->filter()->sort($categorySortComparator)->values();
 
             $months = $items->map(function ($i) use ($resolveMonth) {
                 return $resolveMonth($i->invoice);
             })->unique()->filter()->values();
 
-            // Group payments by category and sort months chronologically (Jan to Dec)
+            // Group payments by category, sort categories by priority order, and sort months chronologically (Jan to Dec)
             $categoryMonths = $items->groupBy(function ($i) {
                 return $i->invoice->feeSetup->category->name ?? 'Fee';
             })->map(function ($group) use ($resolveMonth, $monthOrderMap) {
@@ -179,7 +200,7 @@ class FeeReportController extends Controller
                 return $mList->sortBy(function ($m) use ($monthOrderMap) {
                     return $monthOrderMap[strtolower(trim($m))] ?? 99;
                 })->values();
-            });
+            })->sortKeysUsing($categorySortComparator);
 
             // Formatted string summary for export (e.g. Monthly Fee - Jan, Feb; Term Exam Fee - Apr)
             $feeDetailsSummary = $categoryMonths->map(function ($catMonths, $catName) {
@@ -195,6 +216,28 @@ class FeeReportController extends Controller
             $methods = $items->map(function ($i) {
                 return $i->payment_method ?? 'Cash';
             })->unique()->filter()->values();
+
+            // Sort payment items in breakdown dropdown by category priority, then by chronological month
+            $sortedItems = $items->sort(function ($itemA, $itemB) use ($categorySortComparator, $monthOrderMap, $resolveMonth) {
+                $catA = $itemA->invoice->feeSetup->category->name ?? 'Fee';
+                $catB = $itemB->invoice->feeSetup->category->name ?? 'Fee';
+
+                $catCmp = $categorySortComparator($catA, $catB);
+                if ($catCmp !== 0) {
+                    return $catCmp;
+                }
+
+                $monthA = $resolveMonth($itemA->invoice);
+                $monthB = $resolveMonth($itemB->invoice);
+                $ordA = $monthOrderMap[strtolower(trim($monthA))] ?? 99;
+                $ordB = $monthOrderMap[strtolower(trim($monthB))] ?? 99;
+
+                if ($ordA !== $ordB) {
+                    return $ordA <=> $ordB;
+                }
+
+                return $itemA->id <=> $itemB->id;
+            })->values();
 
             return (object) [
                 'receipt_no' => $masterReceipt,
@@ -212,7 +255,7 @@ class FeeReportController extends Controller
                 'items_count' => $items->count(),
                 'payment_method' => $methods->join(', '),
                 'paid_amount' => $totalAmount,
-                'items' => $items
+                'items' => $sortedItems
             ];
         })->values();
 
@@ -233,7 +276,7 @@ class FeeReportController extends Controller
         $uniqueDefaulterStudentsCount = $dues->pluck('student_id')->unique()->count();
 
         // স্টুডেন্ট অনুযায়ী গ্রুপ করা ডিফল্টার লিস্ট (টোটাল ডিউ মাস ও মাসের নাম সহ)
-        $defaulters = $dues->groupBy('student_id')->map(function ($invoices) use ($resolveMonth) {
+        $defaulters = $dues->groupBy('student_id')->map(function ($invoices) use ($resolveMonth, $categorySortComparator) {
             $firstInv = $invoices->first();
             $student = $firstInv->student;
 
@@ -243,7 +286,7 @@ class FeeReportController extends Controller
 
             $categories = $invoices->map(function ($inv) {
                 return $inv->feeSetup->category->name ?? 'Fee';
-            })->unique()->filter()->values();
+            })->unique()->filter()->sort($categorySortComparator)->values();
 
             return (object) [
                 'student' => $student,
@@ -399,6 +442,26 @@ class FeeReportController extends Controller
 
         $invoices = $query->get();
 
+        $categoryPriorityMap = [
+            'monthly fee' => 1,
+            'monthly exam fee' => 2,
+            'term exam fee' => 3,
+        ];
+
+        $categorySortComparator = function ($catA, $catB) use ($categoryPriorityMap) {
+            $normA = strtolower(trim((string) $catA));
+            $normB = strtolower(trim((string) $catB));
+
+            $prioA = $categoryPriorityMap[$normA] ?? 4;
+            $prioB = $categoryPriorityMap[$normB] ?? 4;
+
+            if ($prioA !== $prioB) {
+                return $prioA <=> $prioB;
+            }
+
+            return strcasecmp($normA, $normB);
+        };
+
         // ম্যাজিক: ক্যাটাগরির নাম দিয়ে গ্রুপ করে টোটাল বের করা হচ্ছে
         $categorySummary = $invoices->groupBy(function ($invoice) {
             return $invoice->feeSetup->category->name ?? 'Uncategorized';
@@ -416,7 +479,7 @@ class FeeReportController extends Controller
                 'total_due' => $due,
                 'percentage' => $percentage
             ];
-        });
+        })->sortKeysUsing($categorySortComparator);
 
         // ওভারঅল সামারি কার্ডের জন্য
         $overallNet = $invoices->sum('net_amount');
