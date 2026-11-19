@@ -128,7 +128,7 @@ class JalalpurAdmissionFeeStructureSeeder extends Seeder
                 'branch_id'                => (int) $branch->id,
                 'class_id'                 => (int) $class->id,
                 'session_year_id'          => null, // All-Time Default across all sessions
-                'structure_name'           => "Class {$pkg['class']} Admission Fee Structure",
+                'structure_name'           => "{$pkg['class']} Admission Fee",
                 'status'                   => AdmissionFeeStructureService::STATUS_ACTIVE,
                 'total_amount'             => $pkg['expected_total'],
                 'includes_monthly_tuition' => true,

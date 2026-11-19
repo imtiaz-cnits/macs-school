@@ -720,6 +720,7 @@ class AdmissionFeeStructureTest extends TestCase
         foreach ($expectedClasses as $className => $spec) {
             $structure = $seededStructures->get($classModels[$className]->id);
             $this->assertNotNull($structure, "Missing seeded structure for Class {$className}");
+            $this->assertSame("{$className} Admission Fee", $structure->structure_name);
             $this->assertSame('Active', $structure->status);
             $this->assertSame(1, (int) $structure->version);
             $this->assertNull($structure->session_year_id);

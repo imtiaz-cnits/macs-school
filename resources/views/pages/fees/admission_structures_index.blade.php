@@ -469,7 +469,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="sm:col-span-2">
                         <label class="block text-[10px] font-black tracking-widest text-gray-550 dark:text-gray-400 uppercase mb-1.5">Structure Package Name *</label>
-                        <input type="text" x-model.trim="form.structure_name" placeholder="e.g. Class Play Admission Fee Structure" class="w-full h-11 px-3.5 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark text-sm font-semibold text-gray-800 dark:text-white focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all" required>
+                        <input type="text" x-model.trim="form.structure_name" placeholder="e.g. Play Admission Fee" class="w-full h-11 px-3.5 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark text-sm font-semibold text-gray-800 dark:text-white focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all" required>
                     </div>
 
                     <div class="relative" @click.away="if (activeModalDropdown === 'status') activeModalDropdown = null">
