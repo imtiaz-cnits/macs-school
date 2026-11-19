@@ -3,14 +3,7 @@
 @section('title', 'Financial Reports')
 
 @push('styles')
-<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <style>
-    /* Table padding override to align with MACS Design guidelines */
-    .table th,
-    .table td {
-        padding: 0.625rem 1rem !important;
-    }
-
     /* Tab animation */
     .tab-content {
         display: none;
@@ -496,7 +489,7 @@
 @endpush
 
 @section('content')
-<div class="w-full min-h-screen" x-data="{ activeTab: 'collection' }">
+<div class="w-full min-w-0 min-h-screen" x-data="{ activeTab: 'collection' }">
 
     <!-- Page Header -->
     <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 no-print">
@@ -550,25 +543,33 @@
     $selectedClass = $classes->firstWhere('id', request('class_id'));
     $selectedClassName = $selectedClass ? $selectedClass->class_name : 'All Classes';
 
+    $selectedMonthVal = $selectedMonth ?? '';
+    $selectedYearVal = $selectedYear ?? (int) date('Y', strtotime($startDate));
+    $availableYearsList = $availableYears ?? range((int) date('Y') + 1, max(2020, (int) date('Y') - 5));
+    $monthOptions = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
     $macsLogoPath = public_path('img/macs_logo.jpeg');
     $macsLogoSrc = file_exists($macsLogoPath) ? asset('img/macs_logo.jpeg') : (file_exists(public_path('img/logo.png')) ? asset('img/logo.png') : '');
     @endphp
 
-    <!-- Filter Card (Rule 7 Dropdowns & Rule 10 DatePickers) -->
-    <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 mb-8 relative z-20 no-print shadow-sm hover:shadow-md transition-all duration-300" x-data="reportFilter()">
-        <form action="{{ route('fees.reports.index') }}" method="GET" id="reportFilterForm">
+    <!-- Filter Card (Rule 7 Dropdowns, Specific Month Selector & Rule 10 DatePickers) -->
+    <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl p-6 mb-8 relative z-20 no-print shadow-sm hover:shadow-md transition-all duration-300" x-data="reportFilter()" @manual-date-picked.window="clearMonthSelection()">
+        <form action="{{ route('fees.reports.index') }}" method="GET" id="reportFilterForm" class="space-y-4">
             <input type="hidden" name="branch_id" :value="form.branch_id">
             <input type="hidden" name="class_id" :value="form.class_id">
             <input type="hidden" name="due_type" :value="form.due_type">
+            <input type="hidden" name="month" :value="form.month">
+            <input type="hidden" name="year" :value="form.year">
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
+            <!-- Row 1: Scope & Due Mode -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
                 <!-- Branch Dropdown (Rule 7) -->
                 <div class="relative" @click.away="if(activeDropdown === 'branch') activeDropdown = null">
-                    <label class="block text-[10px] font-black tracking-widest text-gray-450 dark:text-gray-400 uppercase mb-1.5 ml-1">Branch</label>
-                    <button type="button" @click="activeDropdown = activeDropdown === 'branch' ? null : 'branch'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                    <label class="block text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">Branch</label>
+                    <button type="button" @click="activeDropdown = activeDropdown === 'branch' ? null : 'branch'" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="branchText"></span>
-                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200" :class="activeDropdown === 'branch' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
@@ -582,7 +583,7 @@
                             </template>
                         </button>
                         @foreach($branches as $b)
-                        <button type="button" @click="selectBranch('{{ $b->id }}', '{{ $b->branch_name ?? $b->name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.branch_id == '{{ $b->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                        <button type="button" @click="selectBranch('{{ $b->id }}', '{{ addslashes($b->branch_name ?? $b->name) }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.branch_id == '{{ $b->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                             <span>{{ $b->branch_name ?? $b->name }}</span>
                             <template x-if="form.branch_id == '{{ $b->id }}'">
                                 <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -596,10 +597,10 @@
 
                 <!-- Class Dropdown (Rule 7) -->
                 <div class="relative" @click.away="if(activeDropdown === 'class') activeDropdown = null">
-                    <label class="block text-[10px] font-black tracking-widest text-gray-450 dark:text-gray-400 uppercase mb-1.5 ml-1">Filter by Class</label>
-                    <button type="button" @click="activeDropdown = activeDropdown === 'class' ? null : 'class'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                    <label class="block text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">Filter by Class</label>
+                    <button type="button" @click="activeDropdown = activeDropdown === 'class' ? null : 'class'" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="classText"></span>
-                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200" :class="activeDropdown === 'class' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
@@ -613,7 +614,7 @@
                             </template>
                         </button>
                         @foreach($classes as $c)
-                        <button type="button" @click="selectClass('{{ $c->id }}', '{{ $c->class_name }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.class_id == '{{ $c->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                        <button type="button" @click="selectClass('{{ $c->id }}', '{{ addslashes($c->class_name) }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.class_id == '{{ $c->id }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                             <span>{{ $c->class_name }}</span>
                             <template x-if="form.class_id == '{{ $c->id }}'">
                                 <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -626,16 +627,16 @@
                 </div>
 
                 <!-- Due Filter Mode Dropdown (Rule 7) -->
-                <div class="relative" @click.away="if(activeDropdown === 'due_type') activeDropdown = null">
-                    <label class="block text-[10px] font-black tracking-widest text-gray-450 dark:text-gray-400 uppercase mb-1.5 ml-1">Due Filter Mode</label>
-                    <button type="button" @click="activeDropdown = activeDropdown === 'due_type' ? null : 'due_type'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                <div class="relative sm:col-span-2 lg:col-span-1" @click.away="if(activeDropdown === 'due_type') activeDropdown = null">
+                    <label class="block text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">Due Filter Mode</label>
+                    <button type="button" @click="activeDropdown = activeDropdown === 'due_type' ? null : 'due_type'" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="dueTypeText"></span>
-                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200" :class="activeDropdown === 'due_type' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
                     <div x-show="activeDropdown === 'due_type'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
-                        <button type="button" @click="selectDueType('period', 'Selected Period Only (Monthly Due)')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.due_type === 'period' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                        <button type="button" @click="selectDueType('period', 'Selected Period (Monthly Due)')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.due_type === 'period' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                             <span>Selected Period (Monthly Due)</span>
                             <template x-if="form.due_type === 'period'">
                                 <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -643,7 +644,7 @@
                                 </svg>
                             </template>
                         </button>
-                        <button type="button" @click="selectDueType('cumulative', 'Cumulative Arrears (Up to End Date)')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.due_type === 'cumulative' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                        <button type="button" @click="selectDueType('cumulative', 'Cumulative Arrears (Up to Date)')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.due_type === 'cumulative' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                             <span>Cumulative Arrears (Up to Date)</span>
                             <template x-if="form.due_type === 'cumulative'">
                                 <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -654,12 +655,71 @@
                     </div>
                 </div>
 
+            </div>
+
+            <!-- Row 2: Specific Month / Year & Custom Date Range -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+                <!-- Specific Month Dropdown (Rule 7) -->
+                <div class="relative" @click.away="if(activeDropdown === 'month') activeDropdown = null">
+                    <label class="block text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">Specific Month</label>
+                    <button type="button" @click="activeDropdown = activeDropdown === 'month' ? null : 'month'" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeDark border-2 rounded-xl flex items-center justify-between text-xs font-semibold focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left" :class="form.month ? 'border-themeBlue/50 text-themeBlue dark:text-blue-300' : 'border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200'">
+                        <span class="truncate" x-text="form.month ? form.month : 'Custom Date Range'"></span>
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200" :class="activeDropdown === 'month' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div x-show="activeDropdown === 'month'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                        <button type="button" @click="selectMonth('')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.month === '' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>Custom Date Range</span>
+                            <template x-if="form.month === ''">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </template>
+                        </button>
+                        @foreach($monthOptions as $mName)
+                        <button type="button" @click="selectMonth('{{ $mName }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.month === '{{ $mName }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <span>{{ $mName }}</span>
+                            <template x-if="form.month === '{{ $mName }}'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </template>
+                        </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                <!-- Year Dropdown (Rule 7) -->
+                <div class="relative" @click.away="if(activeDropdown === 'year') activeDropdown = null">
+                    <label class="block text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">Year</label>
+                    <button type="button" @click="activeDropdown = activeDropdown === 'year' ? null : 'year'" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span class="truncate font-mono font-bold" x-text="form.year"></span>
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200" :class="activeDropdown === 'year' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div x-show="activeDropdown === 'year'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                        @foreach($availableYearsList as $yr)
+                        <button type="button" @click="selectYear('{{ $yr }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left font-mono hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="String(form.year) === '{{ $yr }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200 font-semibold'">
+                            <span>{{ $yr }}</span>
+                            <template x-if="String(form.year) === '{{ $yr }}'">
+                                <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </template>
+                        </button>
+                        @endforeach
+                    </div>
+                </div>
+
                 <!-- From Date Picker (Rule 10) -->
-                <div class="relative" x-data="datePicker('{{ $startDate }}')" @click.away="show = false">
-                    <label class="block text-[10px] font-black tracking-widest text-gray-450 dark:text-gray-400 uppercase mb-1.5 ml-1">From Date</label>
+                <div class="relative" x-data="datePicker('{{ $startDate }}')" @click.away="show = false" @sync-report-dates.window="if ($event.detail && $event.detail.start) { value = $event.detail.start; }">
+                    <label class="block text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">From Date</label>
                     <input type="hidden" name="start_date" :value="value">
-                    <button type="button" @click="show = !show" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
-                        <span class="truncate" x-text="formatDisplay(value)"></span>
+                    <button type="button" @click="show = !show" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span class="truncate font-mono" x-text="formatDisplay(value)"></span>
                         <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
@@ -713,7 +773,7 @@
                             <template x-for="(d, i) in days" :key="i">
                                 <button type="button" @click="selectDay(d.day)"
                                     class="h-7 w-7 text-[10px] font-bold rounded-lg flex items-center justify-center transition-all"
-                                    :class="d.day === parseInt((value || '').split('-')[2]) && d.isCurrentMonth ? 'bg-themeBlue text-white font-black shadow-sm' : d.isCurrentMonth ? 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-themeDark/45' : 'text-transparent cursor-default'"
+                                    :class="d.day === parseInt((value || '').split('-')[2]) && currentMonth === (parseInt((value || '').split('-')[1], 10) - 1) && parseInt(currentYear, 10) === parseInt((value || '').split('-')[0], 10) && d.isCurrentMonth ? 'bg-themeBlue text-white font-black shadow-sm' : d.isCurrentMonth ? 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-themeDark/45' : 'text-transparent cursor-default'"
                                     :disabled="!d.isCurrentMonth">
                                     <span x-text="d.day"></span>
                                 </button>
@@ -723,18 +783,18 @@
                 </div>
 
                 <!-- To Date Picker (Rule 10) -->
-                <div class="relative" x-data="datePicker('{{ $endDate }}')" @click.away="show = false">
-                    <label class="block text-[10px] font-black tracking-widest text-gray-450 dark:text-gray-400 uppercase mb-1.5 ml-1">To Date</label>
+                <div class="relative" x-data="datePicker('{{ $endDate }}')" @click.away="show = false" @sync-report-dates.window="if ($event.detail && $event.detail.end) { value = $event.detail.end; }">
+                    <label class="block text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">To Date</label>
                     <input type="hidden" name="end_date" :value="value">
-                    <button type="button" @click="show = !show" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
-                        <span class="truncate" x-text="formatDisplay(value)"></span>
+                    <button type="button" @click="show = !show" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span class="truncate font-mono" x-text="formatDisplay(value)"></span>
                         <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                     </button>
 
                     <!-- Calendar Dropdown panel -->
-                    <div x-show="show" x-cloak class="absolute left-0 z-50 mt-1.5 w-64 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl p-3" x-transition>
+                    <div x-show="show" x-cloak class="absolute left-0 sm:left-auto sm:right-0 z-50 mt-1.5 w-64 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl p-3" x-transition>
                         <div class="flex items-center justify-between mb-3 border-b border-gray-100 dark:border-white/[0.04] pb-2">
                             <button type="button" @click="prevMonth()" class="p-1 hover:bg-gray-50 dark:hover:bg-themeDark/45 rounded-lg transition-colors">
                                 <svg class="w-3.5 h-3.5 text-gray-550" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -781,7 +841,7 @@
                             <template x-for="(d, i) in days" :key="i">
                                 <button type="button" @click="selectDay(d.day)"
                                     class="h-7 w-7 text-[10px] font-bold rounded-lg flex items-center justify-center transition-all"
-                                    :class="d.day === parseInt((value || '').split('-')[2]) && d.isCurrentMonth ? 'bg-themeBlue text-white font-black shadow-sm' : d.isCurrentMonth ? 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-themeDark/45' : 'text-transparent cursor-default'"
+                                    :class="d.day === parseInt((value || '').split('-')[2]) && currentMonth === (parseInt((value || '').split('-')[1], 10) - 1) && parseInt(currentYear, 10) === parseInt((value || '').split('-')[0], 10) && d.isCurrentMonth ? 'bg-themeBlue text-white font-black shadow-sm' : d.isCurrentMonth ? 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-themeDark/45' : 'text-transparent cursor-default'"
                                     :disabled="!d.isCurrentMonth">
                                     <span x-text="d.day"></span>
                                 </button>
@@ -790,12 +850,34 @@
                     </div>
                 </div>
 
-                <!-- Action Button -->
-                <div class="flex gap-2">
-                    <button type="submit" class="w-full h-11 bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-xs uppercase tracking-widest flex items-center justify-center whitespace-nowrap active:scale-95">Generate Report</button>
-                    <a href="{{ route('fees.reports.index') }}" class="h-11 px-4 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy hover:bg-gray-50 dark:hover:bg-themeDark/45 text-gray-500 dark:text-gray-300 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 whitespace-nowrap">Reset</a>
+            </div>
+
+            <!-- Action Bar (Rule 2 Buttons — Spacious & Balanced) -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-100 dark:border-white/[0.06]">
+                <div class="flex items-center gap-2">
+                    <template x-if="form.month">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-themeBlue/15 border border-sky-200/70 dark:border-themeBlue/30 text-[11px] font-bold text-themeBlue dark:text-blue-300">
+                            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span>Monthly Scope: <strong x-text="form.month + ' ' + form.year"></strong></span>
+                        </span>
+                    </template>
+                    <template x-if="!form.month">
+                        <span class="text-[11px] font-semibold text-gray-400 dark:text-gray-500">
+                            Select a specific month for full-month figures, or customize From / To dates.
+                        </span>
+                    </template>
                 </div>
 
+                <div class="flex items-center gap-2.5 ml-auto">
+                    <a href="{{ route('fees.reports.index') }}" class="h-11 px-6 border-2 border-gray-200 dark:border-gray-700/80 rounded-xl bg-white dark:bg-themeDark/60 hover:bg-gray-50 dark:hover:bg-themeDark text-gray-600 dark:text-gray-300 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 whitespace-nowrap">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Reset
+                    </a>
+                    <button type="submit" class="h-11 px-7 bg-gradient-to-r from-themeBlue to-themeGreen hover:opacity-95 text-white font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-2 whitespace-nowrap active:scale-95">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        Generate Report
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -896,7 +978,13 @@
 
         <div class="flex flex-wrap items-center gap-3">
             <div class="text-xs font-bold text-gray-500 dark:text-gray-400 bg-white dark:bg-themeNavy px-4 py-2.5 rounded-2xl border border-gray-100 dark:border-white/[0.06] shadow-sm">
-                Filtered: <span class="text-themeBlue font-black">{{ $selectedClassName }}</span> • <span class="text-gray-700 dark:text-gray-200 font-black">{{ date('d M Y', strtotime($startDate)) }} to {{ date('d M Y', strtotime($endDate)) }}</span>
+                Filtered: <span class="text-themeBlue font-black">{{ $selectedClassName }}</span> •
+                @if($selectedMonthVal)
+                    <span class="text-themeGreen font-black">{{ $selectedMonthVal }} {{ $selectedYearVal }}</span>
+                    <span class="text-gray-400 dark:text-gray-500 font-semibold">({{ date('d M Y', strtotime($startDate)) }} to {{ date('d M Y', strtotime($endDate)) }})</span>
+                @else
+                    <span class="text-gray-700 dark:text-gray-200 font-black">{{ date('d M Y', strtotime($startDate)) }} to {{ date('d M Y', strtotime($endDate)) }}</span>
+                @endif
             </div>
 
             <!-- Quick Table Action Buttons -->
@@ -970,7 +1058,7 @@
                             <td style="border: none !important; padding: 0.5px 2px !important; font-size: 10px; color: #334155; font-weight: 700; white-space: nowrap;">
                                 Branch: <strong style="color: #008ED6;">{{ $selectedBranchName }}</strong>
                                 &nbsp;&bull;&nbsp; Class: <strong style="color: #008ED6;">{{ $selectedClassName }}</strong>
-                                &nbsp;&bull;&nbsp; Period: <strong style="color: #0F1E2C;">{{ date('d M Y', strtotime($startDate)) }} - {{ date('d M Y', strtotime($endDate)) }}</strong>
+                                &nbsp;&bull;&nbsp; Period: <strong style="color: #0F1E2C;">@if($selectedMonthVal){{ $selectedMonthVal }} {{ $selectedYearVal }} ({{ date('d M Y', strtotime($startDate)) }} - {{ date('d M Y', strtotime($endDate)) }})@else{{ date('d M Y', strtotime($startDate)) }} - {{ date('d M Y', strtotime($endDate)) }}@endif</strong>
                             </td>
                             <td style="border: none !important; padding: 0.5px 2px !important; font-size: 10px; color: #334155; font-weight: 700; text-align: right; white-space: nowrap;">
                                 Receipts: <strong style="color: #0F1E2C;">{{ $totalCollectionCount }}</strong>@if($totalPaymentRecordsCount > $totalCollectionCount) <span style="color: #64748B; font-size: 9px;">({{ $totalPaymentRecordsCount }} Fees)</span>@endif
@@ -986,7 +1074,7 @@
                             <td style="border: none !important; padding: 0.5px 2px !important; font-size: 10px; color: #334155; font-weight: 700; white-space: nowrap;">
                                 Branch: <strong style="color: #008ED6;">{{ $selectedBranchName }}</strong>
                                 &nbsp;&bull;&nbsp; Class: <strong style="color: #008ED6;">{{ $selectedClassName }}</strong>
-                                &nbsp;&bull;&nbsp; Period: <strong style="color: #0F1E2C;">{{ ($dueType ?? 'period') === 'cumulative' ? 'All Unpaid Arrears up to ' . date('d M Y', strtotime($endDate)) : date('d M Y', strtotime($startDate)) . ' - ' . date('d M Y', strtotime($endDate)) }}</strong>
+                                &nbsp;&bull;&nbsp; Period: <strong style="color: #0F1E2C;">{{ ($dueType ?? 'period') === 'cumulative' ? 'All Unpaid Arrears up to ' . date('d M Y', strtotime($endDate)) : ($selectedMonthVal ? $selectedMonthVal . ' ' . $selectedYearVal . ' (' . date('d M Y', strtotime($startDate)) . ' - ' . date('d M Y', strtotime($endDate)) . ')' : date('d M Y', strtotime($startDate)) . ' - ' . date('d M Y', strtotime($endDate))) }}</strong>
                             </td>
                             <td style="border: none !important; padding: 0.5px 2px !important; font-size: 10px; color: #334155; font-weight: 700; text-align: right; white-space: nowrap;">
                                 Defaulters: <strong style="color: #DC2626;">{{ $uniqueDefaulterStudentsCount }}</strong>
@@ -998,138 +1086,157 @@
                 </div>
             </div>
 
-            <!-- Data Tables Card (Point 3: Gap minimized, print:!mt-0 print:!mb-0) -->
-            <div class="table-card-wrapper bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden mb-12 print:!border-none print:!shadow-none print:!rounded-none print:!overflow-visible print:!bg-transparent print:!mb-0 print:!mt-0 print:!p-0">
+            <!-- Data Tables Card (AGENTS.md Rule 9, print:!mt-0 print:!mb-0) -->
+            <div class="table-card-wrapper w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden mb-12 print:!border-none print:!shadow-none print:!rounded-none print:!overflow-visible print:!bg-transparent print:!mb-0 print:!mt-0 print:!p-0">
 
                 <!-- Collection History Tab -->
                 <div id="tab-collection" class="tab-content active" :class="{ 'active': activeTab === 'collection' }">
-                    <div class="table-container bg-transparent !border-none !shadow-none print:!mt-0 !mt-2 !mb-0 overflow-x-auto">
-                        <table class="w-full text-left border-collapse table">
-                            <thead>
-                                <tr class="!bg-transparent">
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center col-sl">#</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] col-receipt">Receipt & Date</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] col-student">Student Info</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] col-fee-details">Fee Details & Month</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center col-method">Method</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-right col-amount">Paid Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06]">
-                                @forelse($collections as $index => $col)
-                                <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors" x-data="{ expanded: false }">
-                                    <td class="py-0 px-0 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm col-sl">{{ $index + 1 }}</td>
-                                    <td class="py-0 px-0 col-receipt">
-                                        <div class="flex items-center gap-1.5 flex-nowrap">
-                                            <a href="{{ route('fees.receipt.pos_print', $col->receipt_no) }}" target="_blank" class="font-mono font-black text-themeBlue hover:underline text-xs" title="Print POS Receipt">{{ $col->receipt_no }}</a>
-                                            @if($col->items_count > 1)
-                                             <span class="no-print inline-block px-1.5 py-0.5 bg-blue-50 dark:bg-themeDark border border-blue-200 dark:border-white/[0.08] text-themeBlue text-[8.5px] font-black rounded-md">{{ $col->items_count }} Fees</span>
-                                            @endif
-                                        </div>
-                                        <div class="text-[10px] text-gray-500 font-semibold mt-0.5 whitespace-nowrap">{{ $col->collection_date_formatted ?? 'Date unavailable' }}</div>
-                                    </td>
-                                    <td class="py-0 px-0 col-student">
-                                        <div class="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">{{ $col->student->student_name ?? 'N/A' }}</div>
-                                        <div class="student-meta text-xs font-bold text-gray-600 dark:text-gray-400 mt-0.5 leading-tight whitespace-nowrap">
-                                            <span class="font-mono text-gray-800 dark:text-gray-200">{{ $col->student->student_identity ?? 'N/A' }}</span>
-                                            <span class="text-gray-400 mx-1">&bull;</span>
-                                            @if(!$selectedClass)
-                                            <span class="text-gray-800 dark:text-gray-200">{{ $col->student->schoolClass->class_name ?? 'N/A' }}</span>,
-                                            @endif
-                                            <span class="text-gray-700 dark:text-gray-300">Roll: {{ $col->student->roll_number ?? 'N/A' }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="py-0 px-0 text-sm font-semibold text-gray-700 dark:text-gray-300 col-fee-details">
-                                        <div class="col-fee-details-list space-y-0.5">
-                                            @if(isset($col->category_months) && count($col->category_months) > 0)
-                                                @foreach($col->category_months as $catName => $catMonths)
-                                                    @php
-                                                        $filteredMonths = collect($catMonths)->filter(function($m) {
-                                                            return !empty($m) && !in_array(strtolower(trim($m)), ['one time', 'one_time', 'general', '']);
-                                                        });
-                                                    @endphp
-                                                    <div class="fee-detail-line text-xs leading-tight">
-                                                        <span class="fee-cat-name font-bold text-gray-900 dark:text-gray-100">{{ $catName }}</span>@if($filteredMonths->isNotEmpty())<span class="fee-sep font-bold text-gray-500 dark:text-gray-400 mx-1">-</span><span class="fee-months font-semibold text-gray-800 dark:text-gray-200">{{ $filteredMonths->join(', ') }}</span>@elseif(collect($catMonths)->isNotEmpty() && strtolower(trim(collect($catMonths)->first())) === 'one time')<span class="fee-sep font-bold text-gray-500 dark:text-gray-400 mx-1">-</span><span class="fee-months font-semibold text-gray-800 dark:text-gray-200">One Time</span>@endif
-                                                    </div>
-                                                @endforeach
-                                            @else
-                                                <div class="fee-detail-line text-xs leading-tight">
-                                                    <span class="fee-cat-name font-bold text-gray-900 dark:text-gray-100">{{ $col->categories_summary ?? 'Fee' }}</span>@if(!empty($col->months))<span class="fee-sep font-bold text-gray-500 dark:text-gray-400 mx-1">-</span><span class="fee-months font-semibold text-gray-800 dark:text-gray-200">{{ collect($col->months)->join(', ') }}</span>@endif
-                                                </div>
-                                            @endif
-                                        </div>
-                                        @if($col->items_count > 1)
-                                        <div class="no-print mt-1">
-                                            <button type="button" @click="expanded = !expanded" class="text-[9px] font-bold text-themeBlue hover:underline flex items-center gap-0.5 focus:outline-none">
-                                                <span x-text="expanded ? 'Hide fee breakdown' : 'View breakdown (' + {{ $col->items_count }} + ')'"></span>
-                                                <svg class="w-2.5 h-2.5 transition-transform duration-200" :class="expanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </button>
-                                            <div x-show="expanded" x-cloak class="mt-1.5 p-2 bg-gray-50/90 dark:bg-themeDark/80 rounded-xl border border-gray-200/70 dark:border-white/[0.08] text-[10px] space-y-1">
-                                                @foreach($col->items as $it)
-                                                @php
-                                                $itMonth = $it->invoice->month_name ?? 'One Time';
-                                                @endphp
-                                                <div class="flex justify-between items-center text-gray-600 dark:text-gray-300">
-                                                    <span>{{ $it->invoice->feeSetup->category->name ?? 'Fee' }} ({{ $itMonth }})</span>
-                                                    <span class="font-mono font-bold text-gray-900 dark:text-white">৳ {{ number_format($it->paid_amount, 2) }}</span>
-                                                </div>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                        @endif
-                                    </td>
-                                    <td class="py-0 px-0 text-center col-method">
-                                        <span class="px-2 py-0.5 text-[10.5px] font-black rounded-md border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-themeDark/45">{{ $col->payment_method }}</span>
-                                    </td>
-                                    <td class="py-0 px-0 text-right font-black text-themeGreen dark:text-themeGreen text-sm sm:text-base font-mono col-amount">
-                                        ৳ {{ number_format($col->paid_amount, 2) }}
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="6" class="py-12 text-center text-gray-400 font-bold uppercase tracking-wider">No collections found in this date range.</td>
-                                </tr>
-                                @endforelse
-                            </tbody>
+                    <!-- Screen-only Section Header -->
+                    <div class="no-print px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-themeGreen flex-shrink-0"></span>
+                            <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Collection History</h3>
+                        </div>
+                        <div class="flex items-center gap-2 text-[11px] font-semibold text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                            <span><strong class="font-mono text-gray-700 dark:text-gray-200">{{ $totalCollectionCount }}</strong> receipt(s)</span>
+                            <span>&bull;</span>
+                            <span><strong class="font-mono text-gray-700 dark:text-gray-200">{{ $uniquePayingStudentsCount }}</strong> student(s)</span>
+                        </div>
+                    </div>
 
-                            <!-- Table Summary Footer (Aggregate Collections) -->
-                            @if($collections->isNotEmpty())
-                            <tfoot>
-                                <tr class="bg-gray-50/80 dark:bg-themeNavy/80 border-t-2 border-gray-200 dark:border-white/[0.1] font-black">
-                                    <td colspan="3" class="py-3 px-4 text-xs uppercase tracking-widest text-gray-600 dark:text-gray-300">
-                                        Total Collection Summary: <span class="text-themeBlue font-mono">{{ $totalCollectionCount }}</span> Receipts @if($totalPaymentRecordsCount > $totalCollectionCount) (<span class="font-mono">{{ $totalPaymentRecordsCount }}</span> Invoices) @endif • <span class="text-themeBlue font-mono">{{ $uniquePayingStudentsCount }}</span> Students
-                                    </td>
-                                    <td colspan="2" class="py-3 px-4 text-right text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">
-                                        Grand Total Collected:
-                                    </td>
-                                    <td class="py-3 px-4 text-right font-mono text-base font-black text-themeGreen dark:text-green-400 col-amount">
-                                        ৳ {{ number_format($totalCollected, 2) }}
-                                    </td>
-                                </tr>
-                            </tfoot>
-                            @endif
-                        </table>
+                    <div class="px-6 pb-4 pt-1 print:!p-0">
+                        <div class="table-container bg-transparent !border-none !shadow-none !rounded-none print:!mt-0 !mt-2 !mb-0 overflow-x-auto">
+                            <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-1 [&>thead>tr>th:last-child]:!pr-1 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-3 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-1 [&>tbody>tr>td:last-child]:!pr-1 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35 [&>tbody>tr>td.col-sl]:!text-gray-400 dark:[&>tbody>tr>td.col-sl]:!text-gray-500 [&>tbody>tr>td.col-amount]:!text-themeGreen dark:[&>tbody>tr>td.col-amount]:!text-emerald-400 [&>tfoot>tr>td]:!py-3 [&>tfoot>tr>td]:!px-3 [&>tfoot>tr>td:first-child]:!pl-1 [&>tfoot>tr>td:last-child]:!pr-1 [&>tfoot>tr>td]:!bg-gray-50/80 dark:[&>tfoot>tr>td]:!bg-themeDark/60 [&>tfoot>tr:hover>td]:!bg-gray-50/80 dark:[&>tfoot>tr:hover>td]:!bg-themeDark/60 [&>tfoot>tr>td]:!border-t-2 [&>tfoot>tr>td]:!border-b-0 [&>tfoot>tr>td]:!border-gray-200 dark:[&>tfoot>tr>td]:!border-white/[0.12] [&>tfoot>tr>td.col-amount]:!text-themeGreen dark:[&>tfoot>tr>td.col-amount]:!text-emerald-400">
+                                <thead>
+                                    <tr class="!bg-transparent">
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center whitespace-nowrap w-12 col-sl">#</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] whitespace-nowrap col-receipt">Receipt &amp; Date</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] whitespace-nowrap col-student">Student Info</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] whitespace-nowrap col-fee-details">Fee Details &amp; Month</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center whitespace-nowrap col-method">Method</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-right whitespace-nowrap col-amount">Paid Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($collections as $index => $col)
+                                    <tr class="transition-colors" x-data="{ expanded: false }">
+                                        <td class="py-0 px-0 text-center font-mono font-black text-sm whitespace-nowrap col-sl">{{ $index + 1 }}</td>
+                                        <td class="py-0 px-0 col-receipt whitespace-nowrap">
+                                            <div class="flex items-center gap-1.5 flex-nowrap">
+                                                <a href="{{ route('fees.receipt.pos_print', $col->receipt_no) }}" target="_blank" class="font-mono font-black text-themeBlue hover:underline text-xs whitespace-nowrap" title="Print POS Receipt">{{ $col->receipt_no }}</a>
+                                                @if($col->items_count > 1)
+                                                 <span class="no-print inline-flex items-center px-1.5 py-0.5 bg-sky-50 dark:bg-themeBlue/15 border border-sky-200/70 dark:border-themeBlue/30 text-themeBlue dark:text-blue-300 text-[9px] font-black rounded-md whitespace-nowrap">{{ $col->items_count }} Fees</span>
+                                                @endif
+                                            </div>
+                                            <div class="text-[11px] text-gray-500 dark:text-gray-400 font-semibold mt-0.5 whitespace-nowrap">{{ $col->collection_date_formatted ?? 'Date unavailable' }}</div>
+                                        </td>
+                                        <td class="py-0 px-0 col-student whitespace-nowrap">
+                                            <div class="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">{{ $col->student->student_name ?? 'N/A' }}</div>
+                                            <div class="student-meta text-xs font-bold text-gray-600 dark:text-gray-400 mt-0.5 leading-tight whitespace-nowrap">
+                                                <span class="font-mono text-gray-700 dark:text-gray-300">{{ $col->student->student_identity ?? 'N/A' }}</span>
+                                                <span class="text-gray-400 mx-1">&bull;</span>
+                                                @if(!$selectedClass)
+                                                <span class="text-gray-700 dark:text-gray-300">{{ $col->student->schoolClass->class_name ?? 'N/A' }}</span>,
+                                                @endif
+                                                <span class="text-gray-600 dark:text-gray-400">Roll: {{ $col->student->roll_number ?? 'N/A' }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-0 px-0 text-sm font-semibold text-gray-700 dark:text-gray-300 col-fee-details">
+                                            <div class="col-fee-details-list space-y-0.5">
+                                                @if(isset($col->category_months) && count($col->category_months) > 0)
+                                                    @foreach($col->category_months as $catName => $catMonths)
+                                                        @php
+                                                            $filteredMonths = collect($catMonths)->filter(function($m) {
+                                                                return !empty($m) && !in_array(strtolower(trim($m)), ['one time', 'one_time', 'general', '']);
+                                                            });
+                                                        @endphp
+                                                        <div class="fee-detail-line text-xs leading-snug">
+                                                            <span class="fee-cat-name font-bold text-gray-900 dark:text-gray-100">{{ $catName }}</span>@if($filteredMonths->isNotEmpty())<span class="fee-sep font-bold text-gray-400 mx-1">-</span><span class="fee-months font-semibold text-gray-600 dark:text-gray-300">{{ $filteredMonths->join(', ') }}</span>@elseif(collect($catMonths)->isNotEmpty() && strtolower(trim(collect($catMonths)->first())) === 'one time')<span class="fee-sep font-bold text-gray-400 mx-1">-</span><span class="fee-months font-semibold text-gray-600 dark:text-gray-300">One Time</span>@endif
+                                                        </div>
+                                                    @endforeach
+                                                @else
+                                                    <div class="fee-detail-line text-xs leading-snug">
+                                                        <span class="fee-cat-name font-bold text-gray-900 dark:text-gray-100">{{ $col->categories_summary ?? 'Fee' }}</span>@if(!empty($col->months))<span class="fee-sep font-bold text-gray-400 mx-1">-</span><span class="fee-months font-semibold text-gray-600 dark:text-gray-300">{{ collect($col->months)->join(', ') }}</span>@endif
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            @if($col->items_count > 1)
+                                            <div class="no-print mt-1">
+                                                <button type="button" @click="expanded = !expanded" class="text-[10px] font-bold text-themeBlue hover:underline inline-flex items-center gap-1 focus:outline-none">
+                                                    <span x-text="expanded ? 'Hide fee breakdown' : 'View breakdown (' + {{ $col->items_count }} + ')'"></span>
+                                                    <svg class="w-3 h-3 transition-transform duration-200" :class="expanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </button>
+                                                <div x-show="expanded" x-cloak class="mt-1.5 p-2.5 bg-gray-50/90 dark:bg-themeDark/80 rounded-xl border border-gray-200/70 dark:border-white/[0.08] text-[11px] space-y-1">
+                                                    @foreach($col->items as $it)
+                                                    @php
+                                                    $itMonth = $it->invoice->month_name ?? 'One Time';
+                                                    @endphp
+                                                    <div class="flex justify-between items-center gap-4 text-gray-600 dark:text-gray-300">
+                                                        <span>{{ $it->report_fee_label ?? ($it->invoice->feeSetup->category->name ?? 'Fee') }} ({{ $itMonth }})</span>
+                                                        <span class="font-mono font-bold text-gray-900 dark:text-white whitespace-nowrap">৳ {{ number_format($it->report_effective_amount ?? $it->paid_amount, 2) }}</span>
+                                                    </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                            @endif
+                                        </td>
+                                        <td class="py-0 px-0 text-center whitespace-nowrap col-method">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-lg border border-gray-200 dark:border-white/[0.08] text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-themeDark/50 whitespace-nowrap">{{ $col->payment_method }}</span>
+                                        </td>
+                                        <td class="py-0 px-0 text-right font-black text-sm sm:text-base font-mono whitespace-nowrap col-amount">
+                                            ৳ {{ number_format($col->paid_amount, 2) }}
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="6">
+                                            <div class="py-12 text-center text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">No collections found in this date range.</div>
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+
+                                <!-- Table Summary Footer (Aggregate Collections) -->
+                                @if($collections->isNotEmpty())
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="whitespace-nowrap">
+                                            <span class="text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                                                Total Collection Summary: <strong class="text-themeBlue font-mono">{{ $totalCollectionCount }}</strong> Receipts @if($totalPaymentRecordsCount > $totalCollectionCount) (<strong class="font-mono">{{ $totalPaymentRecordsCount }}</strong> Invoices) @endif &bull; <strong class="text-themeBlue font-mono">{{ $uniquePayingStudentsCount }}</strong> Students
+                                            </span>
+                                        </td>
+                                        <td colspan="2" class="text-right whitespace-nowrap">
+                                            <span class="text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300">Grand Total Collected:</span>
+                                        </td>
+                                        <td class="text-right font-mono text-base font-black whitespace-nowrap col-amount">
+                                            ৳ {{ number_format($totalCollected, 2) }}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                                @endif
+                            </table>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Defaulters List Tab (Student-Wise with Total Due Months & Month Names) -->
                 <div id="tab-dues" class="tab-content" :class="{ 'active': activeTab === 'dues' }">
-                    <!-- Quick Mode Switcher Pills (Rule 2) -->
-                    <div class="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50/70 dark:bg-themeDark/60 rounded-2xl border border-gray-150 dark:border-white/[0.06] no-print">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] font-black uppercase tracking-wider text-gray-450 dark:text-gray-400 ml-1">Arrears Filter Mode:</span>
-                            <a href="{{ request()->fullUrlWithQuery(['due_type' => 'period']) }}" class="px-3 py-1.5 text-xs rounded-xl transition-all uppercase tracking-wider flex items-center gap-1.5 {{ ($dueType ?? 'period') === 'period' ? 'bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-300 font-bold hover:text-themeBlue' }}">
+                    <!-- Quick Mode Switcher Header Bar (Rule 2) -->
+                    <div class="no-print px-6 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/40 dark:bg-themeDark/30 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 mr-1">Arrears Mode:</span>
+                            <a href="{{ request()->fullUrlWithQuery(['due_type' => 'period']) }}" class="px-3.5 py-1.5 text-[11px] rounded-xl transition-all uppercase tracking-wider inline-flex items-center gap-1.5 whitespace-nowrap {{ ($dueType ?? 'period') === 'period' ? 'bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black shadow-sm' : 'bg-white dark:bg-themeNavy border border-gray-200 dark:border-white/[0.08] text-gray-600 dark:text-gray-300 font-bold hover:text-themeBlue' }}">
                                 <span>Period Due</span>
                                 <span class="font-mono text-[11px] opacity-90">(৳ {{ number_format($periodTotalDue ?? 0, 0) }})</span>
                             </a>
-                            <a href="{{ request()->fullUrlWithQuery(['due_type' => 'cumulative']) }}" class="px-3 py-1.5 text-xs rounded-xl transition-all uppercase tracking-wider flex items-center gap-1.5 {{ ($dueType ?? 'period') === 'cumulative' ? 'bg-gradient-to-r from-red-600 to-red-800 text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-300 font-bold hover:text-red-600' }}">
+                            <a href="{{ request()->fullUrlWithQuery(['due_type' => 'cumulative']) }}" class="px-3.5 py-1.5 text-[11px] rounded-xl transition-all uppercase tracking-wider inline-flex items-center gap-1.5 whitespace-nowrap {{ ($dueType ?? 'period') === 'cumulative' ? 'bg-gradient-to-r from-red-600 to-red-800 text-white font-black shadow-sm' : 'bg-white dark:bg-themeNavy border border-gray-200 dark:border-white/[0.08] text-gray-600 dark:text-gray-300 font-bold hover:text-red-500' }}">
                                 <span>Cumulative Arrears</span>
                                 <span class="font-mono text-[11px] opacity-90">(৳ {{ number_format($cumulativeTotalDue ?? 0, 0) }})</span>
                             </a>
                         </div>
-                        <div class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mr-2">
+                        <div class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                             @if(($dueType ?? 'period') === 'cumulative')
                             Showing all unpaid balances due on or before <span class="font-bold text-gray-800 dark:text-gray-200">{{ date('d M Y', strtotime($endDate)) }}</span>
                             @else
@@ -1138,85 +1245,91 @@
                         </div>
                     </div>
 
-                    <div class="table-container bg-transparent !border-none !shadow-none print:!mt-0 !mt-2 !mb-0 overflow-x-auto">
-                        <table class="w-full text-left border-collapse table">
-                            <thead>
-                                <tr class="!bg-transparent">
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center col-sl">#</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] col-student">Student Info</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] col-fee-details">Total Due Months & Month Names</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] col-fee-types">Fee Types</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center col-invoices">Invoices</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-red-500 dark:text-red-400 uppercase tracking-[0.2em] text-right col-due-amount col-amount">Total Due Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06]">
-                                @forelse($defaulters as $index => $def)
-                                <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
-                                    <td class="py-0 px-0 text-center font-mono font-black text-gray-555 dark:text-gray-400 text-sm col-sl">{{ $index + 1 }}</td>
-                                    <td class="py-0 px-0 col-student">
-                                        <div class="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">{{ $def->student->student_name ?? 'N/A' }}</div>
-                                        <div class="student-meta text-xs font-bold text-gray-600 dark:text-gray-400 mt-0.5 leading-tight whitespace-nowrap">
-                                            <span class="font-mono text-gray-800 dark:text-gray-200">{{ $def->student->student_identity ?? 'N/A' }}</span>
-                                            <span class="text-gray-400 mx-1">&bull;</span>
-                                            @if(!$selectedClass)
-                                            <span class="text-gray-800 dark:text-gray-200">{{ $def->student->schoolClass->class_name ?? 'N/A' }}</span>,
-                                            @endif
-                                            <span class="text-gray-700 dark:text-gray-300">Roll: {{ $def->student->roll_number ?? 'N/A' }}</span>
-                                            @if($def->student && $def->student->phone)
-                                            <span class="text-gray-400 mx-1">&bull;</span>
-                                            <span class="text-gray-500">{{ $def->student->phone }}</span>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="py-0 px-0 col-fee-details">
-                                        <div class="flex items-center gap-1.5 flex-wrap">
-                                            <span class="inline-flex items-center px-2.5 py-1 text-[10px] font-black bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300 rounded-lg">
-                                                {{ $def->due_months_count }} {{ Str::plural('Month', $def->due_months_count) }} Due
+                    <div class="px-6 pb-4 pt-1 print:!p-0">
+                        <div class="table-container bg-transparent !border-none !shadow-none !rounded-none print:!mt-0 !mt-2 !mb-0 overflow-x-auto">
+                            <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-1 [&>thead>tr>th:last-child]:!pr-1 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>thead>tr>th.col-due-amount]:!text-rose-500 dark:[&>thead>tr>th.col-due-amount]:!text-rose-400 [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-3 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-1 [&>tbody>tr>td:last-child]:!pr-1 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35 [&>tbody>tr>td.col-sl]:!text-gray-400 dark:[&>tbody>tr>td.col-sl]:!text-gray-500 [&>tbody>tr>td.col-fee-types]:!text-xs [&>tbody>tr>td.col-fee-types]:!text-gray-600 dark:[&>tbody>tr>td.col-fee-types]:!text-gray-300 [&>tbody>tr>td.col-due-amount]:!text-rose-600 dark:[&>tbody>tr>td.col-due-amount]:!text-rose-400 [&>tfoot>tr>td]:!py-3 [&>tfoot>tr>td]:!px-3 [&>tfoot>tr>td:first-child]:!pl-1 [&>tfoot>tr>td:last-child]:!pr-1 [&>tfoot>tr>td]:!bg-gray-50/80 dark:[&>tfoot>tr>td]:!bg-themeDark/60 [&>tfoot>tr:hover>td]:!bg-gray-50/80 dark:[&>tfoot>tr:hover>td]:!bg-themeDark/60 [&>tfoot>tr>td]:!border-t-2 [&>tfoot>tr>td]:!border-b-0 [&>tfoot>tr>td]:!border-gray-200 dark:[&>tfoot>tr>td]:!border-white/[0.12] [&>tfoot>tr>td.col-due-amount]:!text-rose-600 dark:[&>tfoot>tr>td.col-due-amount]:!text-rose-400">
+                                <thead>
+                                    <tr class="!bg-transparent">
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center whitespace-nowrap w-12 col-sl">#</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] whitespace-nowrap col-student">Student Info</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] whitespace-nowrap col-fee-details">Total Due Months &amp; Month Names</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] whitespace-nowrap col-fee-types">Fee Types</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center whitespace-nowrap col-invoices">Invoices</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-rose-500 dark:text-rose-400 uppercase tracking-[0.2em] text-right whitespace-nowrap col-due-amount col-amount">Total Due Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($defaulters as $index => $def)
+                                    <tr class="transition-colors">
+                                        <td class="py-0 px-0 text-center font-mono font-black text-sm whitespace-nowrap col-sl">{{ $index + 1 }}</td>
+                                        <td class="py-0 px-0 col-student whitespace-nowrap">
+                                            <div class="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">{{ $def->student->student_name ?? 'N/A' }}</div>
+                                            <div class="student-meta text-xs font-bold text-gray-600 dark:text-gray-400 mt-0.5 leading-tight whitespace-nowrap">
+                                                <span class="font-mono text-gray-700 dark:text-gray-300">{{ $def->student->student_identity ?? 'N/A' }}</span>
+                                                <span class="text-gray-400 mx-1">&bull;</span>
+                                                @if(!$selectedClass)
+                                                <span class="text-gray-700 dark:text-gray-300">{{ $def->student->schoolClass->class_name ?? 'N/A' }}</span>,
+                                                @endif
+                                                <span class="text-gray-600 dark:text-gray-400">Roll: {{ $def->student->roll_number ?? 'N/A' }}</span>
+                                                @if($def->student && $def->student->phone)
+                                                <span class="text-gray-400 mx-1">&bull;</span>
+                                                <span class="text-gray-500">{{ $def->student->phone }}</span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td class="py-0 px-0 col-fee-details">
+                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 text-[10px] font-black bg-rose-50 text-rose-600 border border-rose-200/70 dark:bg-rose-950/40 dark:border-rose-500/25 dark:text-rose-300 rounded-lg whitespace-nowrap">
+                                                    {{ $def->due_months_count }} {{ Str::plural('Month', $def->due_months_count) }} Due
+                                                </span>
+                                                @foreach($def->due_months as $monthName)
+                                                <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold bg-gray-100 dark:bg-themeDark border border-gray-200 dark:border-white/[0.08] text-gray-700 dark:text-gray-300 rounded-md whitespace-nowrap">
+                                                    {{ $monthName }}
+                                                </span>
+                                                @endforeach
+                                            </div>
+                                        </td>
+                                        <td class="py-0 px-0 text-xs font-semibold col-fee-types">
+                                            {{ $def->categories->join(', ') }}
+                                        </td>
+                                        <td class="py-0 px-0 text-center whitespace-nowrap col-invoices">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 text-[10px] font-mono font-bold bg-gray-50 dark:bg-themeDark border border-gray-200 dark:border-white/[0.08] rounded-lg text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                                {{ $def->total_invoices }} {{ Str::plural('Inv', $def->total_invoices) }}
                                             </span>
-                                            @foreach($def->due_months as $monthName)
-                                            <span class="inline-block px-2 py-0.5 text-[9px] font-bold bg-gray-100 dark:bg-themeDark border border-gray-200 dark:border-white/[0.08] text-gray-700 dark:text-gray-300 rounded-md">
-                                                {{ $monthName }}
-                                            </span>
-                                            @endforeach
-                                        </div>
-                                    </td>
-                                    <td class="py-0 px-0 text-xs font-semibold text-gray-600 dark:text-gray-400 col-fee-types">
-                                        {{ $def->categories->join(', ') }}
-                                    </td>
-                                    <td class="py-0 px-0 text-center col-invoices">
-                                        <span class="inline-block px-2.5 py-1 text-[10px] font-mono font-bold bg-gray-50 dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] rounded-lg text-gray-700 dark:text-gray-300">
-                                            {{ $def->total_invoices }} {{ Str::plural('Inv', $def->total_invoices) }}
-                                        </span>
-                                    </td>
-                                    <td class="py-0 px-0 text-right font-black text-red-600 dark:text-red-400 text-sm sm:text-base font-mono col-due-amount col-amount">
-                                        ৳ {{ number_format($def->total_due, 2) }}
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="6" class="py-12 text-center text-themeGreen font-black text-sm uppercase tracking-wider">Awesome! No pending defaulters found for this class and date range.</td>
-                                </tr>
-                                @endforelse
-                            </tbody>
+                                        </td>
+                                        <td class="py-0 px-0 text-right font-black text-sm sm:text-base font-mono whitespace-nowrap col-due-amount col-amount">
+                                            ৳ {{ number_format($def->total_due, 2) }}
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="6">
+                                            <div class="py-12 text-center text-themeGreen font-black text-xs uppercase tracking-wider">Awesome! No pending defaulters found for this class and date range.</div>
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
 
-                            <!-- Table Summary Footer (Aggregate Defaulters Dues) -->
-                            @if($defaulters->isNotEmpty())
-                            <tfoot>
-                                <tr class="bg-gray-50/80 dark:bg-themeNavy/80 border-t-2 border-gray-200 dark:border-white/[0.1] font-black">
-                                    <td colspan="3" class="py-3 px-4 text-xs uppercase tracking-widest text-gray-600 dark:text-gray-300">
-                                        Defaulter Summary: <span class="text-red-600 font-mono">{{ $uniqueDefaulterStudentsCount }}</span> Students • <span class="text-red-600 font-mono">{{ $totalDueInvoicesCount }}</span> Unpaid Invoices
-                                    </td>
-                                    <td colspan="2" class="py-3 px-4 text-right text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">
-                                        Grand Total Due:
-                                    </td>
-                                    <td class="py-3 px-4 text-right font-mono text-base font-black text-red-600 dark:text-red-400 col-amount">
-                                        ৳ {{ number_format($totalDue, 2) }}
-                                    </td>
-                                </tr>
-                            </tfoot>
-                            @endif
-                        </table>
+                                <!-- Table Summary Footer (Aggregate Defaulters Dues) -->
+                                @if($defaulters->isNotEmpty())
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="whitespace-nowrap">
+                                            <span class="text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                                                Defaulter Summary: <strong class="text-rose-500 font-mono">{{ $uniqueDefaulterStudentsCount }}</strong> Students &bull; <strong class="text-rose-500 font-mono">{{ $totalDueInvoicesCount }}</strong> Unpaid Invoices
+                                            </span>
+                                        </td>
+                                        <td colspan="2" class="text-right whitespace-nowrap">
+                                            <span class="text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300">Grand Total Due:</span>
+                                        </td>
+                                        <td class="text-right font-mono text-base font-black whitespace-nowrap col-due-amount col-amount">
+                                            ৳ {{ number_format($totalDue, 2) }}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                                @endif
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -1258,14 +1371,17 @@
     function reportFilter() {
         return {
             activeDropdown: null,
-            branchText: '{{ $selectedBranchName }}',
-            classText: '{{ $selectedClassName }}',
-            dueTypeText: '{{ ($dueType ?? 'period') === 'cumulative' ? 'Cumulative Arrears (Up to End Date)' : 'Selected Period (Monthly Due)' }}',
+            branchText: '{{ addslashes($selectedBranchName) }}',
+            classText: '{{ addslashes($selectedClassName) }}',
+            dueTypeText: '{{ ($dueType ?? 'period') === 'cumulative' ? 'Cumulative Arrears (Up to Date)' : 'Selected Period (Monthly Due)' }}',
+            monthNamesList: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
 
             form: {
                 branch_id: '{{ request('branch_id') }}',
                 class_id: '{{ request('class_id') }}',
-                due_type: '{{ request('due_type', $dueType ?? 'period') }}'
+                due_type: '{{ request('due_type', $dueType ?? 'period') }}',
+                month: '{{ $selectedMonthVal }}',
+                year: '{{ $selectedYearVal }}'
             },
 
             selectBranch(id, name) {
@@ -1282,30 +1398,68 @@
                 this.form.due_type = type;
                 this.dueTypeText = text;
                 this.activeDropdown = null;
+            },
+            selectMonth(monthName) {
+                this.form.month = monthName;
+                this.activeDropdown = null;
+                if (monthName) {
+                    this.syncDatesFromMonth();
+                }
+            },
+            selectYear(yr) {
+                this.form.year = String(yr);
+                this.activeDropdown = null;
+                if (this.form.month) {
+                    this.syncDatesFromMonth();
+                }
+            },
+            syncDatesFromMonth() {
+                const idx = this.monthNamesList.indexOf(this.form.month);
+                const yr = parseInt(this.form.year, 10);
+                if (idx < 0 || isNaN(yr)) return;
+                const mm = String(idx + 1).padStart(2, '0');
+                const lastDay = new Date(yr, idx + 1, 0).getDate();
+                const start = `${yr}-${mm}-01`;
+                const end = `${yr}-${mm}-${String(lastDay).padStart(2, '0')}`;
+                window.dispatchEvent(new CustomEvent('sync-report-dates', { detail: { start, end } }));
+            },
+            clearMonthSelection() {
+                this.form.month = '';
             }
         };
     }
 
     // Custom Date Picker component data definition (Rule 10)
     function datePicker(initialValue = '') {
+        const parseIso = (val) => {
+            if (!val) return null;
+            const parts = String(val).split('-');
+            if (parts.length !== 3) return null;
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10) - 1;
+            const d = parseInt(parts[2], 10);
+            if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+            return { y, m, d };
+        };
+        const initParsed = parseIso(initialValue);
+        const now = new Date();
+
         return {
             show: false,
             value: initialValue || '',
-            currentYear: new Date(initialValue || new Date()).getFullYear(),
-            currentMonth: new Date(initialValue || new Date()).getMonth(),
+            currentYear: initParsed ? initParsed.y : now.getFullYear(),
+            currentMonth: initParsed ? initParsed.m : now.getMonth(),
             days: [],
             monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
 
             init() {
                 this.generateCalendar();
                 this.$watch('value', val => {
-                    if (val) {
-                        const d = new Date(val);
-                        if (!isNaN(d.getTime())) {
-                            this.currentYear = d.getFullYear();
-                            this.currentMonth = d.getMonth();
-                            this.generateCalendar();
-                        }
+                    const p = parseIso(val);
+                    if (p) {
+                        this.currentYear = p.y;
+                        this.currentMonth = p.m;
+                        this.generateCalendar();
                     }
                 });
             },
@@ -1360,12 +1514,13 @@
                 this.value = `${this.currentYear}-${formattedMonth}-${formattedDay}`;
                 this.show = false;
                 this.$dispatch('date-selected', this.value);
+                window.dispatchEvent(new CustomEvent('manual-date-picked', { detail: this.value }));
             },
 
             formatDisplay(val) {
-                if (!val) return 'Select Date';
-                const d = new Date(val);
-                if (isNaN(d.getTime())) return 'Select Date';
+                const p = parseIso(val);
+                if (!p) return 'Select Date';
+                const d = new Date(p.y, p.m, p.d);
                 return d.toLocaleDateString('en-US', {
                     day: 'numeric',
                     month: 'short',
@@ -1418,7 +1573,7 @@
                     item.month,
                     item.items_count,
                     item.method,
-                    item.amount.toFixed(2)
+                    typeof item.amount === 'number' ? item.amount.toFixed(2) : String(item.amount ?? '0.00')
                 ]);
             });
 
@@ -1451,7 +1606,7 @@
                     item.due_months,
                     item.categories,
                     item.total_invoices,
-                    item.total_due.toFixed(2)
+                    typeof item.total_due === 'number' ? item.total_due.toFixed(2) : String(item.total_due ?? '0.00')
                 ]);
             });
 

@@ -12,23 +12,31 @@
             color: #000;
         }
         @media screen {
-            body { background: #f3f4f6; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+            body {
+                background: #f3f4f6;
+                padding: 24px 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                min-height: 100vh;
+                gap: 20px;
+            }
             .page-container {
-                width: 297mm;
-                height: 210mm;
+                width: 148mm;
+                min-height: 210mm;
                 background: #fff;
-                padding: 10mm;
+                padding: 6mm 8mm;
                 border: 1px solid #ddd;
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                 box-sizing: border-box;
-                display: flex;
-                gap: 8mm;
+                margin: 0 auto;
             }
             .receipt-container {
-                flex: 1;
-                height: 100%;
+                width: 100%;
+                min-height: 198mm;
                 border: 1.5px solid #000;
-                padding: 8mm;
+                padding: 5mm 6mm;
                 box-sizing: border-box;
                 display: flex;
                 flex-direction: column;
@@ -36,19 +44,25 @@
             }
         }
         @media print {
-            body { background: #fff; padding: 0; margin: 0; }
-            .page-container {
-                width: 297mm;
-                height: 205mm;
+            body {
                 background: #fff;
-                padding: 6mm;
+                padding: 0;
+                margin: 0;
+            }
+            .page-container {
+                width: 100%;
+                max-width: 100%;
+                min-height: auto;
+                background: #fff;
+                padding: 0;
+                margin: 0;
+                border: none;
+                box-shadow: none;
                 box-sizing: border-box;
-                display: flex;
-                gap: 6mm;
                 page-break-after: always;
                 break-after: page;
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
             .page-container:last-child,
             .page-container:last-of-type {
@@ -56,22 +70,28 @@
                 break-after: avoid !important;
             }
             .receipt-container {
-                flex: 1;
-                height: 100%;
+                width: 100%;
+                min-height: 194mm;
                 border: 1.5px solid #000;
-                padding: 6mm;
+                padding: 4.5mm 5.5mm;
                 box-sizing: border-box;
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
             .no-print { display: none !important; }
-            @page { size: A4 landscape; margin: 0; }
+            @page {
+                size: A5 portrait;
+                margin: 6mm 8mm;
+            }
+            table { page-break-inside: auto; break-inside: auto; }
+            tr { page-break-inside: avoid; break-inside: avoid; }
+            thead { display: table-header-group; }
         }
-        .dashed-line { border-top: 1px dashed #000; margin: 8px 0; }
-        .double-line { border-top: 3px double #000; margin: 8px 0; }
+        .dashed-line { border-top: 1px dashed #000; margin: 6px 0; }
+        .double-line { border-top: 3px double #000; margin: 6px 0; }
     </style>
     <script>
         window.onload = function() {
@@ -83,138 +103,29 @@
 </head>
 <body>
 
-    <div class="fixed top-5 right-5 flex gap-3 no-print">
-        <button onclick="window.print()" class="bg-gray-900 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-gray-800 transition flex items-center justify-center">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+    <div class="fixed top-5 right-5 flex gap-3 no-print z-50">
+        <button onclick="window.print()" class="bg-gray-900 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg hover:bg-gray-800 transition flex items-center justify-center text-xs uppercase tracking-wider cursor-pointer">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
             Print Receipts
         </button>
-        <button onclick="window.close()" class="bg-red-100 text-red-700 font-bold py-2 px-6 rounded-lg hover:bg-red-200 transition text-sm text-center">
+        <button onclick="window.close()" class="bg-red-50 text-red-700 font-bold py-2.5 px-5 rounded-xl border border-red-200 hover:bg-red-100 transition text-xs uppercase tracking-wider text-center cursor-pointer">
             Close
         </button>
     </div>
 
-    @foreach($invoices->chunk(2) as $chunk)
+    @php
+        $resolvedCards = isset($slipCards)
+            ? $slipCards
+            : collect($invoices ?? [])->map(fn ($inv) => app(\App\Services\FeeReceiptService::class)->buildSingleInvoiceReceiptData($inv));
+    @endphp
+
+    <!-- One Single-Copy A5 Portrait Receipt Per Page -->
+    @foreach($resolvedCards as $cardData)
         <div class="page-container">
-            @foreach($chunk as $invoice)
-                <div class="receipt-container text-[12px] leading-normal">
-                    
-                    <!-- Header -->
-                    <div>
-                        <div class="flex justify-between items-start gap-2">
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <img src="{{ asset('img/macs_logo.jpeg') }}" class="w-11 h-11 object-contain shrink-0" alt="Logo">
-                                <div class="min-w-0">
-                                    <h1 class="text-[15px] font-black tracking-tight uppercase leading-none whitespace-nowrap">MACS SCHOOL &amp; COLLEGE</h1>
-                                    <p class="text-[9px] mt-1 font-semibold text-gray-700 whitespace-nowrap">Jalalpur, Pabna Sadar, Pabna (Jalalpur Branch)</p>
-                                    <p class="text-[9px] font-semibold text-gray-700 whitespace-nowrap">Phone: 01896-220299, 01896-220300</p>
-                                </div>
-                            </div>
-                            <div class="text-right shrink-0">
-                                <span class="text-[9px] font-black uppercase border border-black px-2 py-0.5 bg-gray-100 mb-1 inline-block">STUDENT COPY</span>
-                                <h2 class="text-sm font-extrabold uppercase block leading-none mt-1">Fee Receipt</h2>
-                                <p class="text-[10px] mt-1 font-semibold text-gray-755 whitespace-nowrap">Invoice No: <strong>{{ $invoice->invoice_no }}</strong></p>
-                                <p class="text-[10px] font-semibold text-gray-755 whitespace-nowrap">Date: {{ date('d-M-Y', strtotime($invoice->created_at)) }}</p>
-                            </div>
-                        </div>
-
-                        <div class="double-line"></div>
-
-                        <!-- Student Info Grid (Aligned with AMOUNT column) -->
-                        <div class="grid grid-cols-5 gap-y-1.5 py-1 text-[11px] font-medium">
-                            <div class="col-span-3"><span class="font-bold text-gray-600">Student Name:</span> {{ $invoice->student->student_name ?? 'N/A' }}</div>
-                            <div class="col-span-2"><span class="font-bold text-gray-600">Student ID  :</span> <strong>{{ $invoice->student->student_identity ?? 'N/A' }}</strong></div>
-                            
-                            <div class="col-span-3"><span class="font-bold text-gray-600">Class       :</span> {{ $invoice->student->schoolClass->class_name ?? 'N/A' }} ({{ $invoice->student->section->section_name ?? 'N/A' }})</div>
-                            <div class="col-span-2"><span class="font-bold text-gray-600">Roll No     :</span> {{ $invoice->student->roll_number ?? 'N/A' }}</div>
-                            
-                            <div class="col-span-5"><span class="font-bold text-gray-600">Session     :</span> {{ $invoice->student->sessionYear->session_name ?? $invoice->student->session_year->session_name ?? 'N/A' }}</div>
-                        </div>
-
-                        <div class="double-line"></div>
-
-                        <!-- Invoice Details Table -->
-                        <table class="w-full text-left mt-2">
-                            <thead>
-                                <tr class="border-b border-black">
-                                    <th class="py-1 font-bold uppercase text-[10px] text-gray-700">Fee Description</th>
-                                    <th class="py-1 font-bold uppercase text-[10px] text-gray-700 w-28">Month</th>
-                                    <th class="py-1 text-right font-bold uppercase text-[10px] text-gray-700 w-28">Amount</th>
-                                    <th class="py-1 text-right font-bold uppercase text-[10px] text-gray-700 w-28">Paid</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @php
-                                    $monthName = 'One Time';
-                                    if ($invoice->feeSetup) {
-                                        if ($invoice->feeSetup->fee_month && strtolower($invoice->feeSetup->fee_month) !== 'monthly') {
-                                            $monthName = $invoice->feeSetup->fee_month;
-                                        } elseif ($invoice->due_date) {
-                                            $monthName = date('F', strtotime($invoice->due_date));
-                                        } else {
-                                            $monthName = date('F', strtotime($invoice->created_at));
-                                        }
-                                    }
-                                @endphp
-                                <tr class="border-b border-gray-200">
-                                    <td class="py-2.5 font-bold">
-                                        {{ $invoice->feeSetup->category->name ?? 'Fee Payment' }}
-                                    </td>
-                                    <td class="py-2.5 font-semibold text-gray-700">
-                                        {{ $monthName }}
-                                    </td>
-                                    <td class="py-2.5 text-right font-bold font-mono">{{ number_format($invoice->net_amount, 2) }}</td>
-                                    <td class="py-2.5 text-right font-bold font-mono text-green-700">{{ number_format($invoice->paid_amount, 2) }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Summary & Signatures Footer -->
-                    <div>
-                        <div class="flex justify-between items-end border-t border-black pt-3">
-                            <div class="w-1/2 text-[10px] space-y-0.5 font-bold text-gray-755">
-                                <p>Method: {{ strtoupper($invoice->payments->first()->payment_method ?? 'Cash') }}</p>
-                                @if($invoice->payments->first() && $invoice->payments->first()->transaction_id)
-                                    <p>Trx ID: {{ $invoice->payments->first()->transaction_id }}</p>
-                                @endif
-                                <p class="mt-1">Status: <span class="border border-black px-1.5 py-0.5 bg-gray-50">{{ strtoupper($invoice->status) }}</span></p>
-                            </div>
-                            <div class="w-64 space-y-1 text-[12px] font-bold">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Total Payable:</span>
-                                    <span class="font-mono">৳{{ number_format($invoice->net_amount, 2) }}</span>
-                                </div>
-                                <div class="flex justify-between text-green-700">
-                                    <span>Total Paid   :</span>
-                                    <span class="font-mono">৳{{ number_format($invoice->paid_amount, 2) }}</span>
-                                </div>
-                                <div class="border-t border-black my-1"></div>
-                                <div class="flex justify-between font-black text-[13px] text-red-600">
-                                    <span>Remaining Due:</span>
-                                    <span class="font-mono">৳{{ number_format($invoice->due_amount, 2) }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Signature Lines -->
-                        <div class="flex justify-between items-center mt-10 pt-4 border-t border-dashed border-gray-300">
-                            <div class="text-center w-40">
-                                <div class="border-t border-black w-full mb-0.5"></div>
-                                <p class="text-[9px] font-black uppercase text-gray-600">Guardian</p>
-                            </div>
-                            <div class="text-center w-40">
-                                <div class="border-t border-black w-full mb-0.5"></div>
-                                <p class="text-[9px] font-black uppercase text-gray-600">Authorized Cashier</p>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            @endforeach
-            
-            @if($chunk->count() < 2)
-                <div class="receipt-container opacity-0 pointer-events-none no-print border-none" style="visibility: hidden;"></div>
-            @endif
+            @include('pages.fees.partials._pos_invoice_card', [
+                'receiptData' => $cardData,
+                'copyTitle' => null,
+            ])
         </div>
     @endforeach
 </body>

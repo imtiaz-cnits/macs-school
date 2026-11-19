@@ -512,6 +512,153 @@
         </div>
     </div>
 
+    <!-- Admission Fee Package Preview & Admin-Only Discount Panel (Subphase 4E) -->
+    @php
+        $canGrantAdmissionDiscount = auth()->check() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin'));
+    @endphp
+    <div x-data="admissionPackagePreview({
+            canDiscount: @js($canGrantAdmissionDiscount),
+            activeUrl: @js(route('ajax.admission.structures.active')),
+            discountPreviewUrl: @js($canGrantAdmissionDiscount ? route('fees.admission.structures.discount_preview') : '')
+         })"
+         class="mb-10 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-4">
+            <div class="flex items-center gap-2.5">
+                <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-themeBlue to-themeGreen"></span>
+                <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Admission Fee Package Preview</h3>
+            </div>
+            <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400" x-show="loading" x-cloak>Checking package...</span>
+        </div>
+
+        <template x-if="!scopeSelected">
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                Select Branch, Class, and Session Year above to preview the active Admission Fee Package for this student.
+            </p>
+        </template>
+
+        <template x-if="scopeSelected && schemaWarning !== ''">
+            <div class="rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-950/25 px-4 py-3 text-xs font-bold text-amber-800 dark:text-amber-300" x-text="schemaWarning"></div>
+        </template>
+
+        <template x-if="scopeSelected && !loading && schemaWarning === '' && !structure">
+            <div class="rounded-2xl border border-gray-150 dark:border-white/[0.08] bg-gray-50/70 dark:bg-themeDark/40 px-4 py-3 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                <template x-if="legacyFallback">
+                    <span x-text="'No multi-head Admission Structure configured for this scope. Student admission will use legacy Setup: ' + legacyFallback.category_name + ' (৳ ' + legacyFallback.amount + ').'"></span>
+                </template>
+                <template x-if="!legacyFallback">
+                    <span>No active Admission Fee Structure or Admission Setup found for this scope.</span>
+                </template>
+            </div>
+        </template>
+
+        <template x-if="scopeSelected && !loading && structure">
+            <div class="space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-sm font-black text-gray-900 dark:text-white" x-text="structure.structure_name"></span>
+                        <span class="px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-themeBlue/15 text-themeBlue font-mono font-black text-[10px]" x-text="'v' + structure.version"></span>
+                        <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider"
+                              :class="structure.is_all_time ? 'bg-emerald-50 dark:bg-themeGreen/15 text-themeGreen' : 'bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-300'"
+                              x-text="structure.is_all_time ? 'All-Time Default' : ('Session ' + structure.session_name + ' Override')"></span>
+                        <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider"
+                              :class="structure.includes_monthly_tuition ? 'bg-sky-50 dark:bg-themeBlue/15 text-themeBlue' : 'bg-gray-100 dark:bg-themeDark text-gray-500'"
+                              x-text="structure.includes_monthly_tuition ? ('Includes ' + structure.tuition_month_name + ' Tuition') : 'No Monthly Tuition'"></span>
+                    </div>
+                    <div class="font-mono text-sm font-black text-themeGreen" x-text="'Total Gross: ৳ ' + (discountSummary ? discountSummary.total_gross : structure.total_amount)"></div>
+                </div>
+
+                <div class="table-container bg-transparent !border-none !shadow-none !mt-1 !mb-0 overflow-x-auto">
+                    <table class="w-full text-left border-collapse table [&_th]:py-2 [&_th]:px-3 [&_td]:py-2 [&_td]:px-3">
+                        <thead>
+                            <tr class="!bg-transparent">
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Fee Head</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Category</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Discountable</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Gross (৳)</th>
+                                <template x-if="canDiscount && discountSummary">
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] text-right">Disc (৳)</th>
+                                </template>
+                                <template x-if="canDiscount && discountSummary">
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-themeGreen uppercase tracking-[0.2em] text-right">Net (৳)</th>
+                                </template>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                            <template x-for="it in displayItems()" :key="'prev-head-' + it.id">
+                                <tr>
+                                    <td class="py-0 px-0 text-xs font-bold text-gray-800 dark:text-gray-200">
+                                        <span x-text="it.head_name"></span>
+                                        <template x-if="it.is_tuition_head">
+                                            <span class="ml-1.5 px-1.5 py-0.5 rounded bg-sky-50 dark:bg-themeBlue/15 text-themeBlue text-[9px] font-black uppercase">Tuition</span>
+                                        </template>
+                                    </td>
+                                    <td class="py-0 px-0 text-xs font-semibold text-gray-500 dark:text-gray-400" x-text="it.category_name"></td>
+                                    <td class="py-0 px-0 text-center text-[10px] font-black uppercase" :class="it.is_discountable ? 'text-themeGreen' : 'text-gray-400'" x-text="it.is_discountable ? 'Yes' : 'Fixed'"></td>
+                                    <td class="py-0 px-0 text-right font-mono text-xs font-bold text-gray-800 dark:text-gray-200" x-text="it.amount"></td>
+                                    <template x-if="canDiscount && discountSummary">
+                                        <td class="py-0 px-0 text-right font-mono text-xs font-bold text-amber-600" x-text="it.discount ?? '0.00'"></td>
+                                    </template>
+                                    <template x-if="canDiscount && discountSummary">
+                                        <td class="py-0 px-0 text-right font-mono text-xs font-black text-themeGreen" x-text="it.net_amount ?? it.amount"></td>
+                                    </template>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                @if($canGrantAdmissionDiscount)
+                <!-- Admin / Super Admin ONLY Optional Admission Discount -->
+                <div class="pt-4 border-t border-gray-100 dark:border-white/[0.06]">
+                    <input type="hidden" id="admission_discount_type" :value="discountType">
+                    <input type="hidden" id="admission_discount_value" :value="discountValue">
+
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+                        <div class="relative" @click.away="discDropdown = false">
+                            <label class="block text-[10px] font-black tracking-widest text-gray-550 dark:text-gray-400 uppercase mb-1.5">Admission Discount Type</label>
+                            <button type="button" @click="discDropdown = !discDropdown" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                                <span x-text="discountTypeLabel()"></span>
+                                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div x-show="discDropdown" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1">
+                                <template x-for="opt in discountOptions" :key="'dt-' + opt.id">
+                                    <button type="button" @click="selectDiscountType(opt.id)" :class="discountType === opt.id ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200 font-semibold'" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45">
+                                        <span x-text="opt.name"></span>
+                                        <template x-if="discountType === opt.id"><svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></template>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-black tracking-widest text-gray-550 dark:text-gray-400 uppercase mb-1.5" x-text="discountType === 'percentage' ? 'Discount Percentage (%)' : 'Discount Value (৳)'"></label>
+                            <input type="text"
+                                   inputmode="decimal"
+                                   x-model="discountValue"
+                                   @input.debounce.300ms="refreshDiscountPreview()"
+                                   :disabled="discountType === 'none'"
+                                   placeholder="0.00"
+                                   class="w-full h-11 px-3 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark text-xs font-mono font-bold text-gray-900 dark:text-white focus:outline-none focus:border-themeBlue disabled:opacity-50">
+                        </div>
+
+                        <div class="p-2.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-500/20 text-right">
+                            <div class="text-[9px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">Total Discount</div>
+                            <div class="text-sm font-black font-mono text-amber-700 dark:text-amber-300" x-text="'৳ ' + (discountSummary ? discountSummary.total_discount : '0.00')"></div>
+                        </div>
+
+                        <div class="p-2.5 rounded-xl bg-green-50/60 dark:bg-themeGreen/10 border border-green-200/60 dark:border-themeGreen/25 text-right">
+                            <div class="text-[9px] font-black uppercase tracking-wider text-themeGreen">Final Net Receivable</div>
+                            <div class="text-sm font-black font-mono text-themeGreen" x-text="'৳ ' + (discountSummary ? discountSummary.total_net : structure.total_amount)"></div>
+                        </div>
+                    </div>
+
+                    <div x-show="discountError !== ''" x-cloak class="mt-2 text-xs font-bold text-rose-600 dark:text-rose-400" x-text="discountError"></div>
+                </div>
+                @endif
+            </div>
+        </template>
+    </div>
+
     <!-- Section 2: Basic Information -->
     <div class="flex items-center gap-2 mb-6">
         <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-themeBlue to-themeGreen"></span>
@@ -1163,6 +1310,9 @@
             'permanent_village', 'permanent_post_office', 'permanent_post_code', 'permanent_district', 'permanent_division',
             'guardian_name', 'guardian_occupation', 'guardian_mobile', 'status', 'sms_status', 'branch_id', 'class_id', 'section_id', 
             'shift_id', 'session_year_id', 'birth_certificate'
+            @if(auth()->check() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+            , 'admission_discount_type', 'admission_discount_value'
+            @endif
         ];
 
         // Frontend validation for required fields
@@ -1309,6 +1459,142 @@
                 return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
             }
         }
+    }
+
+    window.admissionPackagePreview = function(config) {
+        return {
+            canDiscount: Boolean(config.canDiscount),
+            loading: false,
+            scopeSelected: false,
+            schemaWarning: '',
+            structure: null,
+            legacyFallback: null,
+            discDropdown: false,
+            discountType: 'none',
+            discountValue: '0.00',
+            discountSummary: null,
+            discountError: '',
+            discountOptions: [
+                { id: 'none', name: 'No Discount' },
+                { id: 'fixed', name: 'Fixed Amount (৳)' },
+                { id: 'percentage', name: 'Percentage (%)' }
+            ],
+
+            init() {
+                ['branch_id', 'class_id', 'session_year_id'].forEach((id) => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.addEventListener('change', () => this.fetchActiveStructure());
+                    }
+                });
+                this.fetchActiveStructure();
+            },
+
+            discountTypeLabel() {
+                const match = this.discountOptions.find(o => o.id === this.discountType);
+                return match ? match.name : 'No Discount';
+            },
+
+            selectDiscountType(type) {
+                this.discountType = type;
+                this.discDropdown = false;
+                if (type === 'none') {
+                    this.discountValue = '0.00';
+                }
+                this.refreshDiscountPreview();
+            },
+
+            displayItems() {
+                if (!this.structure) return [];
+                const origItems = this.structure.items || [];
+                if (!this.discountSummary || !Array.isArray(this.discountSummary.heads)) {
+                    return origItems;
+                }
+                const calcById = {};
+                this.discountSummary.heads.forEach(h => { calcById[String(h.id)] = h; });
+                return origItems.map(it => {
+                    const calc = calcById[String(it.id)];
+                    return calc ? { ...it, discount: calc.discount, net_amount: calc.net_amount } : it;
+                });
+            },
+
+            async fetchActiveStructure() {
+                const branchId = document.getElementById('branch_id')?.value?.trim() || '';
+                const classId = document.getElementById('class_id')?.value?.trim() || '';
+                const sessionId = document.getElementById('session_year_id')?.value?.trim() || '';
+
+                if (!branchId || !classId || !sessionId) {
+                    this.scopeSelected = false;
+                    this.structure = null;
+                    this.legacyFallback = null;
+                    this.discountSummary = null;
+                    this.schemaWarning = '';
+                    return;
+                }
+
+                this.scopeSelected = true;
+                this.loading = true;
+                this.discountError = '';
+                try {
+                    const res = await axios.get(config.activeUrl, {
+                        params: { branch_id: branchId, class_id: classId, session_year_id: sessionId },
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (!res.data.tables_available) {
+                        this.schemaWarning = res.data.schema_warning || 'Admission schema migrations are pending. Please contact the system administrator.';
+                        this.structure = null;
+                        this.legacyFallback = null;
+                        this.discountSummary = null;
+                    } else {
+                        this.schemaWarning = '';
+                        this.structure = res.data.structure || null;
+                        this.legacyFallback = res.data.legacy_fallback || null;
+                        this.discountSummary = null;
+                        if (this.structure && this.canDiscount && this.discountType !== 'none') {
+                            this.refreshDiscountPreview();
+                        }
+                    }
+                } catch (e) {
+                    this.structure = null;
+                    this.legacyFallback = null;
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async refreshDiscountPreview() {
+                if (!this.canDiscount || !this.structure || !config.discountPreviewUrl) {
+                    this.discountSummary = null;
+                    return;
+                }
+
+                const branchId = document.getElementById('branch_id')?.value?.trim() || '';
+                const classId = document.getElementById('class_id')?.value?.trim() || '';
+                const sessionId = document.getElementById('session_year_id')?.value?.trim() || '';
+                if (!branchId || !classId || !sessionId) return;
+
+                if (this.discountType === 'none') {
+                    this.discountSummary = null;
+                    this.discountError = '';
+                    return;
+                }
+
+                this.discountError = '';
+                try {
+                    const res = await axios.post(config.discountPreviewUrl, {
+                        branch_id: parseInt(branchId, 10),
+                        class_id: parseInt(classId, 10),
+                        session_year_id: parseInt(sessionId, 10),
+                        discount_type: this.discountType,
+                        discount_value: String(this.discountValue || '0.00').trim()
+                    }, { headers: { 'Accept': 'application/json' } });
+                    this.discountSummary = res.data.preview || null;
+                } catch (err) {
+                    this.discountSummary = null;
+                    this.discountError = err?.response?.data?.message || 'Invalid discount value for discountable heads.';
+                }
+            }
+        };
     }
 </script>
 @endpush

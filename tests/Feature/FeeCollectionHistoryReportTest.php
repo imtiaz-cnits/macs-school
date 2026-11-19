@@ -355,4 +355,88 @@ class FeeCollectionHistoryReportTest extends TestCase
         $response->assertSee('25 Oct 2026, 11:20 AM');
         $response->assertSee('REC-20261025-6666');
     }
+
+    public function test_fee_collection_report_filters_collections_and_dues_by_specific_month_and_year(): void
+    {
+        $octPaidInvoice = $this->createInvoice([
+            'invoice_no' => 'INV-202610-3001',
+            'student_id' => $this->studentTwo->id,
+            'amount' => 1000.00,
+            'net_amount' => 1000.00,
+            'paid_amount' => 1000.00,
+            'due_amount' => 0.00,
+            'status' => 'Paid',
+            'due_date' => '2026-10-10',
+        ]);
+
+        FeePayment::create([
+            'receipt_no' => 'REC-20261012-3001',
+            'fee_invoice_id' => $octPaidInvoice->id,
+            'student_id' => $this->studentTwo->id,
+            'paid_amount' => 1000.00,
+            'payment_date' => '2026-10-12',
+            'payment_method' => 'Cash',
+            'collected_by' => $this->adminUser->id,
+        ]);
+
+        $novPaidInvoice = $this->createInvoice([
+            'invoice_no' => 'INV-202611-3002',
+            'student_id' => $this->studentThree->id,
+            'amount' => 1500.00,
+            'net_amount' => 1500.00,
+            'paid_amount' => 1500.00,
+            'due_amount' => 0.00,
+            'status' => 'Paid',
+            'due_date' => '2026-11-10',
+        ]);
+
+        FeePayment::create([
+            'receipt_no' => 'REC-20261112-3002',
+            'fee_invoice_id' => $novPaidInvoice->id,
+            'student_id' => $this->studentThree->id,
+            'paid_amount' => 1500.00,
+            'payment_date' => '2026-11-12',
+            'payment_method' => 'Cash',
+            'collected_by' => $this->adminUser->id,
+        ]);
+
+        // Unpaid October invoice (must be included for October 2026)
+        $this->createInvoice([
+            'invoice_no' => 'INV-202610-3003',
+            'student_id' => $this->studentThree->id,
+            'amount' => 750.00,
+            'net_amount' => 750.00,
+            'paid_amount' => 0.00,
+            'due_amount' => 750.00,
+            'status' => 'Unpaid',
+            'due_date' => '2026-10-15',
+        ]);
+
+        // Unpaid November invoice (must be excluded for October 2026 period mode)
+        $this->createInvoice([
+            'invoice_no' => 'INV-202611-3004',
+            'student_id' => $this->studentTwo->id,
+            'amount' => 900.00,
+            'net_amount' => 900.00,
+            'paid_amount' => 0.00,
+            'due_amount' => 900.00,
+            'status' => 'Unpaid',
+            'due_date' => '2026-11-15',
+        ]);
+
+        $response = $this->actingAs($this->adminUser)->get(route('fees.reports.index', [
+            'month' => 'October',
+            'year' => '2026',
+            'due_type' => 'period',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('October 2026');
+        $response->assertSee('01 Oct 2026 to 31 Oct 2026');
+        $response->assertSee('REC-20261012-3001');
+        $response->assertDontSee('REC-20261112-3002');
+        $response->assertSee('৳ 1,000.00');
+        $response->assertSee('৳ 750.00');
+        $response->assertDontSee('৳ 900.00');
+    }
 }

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\FeePayment;
 use App\Models\FeeInvoice;
 use App\Models\Classes; // বা Classes (আপনার মডেলে যে নাম আছে)
+use App\Services\AdmissionFeeReportService;
+use App\Services\FeeReceiptService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -12,19 +14,92 @@ class FeeReportController extends Controller
 {
     public function index(Request $request)
     {
-        // ডিফল্টভাবে চলতি মাসের শুরু থেকে আজকের তারিখ সেট করা হচ্ছে
-        $startDate = $request->start_date ?? date('Y-m-01');
-        $endDate = $request->end_date ?? date('Y-m-d');
+        /** @var FeeReceiptService $receiptService */
+        $receiptService = app(FeeReceiptService::class);
+        /** @var AdmissionFeeReportService $admissionReportService */
+        $admissionReportService = app(AdmissionFeeReportService::class);
+
+        // Specific Month + Year resolution (backwards-compatible with start_date/end_date custom range)
+        $monthMap = [
+            '01' => 'January', '02' => 'February', '03' => 'March', '04' => 'April',
+            '05' => 'May', '06' => 'June', '07' => 'July', '08' => 'August',
+            '09' => 'September', '10' => 'October', '11' => 'November', '12' => 'December',
+        ];
+
+        $rawMonth = trim((string) $request->input('month', ''));
+        $selectedMonth = '';
+        $resolvedMonthNum = null;
+
+        if ($rawMonth !== '') {
+            if (is_numeric($rawMonth)) {
+                $paddedMonth = str_pad((string) ((int) $rawMonth), 2, '0', STR_PAD_LEFT);
+                if (isset($monthMap[$paddedMonth])) {
+                    $resolvedMonthNum = $paddedMonth;
+                    $selectedMonth = $monthMap[$paddedMonth];
+                }
+            } else {
+                foreach ($monthMap as $num => $name) {
+                    if (strcasecmp($name, $rawMonth) === 0) {
+                        $resolvedMonthNum = $num;
+                        $selectedMonth = $name;
+                        break;
+                    }
+                }
+            }
+        }
+
+        $rawYear = $request->input('year');
+        $fallbackYear = $request->filled('start_date') && strtotime((string) $request->start_date)
+            ? (int) date('Y', strtotime((string) $request->start_date))
+            : (int) date('Y');
+        $selectedYear = (is_numeric($rawYear) && (int) $rawYear >= 2000 && (int) $rawYear <= 2100)
+            ? (int) $rawYear
+            : $fallbackYear;
+
+        if ($resolvedMonthNum !== null) {
+            $startDate = sprintf('%04d-%02d-01', $selectedYear, (int) $resolvedMonthNum);
+            $endDate = date('Y-m-t', strtotime($startDate));
+        } else {
+            // ডিফল্টভাবে চলতি মাসের শুরু থেকে আজকের তারিখ সেট করা হচ্ছে
+            $startDate = $request->start_date ?? date('Y-m-01');
+            $endDate = $request->end_date ?? date('Y-m-d');
+        }
+
+        $currentYearInt = (int) date('Y');
+        $availableYears = collect(range($currentYearInt + 1, max(2020, $currentYearInt - 5)))
+            ->push($selectedYear)
+            ->unique()
+            ->sortDesc()
+            ->values()
+            ->all();
+
         $classId = $request->class_id;
         $branchId = $request->branch_id;
         $dueType = $request->input('due_type', 'period'); // 'period' (Monthly Due) | 'cumulative' (Cumulative Arrears)
 
-        // ১. পেমেন্ট বা কালেকশনের কোয়েরি (Payment Collection Report: strictly by payment_date)
-        $paymentsQuery = FeePayment::with(['student.schoolClass', 'student.branch', 'invoice.feeSetup.category', 'collector'])
+        $admissionAvailable = $receiptService->admissionTablesAvailable();
+        $paymentRelations = ['student.schoolClass', 'student.branch', 'invoice.feeSetup.category', 'collector'];
+        $invoiceRelations = ['student.schoolClass', 'student.branch', 'feeSetup.category'];
+        if ($admissionAvailable) {
+            $paymentRelations = array_merge($paymentRelations, [
+                'invoice.admissionFeeStructure',
+                'invoice.admissionHeadAllocations.category',
+                'admissionHeadAllocations',
+            ]);
+            $invoiceRelations = array_merge($invoiceRelations, [
+                'admissionFeeStructure',
+                'admissionHeadAllocations.category',
+                'payments' => fn ($pq) => $pq->where('status', 'Active')->with('admissionHeadAllocations'),
+            ]);
+        }
+
+        // ১. পেমেন্ট বা কালেকশনের কোয়েরি (Strictly Active Payments ONLY by payment_date)
+        $paymentsQuery = FeePayment::with($paymentRelations)
+            ->where('status', 'Active')
             ->whereBetween('payment_date', [$startDate, $endDate]);
 
         // ২. বকেয়া বা ডিউ এর কোয়েরি (Due / Arrears Report)
-        $duesQuery = FeeInvoice::with(['student.schoolClass', 'student.branch', 'feeSetup.category'])
+        $duesQuery = FeeInvoice::with($invoiceRelations)
             ->where('status', '!=', 'Cancelled')
             ->where('due_amount', '>', 0);
 
@@ -69,19 +144,9 @@ class FeeReportController extends Controller
             return $inv->month_name ?: 'General';
         };
 
-        // রিসিট নম্বর থেকে কমন মাস্টার রিসিট প্রিফিক্স বের করার হেল্পার ফাংশন
+        // রিসিট নম্বর থেকে কমন মাস্টার রিসিট প্রিফিক্স বের করার হেল্পার ফাংশন (Canonical FeePayment Extractor)
         $resolveMasterReceipt = function ($receiptNo) {
-            if (empty($receiptNo)) return 'N/A';
-            $parts = explode('-', $receiptNo);
-            // REC-BULK-YYYYMMDD-XXXX-INVOICEID -> REC-BULK-YYYYMMDD-XXXX
-            if (count($parts) >= 5 && $parts[0] === 'REC' && $parts[1] === 'BULK') {
-                return $parts[0] . '-' . $parts[1] . '-' . $parts[2] . '-' . $parts[3];
-            }
-            // REC-YYYYMMDD-XXXX-INVOICEID -> REC-YYYYMMDD-XXXX
-            if (count($parts) >= 4 && $parts[0] === 'REC') {
-                return $parts[0] . '-' . $parts[1] . '-' . $parts[2];
-            }
-            return $receiptNo;
+            return FeePayment::extractMasterReceiptNo($receiptNo);
         };
 
         // হেল্পার ফাংশন: পেমেন্ট রেকর্ড থেকে প্রকৃত কালেকশন তারিখ ও সময় নির্ধারণ
@@ -171,33 +236,62 @@ class FeeReportController extends Controller
             return strcasecmp($normA, $normB);
         };
 
+        // Strict Active Payment & Explicit Admission Head Isolation Metadata Preparation (Pure BCMath)
+        foreach ($payments as $p) {
+            $catInfo = $admissionReportService->aggregateActivePaymentCategoryAmounts($p);
+            $p->report_effective_amount = $catInfo['effective_total'];
+            $p->report_category_names = array_keys($catInfo['by_category']);
+
+            if ($catInfo['is_admission']) {
+                $structureName = trim((string) ($p->invoice?->admissionFeeStructure?->structure_name ?? 'Admission Fee'));
+                if (!empty($catInfo['head_details'])) {
+                    $headNames = array_map(fn (array $hd): string => $hd['head_name'], $catInfo['head_details']);
+                    $p->report_fee_label = "Admission Fee Package — {$structureName} (" . implode(', ', $headNames) . ')';
+                } else {
+                    $p->report_fee_label = "Admission Fee Package — {$structureName} (No active heads matched)";
+                    $p->report_category_names = ['Admission Fee Package'];
+                }
+            } else {
+                $p->report_fee_label = (string) ($p->invoice?->feeSetup?->category?->name ?? 'Fee');
+                if (empty($p->report_category_names)) {
+                    $p->report_category_names = [$p->report_fee_label];
+                }
+            }
+        }
+
         // কালেকশনগুলোকে স্টুডেন্ট ও মাস্টার রিসিট অনুযায়ী গ্রুপ করা হচ্ছে (Single Transaction / Bulk Collection Consolidated)
         $collections = $payments->groupBy(function ($item) use ($resolveMasterReceipt) {
             $masterReceipt = $resolveMasterReceipt($item->receipt_no);
             return $item->student_id . '_' . $masterReceipt;
-        })->map(function ($items) use ($resolveMasterReceipt, $resolveMonth, $monthOrderMap, $resolveCollectionDate, $categorySortComparator) {
+        })->map(function ($items) use ($resolveMasterReceipt, $resolveMonth, $monthOrderMap, $resolveCollectionDate, $categorySortComparator, $admissionReportService) {
             $first = $items->first();
             $masterReceipt = $resolveMasterReceipt($first->receipt_no);
-            $totalAmount = $items->sum('paid_amount');
+
+            $totalAmount = '0.00';
+            foreach ($items as $it) {
+                $totalAmount = bcadd($totalAmount, $admissionReportService->toDecimal($it->report_effective_amount), 2);
+            }
+
             $colDateInfo = $resolveCollectionDate($items);
 
-            $categories = $items->map(function ($i) {
-                return $i->invoice->feeSetup->category->name ?? 'Fee';
+            $categories = $items->flatMap(function ($i) {
+                return $i->report_category_names ?: ['Fee'];
             })->unique()->filter()->sort($categorySortComparator)->values();
 
             $months = $items->map(function ($i) use ($resolveMonth) {
                 return $resolveMonth($i->invoice);
             })->unique()->filter()->values();
 
-            // Group payments by category, sort categories by priority order, and sort months chronologically (Jan to Dec)
-            $categoryMonths = $items->groupBy(function ($i) {
-                return $i->invoice->feeSetup->category->name ?? 'Fee';
-            })->map(function ($group) use ($resolveMonth, $monthOrderMap) {
-                $mList = $group->map(function ($i) use ($resolveMonth) {
-                    return $resolveMonth($i->invoice);
-                })->unique()->filter()->values();
-
-                return $mList->sortBy(function ($m) use ($monthOrderMap) {
+            // Group payments by resolved category names, sort by priority, and sort months chronologically (Jan to Dec)
+            $categoryMonthsRaw = [];
+            foreach ($items as $it) {
+                $itMonth = $resolveMonth($it->invoice);
+                foreach ($it->report_category_names ?: ['Fee'] as $catName) {
+                    $categoryMonthsRaw[$catName][] = $itMonth;
+                }
+            }
+            $categoryMonths = collect($categoryMonthsRaw)->map(function ($mArr) use ($monthOrderMap) {
+                return collect($mArr)->unique()->filter()->sortBy(function ($m) use ($monthOrderMap) {
                     return $monthOrderMap[strtolower(trim($m))] ?? 99;
                 })->values();
             })->sortKeysUsing($categorySortComparator);
@@ -219,8 +313,8 @@ class FeeReportController extends Controller
 
             // Sort payment items in breakdown dropdown by category priority, then by chronological month
             $sortedItems = $items->sort(function ($itemA, $itemB) use ($categorySortComparator, $monthOrderMap, $resolveMonth) {
-                $catA = $itemA->invoice->feeSetup->category->name ?? 'Fee';
-                $catB = $itemB->invoice->feeSetup->category->name ?? 'Fee';
+                $catA = $itemA->report_category_names[0] ?? 'Fee';
+                $catB = $itemB->report_category_names[0] ?? 'Fee';
 
                 $catCmp = $categorySortComparator($catA, $catB);
                 if ($catCmp !== 0) {
@@ -259,24 +353,58 @@ class FeeReportController extends Controller
             ];
         })->values();
 
-        // সামারি ক্যালকুলেশন - কালেকশন
-        $totalCollected = $payments->sum('paid_amount');
+        // সামারি ক্যালকুলেশন - কালেকশন (Pure BCMath)
+        $totalCollected = '0.00';
+        $methodBreakdownArr = [];
+        foreach ($payments as $p) {
+            $effAmt = $admissionReportService->toDecimal($p->report_effective_amount);
+            $totalCollected = bcadd($totalCollected, $effAmt, 2);
+            $methodKey = (string) ($p->payment_method ?? 'Cash');
+            $methodBreakdownArr[$methodKey] = bcadd($methodBreakdownArr[$methodKey] ?? '0.00', $effAmt, 2);
+        }
+        $methodBreakdown = collect($methodBreakdownArr);
+
         $totalPaymentRecordsCount = $payments->count();
         $totalCollectionCount = $collections->count();
         $uniquePayingStudentsCount = $payments->pluck('student_id')->unique()->count();
 
-        // কোন মেথডে কত টাকা আসলো তার হিসাব
-        $methodBreakdown = $payments->groupBy('payment_method')->map(function ($row) {
-            return $row->sum('paid_amount');
-        });
-
-        // সামারি ক্যালকুলেশন - বকেয়া (Dues)
-        $totalDue = $dues->sum('due_amount');
+        // সামারি ক্যালকুলেশন - বকেয়া (Dues - Pure BCMath)
+        $totalDue = '0.00';
+        foreach ($dues as $dueInv) {
+            $totalDue = bcadd($totalDue, $admissionReportService->toDecimal($dueInv->due_amount), 2);
+        }
         $totalDueInvoicesCount = $dues->count();
         $uniqueDefaulterStudentsCount = $dues->pluck('student_id')->unique()->count();
 
+        $resolveDueCategories = function (FeeInvoice $inv): array {
+            if (!$inv->isAdmissionInvoice()) {
+                return [(string) ($inv->feeSetup->category->name ?? 'Fee')];
+            }
+
+            $unpaidHeads = $inv->admissionHeadAllocations
+                ->filter(fn ($h): bool => bccomp((string) $h->due_amount, '0.00', 2) > 0)
+                ->pluck('fee_category_name_snapshot')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if (!empty($unpaidHeads)) {
+                return $unpaidHeads;
+            }
+
+            $allHeadCats = $inv->admissionHeadAllocations
+                ->pluck('fee_category_name_snapshot')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            return !empty($allHeadCats) ? $allHeadCats : ['Admission Fee'];
+        };
+
         // স্টুডেন্ট অনুযায়ী গ্রুপ করা ডিফল্টার লিস্ট (টোটাল ডিউ মাস ও মাসের নাম সহ)
-        $defaulters = $dues->groupBy('student_id')->map(function ($invoices) use ($resolveMonth, $categorySortComparator) {
+        $defaulters = $dues->groupBy('student_id')->map(function ($invoices) use ($resolveMonth, $categorySortComparator, $resolveDueCategories, $admissionReportService) {
             $firstInv = $invoices->first();
             $student = $firstInv->student;
 
@@ -284,14 +412,19 @@ class FeeReportController extends Controller
                 return $resolveMonth($inv);
             })->unique()->filter()->values();
 
-            $categories = $invoices->map(function ($inv) {
-                return $inv->feeSetup->category->name ?? 'Fee';
+            $categories = $invoices->flatMap(function ($inv) use ($resolveDueCategories) {
+                return $resolveDueCategories($inv);
             })->unique()->filter()->sort($categorySortComparator)->values();
+
+            $studentDueTotal = '0.00';
+            foreach ($invoices as $inv) {
+                $studentDueTotal = bcadd($studentDueTotal, $admissionReportService->toDecimal($inv->due_amount), 2);
+            }
 
             return (object) [
                 'student' => $student,
                 'invoices' => $invoices,
-                'total_due' => $invoices->sum('due_amount'),
+                'total_due' => $studentDueTotal,
                 'total_invoices' => $invoices->count(),
                 'due_months' => $months,
                 'due_months_count' => $months->count(),
@@ -300,12 +433,16 @@ class FeeReportController extends Controller
             ];
         })->sortByDesc('total_due')->values();
 
-        // মাস অনুযায়ী মোট ডিউ টাকার সমষ্টি ও হিসাব
+        // মাস অনুযায়ী মোট ডিউ টাকার সমষ্টি ও হিসাব (Pure BCMath)
         $dueMonthBreakdown = $dues->groupBy(function ($inv) use ($resolveMonth) {
             return $resolveMonth($inv);
-        })->map(function ($group) {
+        })->map(function ($group) use ($admissionReportService) {
+            $amt = '0.00';
+            foreach ($group as $inv) {
+                $amt = bcadd($amt, $admissionReportService->toDecimal($inv->due_amount), 2);
+            }
             return (object) [
-                'amount' => $group->sum('due_amount'),
+                'amount' => $amt,
                 'invoices_count' => $group->count(),
                 'students_count' => $group->pluck('student_id')->unique()->count()
             ];
@@ -322,7 +459,10 @@ class FeeReportController extends Controller
         if ($classId) {
             $cumulativeQuery->whereHas('student', fn($q) => $q->where('class_id', $classId));
         }
-        $cumulativeTotalDue = (float) $cumulativeQuery->sum('due_amount');
+        $cumulativeTotalDue = '0.00';
+        foreach ($cumulativeQuery->get(['id', 'due_amount']) as $cInv) {
+            $cumulativeTotalDue = bcadd($cumulativeTotalDue, $admissionReportService->toDecimal($cInv->due_amount), 2);
+        }
         $cumulativeDueInvoicesCount = (int) $cumulativeQuery->count();
         $cumulativeDefaulterCount = (int) $cumulativeQuery->distinct('student_id')->count('student_id');
 
@@ -336,7 +476,10 @@ class FeeReportController extends Controller
         if ($classId) {
             $periodQuery->whereHas('student', fn($q) => $q->where('class_id', $classId));
         }
-        $periodTotalDue = (float) $periodQuery->sum('due_amount');
+        $periodTotalDue = '0.00';
+        foreach ($periodQuery->get(['id', 'due_amount']) as $pInv) {
+            $periodTotalDue = bcadd($periodTotalDue, $admissionReportService->toDecimal($pInv->due_amount), 2);
+        }
         $periodDueInvoicesCount = (int) $periodQuery->count();
         $periodDefaulterCount = (int) $periodQuery->distinct('student_id')->count('student_id');
 
@@ -345,7 +488,7 @@ class FeeReportController extends Controller
         $classes = Classes::all();
 
         // সিএসভি এক্সপোর্টের জন্য প্রস্তুতকৃত ডাটা
-        $collectionExportData = $collections->map(function ($col, $index) {
+        $collectionExportData = $collections->map(function ($col, $index) use ($admissionReportService) {
             return [
                 'sl' => $index + 1,
                 'receipt_no' => $col->receipt_no ?? 'N/A',
@@ -358,11 +501,11 @@ class FeeReportController extends Controller
                 'month' => $col->months_summary ?: 'General',
                 'items_count' => $col->items_count,
                 'method' => $col->payment_method ?? 'Cash',
-                'amount' => (float) $col->paid_amount,
+                'amount' => $admissionReportService->toDecimal($col->paid_amount),
             ];
         });
 
-        $defaultersExportData = $defaulters->map(function ($def, $index) {
+        $defaultersExportData = $defaulters->map(function ($def, $index) use ($admissionReportService) {
             return [
                 'sl' => $index + 1,
                 'student_name' => $def->student->student_name ?? 'N/A',
@@ -374,12 +517,12 @@ class FeeReportController extends Controller
                 'due_months' => $def->due_months->join(', '),
                 'categories' => $def->categories->join(', '),
                 'total_invoices' => $def->total_invoices,
-                'total_due' => (float) $def->total_due,
+                'total_due' => $admissionReportService->toDecimal($def->total_due),
             ];
         });
 
-        $totalCollectedFormatted = number_format((float) $totalCollected, 2, '.', '');
-        $totalDueFormatted = number_format((float) $totalDue, 2, '.', '');
+        $totalCollectedFormatted = $admissionReportService->toDecimal($totalCollected);
+        $totalDueFormatted = $admissionReportService->toDecimal($totalDue);
 
         return view('pages.fees.reports', compact(
             'payments',
@@ -399,6 +542,9 @@ class FeeReportController extends Controller
             'dueMonthBreakdown',
             'startDate',
             'endDate',
+            'selectedMonth',
+            'selectedYear',
+            'availableYears',
             'classId',
             'branchId',
             'branches',
@@ -415,9 +561,14 @@ class FeeReportController extends Controller
         ));
     }
 
-    // ২. ক্যাটাগরি বা খাত অনুযায়ী ফি সামারি রিপোর্ট
+    // ২. ক্যাটাগরি বা খাত অনুযায়ী ফি সামারি রিপোর্ট (Legacy + Head-Decomposed Admission Invoices)
     public function summaryReport(Request $request)
     {
+        /** @var FeeReceiptService $receiptService */
+        $receiptService = app(FeeReceiptService::class);
+        /** @var AdmissionFeeReportService $admissionReportService */
+        $admissionReportService = app(AdmissionFeeReportService::class);
+
         // ড্রপডাউনের ডাটা
         $branches = \App\Models\Branch::all();
         $sessions = \App\Models\SessionYear::latest()->get();
@@ -428,15 +579,56 @@ class FeeReportController extends Controller
         $sessionId = $request->session_year_id;
         $classId = $request->class_id;
 
-        // ইনভয়েস কোয়েরি (FeeSetup এর সাথে জয়েন করে)
-        $query = FeeInvoice::with('feeSetup.category')->where('status', '!=', 'Cancelled');
+        $admissionAvailable = $receiptService->admissionTablesAvailable();
+        $relations = ['feeSetup.category'];
+        if ($admissionAvailable) {
+            $relations = array_merge($relations, [
+                'admissionFeeStructure',
+                'admissionHeadAllocations.category',
+                'payments' => fn ($pq) => $pq->where('status', 'Active')->with('admissionHeadAllocations'),
+            ]);
+        }
 
-        // যদি ফিল্টার সিলেক্ট করা থাকে
+        // ইনভয়েস কোয়েরি (Legacy feeSetup এবং Admission Structure উভয় সমর্থনসহ)
+        $query = FeeInvoice::with($relations)->where('status', '!=', 'Cancelled');
+
+        if (!$admissionAvailable) {
+            $query->whereNull('admission_fee_structure_id');
+        }
+
         if ($branchId || $sessionId || $classId) {
-            $query->whereHas('feeSetup', function ($q) use ($branchId, $sessionId, $classId) {
-                if ($branchId) $q->where('branch_id', $branchId);
-                if ($sessionId) $q->where('session_year_id', $sessionId);
-                if ($classId) $q->where('class_id', $classId);
+            $query->where(function ($scopeQuery) use ($branchId, $sessionId, $classId, $admissionAvailable): void {
+                // Legacy Scope Filter
+                $scopeQuery->where(function ($legacyQ) use ($branchId, $sessionId, $classId): void {
+                    $legacyQ->whereNull('fee_invoices.admission_fee_structure_id')
+                            ->whereHas('feeSetup', function ($q) use ($branchId, $sessionId, $classId): void {
+                                if ($branchId) {
+                                    $q->where('branch_id', $branchId);
+                                }
+                                if ($sessionId) {
+                                    $q->where('session_year_id', $sessionId);
+                                }
+                                if ($classId) {
+                                    $q->where('class_id', $classId);
+                                }
+                            });
+                });
+
+                // Admission Historical Scope Filter (branch_id, session_year_id, and historical admission_fee_structures.class_id)
+                if ($admissionAvailable) {
+                    $scopeQuery->orWhere(function ($admQ) use ($branchId, $sessionId, $classId): void {
+                        $admQ->whereNotNull('fee_invoices.admission_fee_structure_id');
+                        if ($branchId) {
+                            $admQ->where('fee_invoices.branch_id', $branchId);
+                        }
+                        if ($sessionId) {
+                            $admQ->where('fee_invoices.session_year_id', $sessionId);
+                        }
+                        if ($classId) {
+                            $admQ->whereHas('admissionFeeStructure', fn ($sq) => $sq->where('class_id', $classId));
+                        }
+                    });
+                }
             });
         }
 
@@ -462,30 +654,57 @@ class FeeReportController extends Controller
             return strcasecmp($normA, $normB);
         };
 
-        // ম্যাজিক: ক্যাটাগরির নাম দিয়ে গ্রুপ করে টোটাল বের করা হচ্ছে
-        $categorySummary = $invoices->groupBy(function ($invoice) {
-            return $invoice->feeSetup->category->name ?? 'Uncategorized';
-        })->map(function ($group) {
-            $net = $group->sum('net_amount');
-            $paid = $group->sum('paid_amount');
-            $due = $group->sum('due_amount');
+        // Pure BCMath Category Aggregation (Legacy Invoice + Head-Decomposed Admission Invoice)
+        $bucketTotals = [];
+        $overallNet = '0.00';
+        $overallPaid = '0.00';
+        $overallDue = '0.00';
 
-            // কত পারসেন্ট কালেকশন হলো তার হিসাব
-            $percentage = $net > 0 ? round(($paid / $net) * 100, 1) : 0;
+        foreach ($invoices as $invoice) {
+            if ($invoice->isAdmissionInvoice() && $admissionAvailable) {
+                $headSummary = $admissionReportService->summarizeAdmissionInvoiceActiveHeads($invoice);
+                foreach ($headSummary['heads'] as $head) {
+                    $catName = $head['category_name'];
+                    if (!isset($bucketTotals[$catName])) {
+                        $bucketTotals[$catName] = ['net' => '0.00', 'paid' => '0.00', 'due' => '0.00'];
+                    }
+                    $bucketTotals[$catName]['net'] = bcadd($bucketTotals[$catName]['net'], $head['net'], 2);
+                    $bucketTotals[$catName]['paid'] = bcadd($bucketTotals[$catName]['paid'], $head['collected'], 2);
+                    $bucketTotals[$catName]['due'] = bcadd($bucketTotals[$catName]['due'], $head['due'], 2);
 
+                    $overallNet = bcadd($overallNet, $head['net'], 2);
+                    $overallPaid = bcadd($overallPaid, $head['collected'], 2);
+                    $overallDue = bcadd($overallDue, $head['due'], 2);
+                }
+            } else {
+                $catName = (string) ($invoice->feeSetup->category->name ?? 'Uncategorized');
+                $invNet = $admissionReportService->toDecimal($invoice->net_amount);
+                $invPaid = $admissionReportService->toDecimal($invoice->paid_amount);
+                $invDue = $admissionReportService->clampNonNegative($admissionReportService->toDecimal($invoice->due_amount));
+
+                if (!isset($bucketTotals[$catName])) {
+                    $bucketTotals[$catName] = ['net' => '0.00', 'paid' => '0.00', 'due' => '0.00'];
+                }
+                $bucketTotals[$catName]['net'] = bcadd($bucketTotals[$catName]['net'], $invNet, 2);
+                $bucketTotals[$catName]['paid'] = bcadd($bucketTotals[$catName]['paid'], $invPaid, 2);
+                $bucketTotals[$catName]['due'] = bcadd($bucketTotals[$catName]['due'], $invDue, 2);
+
+                $overallNet = bcadd($overallNet, $invNet, 2);
+                $overallPaid = bcadd($overallPaid, $invPaid, 2);
+                $overallDue = bcadd($overallDue, $invDue, 2);
+            }
+        }
+
+        $categorySummary = collect($bucketTotals)->map(function (array $totals) use ($admissionReportService) {
             return (object) [
-                'total_net' => $net,
-                'total_paid' => $paid,
-                'total_due' => $due,
-                'percentage' => $percentage
+                'total_net' => $totals['net'],
+                'total_paid' => $totals['paid'],
+                'total_due' => $totals['due'],
+                'percentage' => $admissionReportService->percentage($totals['paid'], $totals['net']),
             ];
         })->sortKeysUsing($categorySortComparator);
 
-        // ওভারঅল সামারি কার্ডের জন্য
-        $overallNet = $invoices->sum('net_amount');
-        $overallPaid = $invoices->sum('paid_amount');
-        $overallDue = $invoices->sum('due_amount');
-        $overallPercentage = $overallNet > 0 ? round(($overallPaid / $overallNet) * 100, 1) : 0;
+        $overallPercentage = $admissionReportService->percentage($overallPaid, $overallNet);
 
         return view('pages.fees.summary_report', compact(
             'branches',

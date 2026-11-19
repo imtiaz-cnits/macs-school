@@ -106,6 +106,12 @@
         </button>
     </div>
 
+    @php
+        $mr = $masterReceipt ?? app(\App\Services\FeeReceiptService::class)->buildMasterReceiptData($payments, $receipt_no);
+        $branchLine = 'Jalalpur, Pabna Sadar, Pabna (' . ($mr['branch_name'] ?? 'Jalalpur Branch') . ')';
+        $tableColSpan = $mr['is_multiple_students'] ? 4 : 3;
+    @endphp
+
     <!-- Single A5 Master Receipt Container -->
     <div class="page-container">
         <div class="receipt-container text-[11px] leading-normal">
@@ -118,17 +124,38 @@
                         <img src="{{ asset('img/macs_logo.jpeg') }}" class="w-10 h-10 object-contain shrink-0" alt="Logo">
                         <div class="min-w-0">
                             <h1 class="text-[13px] font-black tracking-tight uppercase leading-tight whitespace-nowrap">MACS SCHOOL &amp; COLLEGE</h1>
-                            <p class="text-[8.5px] font-semibold text-gray-700 leading-tight whitespace-nowrap">Jalalpur, Pabna Sadar, Pabna (Jalalpur Branch)</p>
+                            <p class="text-[8.5px] font-semibold text-gray-700 leading-tight whitespace-nowrap">{{ $branchLine }}</p>
                             <p class="text-[8.5px] font-semibold text-gray-700 leading-tight whitespace-nowrap">Phone: 01896-220299, 01896-220300</p>
                         </div>
                     </div>
                     <div class="text-right shrink-0">
                         <h2 class="text-xs font-black uppercase tracking-wider text-gray-900 block leading-tight">Master Receipt</h2>
                         <p class="text-[9.5px] mt-0.5 font-semibold text-gray-700 whitespace-nowrap">Receipt No: <strong>{{ $receipt_no }}</strong></p>
-                        <p class="text-[9.5px] font-semibold text-gray-700 whitespace-nowrap">Date: {{ date('d-M-Y', strtotime($date)) }}</p>
+                        <p class="text-[9.5px] font-semibold text-gray-700 whitespace-nowrap">Date: {{ $date ? date('d-M-Y', strtotime((string) $date)) : 'N/A' }}</p>
                         <p class="text-[9.5px] font-semibold text-gray-700 whitespace-nowrap">Print Date: {{ \Carbon\Carbon::now('Asia/Dhaka')->format('d-M-Y') }}</p>
                     </div>
                 </div>
+
+                @if($mr['is_fully_reversed'])
+                    <div class="mt-2 border-2 border-black bg-gray-100 px-2.5 py-2 text-[9.5px]">
+                        <div class="flex justify-between items-center font-black uppercase tracking-wider text-red-700">
+                            <span>VOID / REVERSED RECEIPT</span>
+                            <span>Audit Copy</span>
+                        </div>
+                        <div class="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 font-semibold text-gray-800">
+                            <div>Original Receipt: <span class="font-mono font-black">{{ $receipt_no }}</span></div>
+                            <div>Reversal Ref: <span class="font-mono font-black">{{ $mr['reversal_references']->join(', ') ?: 'N/A' }}</span></div>
+                            <div>Reversal Date: {{ $mr['reversed_at_formatted'] }}</div>
+                            <div>Reversed By: {{ $mr['reversed_by_name'] }}</div>
+                            <div class="col-span-2">Reason: {{ $mr['reversal_reason'] }}</div>
+                        </div>
+                    </div>
+                @elseif($mr['has_partial_reversals'])
+                    <div class="mt-2 border border-black bg-gray-100 px-2.5 py-1.5 text-[9px] font-bold text-gray-900">
+                        <span class="uppercase font-black text-red-700">PARTIAL REVERSAL NOTICE:</span>
+                        Reversed items ({{ $mr['reversal_references']->join(', ') }}) are shown separately for audit and excluded from GRAND TOTAL Paid.
+                    </div>
+                @endif
 
                 <div class="double-line"></div>
 
@@ -151,56 +178,169 @@
 
                 <div class="double-line"></div>
 
-                <!-- Invoice Details Table -->
-                <table class="w-full text-left mt-1.5 border-collapse">
-                    <thead>
-                        <tr class="border-b border-black text-[9.5px] font-bold uppercase text-gray-700">
-                            @if(isset($isMultipleStudents) && $isMultipleStudents)
-                                <th class="py-1">Student Details</th>
+                <!-- Active Invoice Details Table -->
+                @if($mr['active_items']->isNotEmpty())
+                    <table class="w-full text-left mt-1.5 border-collapse">
+                        <thead>
+                            <tr class="border-b border-black text-[9.5px] font-bold uppercase text-gray-700">
+                                @if(isset($isMultipleStudents) && $isMultipleStudents)
+                                    <th class="py-1">Student Details</th>
+                                @endif
+                                <th class="py-1">Fee Category</th>
+                                <th class="py-1 w-24 text-left">Month</th>
+                                <th class="py-1 w-24 text-right">Paid Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-[10px]">
+                            @foreach($mr['active_items'] as $item)
+                                <tr class="border-b {{ ($item['is_admission'] && !empty($item['head_lines'])) ? 'border-gray-300' : 'border-gray-200' }}">
+                                    @if(isset($isMultipleStudents) && $isMultipleStudents)
+                                        <td class="py-1 font-bold">{{ $item['student']->student_name ?? 'N/A' }} ({{ $item['student']->student_identity ?? 'N/A' }})</td>
+                                    @endif
+                                    <td class="py-1 font-semibold">
+                                        {{ $item['label'] }}
+                                        @if($item['is_admission'])
+                                            <span class="block text-[8.5px] font-normal text-gray-600">
+                                                Invoice: {{ $item['invoice_no'] }}
+                                                @if(!empty($item['tuition_month_label']))
+                                                    | Includes {{ $item['tuition_month_label'] }} Tuition
+                                                @endif
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="py-1 font-semibold text-gray-700">
+                                        {{ $item['month_label'] }}
+                                    </td>
+                                    <td class="py-1 text-right font-bold font-mono text-green-700">৳{{ $item['paid_amount_formatted'] }}</td>
+                                </tr>
+                                @if($item['is_admission'] && !empty($item['head_lines']))
+                                    @foreach($item['head_lines'] as $head)
+                                        <tr class="border-b border-gray-100 bg-gray-50/60 text-[9px] text-gray-700">
+                                            @if(isset($isMultipleStudents) && $isMultipleStudents)
+                                                <td></td>
+                                            @endif
+                                            <td class="py-0.5 pl-3" colspan="2">
+                                                &bull; {{ $head['head_name'] }}
+                                                @if($head['is_tuition_head'])
+                                                    <span class="ml-1 px-1 border border-gray-400 text-[7.5px] font-bold uppercase">Tuition</span>
+                                                @endif
+                                            </td>
+                                            <td class="py-0.5 text-right font-mono font-semibold text-gray-800">৳{{ $head['allocated_paid_formatted'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                @elseif($item['is_admission'] && !empty($item['has_alloc_status_mismatch']))
+                                    <tr class="border-b border-gray-100 bg-gray-50/60 text-[8.5px] text-gray-600 italic">
+                                        @if(isset($isMultipleStudents) && $isMultipleStudents)
+                                            <td></td>
+                                        @endif
+                                        <td class="py-0.5 pl-3" colspan="3">
+                                            Active head allocation breakdown unavailable (no Active head allocations matched).
+                                        </td>
+                                    </tr>
+                                @endif
+                            @endforeach
+                        </tbody>
+                    </table>
+                @endif
+
+                <!-- Reversed Audit Lines Table (Never Counted in Active Collected Total) -->
+                @if($mr['reversed_items']->isNotEmpty())
+                    <div class="mt-2">
+                        <p class="text-[8.5px] font-black uppercase tracking-wider text-red-700 mb-0.5">
+                            Reversed Payment Line Items (Excluded from Active Totals)
+                        </p>
+                        <table class="w-full text-left border-collapse">
+                            @if($mr['active_items']->isEmpty())
+                                <thead>
+                                    <tr class="border-b border-black text-[9.5px] font-bold uppercase text-gray-700">
+                                        @if(isset($isMultipleStudents) && $isMultipleStudents)
+                                            <th class="py-1">Student Details</th>
+                                        @endif
+                                        <th class="py-1">Fee Category</th>
+                                        <th class="py-1 w-24 text-left">Month</th>
+                                        <th class="py-1 w-28 text-right">Reversed Amt</th>
+                                    </tr>
+                                </thead>
                             @endif
-                            <th class="py-1">Fee Category</th>
-                            <th class="py-1 w-24 text-left">Month</th>
-                            <th class="py-1 w-24 text-right">Paid Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-[10px]">
-                        @php $grandTotal = '0.00'; @endphp
-                        @foreach($payments as $pay)
-                        <tr class="border-b border-gray-200">
-                            @if(isset($isMultipleStudents) && $isMultipleStudents)
-                                <td class="py-1 font-bold">{{ $pay->student->student_name }} ({{ $pay->student->student_identity }})</td>
-                            @endif
-                            <td class="py-1 font-semibold">
-                                {{ $pay->invoice->feeSetup->category->name ?? 'Fee Payment' }}
-                            </td>
-                            @php
-                                $monthName = $pay->invoice->month_name ?? ($pay->invoice->feeSetup->fee_month ?? 'One Time');
-                            @endphp
-                            <td class="py-1 font-semibold text-gray-700">
-                                {{ $monthName }}
-                            </td>
-                            <td class="py-1 text-right font-bold font-mono text-green-700">৳{{ number_format((float)$pay->paid_amount, 2) }}</td>
-                        </tr>
-                        @php $grandTotal = \App\Helpers\NumberToWords::add($grandTotal, $pay->paid_amount); @endphp
-                        @endforeach
-                    </tbody>
-                </table>
+                            <tbody class="text-[9.5px] text-gray-500">
+                                @foreach($mr['reversed_items'] as $rItem)
+                                    <tr class="border-b border-gray-200">
+                                        @if(isset($isMultipleStudents) && $isMultipleStudents)
+                                            <td class="py-1 font-semibold line-through">{{ $rItem['student']->student_name ?? 'N/A' }} ({{ $rItem['student']->student_identity ?? 'N/A' }})</td>
+                                        @endif
+                                        <td class="py-1 font-semibold">
+                                            <span class="line-through">{{ $rItem['label'] }}</span>
+                                            <span class="ml-1 border border-black px-1 py-0.2 bg-gray-100 text-[8px] font-black text-red-700 uppercase">[REVERSED]</span>
+                                            @if(!empty($rItem['reversal_reference']))
+                                                <span class="block text-[8px] font-mono text-gray-600">
+                                                    Ref: {{ $rItem['reversal_reference'] }} | Receipt: {{ $rItem['receipt_no'] }}
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="py-1 line-through">{{ $rItem['month_label'] }}</td>
+                                        <td class="py-1 text-right font-mono font-bold line-through text-red-700">৳{{ $rItem['reversed_amount_formatted'] }}</td>
+                                    </tr>
+                                    @if($rItem['is_admission'] && !empty($rItem['head_lines']))
+                                        @foreach($rItem['head_lines'] as $rHead)
+                                            <tr class="border-b border-gray-100 text-[8.5px] text-gray-500">
+                                                @if(isset($isMultipleStudents) && $isMultipleStudents)
+                                                    <td></td>
+                                                @endif
+                                                <td class="py-0.5 pl-3" colspan="2">
+                                                    <span class="line-through">&bull; {{ $rHead['head_name'] }}</span>
+                                                    @if(!empty($rHead['is_unsynced_original']))
+                                                        <span class="ml-1 px-1 border border-gray-400 text-[7px] font-bold uppercase text-gray-600">[ORIG ALLOCATION — REVERSAL STATUS MISSING]</span>
+                                                    @endif
+                                                </td>
+                                                <td class="py-0.5 text-right font-mono line-through">৳{{ $rHead['allocated_paid_formatted'] }}</td>
+                                            </tr>
+                                        @endforeach
+                                    @elseif($rItem['is_admission'] && !empty($rItem['missing_expected_allocations']))
+                                        <tr class="border-b border-gray-100 text-[8px] text-gray-500 italic">
+                                            @if(isset($isMultipleStudents) && $isMultipleStudents)
+                                                <td></td>
+                                            @endif
+                                            <td class="py-0.5 pl-3" colspan="3">
+                                                Reversed head allocation rows missing from ledger (active collected: ৳0.00).
+                                            </td>
+                                        </tr>
+                                    @endif
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </div>
 
             <!-- Bottom Section: Summary & Signatures Footer -->
             <div class="mt-4">
                 <div class="flex justify-between items-end border-t border-black pt-2">
                     <div class="text-[9.5px] space-y-0.5 font-bold text-gray-700">
-                        <p>Method: {{ strtoupper($payments->first()->payment_method ?? 'Cash') }}</p>
-                        @if($payments->first() && $payments->first()->transaction_id)
-                            <p>Trx ID: {{ $payments->first()->transaction_id }}</p>
+                        @if($mr['is_fully_reversed'])
+                            <p class="text-red-700 font-black">Status: VOID / REVERSED</p>
+                            <p>Total Reversed: <span class="font-mono line-through">৳{{ $mr['reversed_grand_total_formatted'] }}</span></p>
+                        @else
+                            <p>Method: {{ $mr['primary_active_method'] ?? 'CASH' }}</p>
+                            @if(!empty($mr['primary_active_trx_id']))
+                                <p>Trx ID: {{ $mr['primary_active_trx_id'] }}</p>
+                            @endif
+                            @if($mr['has_partial_reversals'])
+                                <p class="text-red-700 text-[8.5px]">Excluded Reversed: ৳{{ $mr['reversed_grand_total_formatted'] }}</p>
+                            @endif
                         @endif
                     </div>
                     <div class="space-y-1 text-right">
-                        <div class="flex items-baseline justify-end gap-2 font-black text-xs text-green-700">
-                            <span class="text-gray-900 uppercase tracking-tight text-[10px]">GRAND TOTAL Paid:</span>
-                            <span class="font-mono text-[13px]">৳{{ \App\Helpers\NumberToWords::formatDecimal($grandTotal) }}</span>
-                        </div>
+                        @if($mr['is_fully_reversed'])
+                            <div class="flex items-baseline justify-end gap-2 font-black text-xs text-red-700">
+                                <span class="text-gray-900 uppercase tracking-tight text-[10px]">ACTIVE COLLECTED TOTAL:</span>
+                                <span class="font-mono text-[13px]">৳0.00</span>
+                            </div>
+                        @else
+                            <div class="flex items-baseline justify-end gap-2 font-black text-xs text-green-700">
+                                <span class="text-gray-900 uppercase tracking-tight text-[10px]">GRAND TOTAL Paid:</span>
+                                <span class="font-mono text-[13px]">৳{{ $mr['active_grand_total_formatted'] }}</span>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -208,7 +348,7 @@
                 <div class="flex justify-between items-end mt-5 pt-2 border-t border-dashed border-gray-300 gap-4">
                     <div class="flex-1 min-w-0 pr-2">
                         <p class="text-[8.5px] font-bold text-gray-500 uppercase tracking-wider">In Words:</p>
-                        <p class="text-[10px] font-bold leading-snug text-gray-900 break-words">{{ \App\Helpers\NumberToWords::convert($grandTotal) }}</p>
+                        <p class="text-[10px] font-bold leading-snug text-gray-900 break-words">{{ $mr['active_grand_total_words'] }}</p>
                     </div>
                     <div class="text-center w-32 shrink-0">
                         <div class="border-t border-black w-full mb-0.5"></div>

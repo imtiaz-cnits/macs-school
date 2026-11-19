@@ -240,20 +240,20 @@
             <tr>
                 <!-- Due -->
                 <th class="text-right bg-head-due">Monthly Fee</th>
+                <th class="text-right bg-head-due">Exam Fees</th>
                 <th class="text-right bg-head-due">Other Fees</th>
-                <th class="text-right bg-head-due">Other</th>
                 <th class="text-right bg-head-due" style="font-weight: 900;">Total</th>
 
                 <!-- Collected -->
                 <th class="text-right bg-head-collected">Monthly Fee</th>
+                <th class="text-right bg-head-collected">Exam Fees</th>
                 <th class="text-right bg-head-collected">Other Fees</th>
-                <th class="text-right bg-head-collected">Other</th>
                 <th class="text-right bg-head-collected" style="font-weight: 900;">Total</th>
 
                 <!-- Outstanding -->
                 <th class="text-right bg-head-outstanding">Monthly Fee</th>
+                <th class="text-right bg-head-outstanding">Exam Fees</th>
                 <th class="text-right bg-head-outstanding">Other Fees</th>
-                <th class="text-right bg-head-outstanding">Other</th>
                 <th class="text-right bg-head-outstanding" style="font-weight: 900;">Total</th>
             </tr>
         </thead>
@@ -265,20 +265,20 @@
 
                 <!-- Due -->
                 <td class="text-right font-mono">{{ number_format($r['due']['monthly_fee'], 2) }}</td>
-                <td class="text-right font-mono">{{ number_format($r['due']['other_fees'], 2) }}</td>
-                <td class="text-right font-mono" style="color: #6b7280;">{{ number_format($r['due']['other'], 2) }}</td>
+                <td class="text-right font-mono">{{ number_format($r['due']['exam_fees'], 2) }}</td>
+                <td class="text-right font-mono" style="color: #6b7280;">{{ number_format($r['due']['other_fees'], 2) }}</td>
                 <td class="text-right font-mono bg-total-col" style="color: #1e40af;">{{ number_format($r['due']['total'], 2) }}</td>
 
                 <!-- Collected -->
                 <td class="text-right font-mono">{{ number_format($r['collected']['monthly_fee'], 2) }}</td>
-                <td class="text-right font-mono">{{ number_format($r['collected']['other_fees'], 2) }}</td>
-                <td class="text-right font-mono" style="color: #6b7280;">{{ number_format($r['collected']['other'], 2) }}</td>
+                <td class="text-right font-mono">{{ number_format($r['collected']['exam_fees'], 2) }}</td>
+                <td class="text-right font-mono" style="color: #6b7280;">{{ number_format($r['collected']['other_fees'], 2) }}</td>
                 <td class="text-right font-mono bg-total-col" style="color: #065f46;">{{ number_format($r['collected']['total'], 2) }}</td>
 
                 <!-- Outstanding -->
                 <td class="text-right font-mono">{{ number_format($r['outstanding']['monthly_fee'], 2) }}</td>
-                <td class="text-right font-mono">{{ number_format($r['outstanding']['other_fees'], 2) }}</td>
-                <td class="text-right font-mono" style="color: #6b7280;">{{ number_format($r['outstanding']['other'], 2) }}</td>
+                <td class="text-right font-mono">{{ number_format($r['outstanding']['exam_fees'], 2) }}</td>
+                <td class="text-right font-mono" style="color: #6b7280;">{{ number_format($r['outstanding']['other_fees'], 2) }}</td>
                 <td class="text-right font-mono bg-total-col" style="color: #9f1239;">{{ number_format($r['outstanding']['total'], 2) }}</td>
             </tr>
             @endforeach
@@ -290,20 +290,20 @@
 
                 <!-- Due Grand Total -->
                 <td class="text-right font-mono">{{ number_format($grand_total['due']['monthly_fee'], 2) }}</td>
+                <td class="text-right font-mono">{{ number_format($grand_total['due']['exam_fees'], 2) }}</td>
                 <td class="text-right font-mono">{{ number_format($grand_total['due']['other_fees'], 2) }}</td>
-                <td class="text-right font-mono">{{ number_format($grand_total['due']['other'], 2) }}</td>
                 <td class="text-right font-mono" style="color: #1e3a8a; font-weight: 900;">{{ number_format($grand_total['due']['total'], 2) }}</td>
 
                 <!-- Collected Grand Total -->
                 <td class="text-right font-mono">{{ number_format($grand_total['collected']['monthly_fee'], 2) }}</td>
+                <td class="text-right font-mono">{{ number_format($grand_total['collected']['exam_fees'], 2) }}</td>
                 <td class="text-right font-mono">{{ number_format($grand_total['collected']['other_fees'], 2) }}</td>
-                <td class="text-right font-mono">{{ number_format($grand_total['collected']['other'], 2) }}</td>
                 <td class="text-right font-mono" style="color: #064e3b; font-weight: 900;">{{ number_format($grand_total['collected']['total'], 2) }}</td>
 
                 <!-- Outstanding Grand Total -->
                 <td class="text-right font-mono">{{ number_format($grand_total['outstanding']['monthly_fee'], 2) }}</td>
+                <td class="text-right font-mono">{{ number_format($grand_total['outstanding']['exam_fees'], 2) }}</td>
                 <td class="text-right font-mono">{{ number_format($grand_total['outstanding']['other_fees'], 2) }}</td>
-                <td class="text-right font-mono">{{ number_format($grand_total['outstanding']['other'], 2) }}</td>
                 <td class="text-right font-mono" style="color: #881337; font-weight: 900;">{{ number_format($grand_total['outstanding']['total'], 2) }}</td>
             </tr>
         </tfoot>

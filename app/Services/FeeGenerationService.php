@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use App\Models\FeeInvoice;
 use App\Models\FeeSetup;
 use App\Models\SessionYear;
@@ -294,7 +295,35 @@ class FeeGenerationService
                     // 3. In-Transaction Serial Calculation & Insertion
                     DB::beginTransaction();
                     try {
-                        // Serial locked via lockForUpdate() under the global advisory lock
+                        // Enforce Tier 1 Global Lock Hierarchy (Student ASC) BEFORE Tier 2 (FeeInvoice) lock
+                        // and cross-module first-month tuition coverage checks.
+                        $eligibleStudentIds = $eligibleStudents
+                            ->pluck('id')
+                            ->map(static fn ($id): int => (int) $id)
+                            ->unique()
+                            ->sort()
+                            ->values()
+                            ->all();
+
+                        if (!empty($eligibleStudentIds)) {
+                            Student::whereIn('id', $eligibleStudentIds)
+                                ->orderBy('id', 'asc')
+                                ->lockForUpdate()
+                                ->get();
+                        }
+
+                        $targetMonthNum = (int) $paddedMonth;
+                        $coveredTuitionStudentMap = [];
+                        if (self::isMonthlyTuitionCategoryName($catName) && $targetMonthNum >= 1 && $targetMonthNum <= 12) {
+                            $coveredStudentIds = $this->getStudentsCoveredByAdmissionTuition(
+                                $eligibleStudentIds,
+                                (int) $feeSetup->session_year_id,
+                                $targetMonthNum
+                            );
+                            $coveredTuitionStudentMap = array_flip($coveredStudentIds);
+                        }
+
+                        // Serial locked via lockForUpdate() under the global advisory lock and Tier 1 student locks
                         $lastInvoice = FeeInvoice::where('invoice_no', 'like', $prefix . '%')
                             ->lockForUpdate()
                             ->orderBy('id', 'desc')
@@ -309,6 +338,12 @@ class FeeGenerationService
                         $batchSkipped = 0;
 
                         foreach ($eligibleStudents as $student) {
+                            // Suppress standalone Monthly Tuition invoice if active Admission Package already includes it
+                            if (isset($coveredTuitionStudentMap[(int) $student->id])) {
+                                $batchSkipped++;
+                                continue;
+                            }
+
                             // Idempotency: Skip if invoice already exists
                             if ($isMonthlyRecurring) {
                                 $exists = FeeInvoice::where('student_id', $student->id)
@@ -983,10 +1018,17 @@ class FeeGenerationService
         $eligibleMatchedStudentIds = [];
         $cancelledExpectedSlotsCount = 0;
 
+        $coveredTuitionMonthsByStudent = $this->getStudentAdmissionTuitionMonthsMap(
+            $candidateStudents->pluck('id')->map(static fn ($id): int => (int) $id)->unique()->all(),
+            $sessionYearId
+        );
+
         foreach ($activeSetups as $feeSetup) {
             $scopeKey = $feeSetup->branch_id . '_' . $feeSetup->class_id;
             $studentsInScope = $studentsByScope->get($scopeKey, collect());
-            $isAdmissionCategory = strtolower(trim($feeSetup->category->name ?? '')) === 'admission fee';
+            $catName = $feeSetup->category->name ?? '';
+            $isAdmissionCategory = strtolower(trim($catName)) === 'admission fee';
+            $isMonthlyTuitionCat = self::isMonthlyTuitionCategoryName($catName);
 
             // Resolve billing periods for this specific setup
             $periods = $this->resolveSetupBillingPeriods($feeSetup, (int)$targetYear);
@@ -998,10 +1040,16 @@ class FeeGenerationService
 
                 foreach ($periods as $periodDef) {
                     $paddedMonth = $periodDef['month_num'];
+                    $monthInt = (int) $paddedMonth;
 
                     $isEligible = $isAdmissionCategory
                         ? $this->isStudentEligibleForAdmission($student, (int)$feeSetup->session_year_id, (int)$targetYear)
                         : $this->isStudentEligibleForMonth($student, (int)$targetYear, $paddedMonth);
+
+                    // Exclude Monthly Tuition slots legitimately absorbed inside an active Admission Package
+                    if ($isEligible && $isMonthlyTuitionCat && isset($coveredTuitionMonthsByStudent[(int) $student->id][$monthInt])) {
+                        $isEligible = false;
+                    }
 
                     if ($isEligible) {
                         $key = $student->id . '_' . $feeSetup->id . '_' . $paddedMonth;
@@ -1276,6 +1324,117 @@ class FeeGenerationService
             'result'            => $result,
             'details'           => $statusAfter,
         ];
+    }
+
+    /**
+     * Determine whether a fee category name denotes Monthly Tuition (excluding Monthly Exam, Term Exam, etc.).
+     */
+    public static function isMonthlyTuitionCategoryName(?string $categoryName): bool
+    {
+        $normalized = strtolower(trim((string) $categoryName));
+        if ($normalized === '') {
+            return false;
+        }
+
+        if (in_array($normalized, ['monthly fee', 'tuition fee', 'monthly tuition fee'], true)) {
+            return true;
+        }
+
+        return str_contains($normalized, 'tuition');
+    }
+
+    /**
+     * Return student IDs (from the supplied list) whose first-month tuition for `$monthNumber`
+     * in `$sessionYearId` is already covered by a non-cancelled multi-head Admission Invoice.
+     *
+     * @param  array<int, int>  $studentIds
+     * @return array<int, int>
+     */
+    public function getStudentsCoveredByAdmissionTuition(
+        array $studentIds,
+        int $sessionYearId,
+        int $monthNumber
+    ): array {
+        if (
+            empty($studentIds)
+            || $monthNumber < 1
+            || $monthNumber > 12
+            || !$this->hasAdmissionTuitionSchema()
+        ) {
+            return [];
+        }
+
+        return FeeInvoice::query()
+            ->whereIn('fee_invoices.student_id', $studentIds)
+            ->where('fee_invoices.session_year_id', $sessionYearId)
+            ->whereNotNull('fee_invoices.admission_fee_structure_id')
+            ->where('fee_invoices.status', '!=', 'Cancelled')
+            ->whereHas('admissionFeeStructure', function ($sq) use ($monthNumber): void {
+                $sq->where('includes_monthly_tuition', true)
+                    ->where('tuition_month_number', $monthNumber);
+            })
+            ->whereHas('admissionHeadAllocations', function ($hq): void {
+                $hq->where('is_tuition_head', true);
+            })
+            ->pluck('fee_invoices.student_id')
+            ->map(static fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Check whether a single student has an active Admission Package covering Monthly Tuition for `$monthNumber`.
+     */
+    public function hasActiveAdmissionTuitionCoverage(int $studentId, int $sessionYearId, int $monthNumber): bool
+    {
+        return count($this->getStudentsCoveredByAdmissionTuition([$studentId], $sessionYearId, $monthNumber)) > 0;
+    }
+
+    /**
+     * Build map [student_id => [month_number => true]] of active Admission Package tuition coverage.
+     *
+     * @param  array<int, int>  $studentIds
+     * @return array<int, array<int, bool>>
+     */
+    private function getStudentAdmissionTuitionMonthsMap(array $studentIds, int $sessionYearId): array
+    {
+        if (empty($studentIds) || !$this->hasAdmissionTuitionSchema()) {
+            return [];
+        }
+
+        $rows = DB::table('fee_invoices as fi')
+            ->join('admission_fee_structures as afs', 'fi.admission_fee_structure_id', '=', 'afs.id')
+            ->whereIn('fi.student_id', $studentIds)
+            ->where('fi.session_year_id', $sessionYearId)
+            ->whereNotNull('fi.admission_fee_structure_id')
+            ->where('fi.status', '!=', 'Cancelled')
+            ->where('afs.includes_monthly_tuition', true)
+            ->whereNotNull('afs.tuition_month_number')
+            ->whereExists(function ($sub): void {
+                $sub->select(DB::raw(1))
+                    ->from('admission_invoice_head_allocations as aiha')
+                    ->whereColumn('aiha.fee_invoice_id', 'fi.id')
+                    ->where('aiha.is_tuition_head', true);
+            })
+            ->get(['fi.student_id', 'afs.tuition_month_number']);
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int) $row->student_id][(int) $row->tuition_month_number] = true;
+        }
+
+        return $map;
+    }
+
+    /**
+     * Guard against environments where Phase 2 Admission Fee migrations remain pending.
+     */
+    private function hasAdmissionTuitionSchema(): bool
+    {
+        return Schema::hasTable('admission_fee_structures')
+            && Schema::hasTable('admission_invoice_head_allocations')
+            && Schema::hasColumn('fee_invoices', 'admission_fee_structure_id');
     }
 }
 

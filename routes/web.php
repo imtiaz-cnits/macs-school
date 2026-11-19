@@ -26,6 +26,8 @@ use App\Http\Controllers\FeeSetupController;
 use App\Http\Controllers\FeeCollectionController;
 use App\Http\Controllers\FeeInvoiceController;
 use App\Http\Controllers\FeeReportController;
+use App\Http\Controllers\AdmissionFeeReportController;
+use App\Http\Controllers\AdmissionFeeStructureController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
@@ -178,6 +180,7 @@ Route::middleware(['auth', 'roles:editor,admin,super-admin'])->group(function ()
     Route::post('/ajax/students/{id}/reactivate', [StudentController::class, 'reactivateStudent'])->name('students.reactivate');
     Route::post('/ajax/students/{id}/toggle-status', [StudentController::class, 'toggleStatus'])->name('students.toggle-status');
     Route::post('/ajax/invoices/{id}/restore', [FeeInvoiceController::class, 'restoreInvoice'])->name('invoices.restore_ajax');
+    Route::get('/ajax/admission-structures/active', [AdmissionFeeStructureController::class, 'activeForScope'])->name('ajax.admission.structures.active');
 
     // ৫. ডাটা সেভ, আপডেট, ডিলিট এবং রিড করার জন্য AJAX রাউট (API Resource)
     Route::resource('ajax/students', StudentController::class);
@@ -422,6 +425,16 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
         // Generate Invoices Routes
         Route::get('/invoice/generate', [FeeInvoiceController::class, 'index'])->name('invoice.generate');
         Route::post('/invoice/generate', [FeeInvoiceController::class, 'generate'])->name('invoice.store');
+        Route::post('/invoice/admission/{student_id}', [FeeInvoiceController::class, 'generateAdmission'])->name('invoice.admission.generate');
+
+        // Admission Fee Structures (Subphase 4E CRUD, Versioning & Admin Discount Preview)
+        Route::get('/admission-structures', [AdmissionFeeStructureController::class, 'index'])->name('admission.structures.index');
+        Route::post('/admission-structures', [AdmissionFeeStructureController::class, 'store'])->name('admission.structures.store');
+        Route::put('/admission-structures/{id}', [AdmissionFeeStructureController::class, 'update'])->name('admission.structures.update');
+        Route::post('/admission-structures/{id}/activate', [AdmissionFeeStructureController::class, 'activate'])->name('admission.structures.activate');
+        Route::post('/admission-structures/{id}/deactivate', [AdmissionFeeStructureController::class, 'deactivate'])->name('admission.structures.deactivate');
+        Route::delete('/admission-structures/{id}', [AdmissionFeeStructureController::class, 'destroy'])->name('admission.structures.destroy');
+        Route::post('/admission-structures/discount-preview', [AdmissionFeeStructureController::class, 'discountPreview'])->name('admission.structures.discount_preview');
         
         // POS Print Route
         Route::get('/invoice/{id}/pos-print', [FeeInvoiceController::class, 'printPos'])->name('invoice.pos_print');
@@ -434,11 +447,17 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
         Route::get('/receipt/{receipt_no}/pos-print-individual', [FeeCollectionController::class, 'printBulkIndividualPos'])->name('receipt.pos_print_individual');
         Route::get('/payments', [FeeCollectionController::class, 'paymentsIndex'])->name('payments.index');
         Route::post('/payments/print-selected', [FeeCollectionController::class, 'printSelectedIndividualPos'])->name('payments.print_selected');
+        Route::post('/payments/{id}/reverse', [FeeCollectionController::class, 'reversePayment'])->name('payments.reverse');
 
         // Fee Reports
         Route::get('/reports', [FeeReportController::class, 'index'])->name('reports.index');
         // নতুন: Summary Report
         Route::get('/reports/summary', [FeeReportController::class, 'summaryReport'])->name('reports.summary');
+        // Admission Fee Reports (Subphase 4C Backend/Excel + Subphase 4D UI, Data API & Print View)
+        Route::get('/admission-reports', [AdmissionFeeReportController::class, 'index'])->name('admission.reports.index');
+        Route::get('/admission-reports/data', [AdmissionFeeReportController::class, 'data'])->name('admission.reports.data');
+        Route::get('/admission-reports/print', [AdmissionFeeReportController::class, 'printReport'])->name('admission.reports.print');
+        Route::get('/admission-reports/export-excel', [AdmissionFeeReportController::class, 'exportExcel'])->name('admission.reports.export_excel');
         
     });
 

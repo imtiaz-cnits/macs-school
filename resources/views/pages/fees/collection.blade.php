@@ -44,6 +44,13 @@
         </div>
     </div>
 
+    @if(isset($hasAdmissionSchema) && !$hasAdmissionSchema)
+        <div class="mb-6 rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/90 dark:bg-amber-950/30 px-4 py-3 text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-3 no-print">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+            <span>Admission schema migrations are pending. Please contact the system administrator.</span>
+        </div>
+    @endif
+
     <!-- Collection Mode Tabs -->
     <div class="flex gap-4 border-b border-gray-100 dark:border-white/[0.06] pb-px mb-8 no-print" x-data="{ activeTab: '{{ request('mode', 'single') }}' }">
         <a href="{{ route('fees.collection.index', ['mode' => 'single']) }}" 
@@ -229,177 +236,200 @@
         <!-- Single Mode View -->
         @if(request('mode', 'single') === 'single')
         @if($student)
-        <div class="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <div class="mb-4 flex flex-wrap justify-between items-center gap-3">
             <a href="{{ route('fees.collection.index', array_merge(request()->except(['student_identity', 'search']), ['mode' => 'single'])) }}" class="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-themeBlue hover:text-themeGreen active:scale-95 transition-all">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Back to Outstanding Dues Directory</span>
+                <span>Back to Fee Collection</span>
             </a>
-            <div class="flex items-center gap-2">
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Selected Student: <strong class="text-gray-900 dark:text-white font-black">{{ $student->student_name }}</strong> ({{ $student->student_identity }})</span>
-                @if(($student->status ?? 'Active') === 'Inactive')
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-450 border border-rose-200 dark:border-rose-500/20 shadow-sm">
-                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive
-                    </span>
-                @else
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-450 border border-emerald-200 dark:border-emerald-500/20 shadow-sm">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Active
-                    </span>
-                @endif
-            </div>
+            <a href="{{ route('student.view', $student->id) }}" class="inline-flex items-center gap-1.5 px-3.5 h-8 rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-themeNavy text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-300 hover:border-themeBlue hover:text-themeBlue transition-all shadow-sm">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                <span>Student Profile</span>
+            </a>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            
-            <!-- Student Info Sidebar Panel -->
-            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 lg:col-span-1 h-fit shadow-sm hover:shadow-md transition-all duration-300">
-                <div class="text-center mb-6">
-                    <div class="w-24 h-24 mx-auto bg-gray-55 dark:bg-themeDark rounded-full border-4 border-gray-100 dark:border-gray-800 shadow-md mb-3 flex items-center justify-center overflow-hidden relative">
-                        <img src="https://ui-avatars.com/api/?name={{ $student->student_name }}&background=008ED6&color=fff" class="w-full h-full object-cover">
-                    </div>
-                    <h3 class="text-lg font-black text-gray-900 dark:text-white leading-tight">{{ $student->student_name }}</h3>
-                    <p class="text-themeBlue font-mono font-black text-sm mt-1.5 uppercase tracking-wider">{{ $student->student_identity }}</p>
-                    
-                    <!-- Dynamic Student Status Badge -->
-                    <div class="mt-3 flex justify-center">
-                        @if(($student->status ?? 'Active') === 'Inactive')
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-450 border border-rose-200 dark:border-rose-500/20 shadow-sm">
-                                <span class="w-2 h-2 rounded-full bg-rose-500"></span> Inactive Student
-                            </span>
-                        @else
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-450 border border-emerald-200 dark:border-emerald-500/20 shadow-sm">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Active Student
-                            </span>
-                        @endif
-                    </div>
-                </div>
-                
-                <div class="space-y-4 pt-4 border-t border-gray-100 dark:border-white/[0.05] text-xs">
-                    <div class="flex justify-between items-center">
-                        <span class="font-bold text-gray-400 dark:text-gray-555 uppercase tracking-wider">Status:</span> 
-                        <span class="font-black {{ ($student->status ?? 'Active') === 'Inactive' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
-                            {{ $student->status ?? 'Active' }}
-                        </span>
-                    </div>
-                    <div class="flex justify-between items-center"><span class="font-bold text-gray-400 dark:text-gray-555 uppercase tracking-wider">Class:</span> <span class="font-bold text-gray-800 dark:text-gray-200">{{ $student->schoolClass->class_name ?? 'N/A' }}</span></div>
-                    <div class="flex justify-between items-center"><span class="font-bold text-gray-400 dark:text-gray-555 uppercase tracking-wider">Section:</span> <span class="font-bold text-gray-800 dark:text-gray-200">{{ $student->section->section_name ?? 'N/A' }}</span></div>
-                    <div class="flex justify-between items-center"><span class="font-bold text-gray-400 dark:text-gray-555 uppercase tracking-wider">Roll No:</span> <span class="font-mono font-black text-gray-800 dark:text-gray-200">{{ $student->roll_number }}</span></div>
-                    <div class="flex justify-between items-center"><span class="font-bold text-gray-400 dark:text-gray-555 uppercase tracking-wider">Mobile:</span> <span class="font-bold text-gray-800 dark:text-gray-200">{{ $student->father_mobile }}</span></div>
-                </div>
-            </div>
 
-            <!-- Dues & Payments Area -->
-            <div class="lg:col-span-3 space-y-8">
-                
-                @if(($student->status ?? 'Active') === 'Inactive')
-                <!-- Inactive Student Account Notice Banner -->
-                <div class="p-4 rounded-2xl bg-rose-50/90 dark:bg-rose-950/25 border-2 border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-300 flex items-center gap-3.5 shadow-sm">
-                    <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/60 flex items-center justify-center shrink-0 text-rose-600 dark:text-rose-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                    </div>
-                    <div>
-                        <div class="font-black text-xs uppercase tracking-wider text-rose-700 dark:text-rose-300 flex items-center gap-2">
-                            <span>Inactive Student Account</span>
-                            <span class="px-2 py-0.5 text-[9px] font-black rounded-md bg-rose-200/70 dark:bg-rose-900/70 text-rose-900 dark:text-rose-100">School Leaver</span>
+        <div class="w-full min-w-0 space-y-6">
+            <!-- Full-Width Horizontal Student Profile Banner -->
+            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl px-6 py-4 shadow-sm hover:shadow-md transition-all duration-300">
+                <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+                    <!-- Student Identity & Status -->
+                    <div class="flex items-center gap-4 min-w-0">
+                        <div class="w-14 h-14 bg-gray-50 dark:bg-themeDark rounded-2xl border-2 border-gray-100 dark:border-white/[0.08] shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0">
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode($student->student_name) }}&background=008ED6&color=fff" alt="{{ $student->student_name }}" class="w-full h-full object-cover">
                         </div>
-                        <p class="font-medium text-xs text-rose-700 dark:text-rose-300/90 mt-0.5">This student has been marked as <strong>Inactive</strong>. You can collect previous pending dues below, but no new monthly or exam fee invoices will be generated for them.</p>
-                    </div>
-                </div>
-                @endif
-                
-                <!-- Pending Dues Table -->
-                <form action="{{ route('fees.collection.bulk_store') }}" method="POST" id="bulkPaymentForm">
-                    @csrf
-                    <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden relative">
-                        <div class="p-6 border-b border-gray-100 dark:border-white/[0.05] flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                            <h3 class="text-sm font-black text-red-655 dark:text-red-400 uppercase tracking-wider flex items-center">
-                                <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                Pending Dues
-                            </h3>
-                            
-                            <!-- Important Financial Summary Badges -->
-                            <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                                @php
-                                    $pendingInvoicesCount = $invoices->count();
-                                    $totalNetBill = $invoices->sum('net_amount');
-                                    $totalDueAmount = $invoices->sum('due_amount');
-                                    $totalDiscount = $invoices->sum('discount');
-                                    $totalLifetimePaid = $paymentHistory->flatten()->sum('paid_amount');
-                                @endphp
-
-                                <!-- Dynamic Selected Amount (shown when checkboxes are checked) -->
-                                <div id="headerSelectedPill" class="hidden px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-themeBlue to-indigo-600 text-white shadow-md shadow-themeBlue/20 text-xs font-black flex items-center gap-1.5 transition-all">
-                                    <span class="text-[10px] font-black uppercase tracking-wider opacity-90">Selected:</span>
-                                    <span class="font-mono text-xs font-black">৳ <span id="headerSelectedDisplay">0.00</span></span>
-                                </div>                                <!-- Invoices Count -->
-                                <div class="px-3 py-1.5 rounded-xl bg-gray-50/80 dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] text-xs font-semibold flex items-center gap-1.5 shadow-sm">
-                                    <span class="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">Invoices:</span>
-                                    <span id="summaryInvoicesCount" class="font-black text-gray-800 dark:text-gray-200">{{ $pendingInvoicesCount }}</span>
-                                </div>
-
-                                <!-- Total Bill -->
-                                <div class="px-3 py-1.5 rounded-xl bg-gray-50/80 dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] text-xs font-semibold flex items-center gap-1.5 shadow-sm">
-                                    <span class="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">Total Bill:</span>
-                                    <span id="summaryTotalBill" class="font-black font-mono text-gray-900 dark:text-white">৳ {{ number_format($totalNetBill, 2) }}</span>
-                                </div>
-
-                                <!-- Total Discount -->
-                                <div id="summaryDiscountWrapper" class="{{ $totalDiscount > 0 ? '' : 'hidden' }} px-3 py-1.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 text-xs font-semibold flex items-center gap-1.5 shadow-sm text-amber-700 dark:text-amber-400">
-                                    <span class="text-[10px] font-black uppercase tracking-wider opacity-80">Discount:</span>
-                                    <span id="summaryDiscount" class="font-black font-mono">৳ {{ number_format($totalDiscount, 2) }}</span>
-                                </div>
-
-                                <!-- Total Paid (Lifetime) -->
-                                <div class="px-3 py-1.5 rounded-xl bg-green-50/70 dark:bg-themeGreen/10 border border-green-200/60 dark:border-green-800/40 text-xs font-semibold flex items-center gap-1.5 shadow-sm text-themeGreen">
-                                    <span class="text-[10px] font-black uppercase tracking-wider opacity-80">Total Paid:</span>
-                                    <span class="font-black font-mono">৳ {{ number_format($totalLifetimePaid, 2) }}</span>
-                                </div>
-
-                                <!-- Total Pending Due (Prominent Red Badge) -->
-                                <div class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-500/20 text-xs font-black flex items-center gap-1.5">
-                                    <span class="uppercase tracking-wider text-[10px] opacity-90">Total Due:</span>
-                                    <span id="summaryTotalDue" class="font-mono text-xs sm:text-sm font-black tracking-tight">৳ {{ number_format($totalDueAmount, 2) }}</span>
-                                </div>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2.5">
+                                <h3 class="text-lg font-black text-gray-900 dark:text-white tracking-tight truncate">{{ $student->student_name }}</h3>
+                                @if(($student->status ?? 'Active') === 'Inactive')
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 whitespace-nowrap">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive Student
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 whitespace-nowrap">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Active Student
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 mt-1">
+                                <span class="px-2.5 py-0.5 rounded-lg bg-sky-50 dark:bg-themeBlue/15 text-themeBlue font-mono font-black text-xs tracking-wider">{{ $student->student_identity }}</span>
+                                @if($student->branch)
+                                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">&middot; {{ $student->branch->branch_name }}</span>
+                                @endif
                             </div>
                         </div>
-                        
-                        <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-                            <table class="w-full text-left border-collapse table">
+                    </div>
+
+                    <!-- Academic & Contact Metadata Chips -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 xl:flex xl:items-center xl:gap-3">
+                        <div class="rounded-2xl bg-gray-50/80 dark:bg-themeDark/60 border border-gray-100 dark:border-white/[0.06] px-3.5 py-2">
+                            <div class="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Class</div>
+                            <div class="text-xs font-black text-gray-800 dark:text-gray-100 mt-0.5 whitespace-nowrap">{{ $student->schoolClass->class_name ?? 'N/A' }}</div>
+                        </div>
+                        <div class="rounded-2xl bg-gray-50/80 dark:bg-themeDark/60 border border-gray-100 dark:border-white/[0.06] px-3.5 py-2">
+                            <div class="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Section</div>
+                            <div class="text-xs font-black text-gray-800 dark:text-gray-100 mt-0.5 whitespace-nowrap">{{ $student->section->section_name ?? 'N/A' }}</div>
+                        </div>
+                        <div class="rounded-2xl bg-gray-50/80 dark:bg-themeDark/60 border border-gray-100 dark:border-white/[0.06] px-3.5 py-2">
+                            <div class="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Roll No</div>
+                            <div class="text-xs font-mono font-black text-gray-800 dark:text-gray-100 mt-0.5 whitespace-nowrap">{{ $student->roll_number }}</div>
+                        </div>
+                        <div class="rounded-2xl bg-gray-50/80 dark:bg-themeDark/60 border border-gray-100 dark:border-white/[0.06] px-3.5 py-2">
+                            <div class="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Mobile</div>
+                            <div class="text-xs font-mono font-bold text-gray-800 dark:text-gray-100 mt-0.5 whitespace-nowrap">{{ $student->father_mobile }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if(($student->status ?? 'Active') === 'Inactive')
+            <!-- Inactive Student Account Notice Banner -->
+            <div class="p-4 rounded-2xl bg-rose-50/90 dark:bg-rose-950/25 border-2 border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-300 flex items-center gap-3.5 shadow-sm">
+                <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/60 flex items-center justify-center shrink-0 text-rose-600 dark:text-rose-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+                <div>
+                    <div class="font-black text-xs uppercase tracking-wider text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                        <span>Inactive Student Account</span>
+                        <span class="px-2 py-0.5 text-[9px] font-black rounded-md bg-rose-200/70 dark:bg-rose-900/70 text-rose-900 dark:text-rose-100">School Leaver</span>
+                    </div>
+                    <p class="font-medium text-xs text-rose-700 dark:text-rose-300/90 mt-0.5">This student has been marked as <strong>Inactive</strong>. You can collect previous pending dues below, but no new monthly or exam fee invoices will be generated for them.</p>
+                </div>
+            </div>
+            @endif
+
+            <!-- Full-Width Pending Dues Table (AGENTS.md Rule 9) -->
+            <form action="{{ route('fees.collection.bulk_store') }}" method="POST" id="bulkPaymentForm" class="w-full min-w-0">
+                @csrf
+                <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden relative">
+                    <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
+                        <h3 class="text-sm font-black text-red-600 dark:text-red-400 uppercase tracking-wider flex items-center whitespace-nowrap">
+                            <svg class="w-5 h-5 mr-2 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Pending Dues
+                        </h3>
+
+                        <!-- Important Financial Summary Badges -->
+                        <div class="flex flex-wrap items-center gap-2">
+                            @php
+                                $pendingInvoicesCount = $invoices->count();
+                                $totalNetBill = $invoices->sum('net_amount');
+                                $totalDueAmount = $invoices->sum('due_amount');
+                                $totalDiscount = $invoices->sum('discount');
+                                $totalLifetimePaid = '0.00';
+                                foreach ($paymentHistory->flatten()->filter(fn ($pay) => !$pay->isReversed()) as $activePay) {
+                                    $totalLifetimePaid = bcadd($totalLifetimePaid, bcadd((string) $activePay->paid_amount, '0.00', 2), 2);
+                                }
+                            @endphp
+
+                            <!-- Dynamic Selected Amount (shown when checkboxes are checked) -->
+                            <div id="headerSelectedPill" class="hidden px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-themeBlue to-indigo-600 text-white shadow-md shadow-themeBlue/20 text-xs font-black flex items-center gap-1.5 transition-all whitespace-nowrap">
+                                <span class="text-[10px] font-black uppercase tracking-wider opacity-90">Selected:</span>
+                                <span class="font-mono text-xs font-black">৳ <span id="headerSelectedDisplay">0.00</span></span>
+                            </div>
+
+                            <!-- Invoices Count -->
+                            <div class="px-3 py-1.5 rounded-xl bg-gray-50/80 dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] text-xs font-semibold flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">Invoices:</span>
+                                <span id="summaryInvoicesCount" class="font-black text-gray-800 dark:text-gray-200">{{ $pendingInvoicesCount }}</span>
+                            </div>
+
+                            <!-- Total Bill -->
+                            <div class="px-3 py-1.5 rounded-xl bg-gray-50/80 dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] text-xs font-semibold flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">Total Bill:</span>
+                                <span id="summaryTotalBill" class="font-black font-mono text-gray-900 dark:text-white">৳ {{ number_format($totalNetBill, 2) }}</span>
+                            </div>
+
+                            <!-- Total Discount -->
+                            <div id="summaryDiscountWrapper" class="{{ $totalDiscount > 0 ? '' : 'hidden' }} px-3 py-1.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 text-xs font-semibold flex items-center gap-1.5 shadow-sm text-amber-700 dark:text-amber-400 whitespace-nowrap">
+                                <span class="text-[10px] font-black uppercase tracking-wider opacity-80">Discount:</span>
+                                <span id="summaryDiscount" class="font-black font-mono">৳ {{ number_format($totalDiscount, 2) }}</span>
+                            </div>
+
+                            <!-- Total Paid (Active Only) -->
+                            <div class="px-3 py-1.5 rounded-xl bg-green-50/70 dark:bg-themeGreen/10 border border-green-200/60 dark:border-green-800/40 text-xs font-semibold flex items-center gap-1.5 shadow-sm text-themeGreen whitespace-nowrap">
+                                <span class="text-[10px] font-black uppercase tracking-wider opacity-80">Total Paid:</span>
+                                <span class="font-black font-mono">৳ {{ number_format($totalLifetimePaid, 2) }}</span>
+                            </div>
+
+                            <!-- Total Pending Due (Prominent Red Badge) -->
+                            <div class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-500/20 text-xs font-black flex items-center gap-1.5 whitespace-nowrap">
+                                <span class="uppercase tracking-wider text-[10px] opacity-90">Total Due:</span>
+                                <span id="summaryTotalDue" class="font-mono text-xs sm:text-sm font-black tracking-tight">৳ {{ number_format($totalDueAmount, 2) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="px-6 pb-4 pt-1">
+                        <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 !rounded-none overflow-x-auto">
+                            <table class="w-full text-left border-collapse table [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-1 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-3 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-1 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
                                 <thead>
                                     <tr class="!bg-transparent">
-                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-center w-12">
-                                            <input type="checkbox" id="selectAllDues" class="w-4 h-4 text-themeGreen rounded border-gray-200 dark:border-gray-800 focus:ring-themeGreen cursor-pointer">
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-center w-10">
+                                            <input type="checkbox" id="selectAllDues" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 accent-themeBlue focus:ring-themeBlue cursor-pointer">
                                         </th>
-                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-2 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Fee Description</th>
-                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Month</th>
-                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Net Bill</th>
-                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-themeGreen dark:text-themeGreen uppercase tracking-[0.2em] text-right w-44">Due Amt (৳)</th>
-                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-44">Action</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Fee Description</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Month</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-right whitespace-nowrap">Net Bill</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-themeGreen dark:text-themeGreen uppercase tracking-[0.18em] text-right whitespace-nowrap">Due Amt (৳)</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-right whitespace-nowrap">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                <tbody>
                                     @forelse($invoices as $inv)
-                                    <tr id="inv-row-{{ $inv->id }}" data-category-id="{{ $inv->feeSetup->fee_category_id }}" class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
-                                        <td class="py-4 px-4 text-center">
-                                            <input type="checkbox" id="checkbox-{{ $inv->id }}" name="invoice_ids[]" value="{{ $inv->id }}" data-amount="{{ $inv->due_amount }}" class="due-checkbox w-4 h-4 text-themeGreen rounded border-gray-200 dark:border-gray-800 focus:ring-themeGreen cursor-pointer">
+                                    @php
+                                        $isAdmInv = method_exists($inv, 'isAdmissionInvoice') && $inv->isAdmissionInvoice();
+                                        $invCategoryId = $inv->feeSetup->fee_category_id ?? '';
+                                        $invTitle = $isAdmInv
+                                            ? ('Admission Fee Package — ' . ($inv->admissionFeeStructure->structure_name ?? 'Admission Fee'))
+                                            : ($inv->feeSetup?->category?->name ?? 'Fee Payment');
+                                    @endphp
+                                    <tr id="inv-row-{{ $inv->id }}" data-category-id="{{ $invCategoryId }}" class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                                        <td class="py-0 px-0 text-center">
+                                            <input type="checkbox" id="checkbox-{{ $inv->id }}" name="invoice_ids[]" value="{{ $inv->id }}" data-amount="{{ $inv->due_amount }}" class="due-checkbox w-4 h-4 rounded border-gray-300 dark:border-gray-600 accent-themeBlue focus:ring-themeBlue cursor-pointer">
                                         </td>
-                                        <td class="py-4 px-2">
-                                            <div class="font-bold text-gray-900 dark:text-gray-100 text-sm">{{ $inv->feeSetup->category->name }}</div>
-                                            <div class="text-[10px] text-gray-400 dark:text-gray-555 font-mono mt-0.5">{{ $inv->invoice_no }}</div>
+                                        <td class="py-0 px-0">
+                                            <div class="font-bold text-gray-900 dark:text-gray-100 text-sm flex flex-wrap items-center gap-2">
+                                                <span class="whitespace-nowrap">{{ $invTitle }}</span>
+                                                @if($isAdmInv)
+                                                    <span class="inline-flex items-center px-2 py-0.5 bg-indigo-50 dark:bg-themeBlue/15 border border-indigo-100 dark:border-themeBlue/30 text-themeBlue text-[9px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">Admission</span>
+                                                @endif
+                                            </div>
+                                            <div class="text-[11px] text-gray-400 dark:text-gray-500 font-mono mt-0.5 whitespace-nowrap">{{ $inv->invoice_no }}</div>
                                         </td>
-                                        <td class="py-4 px-4">
-                                            <span class="px-2 py-0.5 bg-gray-50 dark:bg-themeDark border border-gray-100 dark:border-white/[0.06] text-themeBlue dark:text-themeBlue text-[9px] font-black uppercase tracking-wider rounded-lg inline-block">{{ $inv->month_name }}</span>
+                                        <td class="py-0 px-0 whitespace-nowrap">
+                                            <span class="inline-flex items-center px-2.5 py-1 bg-sky-50/70 dark:bg-themeDark border border-sky-100 dark:border-white/[0.06] text-themeBlue text-[10px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">{{ $inv->month_name }}</span>
                                         </td>
-                                        <td id="net-bill-{{ $inv->id }}" class="py-4 px-4 text-right text-sm font-semibold text-gray-600 dark:text-gray-400 font-mono">{{ number_format($inv->net_amount, 2) }}</td>
-                                        <td class="py-3 px-4 text-right">
-                                            <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-gray-50/80 dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] text-sm font-black font-mono text-themeGreen dark:text-themeGreen shadow-sm">
-                                                <span class="text-xs mr-1 opacity-70">৳</span>
+                                        <td id="net-bill-{{ $inv->id }}" class="py-0 px-0 text-right text-sm font-bold text-gray-600 dark:text-gray-400 font-mono whitespace-nowrap">{{ number_format($inv->net_amount, 2) }}</td>
+                                        <td class="py-0 px-0 text-right whitespace-nowrap">
+                                            <span class="inline-flex items-center px-3 py-1 rounded-xl bg-emerald-50/70 dark:bg-themeGreen/10 border border-emerald-200/60 dark:border-themeGreen/25 text-sm font-black font-mono text-themeGreen whitespace-nowrap">
+                                                <span class="text-xs mr-1 opacity-75">৳</span>
                                                 <span id="due-display-{{ $inv->id }}">{{ number_format($inv->due_amount, 2) }}</span>
                                             </span>
                                         </td>
-                                        <td class="py-4 px-4 text-right">
-                                            <div class="flex items-center justify-end gap-2">
-                                                <button type="button" 
+                                        <td class="py-0 px-0 text-right whitespace-nowrap">
+                                            <div class="flex items-center justify-end gap-2 whitespace-nowrap">
+                                                @if(!$isAdmInv && $inv->feeSetup)
+                                                <button type="button"
                                                         id="adjust-btn-{{ $inv->id }}"
-                                                        data-fee-name="{{ $inv->feeSetup->category->name }}"
+                                                        data-fee-name="{{ $invTitle }}"
                                                         data-month-name="{{ $inv->month_name }}"
                                                         data-setup-amount="{{ $inv->feeSetup->amount }}"
                                                         data-gross-amount="{{ $inv->amount }}"
@@ -407,14 +437,32 @@
                                                         data-net-amount="{{ $inv->net_amount }}"
                                                         data-paid-amount="{{ $inv->paid_amount }}"
                                                         data-due-amount="{{ $inv->due_amount }}"
-                                                        onclick="openAdjustModal({{ $inv->id }})" 
-                                                        title="Adjust Fee (+ / -) for {{ $inv->month_name }}" 
-                                                        class="h-9 w-9 rounded-xl border-2 border-themeBlue/30 hover:border-themeBlue bg-indigo-50/70 hover:bg-themeBlue dark:bg-themeBlue/10 dark:hover:bg-themeBlue text-themeBlue hover:text-white flex items-center justify-center transition-all shadow-sm hover:shadow-md active:scale-95 flex-shrink-0 group">
+                                                        onclick="openAdjustModal({{ $inv->id }})"
+                                                        title="Adjust Fee (+ / -) for {{ $inv->month_name }}"
+                                                        class="h-8 w-8 rounded-lg border border-themeBlue/30 hover:border-themeBlue bg-sky-50/70 hover:bg-themeBlue dark:bg-themeBlue/10 dark:hover:bg-themeBlue text-themeBlue hover:text-white flex items-center justify-center transition-all active:scale-95 flex-shrink-0 group">
                                                     <svg class="w-4 h-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                                     </svg>
                                                 </button>
-                                                <button type="button" id="pay-btn-{{ $inv->id }}" data-fee-name="{{ $inv->feeSetup->category->name }} ({{ $inv->month_name }})" onclick="openPayModal({{ $inv->id }}, '{{ $inv->feeSetup->category->name }} ({{ $inv->month_name }})', {{ $inv->due_amount }})" class="h-9 px-4 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-[10px] font-black rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center active:scale-95 whitespace-nowrap">Pay Single</button>
+                                                @endif
+                                                @if($isAdmInv)
+                                                    <button type="button"
+                                                            id="pay-btn-{{ $inv->id }}"
+                                                            data-fee-name="{{ $invTitle }} ({{ $inv->month_name }})"
+                                                            data-admission-invoice="{{ json_encode([
+                                                                'invoice_id' => $inv->id,
+                                                                'invoice_no' => $inv->invoice_no,
+                                                                'structure_name' => $inv->prepared_structure_name ?? ($invTitle ?: 'Admission Fee Package'),
+                                                                'due_amount' => bcadd((string) $inv->due_amount, '0.00', 2),
+                                                                'heads' => $inv->prepared_admission_heads ?? [],
+                                                            ]) }}"
+                                                            onclick="window.openAdmissionPayModalFromButton(this)"
+                                                            class="h-8 px-3.5 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-[10px] font-black rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center active:scale-95 whitespace-nowrap">
+                                                        Collect Heads
+                                                    </button>
+                                                @else
+                                                    <button type="button" id="pay-btn-{{ $inv->id }}" data-fee-name="{{ $invTitle }} ({{ $inv->month_name }})" onclick="openPayModal({{ $inv->id }}, {{ \Illuminate\Support\Js::from($invTitle . ' (' . $inv->month_name . ')') }}, {{ $inv->due_amount }})" class="h-8 px-3.5 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-[10px] font-black rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center active:scale-95 whitespace-nowrap">Pay Single</button>
+                                                @endif
                                             </div>
                                         </td>
                                     </tr>
@@ -429,109 +477,183 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
 
-                        <!-- Floating modern selected dues panel -->
-                        @if($invoices->count() > 0)
-                        <div id="bulkPaymentBar" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[999] w-[calc(100%-2rem)] max-w-2xl bg-gradient-to-r from-themeBlue to-themeGreen p-4 rounded-3xl shadow-2xl flex flex-col sm:flex-row justify-between items-center gap-4 hidden transition-all duration-300">
-                            <div class="text-white flex items-center">
-                                <span class="text-xs font-black uppercase tracking-wider opacity-85">Selected Total:</span>
-                                <span class="text-2xl font-black ml-3 font-mono">৳ <span id="bulkTotalDisplay">0.00</span></span>
-                            </div>
-                            <div class="flex items-center gap-3 w-full sm:w-auto">
-                                <!-- Custom Alpine Dropdown for bulk payment method -->
-                                <div x-data="{ 
-                                    open: false, 
-                                    value: 'Cash', 
-                                    label: 'Cash',
-                                    select(val) {
-                                        this.value = val;
-                                        this.label = val;
-                                        this.open = false;
-                                        let inp = this.$refs.hiddenInput;
-                                        inp.value = val;
-                                    }
-                                }" class="relative w-full sm:w-36 text-gray-900" @click.away="open = false">
-                                    <button type="button" @click="open = !open" class="w-full h-10 px-3 bg-white/20 border border-white/30 rounded-xl flex items-center justify-between text-xs font-black text-white focus:outline-none focus:ring-2 focus:ring-white transition-all text-left">
-                                        <span class="truncate uppercase tracking-wider" x-text="label"></span>
-                                        <svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                                    </button>
-                                    <input type="hidden" name="payment_method" x-ref="hiddenInput" value="Cash">
-                                    <div x-show="open" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
-                                        <template x-for="opt in ['Cash', 'bKash', 'Nagad', 'Bank']" :key="opt">
-                                            <button type="button" @click="select(opt)" class="w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-gray-55 dark:hover:bg-themeDark/45 transition-colors" :class="value == opt ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
-                                                <span x-text="opt"></span>
-                                                <svg x-show="value == opt" class="w-3 h-3 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                            </button>
-                                        </template>
-                                    </div>
-                                </div>
-                                <button type="submit" class="w-full sm:w-auto h-10 px-5 bg-white text-themeGreen font-black rounded-xl text-xs uppercase tracking-widest hover:bg-gray-50 hover:-translate-y-0.5 active:scale-95 transition-all shadow-md">Pay Selected</button>
-                            </div>
+                    <!-- Floating modern selected dues panel -->
+                    @if($invoices->count() > 0)
+                    <div id="bulkPaymentBar" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[999] w-[calc(100%-2rem)] max-w-2xl bg-gradient-to-r from-themeBlue to-themeGreen p-4 rounded-3xl shadow-2xl flex flex-col sm:flex-row justify-between items-center gap-4 hidden transition-all duration-300">
+                        <div class="text-white flex items-center">
+                            <span class="text-xs font-black uppercase tracking-wider opacity-85">Selected Total:</span>
+                            <span class="text-2xl font-black ml-3 font-mono">৳ <span id="bulkTotalDisplay">0.00</span></span>
                         </div>
-                        @endif
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <!-- Custom Alpine Dropdown for bulk payment method -->
+                            <div x-data="{ 
+                                open: false, 
+                                value: 'Cash', 
+                                label: 'Cash',
+                                select(val) {
+                                    this.value = val;
+                                    this.label = val;
+                                    this.open = false;
+                                    let inp = this.$refs.hiddenInput;
+                                    inp.value = val;
+                                }
+                            }" class="relative w-full sm:w-36 text-gray-900" @click.away="open = false">
+                                <button type="button" @click="open = !open" class="w-full h-10 px-3 bg-white/20 border border-white/30 rounded-xl flex items-center justify-between text-xs font-black text-white focus:outline-none focus:ring-2 focus:ring-white transition-all text-left">
+                                    <span class="truncate uppercase tracking-wider" x-text="label"></span>
+                                    <svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <input type="hidden" name="payment_method" x-ref="hiddenInput" value="Cash">
+                                <div x-show="open" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                                    <template x-for="opt in ['Cash', 'bKash', 'Nagad', 'Bank']" :key="opt">
+                                        <button type="button" @click="select(opt)" class="w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-gray-55 dark:hover:bg-themeDark/45 transition-colors" :class="value == opt ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                            <span x-text="opt"></span>
+                                            <svg x-show="value == opt" class="w-3 h-3 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full sm:w-auto h-10 px-5 bg-white text-themeGreen font-black rounded-xl text-xs uppercase tracking-widest hover:bg-gray-50 hover:-translate-y-0.5 active:scale-95 transition-all shadow-md">Pay Selected</button>
+                        </div>
                     </div>
-                </form>
+                    @endif
+                </div>
+            </form>
 
-                <!-- Payment History -->
-                <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
-                    <div class="p-6 border-b border-gray-100 dark:border-white/[0.05]">
-                        <h3 class="text-sm font-black text-themeGreen dark:text-themeGreen uppercase tracking-wider flex items-center">
-                            <svg class="w-5 h-5 mr-2 text-themeGreen" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-                            Payment History
-                        </h3>
-                    </div>
-                    
-                    <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-                        <table class="w-full text-left border-collapse table">
+            <!-- Full-Width Payment History Table (AGENTS.md Rule 9) -->
+            <div class="w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex items-center justify-between gap-3">
+                    <h3 class="text-sm font-black text-themeGreen dark:text-themeGreen uppercase tracking-wider flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-themeGreen flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                        Payment History
+                    </h3>
+                    <span class="text-xs font-mono font-bold text-gray-400 dark:text-gray-500 whitespace-nowrap">{{ $paymentHistory->count() }} receipt(s)</span>
+                </div>
+
+                <div class="px-6 pb-4 pt-1">
+                    <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 !rounded-none overflow-x-auto">
+                        <table class="w-full text-left border-collapse table [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-3 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
                             <thead>
                                 <tr class="!bg-transparent">
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Paid Items</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Date & Method</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Total Paid</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-36">Action</th>
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Paid Items</th>
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Date &amp; Method</th>
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-right whitespace-nowrap">Total Paid</th>
+                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-right whitespace-nowrap">Action</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            <tbody>
                                 @forelse($paymentHistory as $receiptNo => $payments)
                                 @php
-                                    $totalPaid = $payments->sum('paid_amount');
-                                    $date = $payments->first()->payment_date;
-                                    $method = $payments->first()->payment_method;
+                                    $activeGroupPayments = $payments->filter(fn ($pay) => !$pay->isReversed());
+                                    $reversedGroupPayments = $payments->filter(fn ($pay) => $pay->isReversed());
+                                    $totalPaid = '0.00';
+                                    foreach ($activeGroupPayments as $activePay) {
+                                        $totalPaid = \App\Helpers\NumberToWords::add($totalPaid, $activePay->paid_amount);
+                                    }
+                                    $totalReversed = '0.00';
+                                    foreach ($reversedGroupPayments as $reversedPay) {
+                                        $totalReversed = \App\Helpers\NumberToWords::add($totalReversed, $reversedPay->reversed_amount ?: $reversedPay->paid_amount);
+                                    }
+                                    $primaryPay = $activeGroupPayments->first() ?? $payments->first();
+                                    $date = $primaryPay->payment_date;
+                                    $method = $primaryPay->payment_method;
+                                    $isGroupFullyReversed = $activeGroupPayments->isEmpty() && $reversedGroupPayments->isNotEmpty();
                                 @endphp
-                                
-                                <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
-                                    <td class="py-4 px-4">
-                                        <div class="space-y-2 mb-2">
+
+                                <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                                    <td class="py-0 px-0">
+                                        <div class="space-y-1.5 mb-2">
                                             @foreach($payments as $p)
-                                                <div class="font-bold text-gray-955 dark:text-gray-100 text-sm flex items-center">
-                                                    <svg class="w-4 h-4 text-themeGreen mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
-                                                    {{ $p->invoice->feeSetup->category->name }} 
-                                                    <span class="ml-1 px-2 py-0.5 bg-gray-50 dark:bg-themeDark border border-gray-100 dark:border-white/[0.06] text-themeBlue dark:text-themeBlue text-[9px] font-black uppercase tracking-wider rounded-lg inline-block">{{ $p->invoice->month_name ?? 'One Time' }}</span>
+                                                @php
+                                                    $isAdmItem = $p->invoice && $p->invoice->isAdmissionInvoice();
+                                                    $itemTitle = $isAdmItem
+                                                        ? ('Admission Fee Package — ' . ($p->invoice->admissionFeeStructure->structure_name ?? 'Admission Fee'))
+                                                        : ($p->invoice->feeSetup->category->name ?? 'Fee Payment');
+                                                    $isItemReversed = $p->isReversed();
+                                                @endphp
+                                                <div>
+                                                    <div class="font-bold {{ $isItemReversed ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100' }} text-sm flex flex-wrap items-center gap-1.5">
+                                                        @if($isItemReversed)
+                                                            <svg class="w-4 h-4 text-rose-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                        @else
+                                                            <svg class="w-4 h-4 text-themeGreen flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                                                        @endif
+                                                        <span>{{ $itemTitle }}</span>
+                                                        <span class="inline-flex items-center px-2 py-0.5 bg-sky-50/70 dark:bg-themeDark border border-sky-100 dark:border-white/[0.06] text-themeBlue text-[9px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">{{ $p->invoice->month_name ?? 'One Time' }}</span>
+                                                        @if($isItemReversed)
+                                                            <span class="inline-flex items-center px-2 py-0.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 text-[9px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">
+                                                                Reversed{{ $p->reversal_reference ? ' · ' . $p->reversal_reference : '' }}
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                    @if($isAdmItem)
+                                                        @php
+                                                            $allocSelection = $p->prepared_alloc_selection ?? [
+                                                                'allocations' => collect(),
+                                                                'has_status_mismatch' => false,
+                                                                'missing_expected_allocations' => false,
+                                                                'used_provenance_fallback' => false,
+                                                            ];
+                                                            $displayHeadAllocs = $allocSelection['allocations'] ?? collect();
+                                                        @endphp
+                                                        @if($displayHeadAllocs->isNotEmpty())
+                                                            <div class="mt-1 pl-5 flex flex-wrap gap-1.5">
+                                                                @foreach($displayHeadAllocs as $headAlloc)
+                                                                    <span class="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-gray-100 dark:border-white/[0.06] bg-gray-50 dark:bg-themeDark whitespace-nowrap {{ $isItemReversed ? 'text-gray-400 line-through' : 'text-gray-600 dark:text-gray-300' }}">
+                                                                        {{ $headAlloc->head_name_snapshot }}: ৳{{ \App\Helpers\NumberToWords::formatDecimal($headAlloc->allocated_paid_amount) }}
+                                                                        @if($isItemReversed && !$headAlloc->isReversed())
+                                                                            <span class="ml-0.5 text-[9px] font-black uppercase text-rose-500 no-underline inline-block">(Orig. Unsynced)</span>
+                                                                        @endif
+                                                                    </span>
+                                                                @endforeach
+                                                            </div>
+                                                        @elseif($allocSelection['has_status_mismatch'] && !$isItemReversed)
+                                                            <div class="mt-1 pl-5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                                                                Active head allocation breakdown unavailable (no Active head allocations matched).
+                                                            </div>
+                                                        @elseif($isItemReversed && $allocSelection['missing_expected_allocations'])
+                                                            <div class="mt-1 pl-5 text-[10px] font-semibold text-gray-400 italic">
+                                                                Reversed head allocation details missing from ledger.
+                                                            </div>
+                                                        @endif
+                                                    @endif
                                                 </div>
                                             @endforeach
                                         </div>
-                                        <div class="text-[10px] text-gray-500 font-mono bg-gray-50 dark:bg-themeDark border border-gray-100 dark:border-white/[0.04] inline-block px-2 py-0.5 rounded-lg">{{ $receiptNo }}</div>
+                                        <span class="text-[10px] text-gray-500 dark:text-gray-400 font-mono bg-gray-50 dark:bg-themeDark border border-gray-150 dark:border-white/[0.06] inline-block px-2 py-0.5 rounded-lg whitespace-nowrap">{{ $receiptNo }}</span>
                                     </td>
-                                    
-                                    <td class="py-4 px-4">
-                                        <div class="font-bold text-gray-900 dark:text-white text-sm">{{ date('d M, Y', strtotime($date)) }}</div>
-                                        <div class="text-xs text-gray-550 dark:text-gray-455 font-semibold mt-0.5">Via {{ $method }}</div>
+
+                                    <td class="py-0 px-0 whitespace-nowrap">
+                                        <div class="font-bold text-gray-900 dark:text-white text-sm whitespace-nowrap">{{ $date ? date('d M, Y', strtotime((string) $date)) : 'N/A' }}</div>
+                                        @if($isGroupFullyReversed)
+                                            <div class="text-[10px] text-rose-600 dark:text-rose-400 font-black uppercase tracking-wider mt-0.5 whitespace-nowrap">Void / Reversed</div>
+                                        @else
+                                            <div class="text-xs text-gray-500 dark:text-gray-400 font-semibold mt-0.5 whitespace-nowrap">Via {{ $method }}</div>
+                                        @endif
                                     </td>
-                                    
-                                    <td class="py-4 px-4 text-right font-black text-themeGreen dark:text-themeGreen text-lg font-mono">
-                                        ৳ {{ number_format($totalPaid, 2) }}
+
+                                    <td class="py-0 px-0 text-right whitespace-nowrap">
+                                        <div class="font-black {{ $isGroupFullyReversed ? 'text-rose-600 dark:text-rose-400' : 'text-themeGreen dark:text-themeGreen' }} text-base font-mono whitespace-nowrap">
+                                            ৳ {{ \App\Helpers\NumberToWords::formatDecimal($totalPaid) }}
+                                        </div>
+                                        @if($reversedGroupPayments->isNotEmpty())
+                                            <div class="text-[10px] font-bold text-rose-500 line-through mt-0.5 whitespace-nowrap">
+                                                Reversed: ৳{{ \App\Helpers\NumberToWords::formatDecimal($totalReversed) }}
+                                            </div>
+                                        @endif
                                     </td>
-                                    
-                                    <td class="py-4 px-4 text-right">
-                                        <a href="{{ route('fees.receipt.pos_print', $receiptNo) }}" target="_blank" class="h-9 px-4 bg-indigo-55 hover:bg-indigo-100 dark:bg-themeBlue/10 dark:hover:bg-themeBlue/20 text-themeBlue text-[10px] font-black rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center gap-2 whitespace-nowrap active:scale-95 inline-flex">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                                            Receipt
+
+                                    <td class="py-0 px-0 text-right whitespace-nowrap">
+                                        <a href="{{ route('fees.receipt.pos_print', $receiptNo) }}" target="_blank" class="h-8 px-3.5 bg-sky-50 hover:bg-themeBlue text-themeBlue hover:text-white border border-sky-200/70 dark:bg-themeBlue/10 dark:border-themeBlue/25 dark:hover:bg-themeBlue dark:hover:text-white text-[10px] font-black rounded-lg shadow-sm hover:-translate-y-0.5 transition-all uppercase tracking-widest inline-flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.3"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                            {{ $isGroupFullyReversed ? 'Void Receipt' : 'Receipt' }}
                                         </a>
                                     </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="4" class="py-12 text-center text-gray-555 font-bold uppercase tracking-wider">
+                                    <td colspan="4" class="py-12 text-center text-gray-500 font-bold text-xs uppercase tracking-wider">
                                         No payment history available.
                                     </td>
                                 </tr>
@@ -540,75 +662,189 @@
                         </table>
                     </div>
                 </div>
-
             </div>
+        </div>
         @else
-            <!-- Directory of Outstanding Dues Students (instead of blank screen) -->
-            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden relative">
-                <div class="p-6 border-b border-gray-100 dark:border-white/[0.05] flex justify-between items-center">
-                    <h3 class="text-sm font-black text-themeBlue uppercase tracking-wider flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        Outstanding Dues Student Directory
-                    </h3>
-                    <div class="text-xs font-bold text-gray-550 bg-gray-50 dark:bg-themeDark px-4 py-2 rounded-xl border border-gray-100 dark:border-gray-800">
-                        Total Due Students: <span class="text-themeBlue font-black">{{ $dueStudents->total() }}</span>
+            @php
+                $isSearchLookup = (bool) ($hasSearchQuery ?? false);
+                $stdFeeCols = $standardFeeColumns ?? collect();
+                $stdFeeRows = $standardFeeRows ?? collect();
+                $stdScopeLabel = $standardFeeScopeLabel ?? '';
+            @endphp
+
+            @if($isSearchLookup)
+                <!-- Search Results Directory (Only shown when partial search matches multiple students, AGENTS.md Rule 9) -->
+                <div class="w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden relative">
+                    <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex flex-wrap justify-between items-center gap-3">
+                        <h3 class="text-sm font-black text-themeBlue uppercase tracking-wider flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            Matching Students
+                        </h3>
+                        <div class="text-xs font-bold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-themeDark px-3.5 py-1.5 rounded-xl border border-gray-100 dark:border-white/[0.08] whitespace-nowrap">
+                            Matched: <span class="text-themeBlue font-black font-mono">{{ method_exists($dueStudents, 'total') ? $dueStudents->total() : $dueStudents->count() }}</span>
+                        </div>
+                    </div>
+
+                    <div class="px-6 pb-4 pt-1">
+                        <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 !rounded-none overflow-x-auto">
+                            <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-3 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
+                                <thead>
+                                    <tr class="!bg-transparent">
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Student ID</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Student Name</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Class / Section &amp; Roll</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-right whitespace-nowrap">Outstanding Due</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-right whitespace-nowrap">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($dueStudents as $ds)
+                                    @php $dsDue = (float) ($ds->total_due ?? 0); @endphp
+                                    <tr class="transition-colors">
+                                        <td class="py-0 px-0 whitespace-nowrap">
+                                            <span class="font-mono font-black text-themeBlue text-xs uppercase">{{ $ds->student_identity }}</span>
+                                        </td>
+                                        <td class="py-0 px-0 whitespace-nowrap">
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-bold text-gray-900 dark:text-gray-100 text-sm">{{ $ds->student_name }}</span>
+                                                @if(($ds->status ?? 'Active') === 'Inactive')
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td class="py-0 px-0 whitespace-nowrap">
+                                            <span class="font-bold text-gray-700 dark:text-gray-300 text-xs">{{ $ds->schoolClass->class_name ?? 'N/A' }}</span>
+                                            @if($ds->section)
+                                                <span class="text-xs text-gray-400"> - {{ $ds->section->section_name }}</span>
+                                            @endif
+                                            @if($ds->roll_number)
+                                                <span class="text-gray-400 mx-1">&bull;</span>
+                                                <span class="font-mono text-xs font-bold text-gray-500 dark:text-gray-400">Roll: {{ $ds->roll_number }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-0 px-0 text-right whitespace-nowrap">
+                                            <span class="font-mono font-black text-sm {{ $dsDue > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-themeGreen dark:text-emerald-400' }}">
+                                                ৳ {{ number_format($dsDue, 2) }}
+                                            </span>
+                                        </td>
+                                        <td class="py-0 px-0 text-right whitespace-nowrap">
+                                            <a href="{{ route('fees.collection.index', ['mode' => 'single', 'student_identity' => $ds->student_identity]) }}" class="h-8 px-3.5 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-[10px] font-black rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all uppercase tracking-widest inline-flex items-center justify-center active:scale-95 whitespace-nowrap">Open Ledger</a>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="5">
+                                            <div class="py-10 text-center text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                                                No students found matching your search query.
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    @if(method_exists($dueStudents, 'hasPages') && $dueStudents->hasPages())
+                    <div class="px-6 py-4 border-t border-gray-100 dark:border-white/[0.06] bg-gray-50/40 dark:bg-themeDark/25">
+                        {{ $dueStudents->onEachSide(1)->links('partials.pagination') }}
+                    </div>
+                    @endif
+                </div>
+            @else
+                <!-- Class-wise Standard Fee Schedule Reference Table (Full-Width, AGENTS.md Rule 9) -->
+                <div class="w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden relative">
+                    <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex flex-wrap justify-between items-center gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <svg class="w-5 h-5 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                            </svg>
+                            <div>
+                                <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                                    Class-wise Standard Fee Schedule
+                                </h3>
+                                <p class="text-[11px] font-medium text-gray-400 dark:text-gray-500 mt-0.5">
+                                    Standard configured fee amounts by academic class (Play to Ten)
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            @if($stdScopeLabel)
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-themeBlue/15 border border-sky-200/70 dark:border-themeBlue/30 text-[11px] font-black text-themeBlue dark:text-blue-300 whitespace-nowrap">
+                                {{ $stdScopeLabel }}
+                            </span>
+                            @endif
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-gray-50 dark:bg-themeDark border border-gray-200/80 dark:border-white/[0.08] text-[11px] font-bold text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                Classes: <strong class="font-mono font-black text-gray-900 dark:text-white ml-1">{{ $stdFeeRows->count() }}</strong>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="px-6 pb-4 pt-1">
+                        <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 !rounded-none overflow-x-auto">
+                            <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-3 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
+                                <thead>
+                                    <tr class="!bg-transparent">
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center w-12 whitespace-nowrap">#</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Class</th>
+                                        @foreach($stdFeeCols as $col)
+                                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black uppercase tracking-[0.18em] text-right whitespace-nowrap {{ $col['type'] === 'admission' ? 'text-themeGreen' : ($col['type'] === 'monthly' ? 'text-themeBlue' : 'text-gray-400 dark:text-gray-550') }}">
+                                                {{ $col['label'] }}
+                                            </th>
+                                        @endforeach
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($stdFeeRows as $idx => $row)
+                                    <tr class="transition-colors">
+                                        <td class="py-0 px-0 text-center whitespace-nowrap">
+                                            <span class="font-mono font-black text-xs text-gray-400 dark:text-gray-500">{{ str_pad((string) ($idx + 1), 2, '0', STR_PAD_LEFT) }}</span>
+                                        </td>
+                                        <td class="py-0 px-0 whitespace-nowrap">
+                                            <span class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ $row['class_name'] }}</span>
+                                        </td>
+                                        @foreach($stdFeeCols as $col)
+                                            @php $cellVal = $row['cells'][$col['key']] ?? null; @endphp
+                                            <td class="py-0 px-0 text-right whitespace-nowrap">
+                                                @if($col['type'] === 'admission')
+                                                    @if(is_array($cellVal))
+                                                        <div class="inline-flex items-center justify-end gap-1.5">
+                                                            @if(!empty($cellVal['includes_tuition']))
+                                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-sky-50 dark:bg-themeBlue/15 border border-sky-200/60 dark:border-themeBlue/25 text-[9px] font-black uppercase tracking-wider text-themeBlue dark:text-blue-300" title="Includes January Monthly Tuition">Incl. Jan</span>
+                                                            @endif
+                                                            <span class="font-mono font-black text-sm text-themeGreen dark:text-emerald-400">{{ $cellVal['amount'] }}</span>
+                                                        </div>
+                                                    @else
+                                                        <span class="font-mono text-xs text-gray-300 dark:text-gray-600">—</span>
+                                                    @endif
+                                                @else
+                                                    @if($cellVal !== null)
+                                                        <span class="font-mono text-sm {{ $col['type'] === 'monthly' ? 'font-black text-themeBlue dark:text-blue-400' : 'font-bold text-gray-800 dark:text-gray-200' }}">{{ $cellVal }}</span>
+                                                    @else
+                                                        <span class="font-mono text-xs text-gray-300 dark:text-gray-600">—</span>
+                                                    @endif
+                                                @endif
+                                            </td>
+                                        @endforeach
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="{{ 2 + $stdFeeCols->count() }}">
+                                            <div class="py-10 text-center text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                                                No active standard fee setup configured for the selected scope.
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-
-                <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-                    <table class="w-full text-left border-collapse table">
-                        <thead>
-                            <tr class="!bg-transparent">
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Student ID</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Student Name</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Class / Section</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-red-500 dark:text-red-400 uppercase tracking-[0.2em] text-right">Total Outstanding</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right w-36">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                            @forelse($dueStudents as $ds)
-                            <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
-                                <td class="py-4 px-4 font-mono font-black text-themeBlue text-sm uppercase">{{ $ds->student_identity }}</td>
-                                <td class="py-4 px-4 font-bold text-gray-900 dark:text-gray-100 text-sm">
-                                    <div class="flex items-center gap-2">
-                                        <span>{{ $ds->student_name }}</span>
-                                        @if(($ds->status ?? 'Active') === 'Inactive')
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-450 border border-rose-200 dark:border-rose-500/20">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive
-                                            </span>
-                                        @endif
-                                    </div>
-                                </td>
-                                <td class="py-4 px-4 font-bold text-gray-655 dark:text-gray-400 text-sm">
-                                    {{ $ds->schoolClass->class_name ?? 'N/A' }} 
-                                    @if($ds->section)
-                                        - <span class="text-xs text-gray-400">{{ $ds->section->section_name }}</span>
-                                    @endif
-                                </td>
-                                <td class="py-4 px-4 text-right font-black text-red-655 dark:text-red-400 text-base font-mono">৳ {{ number_format($ds->total_due, 2) }}</td>
-                                <td class="py-4 px-4 text-right">
-                                    <a href="{{ route('fees.collection.index', ['mode' => 'single', 'student_identity' => $ds->student_identity]) }}" class="h-9 px-4 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-[10px] font-black rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center active:scale-95 inline-flex whitespace-nowrap">Collect Dues</a>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="5" class="py-12 text-center text-themeGreen dark:text-themeGreen font-black text-sm uppercase tracking-wider">
-                                    <svg class="w-12 h-12 mx-auto mb-3 text-themeGreen opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    All invoices paid! No students have outstanding dues.
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                
-                @if($dueStudents->hasPages())
-                <div class="px-6 py-4 border-t border-gray-100 dark:border-white/[0.05] bg-gray-50/50 dark:bg-themeDark/30">
-                    {{ $dueStudents->links() }}
-                </div>
-                @endif
-            </div>
+            @endif
         @endif
     @endif
 
@@ -831,55 +1067,57 @@
                         </div>
                     </div>
 
-                    <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-                        <table class="w-full text-left border-collapse table">
-                            <thead>
-                                <tr class="!bg-transparent">
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-center w-12">
-                                        <input type="checkbox" :checked="isAllSelected()" @click="toggleAll()" class="w-4 h-4 text-themeGreen rounded border-gray-200 dark:border-gray-800 focus:ring-themeGreen cursor-pointer">
-                                    </th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-2 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Student Details</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Invoice No</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-red-500 dark:text-red-400 uppercase tracking-[0.2em] text-right">Due Amt</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-themeGreen dark:text-themeGreen uppercase tracking-[0.2em] text-right w-44">Paying Amt (৳)</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                                @forelse($bulkInvoices as $inv)
-                                <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
-                                    <td class="py-4 px-4 text-center">
-                                        <input type="checkbox" name="invoice_ids[]" value="{{ $inv->id }}" :checked="selectedInvoices.includes('{{ $inv->id }}')" @click="toggleInvoice('{{ $inv->id }}')" class="w-4 h-4 text-themeGreen rounded border-gray-200 dark:border-gray-800 focus:ring-themeGreen cursor-pointer">
-                                    </td>
-                                    <td class="py-4 px-2">
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-bold text-gray-900 dark:text-gray-100 text-sm">{{ $inv->student->student_name }}</span>
-                                            @if(($inv->student->status ?? 'Active') === 'Inactive')
-                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-450 border border-rose-200 dark:border-rose-500/20">
-                                                    <span class="w-1 h-1 rounded-full bg-rose-500"></span> Inactive
-                                                </span>
-                                            @endif
-                                        </div>
-                                        <div class="text-[10px] text-themeBlue font-mono font-black mt-0.5">{{ $inv->student->student_identity }}</div>
-                                    </td>
-                                    <td class="py-4 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">
-                                        <div>{{ $inv->invoice_no }}</div>
-                                        <div class="text-[10px] text-themeBlue font-black mt-0.5 uppercase">{{ $inv->month_name }}</div>
-                                    </td>
-                                    <td class="py-4 px-4 text-right font-black text-red-655 dark:text-red-400 text-base font-mono">৳ {{ number_format($inv->due_amount, 2) }}</td>
-                                    <td class="py-4 px-4 text-right">
-                                        <input type="number" step="0.01" name="paying_amounts[{{ $inv->id }}]" x-model.number="payingAmounts['{{ $inv->id }}']" @input="recalculate()" class="w-full h-9 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-55/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-bold font-mono text-themeGreen dark:text-themeGreen px-3 text-right">
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="5" class="py-12 text-center text-themeGreen dark:text-themeGreen font-black text-sm uppercase tracking-wider">
-                                        <svg class="w-12 h-12 mx-auto mb-3 text-themeGreen opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        No outstanding invoices found matching these filters.
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                    <div class="px-6 pb-4 pt-1">
+                        <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 !rounded-none overflow-x-auto">
+                            <table class="w-full text-left border-collapse table [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-1 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-3 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-1 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
+                                <thead>
+                                    <tr class="!bg-transparent">
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-center w-10">
+                                            <input type="checkbox" :checked="isAllSelected()" @click="toggleAll()" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 accent-themeBlue focus:ring-themeBlue cursor-pointer">
+                                        </th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Student Details</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Invoice No</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-red-500 dark:text-red-400 uppercase tracking-[0.18em] text-right whitespace-nowrap">Due Amt</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-themeGreen dark:text-themeGreen uppercase tracking-[0.18em] text-right w-44 whitespace-nowrap">Paying Amt (৳)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($bulkInvoices as $inv)
+                                    <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                                        <td class="py-0 px-0 text-center">
+                                            <input type="checkbox" name="invoice_ids[]" value="{{ $inv->id }}" :checked="selectedInvoices.includes('{{ $inv->id }}')" @click="toggleInvoice('{{ $inv->id }}')" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 accent-themeBlue focus:ring-themeBlue cursor-pointer">
+                                        </td>
+                                        <td class="py-0 px-0 whitespace-nowrap">
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-bold text-gray-900 dark:text-gray-100 text-sm">{{ $inv->student->student_name }}</span>
+                                                @if(($inv->student->status ?? 'Active') === 'Inactive')
+                                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20">
+                                                        <span class="w-1 h-1 rounded-full bg-rose-500"></span> Inactive
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <div class="text-[10px] text-themeBlue font-mono font-black mt-0.5">{{ $inv->student->student_identity }}</div>
+                                        </td>
+                                        <td class="py-0 px-0 text-sm font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                            <div class="font-mono text-xs">{{ $inv->invoice_no }}</div>
+                                            <div class="text-[10px] text-themeBlue font-black mt-0.5 uppercase">{{ $inv->month_name }}</div>
+                                        </td>
+                                        <td class="py-0 px-0 text-right font-black text-red-600 dark:text-red-400 text-sm font-mono whitespace-nowrap">৳ {{ number_format($inv->due_amount, 2) }}</td>
+                                        <td class="py-0 px-0 text-right whitespace-nowrap">
+                                            <input type="number" step="0.01" name="paying_amounts[{{ $inv->id }}]" x-model.number="payingAmounts['{{ $inv->id }}']" @input="recalculate()" class="w-full h-9 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-bold font-mono text-themeGreen dark:text-themeGreen px-3 text-right">
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="5" class="py-12 text-center text-themeGreen dark:text-themeGreen font-black text-sm uppercase tracking-wider">
+                                            <svg class="w-12 h-12 mx-auto mb-3 text-themeGreen opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            No outstanding invoices found matching these filters.
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -1064,6 +1302,323 @@
             <div class="mt-8 flex gap-3">
                 <button type="button" onclick="closePayModal()" class="flex-1 h-11 px-6 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-655 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all">Cancel</button>
                 <button type="submit" class="flex-1 h-11 px-6 bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-xs uppercase tracking-widest flex items-center justify-center active:scale-95">Confirm Payment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Collect Admission Payment (Head-Wise & Lump-Sum) Modal -->
+<div id="admissionPaymentModal"
+     x-data="admissionPayModalComponent()"
+     x-show="isOpen"
+     x-cloak
+     @open-admission-pay-modal.window="open($event.detail)"
+     @keydown.escape.window="if (isOpen && !isSubmitting) close()"
+     class="fixed inset-0 z-[9999] flex items-center justify-center bg-themeDark/50 backdrop-blur-md p-3 sm:p-4">
+    <div class="bg-white dark:bg-themeNavy w-full max-w-4xl max-h-[94vh] flex flex-col rounded-3xl shadow-2xl border border-gray-100 dark:border-white/[0.08] overflow-hidden" @click.away="!isSubmitting && close()">
+        <div class="px-6 py-3.5 border-b border-gray-100 dark:border-white/[0.06] flex items-center justify-between gap-4 flex-shrink-0">
+            <div>
+                <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Collect Admission Fee</h3>
+                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
+                    <span class="font-mono font-black text-themeBlue" x-text="invoiceNo"></span>
+                    <span class="mx-1.5 text-gray-300 dark:text-gray-700">|</span>
+                    <span x-text="structureName"></span>
+                </p>
+            </div>
+            <button type="button" @click="!isSubmitting && close()" class="text-gray-400 hover:text-red-500 transition-colors p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <form @submit.prevent="submit()" class="p-5 overflow-y-auto space-y-3.5 text-gray-900 dark:text-white">
+            <!-- Summary Counters -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="rounded-2xl border border-gray-100 dark:border-white/[0.06] bg-gray-50/70 dark:bg-themeDark/40 p-3">
+                    <div class="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Net Collectible Due</div>
+                    <div class="flex items-baseline gap-2 mt-0.5">
+                        <div class="text-base sm:text-lg font-black font-mono text-red-600 dark:text-red-400" x-text="'৳ ' + formatMoney(effectiveDuePaisa)"></div>
+                        <span x-show="directDiscountPaisa > 0" class="text-xs font-mono font-bold text-gray-400 line-through" x-text="'৳' + formatMoney(totalDuePaisa)"></span>
+                    </div>
+                </div>
+                <div class="rounded-2xl border border-gray-100 dark:border-white/[0.06] bg-gray-50/70 dark:bg-themeDark/40 p-3">
+                    <div class="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Paying Now</div>
+                    <div class="text-base sm:text-lg font-black font-mono text-themeGreen mt-0.5" x-text="'৳ ' + formatMoney(payingTotalPaisa)"></div>
+                </div>
+                <div class="rounded-2xl border border-gray-100 dark:border-white/[0.06] bg-gray-50/70 dark:bg-themeDark/40 p-3">
+                    <div class="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Remaining After</div>
+                    <div class="text-base sm:text-lg font-black font-mono text-gray-800 dark:text-gray-200 mt-0.5" x-text="'৳ ' + formatMoney(Math.max(0, effectiveDuePaisa - payingTotalPaisa))"></div>
+                </div>
+            </div>
+
+            <!-- Allocation Mode Toggle & Quick Action (Auto Split First & Default) -->
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="inline-flex rounded-xl border border-gray-150 dark:border-white/[0.08] bg-gray-50/70 dark:bg-themeDark/40 p-1">
+                    <button type="button"
+                            @click="allocationMode = 'lump_sum'"
+                            class="px-3.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                            :class="allocationMode === 'lump_sum' ? 'bg-white dark:bg-themeNavy text-themeBlue shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'">
+                        Auto Split
+                    </button>
+                    <button type="button"
+                            @click="allocationMode = 'per_head'"
+                            class="px-3.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                            :class="allocationMode === 'per_head' ? 'bg-white dark:bg-themeNavy text-themeBlue shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'">
+                        Per-Head Allocation
+                    </button>
+                </div>
+                <button type="button"
+                        @click="fillFullDue()"
+                        class="h-8 px-3.5 rounded-xl border-2 border-themeBlue/20 bg-themeBlue/10 text-themeBlue text-[10px] font-black uppercase tracking-widest hover:bg-themeBlue hover:text-white transition-all"
+                        x-text="(allocationMode === 'lump_sum' && hasTuitionHead && !includeTuitionInAutoSplit && pendingTuitionDuePaisa > 0) ? 'Pay Non-Tuition Due' : 'Pay Full Due'">
+                </button>
+            </div>
+
+            <!-- Per-Head Table -->
+            <div x-show="allocationMode === 'per_head'" class="w-full min-w-0 rounded-2xl border border-gray-100 dark:border-white/[0.06] overflow-hidden">
+                <div class="table-container w-full max-w-full max-h-60 overflow-y-auto bg-transparent !border-none !shadow-none !mt-0 !mb-0 overflow-x-auto">
+                    <table class="w-full text-left border-collapse table [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-4 [&>thead>tr>th:last-child]:!pr-4 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr>td]:!py-2 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-4 [&>tbody>tr>td:last-child]:!pr-4 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:hover>td]:!bg-gray-50/70 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35 [&>tbody>tr>td.col-due]:!text-red-600 dark:[&>tbody>tr>td.col-due]:!text-red-400 [&>tbody>tr>td.col-muted]:!text-gray-600 dark:[&>tbody>tr>td.col-muted]:!text-gray-400">
+                        <thead>
+                            <tr class="!bg-transparent">
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Fee Head</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-right whitespace-nowrap">Net</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-right whitespace-nowrap">Paid</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-right whitespace-nowrap">Due</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-right whitespace-nowrap">Collect Now (৳)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06]">
+                            <template x-for="head in heads" :key="head.id">
+                                <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                                    <td class="py-0 px-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="text-sm font-bold text-gray-900 dark:text-gray-100" x-text="head.head_name"></span>
+                                            <span x-show="head.is_tuition_head" class="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-themeBlue/10 text-themeBlue">Tuition</span>
+                                            <span x-show="head.is_discountable" class="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-amber-100/80 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">Discountable</span>
+                                        </div>
+                                        <div class="text-[11px] font-medium text-gray-500 dark:text-gray-400" x-text="head.category_name"></div>
+                                    </td>
+                                    <td class="py-0 px-0 col-muted text-right text-xs font-mono font-bold whitespace-nowrap" x-text="'৳' + head.net_amount"></td>
+                                    <td class="py-0 px-0 col-muted text-right text-xs font-mono font-bold whitespace-nowrap" x-text="'৳' + head.allocated_paid_amount"></td>
+                                    <td class="py-0 px-0 col-due text-right text-xs font-mono font-black whitespace-nowrap">
+                                        <span x-text="'৳' + formatMoney(effectiveHeadDuePaisa(head))"></span>
+                                        <span x-show="(discountShareByHeadId[head.id] || 0) > 0" class="block text-[10px] font-bold text-gray-400 line-through" x-text="'৳' + head.due_amount"></span>
+                                    </td>
+                                    <td class="py-0 px-0 text-right whitespace-nowrap">
+                                        <div class="flex items-center justify-end gap-1.5">
+                                            <input type="number"
+                                                   step="0.01"
+                                                   min="0"
+                                                   :max="formatMoney(effectiveHeadDuePaisa(head))"
+                                                   :disabled="effectiveHeadDuePaisa(head) <= 0"
+                                                   x-model="head.pay_input"
+                                                   class="w-24 sm:w-28 h-9 px-2.5 text-right text-xs font-mono font-black border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/60 dark:bg-themeDark focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 transition-all">
+                                            <button type="button"
+                                                    x-show="effectiveHeadDuePaisa(head) > 0"
+                                                    @click="head.pay_input = formatMoney(effectiveHeadDuePaisa(head))"
+                                                    class="px-2.5 h-9 rounded-lg border border-gray-200 dark:border-white/[0.08] text-[10px] font-black uppercase tracking-wider text-themeBlue hover:bg-themeBlue/10 transition-colors">
+                                                Max
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Auto Split Mode -->
+            <div x-show="allocationMode === 'lump_sum'" class="space-y-3">
+                <div class="rounded-2xl border border-gray-100 dark:border-white/[0.06] bg-gray-50/60 dark:bg-themeDark/30 p-3.5 space-y-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase block">
+                            Total Paying Amount (৳) <span x-show="directDiscountPaisa <= 0" class="text-red-500">*</span>
+                        </label>
+                        <span x-show="hasTuitionHead && !includeTuitionInAutoSplit && pendingTuitionDuePaisa > 0"
+                              x-cloak
+                              class="px-2 py-0.5 rounded-lg bg-themeBlue/10 text-themeBlue text-[10px] font-mono font-black">
+                            Non-Tuition Max: ৳<span x-text="formatMoney(autoSplitMaxPaisa)"></span>
+                        </span>
+                    </div>
+                    <input type="number"
+                           step="0.01"
+                           :min="directDiscountPaisa > 0 ? '0' : '0.01'"
+                           :max="formatMoney(autoSplitMaxPaisa)"
+                           x-model="lumpAmount"
+                           class="w-full h-10 px-3.5 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-themeNavy focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 text-base font-mono font-black text-themeGreen transition-all">
+                    <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400"
+                       x-text="(hasTuitionHead && !includeTuitionInAutoSplit && pendingTuitionDuePaisa > 0)
+                           ? ('Monthly Tuition Fee (৳' + formatMoney(pendingTuitionDuePaisa) + ' due) is excluded — Auto Split allocates across pending non-tuition admission heads only.')
+                           : 'Auto Split allocates your paying amount accurately across pending admission heads in package sequence order.'">
+                    </p>
+                </div>
+
+                <!-- Monthly Tuition Fee Select / Unselect Option in Auto Split -->
+                <label x-show="hasTuitionHead"
+                       x-cloak
+                       class="flex items-center justify-between gap-3 rounded-2xl border px-3.5 py-2.5 transition-all select-none"
+                       :class="pendingTuitionDuePaisa <= 0
+                           ? 'border-gray-150 dark:border-white/[0.06] bg-gray-50/60 dark:bg-themeDark/30 opacity-75 cursor-not-allowed'
+                           : (includeTuitionInAutoSplit
+                               ? 'border-themeBlue/30 bg-sky-50/60 dark:bg-themeBlue/10 cursor-pointer hover:border-themeBlue/50'
+                               : 'border-gray-200 dark:border-white/[0.08] bg-gray-50/70 dark:bg-themeDark/40 cursor-pointer hover:border-gray-300 dark:hover:border-white/[0.14]')">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <input type="checkbox"
+                               id="includeTuitionInAutoSplitCheckbox"
+                               x-model="includeTuitionInAutoSplit"
+                               @change="onTuitionAutoSplitToggle()"
+                               :disabled="pendingTuitionDuePaisa <= 0"
+                               class="w-4 h-4 rounded-md border-2 border-gray-300 dark:border-gray-600 text-themeBlue focus:ring-4 focus:ring-themeBlue/15 transition-all cursor-pointer disabled:cursor-not-allowed">
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-xs font-black text-gray-900 dark:text-white tracking-tight">Include Monthly Tuition Fee</span>
+                                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider"
+                                      :class="pendingTuitionDuePaisa <= 0
+                                          ? 'bg-emerald-100 dark:bg-themeGreen/20 text-themeGreen'
+                                          : (includeTuitionInAutoSplit ? 'bg-themeBlue/15 text-themeBlue' : 'bg-gray-200/80 dark:bg-gray-800 text-gray-600 dark:text-gray-400')"
+                                      x-text="pendingTuitionDuePaisa <= 0 ? 'Settled' : (includeTuitionInAutoSplit ? 'Included' : 'Excluded')"></span>
+                            </div>
+                            <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400 truncate" x-text="tuitionHeadNames"></p>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <div class="text-xs font-mono font-black whitespace-nowrap"
+                             :class="pendingTuitionDuePaisa <= 0 ? 'text-themeGreen' : (includeTuitionInAutoSplit ? 'text-themeBlue' : 'text-gray-500 dark:text-gray-400 line-through')"
+                             x-text="'৳ ' + formatMoney(pendingTuitionDuePaisa)"></div>
+                        <div class="text-[9px] font-black uppercase tracking-wider text-gray-400"
+                             x-text="pendingTuitionDuePaisa <= 0 ? 'Paid' : 'Tuition Due'"></div>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Admin-Only Direct Discount Option (Strict is_discountable Package Rule) -->
+            <div x-show="canGrantDiscount" x-cloak class="rounded-2xl border border-amber-200/80 dark:border-amber-500/20 bg-amber-50/40 dark:bg-amber-950/15 p-3.5 space-y-2.5">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-[10px] font-black tracking-widest text-amber-800 dark:text-amber-300 uppercase">Direct Discount (৳)</span>
+                        <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold font-mono"
+                              :class="eligibleDiscountablePaisa > 0 ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200' : 'bg-gray-100 dark:bg-themeDark text-gray-500 dark:text-gray-400'"
+                              x-text="eligibleDiscountablePaisa > 0 ? ('Eligible Due: ৳' + formatMoney(eligibleDiscountablePaisa)) : 'Eligible Due: ৳0.00 (No discountable heads)'"></span>
+                    </div>
+                    <div class="flex items-center gap-2" x-show="eligibleDiscountablePaisa > 0">
+                        <button type="button"
+                                @click="applyDiscountOnly()"
+                                class="px-2.5 h-7 rounded-lg border border-amber-300/80 dark:border-amber-500/30 bg-white dark:bg-themeNavy text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 hover:bg-amber-100/70 transition-colors">
+                            Discount Only (৳0 Pay)
+                        </button>
+                        <button type="button"
+                                x-show="directDiscountPaisa > 0"
+                                @click="clearDirectDiscount()"
+                                class="px-2.5 h-7 rounded-lg border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-themeNavy text-[10px] font-black uppercase tracking-wider text-gray-500 hover:text-red-500 transition-colors">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-1 block">Discount Amount (৳)</label>
+                        <input type="number"
+                               step="0.01"
+                               min="0"
+                               :max="formatMoney(eligibleDiscountablePaisa)"
+                               :disabled="eligibleDiscountablePaisa <= 0"
+                               x-model="directDiscountInput"
+                               @input="onDirectDiscountInput()"
+                               placeholder="0.00"
+                               class="w-full h-10 px-3 border-2 border-amber-200/70 dark:border-gray-800 rounded-xl bg-white dark:bg-themeDark focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 text-sm font-mono font-black text-amber-700 dark:text-amber-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-1 block">Discount Reason (Optional)</label>
+                        <input type="text"
+                               :disabled="eligibleDiscountablePaisa <= 0"
+                               x-model="discountReason"
+                               placeholder="e.g. Principal approved admission discount"
+                               class="w-full h-10 px-3 border-2 border-amber-200/70 dark:border-gray-800 rounded-xl bg-white dark:bg-themeDark focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 text-xs font-semibold text-gray-800 dark:text-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Metadata Fields -->
+            <div x-show="payingTotalPaisa === 0 && directDiscountPaisa > 0" x-cloak class="rounded-xl border border-blue-200/70 dark:border-themeBlue/30 bg-blue-50/50 dark:bg-themeBlue/10 px-3.5 py-2 text-xs font-semibold text-themeBlue">
+                Discount-Only Mode: ৳0.00 cash will be collected, and only the Direct Discount audit adjustment will update this invoice.
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" :class="payingTotalPaisa === 0 && directDiscountPaisa > 0 ? 'opacity-50 pointer-events-none' : ''">
+                <!-- Custom Alpine Payment Method Dropdown (Rule 7) -->
+                <div>
+                    <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-1 block">Payment Method <span class="text-red-500">*</span></label>
+                    <div class="relative w-full" @click.away="methodOpen = false">
+                        <button type="button" @click="methodOpen = !methodOpen" class="w-full h-10 px-3.5 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                            <span class="truncate" x-text="paymentMethod"></span>
+                            <svg class="w-4 h-4 text-gray-455 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="methodOpen" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                            <template x-for="opt in paymentMethods" :key="opt">
+                                <button type="button" @click="paymentMethod = opt; methodOpen = false" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="paymentMethod === opt ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                    <span x-text="opt"></span>
+                                    <svg x-show="paymentMethod === opt" class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Alpine Date Picker (Rule 10) -->
+                <div>
+                    <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-1 block">Payment Date <span class="text-red-500">*</span></label>
+                    <div class="relative" x-data="datePicker(paymentDate)" @click.away="show = false" @date-selected="if($event.detail) paymentDate = $event.detail">
+                        <button type="button" @click="show = !show" class="w-full h-10 px-3.5 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
+                            <span x-text="paymentDate || 'Select Date'" class="truncate"></span>
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </button>
+                        <div x-show="show" x-cloak class="absolute z-50 right-0 sm:left-0 mt-1.5 w-72 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-2xl p-4">
+                            <div class="flex items-center justify-between gap-2 mb-3">
+                                <div class="relative" @click.away="mOpen = false">
+                                    <button type="button" @click="mOpen = !mOpen" class="px-2.5 py-1.5 rounded-lg bg-gray-50 dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] text-xs font-black text-gray-800 dark:text-gray-200 flex items-center gap-1">
+                                        <span x-text="months[month]"></span>
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <div x-show="mOpen" x-cloak class="absolute z-50 left-0 mt-1 w-36 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-xl shadow-xl py-1 max-h-48 overflow-y-auto">
+                                        <template x-for="(mName, mIdx) in months" :key="mIdx">
+                                            <button type="button" @click="month = mIdx; mOpen = false; calculateDays()" class="w-full flex items-center justify-between px-3 py-1.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45" :class="month === mIdx ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                                <span x-text="mName"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                                <input type="number" x-model.number="year" @input="calculateDays()" class="w-20 h-8 px-2 text-center text-xs font-black rounded-lg border border-gray-150 dark:border-white/[0.08] bg-gray-50 dark:bg-themeDark text-gray-800 dark:text-gray-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                            </div>
+                            <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-black text-gray-400 uppercase mb-1">
+                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+                            <div class="grid grid-cols-7 gap-1 text-center text-xs">
+                                <template x-for="(blank, bi) in blankDays" :key="'b'+bi">
+                                    <div></div>
+                                </template>
+                                <template x-for="day in daysInMonth" :key="day">
+                                    <button type="button" @click="selectDay(day); $dispatch('date-selected', formatted)" class="h-8 w-8 rounded-lg font-bold transition-colors flex items-center justify-center" :class="isSelected(day) ? 'bg-themeBlue text-white font-black' : 'hover:bg-gray-100 dark:hover:bg-themeDark/50 text-gray-700 dark:text-gray-200'" x-text="day"></button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-1 block">Transaction ID (Optional)</label>
+                    <input type="text" x-model="transactionId" class="w-full h-10 px-3.5 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 text-sm font-semibold text-gray-800 dark:text-gray-200 transition-all" placeholder="e.g. 8N2K9DJ3">
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-1 block">Collection Note (Optional)</label>
+                    <input type="text" x-model="note" class="w-full h-10 px-3.5 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 text-sm font-semibold text-gray-800 dark:text-gray-200 transition-all" placeholder="Optional counter note">
+                </div>
+            </div>
+
+            <div class="pt-1 flex gap-3">
+                <button type="button" @click="!isSubmitting && close()" class="flex-1 h-10 px-6 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-655 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all">Cancel</button>
+                <button type="submit" :disabled="isSubmitting" class="flex-1 h-10 px-6 bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-xs uppercase tracking-widest flex items-center justify-center active:scale-95 disabled:opacity-60">
+                    <span x-text="isSubmitting ? 'Processing...' : (directDiscountPaisa > 0 ? (payingTotalPaisa > 0 ? 'Apply Discount & Collect' : 'Apply Direct Discount') : 'Confirm Collection')"></span>
+                </button>
             </div>
         </form>
     </div>
@@ -1786,6 +2341,416 @@
             }
         };
     }
+
+    if (typeof window.datePicker !== 'function') {
+        window.datePicker = function(initialValue = '') {
+            const today = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const defaultDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+            const parsed = (initialValue && /^\d{4}-\d{2}-\d{2}$/.test(initialValue))
+                ? new Date(initialValue + 'T00:00:00')
+                : new Date(defaultDate + 'T00:00:00');
+            return {
+                show: false,
+                mOpen: false,
+                formatted: initialValue || defaultDate,
+                year: parsed.getFullYear(),
+                month: parsed.getMonth(),
+                months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                blankDays: [],
+                daysInMonth: [],
+                init() {
+                    this.calculateDays();
+                },
+                calculateDays() {
+                    const y = parseInt(this.year, 10) || today.getFullYear();
+                    const firstDay = new Date(y, this.month, 1).getDay();
+                    const totalDays = new Date(y, this.month + 1, 0).getDate();
+                    this.blankDays = Array.from({ length: firstDay }, (_, i) => i + 1);
+                    this.daysInMonth = Array.from({ length: totalDays }, (_, i) => i + 1);
+                },
+                selectDay(day) {
+                    const y = parseInt(this.year, 10) || today.getFullYear();
+                    this.formatted = `${y}-${pad(this.month + 1)}-${pad(day)}`;
+                    this.show = false;
+                },
+                isSelected(day) {
+                    const y = parseInt(this.year, 10) || today.getFullYear();
+                    return this.formatted === `${y}-${pad(this.month + 1)}-${pad(day)}`;
+                }
+            };
+        };
+    }
+
+    window.openAdmissionPayModalFromButton = function(buttonEl) {
+        try {
+            const raw = buttonEl.getAttribute('data-admission-invoice') || '{}';
+            const detail = JSON.parse(raw);
+            window.dispatchEvent(new CustomEvent('open-admission-pay-modal', { detail }));
+        } catch (err) {
+            console.error(err);
+            showAlert('Unable to load admission invoice details.', 'Modal Error');
+        }
+    };
+
+    window.admissionPayModalComponent = function() {
+        const generateIdempotencyKey = () => {
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                return window.crypto.randomUUID();
+            }
+            return 'adm-col-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+        };
+
+        const todayIso = () => {
+            const d = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        };
+
+        return {
+            isOpen: false,
+            isSubmitting: false,
+            canGrantDiscount: @json(auth()->check() && \App\Services\AdmissionInvoiceService::userCanGrantDiscount(auth()->user())),
+            allocationMode: 'lump_sum',
+            includeTuitionInAutoSplit: true,
+            invoiceId: null,
+            invoiceNo: '',
+            structureName: 'Admission Fee Package',
+            totalDueAmount: '0.00',
+            lumpAmount: '0.00',
+            directDiscountInput: '',
+            discountReason: '',
+            lastAutoEffectiveDuePaisa: 0,
+            heads: [],
+            paymentMethod: 'Cash',
+            paymentMethods: ['Cash', 'Bank', 'bKash', 'Nagad', 'Rocket'],
+            methodOpen: false,
+            paymentDate: todayIso(),
+            transactionId: '',
+            note: '',
+            idempotencyKey: '',
+
+            init() {
+                this.$watch('isOpen', (val) => {
+                    document.body.classList.toggle('overflow-hidden', Boolean(val));
+                });
+            },
+
+            toPaisa(val) {
+                const parsed = parseFloat(String(val ?? '0').replace(/,/g, ''));
+                if (isNaN(parsed)) return 0;
+                return Math.round(parsed * 100);
+            },
+
+            formatMoney(paisa) {
+                return (Math.max(0, Number(paisa || 0)) / 100).toFixed(2);
+            },
+
+            get totalDuePaisa() {
+                return this.toPaisa(this.totalDueAmount);
+            },
+
+            get eligibleDiscountablePaisa() {
+                return this.heads.reduce((sum, h) => {
+                    if (!h.is_discountable) return sum;
+                    return sum + Math.max(0, this.toPaisa(h.due_amount));
+                }, 0);
+            },
+
+            get directDiscountPaisa() {
+                if (!this.canGrantDiscount) return 0;
+                const raw = Math.max(0, this.toPaisa(this.directDiscountInput));
+                return Math.min(raw, this.eligibleDiscountablePaisa);
+            },
+
+            get effectiveDuePaisa() {
+                return Math.max(0, this.totalDuePaisa - this.directDiscountPaisa);
+            },
+
+            get discountShareByHeadId() {
+                const shares = {};
+                const discTotal = this.directDiscountPaisa;
+                const eligibleTotal = this.eligibleDiscountablePaisa;
+                if (discTotal <= 0 || eligibleTotal <= 0) {
+                    return shares;
+                }
+
+                const items = this.heads
+                    .filter((h) => Boolean(h.is_discountable) && this.toPaisa(h.due_amount) > 0)
+                    .map((h) => {
+                        const duePaisa = this.toPaisa(h.due_amount);
+                        const exact = discTotal * duePaisa;
+                        const floored = Math.floor(exact / eligibleTotal);
+                        const rem = exact % eligibleTotal;
+                        return { id: h.id, sortOrder: Number(h.sort_order || 0), duePaisa, share: floored, rem };
+                    });
+
+                let allocated = items.reduce((s, it) => s + it.share, 0);
+                let leftover = discTotal - allocated;
+
+                const byRem = [...items].sort((a, b) => {
+                    if (b.rem !== a.rem) return b.rem - a.rem;
+                    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+                    return Number(a.id) - Number(b.id);
+                });
+
+                for (const it of byRem) {
+                    if (leftover <= 0) break;
+                    if (it.share < it.duePaisa) {
+                        it.share += 1;
+                        leftover -= 1;
+                    }
+                }
+
+                for (const it of items) {
+                    shares[it.id] = it.share;
+                }
+                return shares;
+            },
+
+            effectiveHeadDuePaisa(head) {
+                const base = Math.max(0, this.toPaisa(head.due_amount));
+                const disc = Number(this.discountShareByHeadId[head.id] || 0);
+                return Math.max(0, base - disc);
+            },
+
+            get tuitionHeads() {
+                return this.heads.filter((h) => Boolean(h.is_tuition_head));
+            },
+
+            get hasTuitionHead() {
+                return this.tuitionHeads.length > 0;
+            },
+
+            get tuitionHeadNames() {
+                const names = this.tuitionHeads.map((h) => h.head_name).filter(Boolean);
+                return names.length > 0 ? names.join(', ') : 'Monthly Tuition Fee';
+            },
+
+            get pendingTuitionDuePaisa() {
+                return this.tuitionHeads.reduce((sum, h) => sum + this.effectiveHeadDuePaisa(h), 0);
+            },
+
+            get excludedTuitionDuePaisa() {
+                if (this.includeTuitionInAutoSplit || !this.hasTuitionHead) {
+                    return 0;
+                }
+                return this.pendingTuitionDuePaisa;
+            },
+
+            get autoSplitMaxPaisa() {
+                return Math.max(0, this.effectiveDuePaisa - this.excludedTuitionDuePaisa);
+            },
+
+            get payingTotalPaisa() {
+                if (this.allocationMode === 'lump_sum') {
+                    return Math.max(0, this.toPaisa(this.lumpAmount));
+                }
+                return this.heads.reduce((sum, h) => sum + Math.max(0, this.toPaisa(h.pay_input)), 0);
+            },
+
+            open(detail) {
+                this.invoiceId = detail.invoice_id || null;
+                this.invoiceNo = detail.invoice_no || '';
+                this.structureName = detail.structure_name || 'Admission Fee Package';
+                this.totalDueAmount = detail.due_amount || '0.00';
+                this.directDiscountInput = '';
+                this.discountReason = '';
+                this.allocationMode = 'lump_sum';
+                this.includeTuitionInAutoSplit = true;
+                this.heads = (Array.isArray(detail.heads) ? detail.heads : []).map((h) => ({
+                    ...h,
+                    pay_input: h.due_amount || '0.00',
+                }));
+                this.lastAutoEffectiveDuePaisa = this.autoSplitMaxPaisa;
+                this.lumpAmount = this.formatMoney(this.autoSplitMaxPaisa);
+                this.paymentMethod = 'Cash';
+                this.methodOpen = false;
+                this.paymentDate = todayIso();
+                this.transactionId = '';
+                this.note = '';
+                this.idempotencyKey = generateIdempotencyKey();
+                this.isOpen = true;
+            },
+
+            close() {
+                this.isOpen = false;
+                this.methodOpen = false;
+                document.body.classList.remove('overflow-hidden');
+            },
+
+            onTuitionAutoSplitToggle() {
+                const prevAuto = this.lastAutoEffectiveDuePaisa;
+                const newMax = this.autoSplitMaxPaisa;
+                const curLump = this.toPaisa(this.lumpAmount);
+
+                if (!this.includeTuitionInAutoSplit) {
+                    if (curLump === prevAuto || curLump > newMax) {
+                        this.lumpAmount = this.formatMoney(newMax);
+                    }
+                } else if (curLump === prevAuto) {
+                    this.lumpAmount = this.formatMoney(newMax);
+                }
+
+                this.lastAutoEffectiveDuePaisa = newMax;
+            },
+
+            onDirectDiscountInput() {
+                const rawEntered = Math.max(0, this.toPaisa(this.directDiscountInput));
+                if (rawEntered > this.eligibleDiscountablePaisa) {
+                    this.directDiscountInput = this.formatMoney(this.eligibleDiscountablePaisa);
+                }
+
+                const newAutoMax = this.autoSplitMaxPaisa;
+                const currentLump = this.toPaisa(this.lumpAmount);
+                if (currentLump === this.lastAutoEffectiveDuePaisa || currentLump > newAutoMax) {
+                    this.lumpAmount = this.formatMoney(newAutoMax);
+                }
+                this.lastAutoEffectiveDuePaisa = newAutoMax;
+
+                this.heads = this.heads.map((h) => {
+                    const effHeadDue = this.effectiveHeadDuePaisa(h);
+                    const curPay = this.toPaisa(h.pay_input);
+                    return {
+                        ...h,
+                        pay_input: curPay > effHeadDue ? this.formatMoney(effHeadDue) : h.pay_input,
+                    };
+                });
+            },
+
+            applyDiscountOnly() {
+                this.lumpAmount = '0.00';
+                this.heads = this.heads.map((h) => ({ ...h, pay_input: '0.00' }));
+            },
+
+            clearDirectDiscount() {
+                this.directDiscountInput = '';
+                this.discountReason = '';
+                this.onDirectDiscountInput();
+            },
+
+            fillFullDue() {
+                const targetMax = this.autoSplitMaxPaisa;
+                this.lastAutoEffectiveDuePaisa = targetMax;
+                this.lumpAmount = this.formatMoney(targetMax);
+                this.heads = this.heads.map((h) => ({
+                    ...h,
+                    pay_input: this.formatMoney(this.effectiveHeadDuePaisa(h)),
+                }));
+            },
+
+            async submit() {
+                if (this.isSubmitting || !this.invoiceId) return;
+
+                const rawEnteredDisc = Math.max(0, this.toPaisa(this.directDiscountInput));
+                if (this.canGrantDiscount && rawEnteredDisc > this.eligibleDiscountablePaisa) {
+                    await showAlert(`Direct discount cannot exceed eligible discountable due of ৳${this.formatMoney(this.eligibleDiscountablePaisa)}.`, 'Validation Error');
+                    return;
+                }
+
+                const discPaisa = this.directDiscountPaisa;
+                const effDuePaisa = this.effectiveDuePaisa;
+                const cashPaisa = this.payingTotalPaisa;
+                const tuitionExcluded = this.allocationMode === 'lump_sum'
+                    && this.hasTuitionHead
+                    && !this.includeTuitionInAutoSplit
+                    && this.pendingTuitionDuePaisa > 0;
+
+                if (cashPaisa <= 0 && discPaisa <= 0) {
+                    await showAlert('Please enter a positive collection amount or direct discount.', 'Validation Error');
+                    return;
+                }
+
+                if (this.allocationMode === 'lump_sum') {
+                    if (cashPaisa > this.autoSplitMaxPaisa) {
+                        if (tuitionExcluded) {
+                            await showAlert(`Total paying amount cannot exceed eligible non-tuition due of ৳${this.formatMoney(this.autoSplitMaxPaisa)}. Select Monthly Tuition Fee to pay more.`, 'Validation Error');
+                        } else {
+                            await showAlert('Total paying amount cannot exceed net collectible invoice due.', 'Validation Error');
+                        }
+                        return;
+                    }
+                } else if (cashPaisa > effDuePaisa) {
+                    await showAlert('Total paying amount cannot exceed net collectible invoice due.', 'Validation Error');
+                    return;
+                }
+
+                const payload = {
+                    invoice_id: this.invoiceId,
+                    payment_method: this.paymentMethod,
+                    payment_date: this.paymentDate,
+                    transaction_id: this.transactionId || null,
+                    note: this.note || null,
+                    idempotency_key: this.idempotencyKey,
+                };
+
+                if (discPaisa > 0) {
+                    payload.direct_discount_amount = this.formatMoney(discPaisa);
+                    payload.discount_reason = this.discountReason || null;
+                }
+
+                if (this.allocationMode === 'lump_sum') {
+                    payload.pay_amount = this.formatMoney(cashPaisa);
+                    payload.include_tuition_in_auto_split = Boolean(this.includeTuitionInAutoSplit);
+                } else if (cashPaisa > 0) {
+                    const headMap = {};
+                    for (const h of this.heads) {
+                        const hp = this.toPaisa(h.pay_input);
+                        const dp = this.effectiveHeadDuePaisa(h);
+                        if (hp > dp) {
+                            await showAlert(`Entered amount for "${h.head_name}" exceeds its collectible due balance of ৳${this.formatMoney(dp)}.`, 'Validation Error');
+                            return;
+                        }
+                        if (hp > 0) {
+                            headMap[h.id] = this.formatMoney(hp);
+                        }
+                    }
+                    payload.head_allocations = headMap;
+                } else {
+                    payload.pay_amount = '0.00';
+                }
+
+                const tuitionNote = tuitionExcluded && cashPaisa > 0 ? ' (excluding Monthly Tuition Fee)' : '';
+                let confirmMsg = `Collect ৳${this.formatMoney(cashPaisa)}${tuitionNote} against ${this.invoiceNo} via ${this.paymentMethod}?`;
+                if (discPaisa > 0 && cashPaisa > 0) {
+                    confirmMsg = `Apply ৳${this.formatMoney(discPaisa)} direct discount and collect ৳${this.formatMoney(cashPaisa)}${tuitionNote} against ${this.invoiceNo} via ${this.paymentMethod}?`;
+                } else if (discPaisa > 0 && cashPaisa === 0) {
+                    confirmMsg = `Apply ৳${this.formatMoney(discPaisa)} direct discount (with ৳0.00 cash collection) against ${this.invoiceNo}?`;
+                }
+
+                const confirmed = await showConfirm('Confirm Admission Fee Collection', confirmMsg);
+                if (!confirmed) return;
+
+                this.isSubmitting = true;
+                try {
+                    const response = await fetch("{{ route('fees.collection.store') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify(payload),
+                    });
+
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        this.close();
+                        await showSuccess(data.message || 'Admission fee payment collected successfully.');
+                        window.dispatchEvent(new CustomEvent('trigger-loader'));
+                        window.location.reload();
+                    } else {
+                        await showAlert(data.message || 'Unable to collect admission fee.', 'Collection Error');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    await showAlert('Network or server error while saving collection.', 'Collection Error');
+                } finally {
+                    this.isSubmitting = false;
+                }
+            },
+        };
+    };
 </script>
 @endpush
 

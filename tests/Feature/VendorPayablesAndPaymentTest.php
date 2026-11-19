@@ -642,12 +642,20 @@ class VendorPayablesAndPaymentTest extends TestCase
         ]);
 
         // Filter by Cash
-        $resCash = $this->actingAs($this->adminUser)->get(route('accounts.vendor-payments.index', ['payment_method' => 'Cash']));
+        $resCash = $this->actingAs($this->adminUser)->get(route('accounts.vendor-payments.index', [
+            'payment_method' => 'Cash',
+            'start_date'     => '2026-10-01',
+            'end_date'       => '2026-10-31',
+        ]));
         $resCash->assertSee('PMT-FILTER-1');
         $resCash->assertDontSee('PMT-FILTER-2');
 
         // Filter by Branch
-        $resBranch = $this->actingAs($this->adminUser)->get(route('accounts.vendor-payments.index', ['branch_id' => $this->branch->id]));
+        $resBranch = $this->actingAs($this->adminUser)->get(route('accounts.vendor-payments.index', [
+            'branch_id'  => $this->branch->id,
+            'start_date' => '2026-10-01',
+            'end_date'   => '2026-10-31',
+        ]));
         $resBranch->assertSee('PMT-FILTER-1');
     }
 

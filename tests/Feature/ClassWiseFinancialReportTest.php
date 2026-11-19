@@ -243,7 +243,7 @@ class ClassWiseFinancialReportTest extends TestCase
     }
 
     /**
-     * Test 4: Category classification accurately separates Monthly Fee, Other Fees, and Other.
+     * Test 4: Category classification accurately separates Monthly Fee, Exam Fees, and Other Fees.
      */
     public function test_service_classify_category_correctly_categorizes_fee_types(): void
     {
@@ -259,28 +259,24 @@ class ClassWiseFinancialReportTest extends TestCase
             $service->classifyCategory('monthly fee')
         );
 
-        // 2. Miscellaneous charges -> other
+        // 2. Exam Fees -> exam_fees
         $this->assertEquals(
-            ClassWiseFinancialReportService::BUCKET_OTHER,
-            $service->classifyCategory('Fine')
+            ClassWiseFinancialReportService::BUCKET_EXAM_FEES,
+            $service->classifyCategory('Monthly Exam Fee')
         );
         $this->assertEquals(
-            ClassWiseFinancialReportService::BUCKET_OTHER,
-            $service->classifyCategory('Others')
+            ClassWiseFinancialReportService::BUCKET_EXAM_FEES,
+            $service->classifyCategory('Term Exam Fee')
         );
         $this->assertEquals(
-            ClassWiseFinancialReportService::BUCKET_OTHER,
-            $service->classifyCategory('Miscellaneous')
+            ClassWiseFinancialReportService::BUCKET_EXAM_FEES,
+            $service->classifyCategory('Final Exam Fee')
         );
 
-        // 3. Other configured fees -> other_fees
+        // 3. All other student fees & miscellaneous charges -> other_fees
         $this->assertEquals(
             ClassWiseFinancialReportService::BUCKET_OTHER_FEES,
             $service->classifyCategory('Admission Fee')
-        );
-        $this->assertEquals(
-            ClassWiseFinancialReportService::BUCKET_OTHER_FEES,
-            $service->classifyCategory('Term Exam Fee')
         );
         $this->assertEquals(
             ClassWiseFinancialReportService::BUCKET_OTHER_FEES,
@@ -289,6 +285,18 @@ class ClassWiseFinancialReportTest extends TestCase
         $this->assertEquals(
             ClassWiseFinancialReportService::BUCKET_OTHER_FEES,
             $service->classifyCategory('Registration Fee')
+        );
+        $this->assertEquals(
+            ClassWiseFinancialReportService::BUCKET_OTHER_FEES,
+            $service->classifyCategory('Fine')
+        );
+        $this->assertEquals(
+            ClassWiseFinancialReportService::BUCKET_OTHER_FEES,
+            $service->classifyCategory('Others')
+        );
+        $this->assertEquals(
+            ClassWiseFinancialReportService::BUCKET_OTHER_FEES,
+            $service->classifyCategory('Miscellaneous')
         );
     }
 
@@ -344,10 +352,10 @@ class ClassWiseFinancialReportTest extends TestCase
         // Monthly Fee: Due 1200, Paid 1000, Outstanding 200
         $this->createInvoice($this->stuOne, $this->catMonthlyFee, $this->session2026, 1200.0, 1000.0, 'Partial', '2026-04-10', 'INV-202604-0001');
 
-        // Other Fees (Exam): Due 500, Paid 300, Outstanding 200
+        // Exam Fees: Due 500, Paid 300, Outstanding 200
         $this->createInvoice($this->stuOne, $this->catExamFee, $this->session2026, 500.0, 300.0, 'Partial', '2026-04-15', 'INV-202604-0002');
 
-        // Other (Fine): Due 100, Paid 100, Outstanding 0
+        // Other Fees (Fine + Admission): Due 100, Paid 100, Outstanding 0
         $this->createInvoice($this->stuOne, $this->catFine, $this->session2026, 100.0, 100.0, 'Paid', '2026-04-20', 'INV-202604-0003');
 
         $service = new ClassWiseFinancialReportService();
@@ -358,20 +366,20 @@ class ClassWiseFinancialReportTest extends TestCase
 
         // Due checks
         $this->assertEquals(1200.0, $oneRow['due']['monthly_fee']);
-        $this->assertEquals(500.0, $oneRow['due']['other_fees']);
-        $this->assertEquals(100.0, $oneRow['due']['other']);
+        $this->assertEquals(500.0, $oneRow['due']['exam_fees']);
+        $this->assertEquals(100.0, $oneRow['due']['other_fees']);
         $this->assertEquals(1800.0, $oneRow['due']['total']);
 
         // Collected checks
         $this->assertEquals(1000.0, $oneRow['collected']['monthly_fee']);
-        $this->assertEquals(300.0, $oneRow['collected']['other_fees']);
-        $this->assertEquals(100.0, $oneRow['collected']['other']);
+        $this->assertEquals(300.0, $oneRow['collected']['exam_fees']);
+        $this->assertEquals(100.0, $oneRow['collected']['other_fees']);
         $this->assertEquals(1400.0, $oneRow['collected']['total']);
 
         // Outstanding checks (Due - Collected = Outstanding)
         $this->assertEquals(200.0, $oneRow['outstanding']['monthly_fee']);
-        $this->assertEquals(200.0, $oneRow['outstanding']['other_fees']);
-        $this->assertEquals(0.0, $oneRow['outstanding']['other']);
+        $this->assertEquals(200.0, $oneRow['outstanding']['exam_fees']);
+        $this->assertEquals(0.0, $oneRow['outstanding']['other_fees']);
         $this->assertEquals(400.0, $oneRow['outstanding']['total']);
 
         $this->assertEquals(
@@ -481,18 +489,18 @@ class ClassWiseFinancialReportTest extends TestCase
         $gt = $report['grand_total'];
 
         $this->assertEquals(1000.0, $gt['due']['monthly_fee']);
-        $this->assertEquals(600.0, $gt['due']['other_fees']);
-        $this->assertEquals(300.0, $gt['due']['other']);
+        $this->assertEquals(600.0, $gt['due']['exam_fees']);
+        $this->assertEquals(300.0, $gt['due']['other_fees']);
         $this->assertEquals(1900.0, $gt['due']['total']);
 
         $this->assertEquals(800.0, $gt['collected']['monthly_fee']);
-        $this->assertEquals(500.0, $gt['collected']['other_fees']);
-        $this->assertEquals(300.0, $gt['collected']['other']);
+        $this->assertEquals(500.0, $gt['collected']['exam_fees']);
+        $this->assertEquals(300.0, $gt['collected']['other_fees']);
         $this->assertEquals(1600.0, $gt['collected']['total']);
 
         $this->assertEquals(200.0, $gt['outstanding']['monthly_fee']);
-        $this->assertEquals(100.0, $gt['outstanding']['other_fees']);
-        $this->assertEquals(0.0, $gt['outstanding']['other']);
+        $this->assertEquals(100.0, $gt['outstanding']['exam_fees']);
+        $this->assertEquals(0.0, $gt['outstanding']['other_fees']);
         $this->assertEquals(300.0, $gt['outstanding']['total']);
 
         $this->assertEquals(1900.0, $report['total_due']);
@@ -515,6 +523,7 @@ class ClassWiseFinancialReportTest extends TestCase
         $response->assertSee('Class-wise Financial Report');
         $response->assertSee('MACS School & College', false);
         $response->assertSee('Monthly Fee');
+        $response->assertSee('Exam Fees');
         $response->assertSee('Other Fees');
         $response->assertSee('Outstanding');
     }

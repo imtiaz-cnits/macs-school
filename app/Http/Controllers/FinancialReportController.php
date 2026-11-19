@@ -8,6 +8,8 @@ use App\Models\FeeInvoice;
 use App\Models\FeePayment;
 use App\Models\VendorOpeningBalance;
 use App\Models\VendorPayment;
+use App\Services\AdmissionFeeReportService;
+use App\Services\FeeReceiptService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -50,18 +52,51 @@ class FinancialReportController extends Controller
             'payment_method' => 'nullable|string|max:50',
         ]);
 
+        /** @var FeeReceiptService $receiptService */
+        $receiptService = app(FeeReceiptService::class);
+        /** @var AdmissionFeeReportService $admissionReportService */
+        $admissionReportService = app(AdmissionFeeReportService::class);
+        $admissionAvailable = $receiptService->admissionTablesAvailable();
+
         $startDate = $request->filled('start_date') ? $request->start_date : date('Y-m-01');
         $endDate = $request->filled('end_date') ? $request->end_date : date('Y-m-d');
         $branchId = $request->branch_id;
         $paymentMethod = $request->payment_method;
 
-        // 1. Fee Payments Query (ACTUAL COLLECTED INCOME ONLY)
-        $paymentsQuery = FeePayment::with(['student.schoolClass', 'student.branch', 'invoice.feeSetup.category', 'collector'])
+        $paymentRelations = ['student.schoolClass', 'student.branch', 'invoice.feeSetup.category', 'collector'];
+        if ($admissionAvailable) {
+            $paymentRelations = array_merge($paymentRelations, [
+                'invoice.admissionFeeStructure',
+                'invoice.admissionHeadAllocations.category',
+                'admissionHeadAllocations',
+            ]);
+        }
+
+        // 1. Fee Payments Query (STRICTLY ACTIVE COLLECTED INCOME ONLY)
+        $paymentsQuery = FeePayment::with($paymentRelations)
+            ->where('fee_payments.status', 'Active')
             ->whereBetween('payment_date', [$startDate, $endDate]);
 
         if ($branchId) {
-            $paymentsQuery->whereHas('student', function ($q) use ($branchId) {
-                $q->where('branch_id', $branchId);
+            $paymentsQuery->where(function ($bq) use ($branchId, $admissionAvailable): void {
+                if ($admissionAvailable) {
+                    $bq->where(function ($admQ) use ($branchId): void {
+                        $admQ->whereHas('invoice', function ($iq) use ($branchId): void {
+                            $iq->whereNotNull('admission_fee_structure_id')
+                               ->where('branch_id', $branchId);
+                        });
+                    })->orWhere(function ($legQ) use ($branchId): void {
+                        $legQ->whereHas('invoice', function ($iq): void {
+                            $iq->whereNull('admission_fee_structure_id');
+                        })->whereHas('student', function ($sq) use ($branchId): void {
+                            $sq->where('branch_id', $branchId);
+                        });
+                    });
+                } else {
+                    $bq->whereHas('student', function ($q) use ($branchId): void {
+                        $q->where('branch_id', $branchId);
+                    });
+                }
             });
         }
 
@@ -70,10 +105,41 @@ class FinancialReportController extends Controller
         }
 
         $payments = $paymentsQuery->orderBy('payment_date', 'desc')->orderBy('id', 'desc')->get();
-        $totalIncome = (float) $payments->sum('paid_amount');
+
+        // Pure BCMath Aggregation over Strict Active Payments & Explicit Active Admission Head Allocations
+        $totalIncome = '0.00';
+        $methodInTotals = [];
+        $incomeCategoryTotals = [];
+        $incomeCategoryPaymentIds = [];
+
+        foreach ($payments as $p) {
+            $catInfo = $admissionReportService->aggregateActivePaymentCategoryAmounts($p);
+            $effectiveAmt = $catInfo['effective_total'];
+            $p->report_effective_amount = $effectiveAmt;
+
+            $totalIncome = bcadd($totalIncome, $effectiveAmt, 2);
+
+            $mKey = strtolower(trim((string) ($p->payment_method ?? '')));
+            $methodInTotals[$mKey] = bcadd($methodInTotals[$mKey] ?? '0.00', $effectiveAmt, 2);
+
+            if ($catInfo['is_admission']) {
+                $structureName = trim((string) ($p->invoice?->admissionFeeStructure?->structure_name ?? 'Admission Fee Package'));
+                $catList = array_keys($catInfo['by_category']);
+                $p->report_category_label = !empty($catList)
+                    ? "{$structureName} (" . implode(', ', $catList) . ')'
+                    : "{$structureName} (No active heads matched)";
+            } else {
+                $p->report_category_label = (string) ($p->invoice?->feeSetup?->category?->name ?? 'Fee');
+            }
+
+            foreach ($catInfo['by_category'] as $catName => $catAmount) {
+                $incomeCategoryTotals[$catName] = bcadd($incomeCategoryTotals[$catName] ?? '0.00', $catAmount, 2);
+                $incomeCategoryPaymentIds[$catName][(int) $p->id] = true;
+            }
+        }
         $totalCollectionsCount = $payments->count();
 
-        // 2. Expenses Query (ACTUAL INCURRED EXPENSES RECORDED IN PERIOD)
+        // 2. Expenses Query (ACTUAL INCURRED EXPENSES RECORDED IN PERIOD - Pure BCMath)
         $expensesQuery = Expense::with(['category', 'branch', 'creator', 'items.category', 'vendor'])
             ->whereBetween('expense_date', [$startDate, $endDate]);
 
@@ -86,15 +152,16 @@ class FinancialReportController extends Controller
         }
 
         $expenses = $expensesQuery->orderBy('expense_date', 'desc')->orderBy('id', 'desc')->get();
-        $totalExpense = (float) $expenses->sum('amount');
+        $totalExpense = '0.00';
+        foreach ($expenses as $exp) {
+            $totalExpense = bcadd($totalExpense, $admissionReportService->toDecimal($exp->amount), 2);
+        }
         $totalExpensesCount = $expenses->count();
 
         // 3. Overall Net Surplus / Deficit (Total Income - Total Expense)
-        $netSurplus = $totalIncome - $totalExpense;
+        $netSurplus = bcsub($totalIncome, $totalExpense, 2);
 
-        // 4. Actual Cash Outflow & Method Breakdown:
-        // Cash outflow occurs on payment settlement, not on unpaid bills.
-        // A. Vendor payments recorded during the period
+        // 4. Actual Cash Outflow & Method Breakdown (Pure BCMath)
         $vendorPaymentsQuery = VendorPayment::whereBetween('payment_date', [$startDate, $endDate]);
         if ($branchId) {
             $vendorPaymentsQuery->where('branch_id', $branchId);
@@ -104,8 +171,6 @@ class FinancialReportController extends Controller
         }
         $vendorPayments = $vendorPaymentsQuery->get();
 
-        // B. Backward-compatible legacy paid expenses or ad-hoc non-vendor paid expenses
-        // Only include expenses that do NOT have any canonical payments or payment allocations
         $legacyPaidQuery = Expense::whereBetween('expense_date', [$startDate, $endDate])
             ->where('payment_status', 'Paid')
             ->whereDoesntHave('payments')
@@ -118,29 +183,26 @@ class FinancialReportController extends Controller
         }
         $legacyPaidExpenses = $legacyPaidQuery->get();
 
-        $outflowItems = collect();
+        $methodOutTotals = [];
         foreach ($vendorPayments as $vp) {
-            $outflowItems->push([
-                'method' => $vp->payment_method,
-                'amount' => (float) $vp->amount,
-            ]);
+            $mKey = strtolower(trim((string) ($vp->payment_method ?? '')));
+            $methodOutTotals[$mKey] = bcadd($methodOutTotals[$mKey] ?? '0.00', $admissionReportService->toDecimal($vp->amount), 2);
         }
         foreach ($legacyPaidExpenses as $le) {
-            $outflowItems->push([
-                'method' => $le->payment_method,
-                'amount' => (float) $le->amount,
-            ]);
+            $mKey = strtolower(trim((string) ($le->payment_method ?? '')));
+            $methodOutTotals[$mKey] = bcadd($methodOutTotals[$mKey] ?? '0.00', $admissionReportService->toDecimal($le->amount), 2);
         }
 
-        // Method Breakdown and Pure Physical Cash Flow (Cash Collections - Cash Expenses)
+        // Method Breakdown and Pure Physical Cash Flow (Cash Collections - Cash Outflow)
         $methodSummary = [];
-        $totalCashIn = 0;
-        $totalCashOut = 0;
+        $totalCashIn = '0.00';
+        $totalCashOut = '0.00';
 
         foreach ($this->supportedMethods as $method) {
-            $in = (float) $payments->filter(fn($p) => strcasecmp(trim($p->payment_method ?? ''), $method) === 0)->sum('paid_amount');
-            $out = (float) $outflowItems->filter(fn($e) => strcasecmp(trim($e['method'] ?? ''), $method) === 0)->sum('amount');
-            $net = $in - $out;
+            $lowerMethod = strtolower($method);
+            $in = $methodInTotals[$lowerMethod] ?? '0.00';
+            $out = $methodOutTotals[$lowerMethod] ?? '0.00';
+            $net = bcsub($in, $out, 2);
 
             $methodSummary[$method] = [
                 'method' => $method,
@@ -149,7 +211,7 @@ class FinancialReportController extends Controller
                 'net' => $net,
             ];
 
-            if (strtolower($method) === 'cash') {
+            if ($lowerMethod === 'cash') {
                 $totalCashIn = $in;
                 $totalCashOut = $out;
             }
@@ -157,92 +219,127 @@ class FinancialReportController extends Controller
 
         // Unclassified / Custom payment methods if any exist
         $knownMethodsLower = array_map('strtolower', $this->supportedMethods);
-        $otherIn = (float) $payments->filter(fn($p) => !in_array(strtolower(trim($p->payment_method ?? '')), $knownMethodsLower))->sum('paid_amount');
-        $otherOut = (float) $outflowItems->filter(fn($e) => !in_array(strtolower(trim($e['method'] ?? '')), $knownMethodsLower))->sum('amount');
-        if ($otherIn > 0 || $otherOut > 0) {
+        $otherIn = '0.00';
+        foreach ($methodInTotals as $mKey => $mAmt) {
+            if (!in_array($mKey, $knownMethodsLower, true)) {
+                $otherIn = bcadd($otherIn, $mAmt, 2);
+            }
+        }
+        $otherOut = '0.00';
+        foreach ($methodOutTotals as $mKey => $mAmt) {
+            if (!in_array($mKey, $knownMethodsLower, true)) {
+                $otherOut = bcadd($otherOut, $mAmt, 2);
+            }
+        }
+        if (bccomp($otherIn, '0.00', 2) > 0 || bccomp($otherOut, '0.00', 2) > 0) {
             $methodSummary['Other'] = [
                 'method' => 'Other',
                 'in' => $otherIn,
                 'out' => $otherOut,
-                'net' => $otherIn - $otherOut,
+                'net' => bcsub($otherIn, $otherOut, 2),
             ];
         }
 
         // Physical Cash In Hand Movement = Cash Collections - Cash Outflow
-        $netCashMovement = $totalCashIn - $totalCashOut;
+        $netCashMovement = bcsub($totalCashIn, $totalCashOut, 2);
 
-        // 5. Income by Fee Category
-        $incomeByCategory = $payments->groupBy(function ($p) {
-            return $p->invoice?->feeSetup?->category?->name ?? 'General Fee';
-        })->map(function ($group, $name) use ($totalIncome) {
-            $amt = (float) $group->sum('paid_amount');
-            $pct = $totalIncome > 0 ? round(($amt / $totalIncome) * 100, 1) : 0;
+        // 5. Income by Fee Category (Head-Decomposed for Admission Invoices, Pure BCMath)
+        $incomeByCategory = collect($incomeCategoryTotals)->map(function (string $amt, string $name) use ($totalIncome, $incomeCategoryPaymentIds, $admissionReportService) {
             return [
                 'name' => $name,
                 'amount' => $amt,
-                'count' => $group->count(),
-                'percentage' => $pct,
+                'count' => count($incomeCategoryPaymentIds[$name] ?? []),
+                'percentage' => $admissionReportService->percentage($amt, $totalIncome),
             ];
-        })->sortByDesc('amount')->values();
+        })->sort(function (array $a, array $b): int {
+            $cmp = bccomp($b['amount'], $a['amount'], 2);
+            return $cmp !== 0 ? $cmp : strcmp($a['name'], $b['name']);
+        })->values();
 
-        // 6. Expense by Expense Category (Item-level category attribution with legacy voucher fallback)
+        // 6. Expense by Expense Category (Pure BCMath)
         $categoryBreakdown = [];
         foreach ($expenses as $expense) {
             if ($expense->items && $expense->items->isNotEmpty()) {
                 foreach ($expense->items as $item) {
                     $catName = $item->category?->name ?? ($expense->category?->name ?? 'Uncategorized Expense');
                     if (!isset($categoryBreakdown[$catName])) {
-                        $categoryBreakdown[$catName] = ['name' => $catName, 'amount' => 0.0, 'count' => 0];
+                        $categoryBreakdown[$catName] = ['name' => $catName, 'amount' => '0.00', 'count' => 0];
                     }
-                    $categoryBreakdown[$catName]['amount'] += (float) $item->line_total;
+                    $categoryBreakdown[$catName]['amount'] = bcadd($categoryBreakdown[$catName]['amount'], $admissionReportService->toDecimal($item->line_total), 2);
                     $categoryBreakdown[$catName]['count']++;
                 }
             } else {
                 $catName = $expense->category?->name ?? 'Uncategorized Expense';
                 if (!isset($categoryBreakdown[$catName])) {
-                    $categoryBreakdown[$catName] = ['name' => $catName, 'amount' => 0.0, 'count' => 0];
+                    $categoryBreakdown[$catName] = ['name' => $catName, 'amount' => '0.00', 'count' => 0];
                 }
-                $categoryBreakdown[$catName]['amount'] += (float) $expense->amount;
+                $categoryBreakdown[$catName]['amount'] = bcadd($categoryBreakdown[$catName]['amount'], $admissionReportService->toDecimal($expense->amount), 2);
                 $categoryBreakdown[$catName]['count']++;
             }
         }
 
-        $expenseByCategory = collect($categoryBreakdown)->map(function ($item) use ($totalExpense) {
-            $amt = round((float) $item['amount'], 2);
-            $pct = $totalExpense > 0 ? round(($amt / $totalExpense) * 100, 1) : 0;
+        $expenseByCategory = collect($categoryBreakdown)->map(function (array $item) use ($totalExpense, $admissionReportService) {
+            $amt = $item['amount'];
             return [
                 'name' => $item['name'],
                 'amount' => $amt,
                 'count' => $item['count'],
-                'percentage' => $pct,
+                'percentage' => $admissionReportService->percentage($amt, $totalExpense),
             ];
-        })->sortByDesc('amount')->values();
+        })->sort(function (array $a, array $b): int {
+            $cmp = bccomp($b['amount'], $a['amount'], 2);
+            return $cmp !== 0 ? $cmp : strcmp($a['name'], $b['name']);
+        })->values();
 
-        // 7. Contextual Billed Invoices & Accounts Receivable (NOT counted as income)
-        // Cancelled invoices are strictly excluded so they do not artificially distort billed totals or discounts
+        // 7. Contextual Billed Invoices & Accounts Receivable (Cancelled Strictly Excluded, Pure BCMath)
         $invoicesQuery = FeeInvoice::where('status', '!=', 'Cancelled');
         if ($branchId) {
-            $invoicesQuery->whereHas('student', fn($q) => $q->where('branch_id', $branchId));
+            $invoicesQuery->where(function ($bq) use ($branchId, $admissionAvailable): void {
+                if ($admissionAvailable) {
+                    $bq->where(function ($admQ) use ($branchId): void {
+                        $admQ->whereNotNull('admission_fee_structure_id')
+                             ->where('branch_id', $branchId);
+                    })->orWhere(function ($legQ) use ($branchId): void {
+                        $legQ->whereNull('admission_fee_structure_id')
+                             ->whereHas('student', fn ($q) => $q->where('branch_id', $branchId));
+                    });
+                } else {
+                    $bq->whereHas('student', fn ($q) => $q->where('branch_id', $branchId));
+                }
+            });
         }
         $invoicesQuery->where(function ($q) use ($startDate, $endDate) {
             $q->whereBetween('due_date', [$startDate, $endDate])
               ->orWhereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
         });
-        $totalBilledGross = (float) $invoicesQuery->sum('amount');
-        $totalBilledDiscount = (float) $invoicesQuery->sum('discount');
-        $totalBilledNet = (float) $invoicesQuery->sum('net_amount');
-        $totalOutstandingDue = (float) $invoicesQuery->sum('due_amount');
+        $billedInvoices = $invoicesQuery->get(['id', 'amount', 'discount', 'net_amount', 'due_amount']);
+        $totalBilledGross = '0.00';
+        $totalBilledDiscount = '0.00';
+        $totalBilledNet = '0.00';
+        $totalOutstandingDue = '0.00';
+        foreach ($billedInvoices as $inv) {
+            $totalBilledGross = bcadd($totalBilledGross, $admissionReportService->toDecimal($inv->amount), 2);
+            $totalBilledDiscount = bcadd($totalBilledDiscount, $admissionReportService->toDecimal($inv->discount), 2);
+            $totalBilledNet = bcadd($totalBilledNet, $admissionReportService->toDecimal($inv->net_amount), 2);
+            $totalOutstandingDue = bcadd($totalOutstandingDue, $admissionReportService->clampNonNegative($admissionReportService->toDecimal($inv->due_amount)), 2);
+        }
 
-        // 8. Contextual Accounts Payable & Unsettled Liabilities (NOT counted as cash outflow)
+        // 8. Contextual Accounts Payable & Unsettled Liabilities (Pure BCMath)
         $billsDueQuery = Expense::outstanding();
         $obDueQuery = VendorOpeningBalance::whereIn('status', ['Unpaid', 'Partially Paid']);
         if ($branchId) {
             $billsDueQuery->where('branch_id', $branchId);
             $obDueQuery->where('branch_id', $branchId);
         }
-        $totalPayableBillsDue = (float) $billsDueQuery->get()->sum('due_amount');
-        $totalPayableOBDue = (float) $obDueQuery->get()->sum('due_amount');
-        $totalPayableDue = round($totalPayableBillsDue + $totalPayableOBDue, 2);
+        $totalPayableBillsDue = '0.00';
+        foreach ($billsDueQuery->get() as $bill) {
+            $totalPayableBillsDue = bcadd($totalPayableBillsDue, $admissionReportService->toDecimal($bill->due_amount), 2);
+        }
+        $totalPayableOBDue = '0.00';
+        foreach ($obDueQuery->get() as $ob) {
+            $totalPayableOBDue = bcadd($totalPayableOBDue, $admissionReportService->toDecimal($ob->due_amount), 2);
+        }
+        $totalPayableDue = bcadd($totalPayableBillsDue, $totalPayableOBDue, 2);
 
         // Lookup data for filters
         $branches = Branch::all();

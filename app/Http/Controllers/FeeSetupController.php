@@ -2,13 +2,19 @@
 
 namespace App\Http\Controllers; 
 
+use App\Models\AdmissionFeeStructureItem;
+use App\Models\AdmissionInvoiceHeadAllocation;
+use App\Models\AdmissionPaymentHeadAllocation;
 use App\Models\FeeCategory;
+use App\Models\FeeInvoice;
 use App\Models\FeeSetup;
 use App\Models\Branch;
 use App\Models\Classes;
 use App\Models\SessionYear;
+use App\Models\StudentCustomFee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class FeeSetupController extends Controller
 {
@@ -40,9 +46,31 @@ class FeeSetupController extends Controller
         return back()->with('success', 'Fee Category Created Successfully!');
     }
 
-    public function categoryDestroy($id)
+    public function categoryDestroy(Request $request, $id)
     {
-        FeeCategory::findOrFail($id)->delete();
+        $category = FeeCategory::findOrFail($id);
+
+        $inUse = FeeSetup::where('fee_category_id', $category->id)->exists()
+            || StudentCustomFee::where('fee_category_id', $category->id)->exists()
+            || (Schema::hasTable('admission_fee_structure_items') && AdmissionFeeStructureItem::where('fee_category_id', $category->id)->exists())
+            || (Schema::hasTable('admission_invoice_head_allocations') && AdmissionInvoiceHeadAllocation::where('fee_category_id', $category->id)->exists())
+            || (Schema::hasTable('admission_payment_head_allocations') && AdmissionPaymentHeadAllocation::where('fee_category_id', $category->id)->exists());
+
+        if ($inUse) {
+            $message = "Cannot delete fee category '{$category->name}' because it is referenced by existing fee setups, custom fees, admission structures, or financial ledger snapshots.";
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+
+            return back()->with('error', $message);
+        }
+
+        $category->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Fee Category Deleted!']);
+        }
+
         return back()->with('success', 'Fee Category Deleted!');
     }
 
@@ -185,9 +213,25 @@ class FeeSetupController extends Controller
         return back()->with('success', 'Fee Setup Updated Successfully!');
     }
 
-    public function setupDestroy($id)
+    public function setupDestroy(Request $request, $id)
     {
-        FeeSetup::findOrFail($id)->delete();
+        $setup = FeeSetup::findOrFail($id);
+
+        if (FeeInvoice::where('fee_setup_id', $setup->id)->exists()) {
+            $message = 'Cannot delete this fee setup because fee invoices have already been generated from it.';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+
+            return back()->with('error', $message);
+        }
+
+        $setup->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Fee Setup Deleted!']);
+        }
+
         return back()->with('success', 'Fee Setup Deleted!');
     }
 }

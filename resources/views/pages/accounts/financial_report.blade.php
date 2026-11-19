@@ -2,16 +2,8 @@
 
 @section('title', 'Financial Statement & Cash Flow')
 
-@push('styles')
-<style>
-    .table th, .table td {
-        padding: 0.625rem 1rem !important;
-    }
-</style>
-@endpush
-
 @section('content')
-<div class="w-full min-h-screen" x-data="{ activeTab: 'statement' }">
+<div class="w-full min-w-0 min-h-screen" x-data="{ activeTab: 'collections' }">
 
     <!-- Page Header -->
     <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 no-print">
@@ -333,242 +325,281 @@
     </div>
 
     <!-- Contextual Invoicing & Receivables Callout Banner -->
-    <div class="mb-8 p-5 bg-gray-50 dark:bg-themeDark border border-gray-200/60 dark:border-white/[0.06] rounded-3xl">
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div>
-                <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-550 block mb-1">
+    <div class="mb-8 p-5 bg-gray-50/80 dark:bg-themeDark border border-gray-200/70 dark:border-white/[0.08] rounded-3xl">
+        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+            <div class="min-w-0">
+                <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 block mb-1">
                     Billed Invoices vs Actual Collected Cash (Accounts Receivable Scope)
                 </span>
-                <p class="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                <p class="text-xs font-semibold text-gray-600 dark:text-gray-300 leading-relaxed">
                     Per accounting standards, invoices are receivables targets. Only actual fee payments are counted as recognized income. Consolidated statements include central/unassigned institutional expenses, while individual campus statements exclude them.
                 </p>
             </div>
-            <div class="flex flex-wrap items-center gap-6 text-xs font-bold text-gray-700 dark:text-gray-300">
-                <div>
-                    <span class="text-[10px] text-gray-400 block font-normal uppercase">Billed Gross</span>
-                    <span class="font-mono">৳ {{ number_format($totalBilledGross, 2) }}</span>
+            <div class="shrink-0 grid grid-cols-2 sm:grid-cols-4 gap-4 xl:gap-5 text-xs font-bold text-gray-700 dark:text-gray-300">
+                <div class="whitespace-nowrap">
+                    <span class="text-[10px] text-gray-400 block font-black uppercase tracking-wider">Billed Gross</span>
+                    <span class="font-mono font-bold text-gray-800 dark:text-gray-100">৳ {{ number_format($totalBilledGross, 2) }}</span>
                 </div>
-                <div>
-                    <span class="text-[10px] text-gray-400 block font-normal uppercase">Discounts</span>
-                    <span class="font-mono text-amber-600">৳ {{ number_format($totalBilledDiscount, 2) }}</span>
+                <div class="whitespace-nowrap">
+                    <span class="text-[10px] text-gray-400 block font-black uppercase tracking-wider">Discounts</span>
+                    <span class="font-mono font-bold text-amber-600 dark:text-amber-400">৳ {{ number_format($totalBilledDiscount, 2) }}</span>
                 </div>
-                <div>
-                    <span class="text-[10px] text-gray-400 block font-normal uppercase">Invoiced Net</span>
-                    <span class="font-mono font-black">৳ {{ number_format($totalBilledNet, 2) }}</span>
+                <div class="whitespace-nowrap">
+                    <span class="text-[10px] text-gray-400 block font-black uppercase tracking-wider">Invoiced Net</span>
+                    <span class="font-mono font-black text-gray-900 dark:text-white">৳ {{ number_format($totalBilledNet, 2) }}</span>
                 </div>
-                <div class="border-l border-gray-300 dark:border-gray-700 pl-4">
-                    <span class="text-[10px] text-red-500 block font-normal uppercase">Outstanding Dues</span>
-                    <span class="font-mono font-black text-red-600">৳ {{ number_format($totalOutstandingDue, 2) }}</span>
+                <div class="sm:border-l sm:border-gray-200 dark:sm:border-white/[0.08] sm:pl-4 whitespace-nowrap">
+                    <span class="text-[10px] text-rose-500 block font-black uppercase tracking-wider">Outstanding Dues</span>
+                    <span class="font-mono font-black text-rose-600 dark:text-rose-400">৳ {{ number_format($totalOutstandingDue, 2) }}</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Payment Method Reconciliation & Cash Flow Matrix -->
-    <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 mb-8 overflow-hidden">
-        <div class="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-white/[0.05] pb-3">
+    <!-- Payment Method Reconciliation & Cash Flow Matrix (AGENTS.md Rule 9) -->
+    <div class="w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 mb-8 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex flex-wrap justify-between items-center gap-2">
             <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                Payment-Method-Wise Reconciliation & Net Cash Flow
+                <svg class="w-4 h-4 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                Payment-Method-Wise Reconciliation &amp; Net Cash Flow
             </h3>
-            <span class="text-xs font-semibold text-gray-400">
+            <span class="text-xs font-semibold text-gray-400 dark:text-gray-500 whitespace-nowrap">
                 Period: {{ date('d M Y', strtotime($startDate)) }} — {{ date('d M Y', strtotime($endDate)) }}
             </span>
         </div>
 
-        <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-            <table class="w-full text-left border-collapse table">
-                <thead>
-                    <tr class="!bg-transparent">
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Payment Channel</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em] text-right">Inflow (Income)</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-[0.2em] text-right">Outflow (Expense)</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-right">Net Movement</th>
-                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-3 !px-4 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center w-28">Flow Type</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($methodSummary as $row)
-                        @if($row['in'] > 0 || $row['out'] > 0)
-                        <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04] {{ strtolower($row['method']) === 'cash' ? 'bg-blue-50/20 dark:bg-blue-950/10' : '' }}">
-                            <td class="py-4 px-4 font-bold text-gray-900 dark:text-gray-100 text-sm">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-2.5 h-2.5 rounded-full {{ strtolower($row['method']) === 'cash' ? 'bg-themeBlue' : (in_array(strtolower($row['method']), ['bkash', 'nagad', 'rocket']) ? 'bg-pink-500' : 'bg-gray-400') }}"></span>
-                                    <span>{{ $row['method'] }}</span>
-                                    @if(strtolower($row['method']) === 'cash')
-                                        <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-100 text-themeBlue dark:bg-blue-900/40 dark:text-blue-300">Physical Cash</span>
-                                    @endif
-                                </div>
+        <div class="px-6 pb-4 pt-1">
+            <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 !rounded-none overflow-x-auto">
+                <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>thead>tr>th.col-in]:!text-themeGreen [&>thead>tr>th.col-out]:!text-rose-500 [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-3 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35 [&>tfoot>tr>td]:!py-3 [&>tfoot>tr>td]:!px-3 [&>tfoot>tr>td:first-child]:!pl-0.5 [&>tfoot>tr>td:last-child]:!pr-0.5 [&>tfoot>tr>td]:!bg-gray-50/80 dark:[&>tfoot>tr>td]:!bg-themeDark/70 [&>tfoot>tr:hover>td]:!bg-gray-50/80 dark:[&>tfoot>tr:hover>td]:!bg-themeDark/70 [&>tfoot>tr>td]:!border-t-2 [&>tfoot>tr>td]:!border-b-0 [&>tfoot>tr>td]:!border-gray-200 dark:[&>tfoot>tr>td]:!border-white/[0.12]">
+                    <thead>
+                        <tr class="!bg-transparent">
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Payment Channel</th>
+                            <th class="col-in !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black uppercase tracking-[0.18em] text-right whitespace-nowrap">Inflow (Income)</th>
+                            <th class="col-out !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black uppercase tracking-[0.18em] text-right whitespace-nowrap">Outflow (Expense)</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-right whitespace-nowrap">Net Movement</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap w-28">Flow Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($methodSummary as $row)
+                            @if($row['in'] > 0 || $row['out'] > 0)
+                            <tr class="transition-colors">
+                                <td class="py-0 px-0 whitespace-nowrap">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 {{ strtolower($row['method']) === 'cash' ? 'bg-themeBlue' : (in_array(strtolower($row['method']), ['bkash', 'nagad', 'rocket']) ? 'bg-pink-500' : 'bg-gray-400') }}"></span>
+                                        <span class="font-bold text-gray-900 dark:text-gray-100 text-sm">{{ $row['method'] }}</span>
+                                        @if(strtolower($row['method']) === 'cash')
+                                            <span class="inline-flex items-center text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-sky-50 text-themeBlue border border-sky-200/60 dark:bg-themeBlue/15 dark:border-themeBlue/30 dark:text-blue-300">Physical Cash</span>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="py-0 px-0 text-right whitespace-nowrap">
+                                    <span class="font-mono font-bold text-sm text-themeGreen">৳ {{ number_format($row['in'], 2) }}</span>
+                                </td>
+                                <td class="py-0 px-0 text-right whitespace-nowrap">
+                                    <span class="font-mono font-bold text-sm text-rose-600 dark:text-rose-400">৳ {{ number_format($row['out'], 2) }}</span>
+                                </td>
+                                <td class="py-0 px-0 text-right whitespace-nowrap">
+                                    <span class="font-mono font-black text-sm {{ $row['net'] >= 0 ? 'text-gray-900 dark:text-white' : 'text-rose-600 dark:text-rose-400' }}">৳ {{ number_format($row['net'], 2) }}</span>
+                                </td>
+                                <td class="py-0 px-0 text-center whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg {{ $row['net'] >= 0 ? 'bg-emerald-50 text-themeGreen border border-emerald-200/60 dark:bg-themeGreen/15 dark:border-themeGreen/25' : 'bg-rose-50 text-rose-600 border border-rose-200/60 dark:bg-rose-950/30 dark:text-rose-400' }}">
+                                        {{ $row['net'] >= 0 ? 'Surplus' : 'Deficit' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            @endif
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="whitespace-nowrap">
+                                <span class="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white">Total Financial Position</span>
                             </td>
-                            <td class="py-4 px-4 font-mono font-bold text-right text-emerald-600 dark:text-emerald-400">
-                                ৳ {{ number_format($row['in'], 2) }}
+                            <td class="text-right whitespace-nowrap">
+                                <span class="font-mono font-black text-sm text-themeGreen">৳ {{ number_format($totalIncome, 2) }}</span>
                             </td>
-                            <td class="py-4 px-4 font-mono font-bold text-right text-red-600 dark:text-red-400">
-                                ৳ {{ number_format($row['out'], 2) }}
+                            <td class="text-right whitespace-nowrap">
+                                <span class="font-mono font-black text-sm text-rose-600 dark:text-rose-400">৳ {{ number_format($totalExpense, 2) }}</span>
                             </td>
-                            <td class="py-4 px-4 font-mono font-black text-right {{ $row['net'] >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-600' }}">
-                                ৳ {{ number_format($row['net'], 2) }}
+                            <td class="text-right whitespace-nowrap">
+                                <span class="font-mono font-black text-sm {{ $netSurplus >= 0 ? 'text-themeBlue' : 'text-rose-600 dark:text-rose-400' }}">৳ {{ number_format($netSurplus, 2) }}</span>
                             </td>
-                            <td class="py-4 px-4 text-center">
-                                <span class="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg inline-block {{ $row['net'] >= 0 ? 'bg-green-50 text-themeGreen dark:bg-green-950/20 dark:text-green-400' : 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400' }}">
-                                    {{ $row['net'] >= 0 ? 'Surplus' : 'Deficit' }}
+                            <td class="text-center whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-gray-200/80 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                                    Total
                                 </span>
                             </td>
                         </tr>
-                        @endif
-                    @endforeach
-                    <!-- Total Row -->
-                    <tr class="bg-gray-50/80 dark:bg-themeDark font-black">
-                        <td class="py-4 px-4 text-xs uppercase tracking-wider text-gray-900 dark:text-white">
-                            Total Financial Position
-                        </td>
-                        <td class="py-4 px-4 font-mono text-right text-emerald-600 dark:text-emerald-400 text-sm">
-                            ৳ {{ number_format($totalIncome, 2) }}
-                        </td>
-                        <td class="py-4 px-4 font-mono text-right text-red-600 dark:text-red-400 text-sm">
-                            ৳ {{ number_format($totalExpense, 2) }}
-                        </td>
-                        <td class="py-4 px-4 font-mono text-right text-sm {{ $netSurplus >= 0 ? 'text-themeBlue' : 'text-red-600' }}">
-                            ৳ {{ number_format($netSurplus, 2) }}
-                        </td>
-                        <td class="py-4 px-4 text-center">
-                            <span class="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
-                                Total
-                            </span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                    </tfoot>
+                </table>
+            </div>
         </div>
     </div>
 
     <!-- Category Breakdowns Grid (Income by Fee Category vs Expense by Expense Category) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
 
-        <!-- Left: Income by Fee Category -->
-        <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
-            <div class="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-white/[0.05] pb-3">
+        <!-- Left: Income by Fee Category (AGENTS.md Rule 9) -->
+        <div class="w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex items-center justify-between gap-2">
                 <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-themeGreen flex-shrink-0"></span>
                     Income by Fee Category
                 </h3>
-                <span class="text-xs font-mono font-bold text-themeGreen">৳ {{ number_format($totalIncome, 2) }}</span>
+                <span class="text-xs font-mono font-black text-themeGreen whitespace-nowrap">৳ {{ number_format($totalIncome, 2) }}</span>
             </div>
 
-            <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-                <table class="w-full text-left border-collapse table">
-                    <thead>
-                        <tr class="!bg-transparent">
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center w-20">Receipts</th>
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Amount</th>
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right w-16">Share</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($incomeByCategory as $inc)
-                        <tr class="border-b border-gray-100 dark:border-white/[0.04]">
-                            <td class="py-3 px-3 text-xs font-bold text-gray-800 dark:text-gray-200">{{ $inc['name'] }}</td>
-                            <td class="py-3 px-3 text-xs font-mono text-center text-gray-500">{{ $inc['count'] }}</td>
-                            <td class="py-3 px-3 text-xs font-mono font-bold text-right text-gray-900 dark:text-white">৳ {{ number_format($inc['amount'], 2) }}</td>
-                            <td class="py-3 px-3 text-xs font-mono text-right text-emerald-600">{{ $inc['percentage'] }}%</td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="4" class="py-8 text-center text-xs text-gray-400">No income recorded for this period.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            <div class="px-6 pb-4 pt-1">
+                <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 !rounded-none overflow-x-auto">
+                    <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-2.5 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
+                        <thead>
+                            <tr class="!bg-transparent">
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Category</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">Receipts</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-right whitespace-nowrap">Amount</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-right whitespace-nowrap">Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($incomeByCategory as $inc)
+                            <tr class="transition-colors">
+                                <td class="py-0 px-0 whitespace-nowrap">
+                                    <span class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ $inc['name'] }}</span>
+                                </td>
+                                <td class="py-0 px-0 text-center whitespace-nowrap">
+                                    <span class="inline-flex items-center justify-center min-w-[1.75rem] px-2 py-0.5 rounded-lg bg-gray-100/80 dark:bg-themeDark/60 text-xs font-mono font-bold text-gray-600 dark:text-gray-300">{{ $inc['count'] }}</span>
+                                </td>
+                                <td class="py-0 px-0 text-right whitespace-nowrap">
+                                    <span class="text-xs sm:text-sm font-mono font-bold text-gray-900 dark:text-white">৳ {{ number_format($inc['amount'], 2) }}</span>
+                                </td>
+                                <td class="py-0 px-0 text-right whitespace-nowrap">
+                                    <span class="text-xs font-mono font-black text-themeGreen">{{ $inc['percentage'] }}%</span>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="4">
+                                    <div class="py-6 text-center text-xs font-semibold text-gray-400">No income recorded for this period.</div>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- Right: Expense by Expense Category -->
-        <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
-            <div class="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-white/[0.05] pb-3">
+        <!-- Right: Expense by Expense Category (AGENTS.md Rule 9) -->
+        <div class="w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex items-center justify-between gap-2">
                 <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500 flex-shrink-0"></span>
                     Expense by Category
                 </h3>
-                <span class="text-xs font-mono font-bold text-red-600">৳ {{ number_format($totalExpense, 2) }}</span>
+                <span class="text-xs font-mono font-black text-rose-600 dark:text-rose-400 whitespace-nowrap">৳ {{ number_format($totalExpense, 2) }}</span>
             </div>
 
-            <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-                <table class="w-full text-left border-collapse table">
-                    <thead>
-                        <tr class="!bg-transparent">
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center w-20">Vouchers</th>
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Amount</th>
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right w-16">Share</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($expenseByCategory as $exp)
-                        <tr class="border-b border-gray-100 dark:border-white/[0.04]">
-                            <td class="py-3 px-3 text-xs font-bold text-gray-800 dark:text-gray-200">{{ $exp['name'] }}</td>
-                            <td class="py-3 px-3 text-xs font-mono text-center text-gray-500">{{ $exp['count'] }}</td>
-                            <td class="py-3 px-3 text-xs font-mono font-bold text-right text-gray-900 dark:text-white">৳ {{ number_format($exp['amount'], 2) }}</td>
-                            <td class="py-3 px-3 text-xs font-mono text-right text-red-600">{{ $exp['percentage'] }}%</td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="4" class="py-8 text-center text-xs text-gray-400">No expenses recorded for this period.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            <div class="px-6 pb-4 pt-1">
+                <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 !rounded-none overflow-x-auto">
+                    <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-2.5 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
+                        <thead>
+                            <tr class="!bg-transparent">
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Category</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">Vouchers</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-right whitespace-nowrap">Amount</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-right whitespace-nowrap">Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($expenseByCategory as $exp)
+                            <tr class="transition-colors">
+                                <td class="py-0 px-0 whitespace-nowrap">
+                                    <span class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ $exp['name'] }}</span>
+                                </td>
+                                <td class="py-0 px-0 text-center whitespace-nowrap">
+                                    <span class="inline-flex items-center justify-center min-w-[1.75rem] px-2 py-0.5 rounded-lg bg-gray-100/80 dark:bg-themeDark/60 text-xs font-mono font-bold text-gray-600 dark:text-gray-300">{{ $exp['count'] }}</span>
+                                </td>
+                                <td class="py-0 px-0 text-right whitespace-nowrap">
+                                    <span class="text-xs sm:text-sm font-mono font-bold text-gray-900 dark:text-white">৳ {{ number_format($exp['amount'], 2) }}</span>
+                                </td>
+                                <td class="py-0 px-0 text-right whitespace-nowrap">
+                                    <span class="text-xs font-mono font-black text-rose-600 dark:text-rose-400">{{ $exp['percentage'] }}%</span>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="4">
+                                    <div class="py-6 text-center text-xs font-semibold text-gray-400">No expenses recorded for this period.</div>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Period Transactions Explorer (Tabbed) -->
-    <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 mb-8 overflow-hidden">
+    <!-- Period Transactions Explorer (Tabbed, AGENTS.md Rule 9) -->
+    <div class="w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 mb-8 overflow-hidden">
 
         <!-- Tab Navigation -->
-        <div class="flex items-center justify-between border-b border-gray-100 dark:border-white/[0.05] pb-4 mb-4">
-            <div class="flex items-center gap-4">
-                <button type="button" @click="activeTab = 'collections'" class="text-xs font-black uppercase tracking-wider py-1.5 px-3 rounded-xl transition-all" :class="activeTab === 'collections' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-400 hover:text-gray-700'">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
+            <div class="inline-flex items-center gap-1.5 rounded-2xl bg-gray-50/80 dark:bg-themeDark/60 border border-gray-150 dark:border-white/[0.08] p-1">
+                <button type="button" @click="activeTab = 'collections'" class="text-[11px] font-black uppercase tracking-wider py-1.5 px-3.5 rounded-xl transition-all whitespace-nowrap" :class="activeTab === 'collections' ? 'bg-white dark:bg-themeNavy text-themeBlue shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'">
                     Fee Collections in Period ({{ $totalCollectionsCount }})
                 </button>
-                <button type="button" @click="activeTab = 'expenses'" class="text-xs font-black uppercase tracking-wider py-1.5 px-3 rounded-xl transition-all" :class="activeTab === 'expenses' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-400 hover:text-gray-700'">
+                <button type="button" @click="activeTab = 'expenses'" class="text-[11px] font-black uppercase tracking-wider py-1.5 px-3.5 rounded-xl transition-all whitespace-nowrap" :class="activeTab === 'expenses' ? 'bg-white dark:bg-themeNavy text-themeBlue shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'">
                     Expenses in Period ({{ $totalExpensesCount }})
                 </button>
             </div>
-            <span class="text-[11px] text-gray-400 font-semibold">Showing records matching active filters</span>
+            <span class="text-[11px] text-gray-400 dark:text-gray-500 font-semibold whitespace-nowrap">Showing records matching active filters</span>
         </div>
 
         <!-- Collections Tab Content -->
-        <div x-show="activeTab === 'collections'">
-            <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto max-h-96">
-                <table class="w-full text-left border-collapse table">
-                    <thead>
-                        <tr class="!bg-transparent sticky top-0 bg-white dark:bg-themeNavy">
-                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Receipt No</th>
-                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
-                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Student</th>
-                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Fee Category</th>
-                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Method</th>
-                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Amount</th>
+        <div x-show="activeTab === 'collections'" class="px-6 pb-4 pt-1">
+            <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 !rounded-none overflow-x-auto max-h-96 overflow-y-auto">
+                <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-white dark:[&>thead>tr>th]:!bg-themeNavy [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-2.5 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
+                    <thead class="sticky top-0 z-10">
+                        <tr class="!bg-transparent">
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Receipt No</th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Date</th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Student</th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Fee Category</th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Method</th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-right whitespace-nowrap">Amount</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($payments as $pay)
-                        <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
-                            <td class="py-2.5 px-3 font-mono font-bold text-xs text-themeBlue">{{ $pay->receipt_no }}</td>
-                            <td class="py-2.5 px-3 text-xs text-gray-600 dark:text-gray-300">{{ date('d M Y', strtotime($pay->payment_date)) }}</td>
-                            <td class="py-2.5 px-3 text-xs font-bold text-gray-900 dark:text-gray-100">{{ $pay->student->student_name ?? 'N/A' }}</td>
-                            <td class="py-2.5 px-3 text-xs text-gray-700 dark:text-gray-300">{{ $pay->invoice?->feeSetup?->category?->name ?? 'Fee' }}</td>
-                            <td class="py-2.5 px-3 text-xs">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-white/[0.05] text-gray-700 dark:text-gray-300 uppercase">
+                        <tr class="transition-colors">
+                            <td class="py-0 px-0 whitespace-nowrap">
+                                <span class="font-mono font-black text-xs text-themeBlue">{{ $pay->receipt_no }}</span>
+                            </td>
+                            <td class="py-0 px-0 whitespace-nowrap">
+                                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">{{ date('d M Y', strtotime($pay->payment_date)) }}</span>
+                            </td>
+                            <td class="py-0 px-0 whitespace-nowrap">
+                                <span class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ $pay->student->student_name ?? 'N/A' }}</span>
+                            </td>
+                            <td class="py-0 px-0">
+                                <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">{{ $pay->report_category_label ?? ($pay->invoice?->feeSetup?->category?->name ?? 'Fee') }}</span>
+                            </td>
+                            <td class="py-0 px-0 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg border border-gray-200 dark:border-white/[0.08] text-[10px] font-black bg-gray-50 dark:bg-themeDark/50 text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                     {{ $pay->payment_method }}
                                 </span>
                             </td>
-                            <td class="py-2.5 px-3 font-mono font-bold text-xs text-right text-emerald-600">৳ {{ number_format($pay->paid_amount, 2) }}</td>
+                            <td class="py-0 px-0 text-right whitespace-nowrap">
+                                <span class="font-mono font-black text-xs sm:text-sm text-themeGreen">৳ {{ number_format($pay->report_effective_amount ?? $pay->paid_amount, 2) }}</span>
+                            </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="py-8 text-center text-xs text-gray-400">No collection records in this period.</td>
+                            <td colspan="6">
+                                <div class="py-6 text-center text-xs font-semibold text-gray-400">No collection records in this period.</div>
+                            </td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -577,36 +608,48 @@
         </div>
 
         <!-- Expenses Tab Content -->
-        <div x-show="activeTab === 'expenses'" style="display: none;">
-            <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto max-h-96">
-                <table class="w-full text-left border-collapse table">
-                    <thead>
-                        <tr class="!bg-transparent sticky top-0 bg-white dark:bg-themeNavy">
-                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Voucher No</th>
-                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
-                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
-                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Paid To</th>
-                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Method</th>
-                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-2 !px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Amount</th>
+        <div x-show="activeTab === 'expenses'" x-cloak class="px-6 pb-4 pt-1">
+            <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 !rounded-none overflow-x-auto max-h-96 overflow-y-auto">
+                <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-white dark:[&>thead>tr>th]:!bg-themeNavy [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-2.5 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
+                    <thead class="sticky top-0 z-10">
+                        <tr class="!bg-transparent">
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Voucher No</th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Date</th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Category</th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Paid To</th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Method</th>
+                            <th class="border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-right whitespace-nowrap">Amount</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($expenses as $exp)
-                        <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors border-b border-gray-100 dark:border-white/[0.04]">
-                            <td class="py-2.5 px-3 font-mono font-bold text-xs text-themeBlue">{{ $exp->voucher_no }}</td>
-                            <td class="py-2.5 px-3 text-xs text-gray-600 dark:text-gray-300">{{ date('d M Y', strtotime($exp->expense_date)) }}</td>
-                            <td class="py-2.5 px-3 text-xs font-bold text-gray-900 dark:text-gray-100">{{ $exp->category->name ?? 'Uncategorized' }}</td>
-                            <td class="py-2.5 px-3 text-xs text-gray-700 dark:text-gray-300">{{ $exp->paid_to }}</td>
-                            <td class="py-2.5 px-3 text-xs">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-white/[0.05] text-gray-700 dark:text-gray-300 uppercase">
+                        <tr class="transition-colors">
+                            <td class="py-0 px-0 whitespace-nowrap">
+                                <span class="font-mono font-black text-xs text-themeBlue">{{ $exp->voucher_no }}</span>
+                            </td>
+                            <td class="py-0 px-0 whitespace-nowrap">
+                                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">{{ date('d M Y', strtotime($exp->expense_date)) }}</span>
+                            </td>
+                            <td class="py-0 px-0 whitespace-nowrap">
+                                <span class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ $exp->category->name ?? 'Uncategorized' }}</span>
+                            </td>
+                            <td class="py-0 px-0 whitespace-nowrap">
+                                <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">{{ $exp->paid_to }}</span>
+                            </td>
+                            <td class="py-0 px-0 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg border border-gray-200 dark:border-white/[0.08] text-[10px] font-black bg-gray-50 dark:bg-themeDark/50 text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                     {{ $exp->payment_method }}
                                 </span>
                             </td>
-                            <td class="py-2.5 px-3 font-mono font-bold text-xs text-right text-red-600">৳ {{ number_format($exp->amount, 2) }}</td>
+                            <td class="py-0 px-0 text-right whitespace-nowrap">
+                                <span class="font-mono font-black text-xs sm:text-sm text-rose-600 dark:text-rose-400">৳ {{ number_format($exp->amount, 2) }}</span>
+                            </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="py-8 text-center text-xs text-gray-400">No expense records in this period.</td>
+                            <td colspan="6">
+                                <div class="py-6 text-center text-xs font-semibold text-gray-400">No expense records in this period.</div>
+                            </td>
                         </tr>
                         @endforelse
                     </tbody>

@@ -271,6 +271,9 @@
                     <a href="{{ route('fees.setup.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
                         <span>Fee Setup</span>
                     </a>
+                    <a href="{{ route('fees.admission.structures.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold {{ request()->routeIs('fees.admission.structures.*') ? 'text-themeBlue bg-indigo-50/70 dark:bg-themeBlue/10' : 'text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45' }} transition-colors !no-underline">
+                        <span>Admission Structures</span>
+                    </a>
                     <!-- Expense Management -->
                     <div class="px-4 pt-2 pb-0.5 text-[9px] font-black uppercase tracking-wider text-themeGreen">Expense Management</div>
                     <a href="{{ route('accounts.expenses.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
@@ -298,6 +301,9 @@
                     </a>
                     <a href="{{ route('accounts.reports.class_wise') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
                         <span>Class-wise Financial Report</span>
+                    </a>
+                    <a href="{{ route('fees.admission.reports.index') }}" class="flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold {{ request()->routeIs('fees.admission.reports.*') ? 'text-themeBlue bg-indigo-50/70 dark:bg-themeBlue/10' : 'text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45' }} transition-colors !no-underline">
+                        <span>Admission Reports</span>
                     </a>
                 </div>
             </div>
@@ -605,6 +611,12 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                 <span class="sidebar-text">Generate Invoices</span>
             </a>
+            @if(auth()->check() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+            <a href="{{ route('fees.admission.structures.index') }}" class="sidebar-link {{ request()->routeIs('fees.admission.structures.*') ? 'active' : '' }}" title="Admission Structures">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9 20v-6h6v6"/></svg>
+                <span class="sidebar-text">Admission Structures</span>
+            </a>
+            @endif
 
             <!-- Group 2: Expense Management -->
             <div class="sidebar-section-heading group-[.collapsed]/sidebar:hidden px-3 pt-3 pb-1 text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-550 uppercase border-t border-gray-100 dark:border-white/[0.05] mt-2">
@@ -647,6 +659,12 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><rect x="2" y="2" width="20" height="20" rx="3"/></svg>
                 <span class="sidebar-text">Class-wise Financial Report</span>
             </a>
+            @if(auth()->check() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+            <a href="{{ route('fees.admission.reports.index') }}" class="sidebar-link {{ request()->routeIs('fees.admission.reports.*') ? 'active' : '' }}" title="Admission Reports">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+                <span class="sidebar-text">Admission Reports</span>
+            </a>
+            @endif
         </div>
 
         <!-- ==============================================

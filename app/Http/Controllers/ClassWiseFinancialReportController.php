@@ -128,9 +128,9 @@ class ClassWiseFinancialReportController extends Controller
         // Column Sub-Header Row 2
         $rows[] = [
             'Class',
-            'Monthly Fee', 'Other Fees', 'Other', 'Total',
-            'Monthly Fee', 'Other Fees', 'Other', 'Total',
-            'Monthly Fee', 'Other Fees', 'Other', 'Total'
+            'Monthly Fee', 'Exam Fees', 'Other Fees', 'Total',
+            'Monthly Fee', 'Exam Fees', 'Other Fees', 'Total',
+            'Monthly Fee', 'Exam Fees', 'Other Fees', 'Total'
         ];
 
         // Class Rows
@@ -138,16 +138,16 @@ class ClassWiseFinancialReportController extends Controller
             $rows[] = [
                 $r['class_name'],
                 (float) $r['due']['monthly_fee'],
+                (float) $r['due']['exam_fees'],
                 (float) $r['due']['other_fees'],
-                (float) $r['due']['other'],
                 (float) $r['due']['total'],
                 (float) $r['collected']['monthly_fee'],
+                (float) $r['collected']['exam_fees'],
                 (float) $r['collected']['other_fees'],
-                (float) $r['collected']['other'],
                 (float) $r['collected']['total'],
                 (float) $r['outstanding']['monthly_fee'],
+                (float) $r['outstanding']['exam_fees'],
                 (float) $r['outstanding']['other_fees'],
-                (float) $r['outstanding']['other'],
                 (float) $r['outstanding']['total']
             ];
         }
@@ -157,16 +157,16 @@ class ClassWiseFinancialReportController extends Controller
         $rows[] = [
             'Grand Total',
             (float) $gt['due']['monthly_fee'],
+            (float) $gt['due']['exam_fees'],
             (float) $gt['due']['other_fees'],
-            (float) $gt['due']['other'],
             (float) $gt['due']['total'],
             (float) $gt['collected']['monthly_fee'],
+            (float) $gt['collected']['exam_fees'],
             (float) $gt['collected']['other_fees'],
-            (float) $gt['collected']['other'],
             (float) $gt['collected']['total'],
             (float) $gt['outstanding']['monthly_fee'],
+            (float) $gt['outstanding']['exam_fees'],
             (float) $gt['outstanding']['other_fees'],
-            (float) $gt['outstanding']['other'],
             (float) $gt['outstanding']['total']
         ];
 

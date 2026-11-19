@@ -29,12 +29,12 @@
         @include('tyro-dashboard::partials.admin-sidebar')
 
         <!-- Main Content -->
-        <div class="main-content">
+        <div class="main-content min-w-0">
             <!-- Top Bar -->
             @include('tyro-dashboard::partials.topbar')
 
             <!-- Page Content -->
-            <main class="page-content">
+            <main class="page-content min-w-0">
                 <!-- Flash Messages -->
                 @include('tyro-dashboard::partials.flash-messages')
 

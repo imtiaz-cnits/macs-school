@@ -6,36 +6,6 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 @endpush
 
-@push('styles')
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-    tailwind.config = { 
-        darkMode: 'class', 
-        theme: { 
-            extend: { 
-                colors: { 
-                    themeBlue: '#008ED6', 
-                    themeGreen: '#009A49',
-                    themeDark: '#070E14',
-                    themeNavy: '#0F1E2C',
-                    gray: {
-                        55: '#f8fafc',
-                        450: '#94a3b8',
-                        555: '#64748b',
-                        850: '#1e293b'
-                    }
-                },
-                fontFamily: { 
-                    sans: ['Figtree', 'sans-serif'], 
-                    secondary: ['Onest', 'sans-serif'], 
-                    mono: ['Fira Code', 'monospace'] 
-                } 
-            } 
-        } 
-    }
-</script>
-@endpush
-
 @section('back_button')
 <a href="{{ route('students.index') }}" class="inline-flex items-center gap-2 text-sm font-extrabold text-themeBlue bg-themeBlue/5 dark:bg-themeBlue/10 hover:bg-themeBlue/10 dark:hover:bg-themeBlue/15 px-3.5 py-1.5 rounded-xl border border-themeBlue/25 transition-all hover:scale-105 active:scale-95 shadow-sm shadow-themeBlue/5">
     <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
@@ -46,7 +16,7 @@
 @endsection
 
 @section('content')
-<div class="w-full min-h-screen relative text-gray-900 dark:text-gray-100">
+<div class="w-full min-w-0 min-h-screen relative text-gray-900 dark:text-gray-100">
     
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="fixed inset-0 bg-white/70 dark:bg-themeDark/70 z-50 flex items-center justify-center backdrop-blur-md transition-all duration-300">
@@ -56,398 +26,437 @@
         </div>
     </div>
 
-    <!-- Page Header (Tile Case, Preceded with Icon) -->
+    <!-- Page Header (Rule 4: Title Case, Preceded with Icon) -->
     <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 no-print">
         <div>
             <h1 class="text-3xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
-                <svg class="w-8 h-8 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                <svg class="w-8 h-8 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                Student Profile & Academic Summary
+                Student Profile &amp; Academic Summary
             </h1>
-            <p class="text-sm font-medium text-gray-555 dark:text-gray-450 mt-1">Pabna International School</p>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">Complete student profile, attendance analytics, exam results, and billing history</p>
         </div>
         
-        <div class="flex gap-3 w-full md:w-auto">
-            <button onclick="pushToDevice()" class="h-10 px-5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-xs font-black rounded-xl uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-indigo-200 dark:border-indigo-900/60 shadow-sm whitespace-nowrap active:scale-95">
+        <div class="flex flex-wrap gap-3 w-full md:w-auto justify-start md:justify-end">
+            <button type="button" onclick="pushToDevice()" class="h-11 px-5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-xs font-black rounded-xl uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-indigo-200 dark:border-indigo-900/60 shadow-sm hover:shadow-md hover:-translate-y-0.5 whitespace-nowrap active:scale-95">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" /></svg>
                 Push to Machine
             </button>
 
-            <a href="/student/edit/{{ $id }}" class="h-10 px-6 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center gap-2 whitespace-nowrap active:scale-95">
+            <a href="/student/edit/{{ $id }}" class="h-11 px-6 bg-gradient-to-r from-themeBlue to-themeGreen hover:opacity-95 text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-widest flex items-center justify-center gap-2 whitespace-nowrap active:scale-95">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
                 Edit Profile
             </a>
         </div>
     </div>
 
-    <!-- Main Grid: Left side (Compact Personal info), Right side (Academic dynamic summaries) -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        
-        <!-- ================= LEFT COLUMN: COMPACT STUDENT INFO ================= -->
-        <div class="lg:col-span-1 space-y-6">
-            
-            <!-- Compact Avatar Card -->
-            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-themeBlue/[0.02] rounded-full -mr-16 -mt-16 pointer-events-none"></div>
-                
-                <div class="flex items-center gap-4 relative z-10">
-                    <div class="relative shrink-0">
-                        <img id="profile_photo" src="" alt="Student" class="w-20 h-20 rounded-2xl object-cover border-2 border-gray-100 dark:border-themeDark shadow-sm bg-gray-50">
-                        <div id="view_status_badge" class="absolute -bottom-1 -right-1 px-2 py-0.5 bg-themeGreen text-white text-[8px] font-black rounded-full border border-white dark:border-themeNavy uppercase tracking-wider">Active</div>
+    <!-- ================= TOP HERO ROW: IDENTITY + ATTENDANCE + ACADEMIC INDEX ================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6 items-stretch">
+
+        <!-- Hero Identity Card -->
+        <div class="lg:col-span-5 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden flex items-center">
+            <div class="absolute top-0 right-0 w-36 h-36 bg-themeBlue/[0.03] rounded-full -mr-16 -mt-16 pointer-events-none"></div>
+            <div class="flex items-center gap-4 relative z-10 w-full min-w-0">
+                <div class="relative shrink-0">
+                    <img id="profile_photo" src="" alt="Student" class="w-20 h-20 rounded-2xl object-cover border-2 border-gray-100 dark:border-themeDark shadow-sm bg-gray-50">
+                    <div id="view_status_badge" class="absolute -bottom-1 -right-1 px-2 py-0.5 bg-themeGreen text-white text-[8px] font-black rounded-full border border-white dark:border-themeNavy uppercase tracking-wider">Active</div>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h2 id="view_student_name" class="text-xl font-black text-gray-900 dark:text-white truncate">Student Name</h2>
+                    <p id="view_name_in_bangla" class="text-xs text-themeBlue dark:text-blue-400 font-bold truncate mt-0.5">Name in Bangla</p>
+
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                        <span class="px-2.5 py-1 bg-sky-50 dark:bg-themeBlue/15 border border-sky-200/60 dark:border-themeBlue/30 rounded-lg text-[10px] font-black text-themeBlue dark:text-blue-300 font-mono uppercase tracking-wider" id="badge_identity">PIS-0000</span>
+                        <span class="px-2.5 py-1 bg-gray-50 dark:bg-themeDark border border-gray-200/80 dark:border-white/[0.08] rounded-lg text-[10px] font-bold text-gray-700 dark:text-gray-300">
+                            Class <span id="badge_class" class="font-black text-themeBlue">...</span> &bull; Roll <span id="badge_roll" class="font-black text-themeGreen">...</span>
+                        </span>
                     </div>
-                    <div class="min-w-0">
-                        <h2 id="view_student_name" class="text-lg font-black text-gray-900 dark:text-white truncate">Student Name</h2>
-                        <p id="view_name_in_bangla" class="text-xs text-themeBlue dark:text-indigo-400 font-bold truncate mt-0.5">Name in Bangla</p>
-                        
-                        <div class="mt-2.5 flex flex-wrap gap-2">
-                            <span class="px-2 py-1 bg-indigo-50/70 dark:bg-themeBlue/10 border border-indigo-100/50 dark:border-white/[0.06] rounded-lg text-[9px] font-black text-themeBlue font-mono uppercase tracking-wider" id="badge_identity">PIS-0000</span>
-                            <span class="px-2 py-1 bg-gray-50 dark:bg-themeDark border border-gray-150 dark:border-white/[0.06] rounded-lg text-[9px] font-bold text-gray-700 dark:text-gray-300">
-                                Class <span id="badge_class" class="font-black text-themeBlue">...</span> • Roll <span id="badge_roll" class="font-black text-themeGreen">...</span>
-                            </span>
-                        </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Circular Attendance Widget -->
+        <div class="lg:col-span-4 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-5">
+            <div class="shrink-0">
+                <div class="relative w-24 h-24 flex items-center justify-center">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle class="text-gray-100 dark:text-gray-800" stroke-width="8" stroke="currentColor" fill="transparent" r="38" cx="50" cy="50"/>
+                        <circle id="attendance_circle" class="text-themeBlue transition-all duration-500" stroke-width="8" stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round" stroke="currentColor" fill="transparent" r="38" cx="50" cy="50"/>
+                    </svg>
+                    <div class="absolute text-center">
+                        <span class="text-lg font-black text-gray-900 dark:text-white" id="attendance_percentage_val">100%</span>
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Rate</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Compact Academic & Personal info combined -->
-            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300">
-                <h3 class="flex items-center gap-2 text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-4">
-                    <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm-1.2 6.375a3.375 3.375 0 00-5.1 0v.125h5.1v-.125z" /></svg>
-                    Student Details
-                </h3>
-                
-                <div class="grid grid-cols-2 gap-x-4 gap-y-3.5">
+            <div class="flex-1 min-w-0">
+                <h4 class="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-2 mb-3">Attendance Stats</h4>
+                <div class="grid grid-cols-3 gap-2">
                     <div>
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Branch</span>
-                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="view_branch">...</span>
+                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Present</span>
+                        <span class="text-base font-black font-mono text-themeGreen" id="attendance_present_days">0</span>
                     </div>
                     <div>
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Session</span>
-                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="view_session">...</span>
+                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Absent</span>
+                        <span class="text-base font-black font-mono text-rose-500" id="attendance_absent_days">0</span>
                     </div>
                     <div>
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Section</span>
-                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="view_section">...</span>
-                    </div>
-                    <div>
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Shift</span>
-                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="view_shift">...</span>
-                    </div>
-                    <div>
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Status</span>
-                        <span class="text-xs font-bold" id="view_status_text">...</span>
-                    </div>
-                    
-                    <div class="col-span-2 h-[1px] bg-gray-100 dark:bg-white/[0.05] my-1"></div>
-                    
-                    <div>
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Date of Birth</span>
-                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="view_dob">...</span>
-                    </div>
-                    <div>
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Gender</span>
-                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="view_gender">...</span>
-                    </div>
-                    <div>
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Blood Group</span>
-                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono" id="view_blood_group">...</span>
-                    </div>
-                    <div>
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Religion</span>
-                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="view_religion">...</span>
-                    </div>
-                    <div class="col-span-2">
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Birth Certificate No</span>
-                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono" id="view_birth_certificate">...</span>
-                    </div>
-                    <div class="col-span-2">
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-widest mb-0.5 block">RFID Card Number</span>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono" id="view_card_number">...</span>
-                            <button type="button" onclick="syncRfidCardSingle({{ $id }})" class="p-1.5 bg-themeBlue/10 hover:bg-themeBlue/20 text-themeBlue rounded-lg transition-colors" title="Sync Card from Machine">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="col-span-2 h-[1px] bg-gray-100 dark:bg-white/[0.05] my-1"></div>
-                    
-                    <div class="col-span-2">
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 block">Uploaded Document</span>
-                        <div id="document_wrapper"></div>
+                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Late</span>
+                        <span class="text-base font-black font-mono text-amber-500" id="attendance_late_days">0</span>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Family & Guardian Card -->
-            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300">
-                <h3 class="flex items-center gap-2 text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-4">
-                    <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg>
-                    Family Details
+        <!-- Academic Evaluation / Progress Summary -->
+        <div class="lg:col-span-3 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+            <div>
+                <h4 class="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-widest border-b border-gray-100 dark:border-white/[0.06] pb-2 mb-3">Academic Index</h4>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-3xl font-black font-mono text-themeGreen" id="gpa_aggregate">0.00</span>
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-wider">Average GPA</span>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
+                    <div class="bg-gradient-to-r from-themeBlue to-themeGreen h-full rounded-full transition-all duration-500" id="gpa_bar" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between items-center mt-2">
+                    <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest" id="evaluation_label">Needs Review</span>
+                    <span class="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider font-mono">Max: 5.0</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================= STUDENT DETAILS, FAMILY & ADDRESS BENTO ROW ================= -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6 items-stretch">
+
+        <!-- Left (5 cols): Student Details -->
+        <div class="xl:col-span-5 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col">
+            <h3 class="flex items-center gap-2 text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-4">
+                <svg class="w-4 h-4 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm-1.2 6.375a3.375 3.375 0 00-5.1 0v.125h5.1v-.125z" /></svg>
+                Student Details
+            </h3>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3.5">
+                <div>
+                    <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Branch</span>
+                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="view_branch">...</span>
+                </div>
+                <div>
+                    <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Session</span>
+                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono" id="view_session">...</span>
+                </div>
+                <div>
+                    <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Section</span>
+                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="view_section">...</span>
+                </div>
+                <div>
+                    <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Shift</span>
+                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="view_shift">...</span>
+                </div>
+                <div>
+                    <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Status</span>
+                    <span class="text-xs font-bold" id="view_status_text">...</span>
+                </div>
+                <div>
+                    <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Date of Birth</span>
+                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono" id="view_dob">...</span>
+                </div>
+
+                <div class="col-span-2 sm:col-span-3 h-[1px] bg-gray-100 dark:bg-white/[0.06]"></div>
+
+                <div>
+                    <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Gender</span>
+                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="view_gender">...</span>
+                </div>
+                <div>
+                    <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Blood Group</span>
+                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono" id="view_blood_group">...</span>
+                </div>
+                <div>
+                    <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Religion</span>
+                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="view_religion">...</span>
+                </div>
+                <div class="col-span-2 sm:col-span-1">
+                    <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">Birth Cert No</span>
+                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono break-all" id="view_birth_certificate">...</span>
+                </div>
+                <div>
+                    <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 block">RFID Card No</span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 font-mono" id="view_card_number">...</span>
+                        <button type="button" onclick="syncRfidCardSingle({{ $id }})" class="p-1 bg-themeBlue/10 hover:bg-themeBlue/20 text-themeBlue rounded-lg transition-colors" title="Sync Card from Machine">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1 block">Document</span>
+                    <div id="document_wrapper"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right (7 cols): Family Details + Residential Address -->
+        <div class="xl:col-span-7 flex flex-col gap-6">
+
+            <!-- Family Details Card -->
+            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                <h3 class="flex items-center gap-2 text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-4">
+                    <svg class="w-4 h-4 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg>
+                    Family &amp; Guardian Details
                 </h3>
-                
-                <div class="space-y-4">
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <!-- Father's Info -->
-                    <div class="p-3 bg-blue-50/15 dark:bg-themeBlue/[0.03] border border-themeBlue/10 rounded-2xl">
-                        <span class="text-[9px] font-black text-themeBlue uppercase tracking-widest block mb-2">Father's Info</span>
-                        <div class="grid grid-cols-2 gap-x-2 gap-y-2 text-[11px]">
-                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name</span><span class="font-bold truncate block" id="view_father_name">...</span></div>
-                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name (Bangla)</span><span class="font-bold truncate block" id="view_father_name_bn">...</span></div>
-                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Occupation</span><span class="font-bold truncate block" id="view_father_occupation">...</span></div>
-                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Mobile</span><span class="font-bold block" id="view_father_mobile">...</span></div>
-                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">NID</span><span class="font-mono block" id="view_father_nid">...</span></div>
+                    <div class="p-3.5 bg-sky-50/40 dark:bg-themeBlue/[0.04] border border-themeBlue/15 rounded-2xl">
+                        <span class="text-[9px] font-black text-themeBlue uppercase tracking-widest block mb-2.5">Father's Info</span>
+                        <div class="space-y-2 text-[11px]">
+                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name</span><span class="font-bold text-gray-900 dark:text-gray-100 truncate block" id="view_father_name">...</span></div>
+                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name (Bangla)</span><span class="font-bold text-gray-700 dark:text-gray-300 truncate block" id="view_father_name_bn">...</span></div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="min-w-0"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Occupation</span><span class="font-bold text-gray-700 dark:text-gray-300 truncate block" id="view_father_occupation">...</span></div>
+                                <div class="min-w-0"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Mobile</span><span class="font-bold font-mono text-gray-800 dark:text-gray-200 truncate block" id="view_father_mobile">...</span></div>
+                            </div>
+                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">NID</span><span class="font-mono text-gray-700 dark:text-gray-300 block" id="view_father_nid">...</span></div>
                         </div>
                     </div>
-                    
+
                     <!-- Mother's Info -->
-                    <div class="p-3 bg-green-50/15 dark:bg-themeGreen/[0.03] border border-themeGreen/10 rounded-2xl">
-                        <span class="text-[9px] font-black text-themeGreen uppercase tracking-widest block mb-2">Mother's Info</span>
-                        <div class="grid grid-cols-2 gap-x-2 gap-y-2 text-[11px]">
-                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name</span><span class="font-bold truncate block" id="view_mother_name">...</span></div>
-                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name (Bangla)</span><span class="font-bold truncate block" id="view_mother_name_bn">...</span></div>
-                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Occupation</span><span class="font-bold truncate block" id="view_mother_occupation">...</span></div>
-                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Mobile</span><span class="font-bold block" id="view_mother_mobile">...</span></div>
-                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">NID</span><span class="font-mono block" id="view_mother_nid">...</span></div>
+                    <div class="p-3.5 bg-emerald-50/40 dark:bg-themeGreen/[0.04] border border-themeGreen/15 rounded-2xl">
+                        <span class="text-[9px] font-black text-themeGreen uppercase tracking-widest block mb-2.5">Mother's Info</span>
+                        <div class="space-y-2 text-[11px]">
+                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name</span><span class="font-bold text-gray-900 dark:text-gray-100 truncate block" id="view_mother_name">...</span></div>
+                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name (Bangla)</span><span class="font-bold text-gray-700 dark:text-gray-300 truncate block" id="view_mother_name_bn">...</span></div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="min-w-0"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Occupation</span><span class="font-bold text-gray-700 dark:text-gray-300 truncate block" id="view_mother_occupation">...</span></div>
+                                <div class="min-w-0"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Mobile</span><span class="font-bold font-mono text-gray-800 dark:text-gray-200 truncate block" id="view_mother_mobile">...</span></div>
+                            </div>
+                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">NID</span><span class="font-mono text-gray-700 dark:text-gray-300 block" id="view_mother_nid">...</span></div>
                         </div>
                     </div>
-                    
-                    <!-- Guardian Info -->
-                    <div class="p-3 bg-gray-50/50 dark:bg-themeDark/45 border border-gray-150 dark:border-white/[0.04] rounded-2xl">
-                        <span class="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Local Guardian</span>
-                        <div class="grid grid-cols-2 gap-x-2 gap-y-2 text-[11px]">
-                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name</span><span class="font-bold truncate block" id="view_guardian_name">...</span></div>
-                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Occupation</span><span class="font-bold truncate block" id="view_guardian_occupation">...</span></div>
-                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Mobile</span><span class="font-bold text-red-550 block font-mono" id="view_guardian_mobile">...</span></div>
-                            <div class="col-span-2"><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Email</span><span class="font-medium text-themeBlue block lowercase truncate" id="view_email">...</span></div>
+
+                    <!-- Local Guardian -->
+                    <div class="p-3.5 bg-gray-50/70 dark:bg-themeDark/50 border border-gray-200/70 dark:border-white/[0.06] rounded-2xl">
+                        <span class="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2.5">Local Guardian</span>
+                        <div class="space-y-2 text-[11px]">
+                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Name</span><span class="font-bold text-gray-900 dark:text-gray-100 truncate block" id="view_guardian_name">...</span></div>
+                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Occupation</span><span class="font-bold text-gray-700 dark:text-gray-300 truncate block" id="view_guardian_occupation">...</span></div>
+                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Mobile</span><span class="font-bold font-mono text-gray-800 dark:text-gray-200 block" id="view_guardian_mobile">...</span></div>
+                            <div><span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Email</span><span class="font-medium text-themeBlue block lowercase truncate" id="view_email">...</span></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Addresses -->
-            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300">
-                <h3 class="flex items-center gap-2 text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-4">
-                    <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
+            <!-- Residential Address Card -->
+            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex-1">
+                <h3 class="flex items-center gap-2 text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-4">
+                    <svg class="w-4 h-4 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
                     Residential Address
                 </h3>
-                
-                <div class="space-y-3.5 text-xs">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
                     <div>
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-0.5">Present Address</span>
-                        <p class="font-semibold italic text-gray-655 dark:text-gray-400 leading-relaxed" id="view_present_address">...</p>
+                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-1">Present Address</span>
+                        <p class="font-semibold text-gray-600 dark:text-gray-300 leading-relaxed" id="view_present_address">...</p>
                     </div>
-                    <div class="h-[1px] bg-gray-100 dark:bg-white/[0.05]"></div>
-                    <div>
-                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-0.5">Permanent Address</span>
-                        <p class="font-semibold italic text-gray-655 dark:text-gray-400 leading-relaxed" id="view_permanent_address">...</p>
+                    <div class="md:border-l md:border-gray-100 dark:md:border-white/[0.06] md:pl-5">
+                        <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-1">Permanent Address</span>
+                        <p class="font-semibold text-gray-600 dark:text-gray-300 leading-relaxed" id="view_permanent_address">...</p>
                     </div>
                 </div>
             </div>
 
         </div>
 
-        <!-- ================= RIGHT COLUMN: DYNAMIC SUMMARY MODULES ================= -->
-        <div class="lg:col-span-2 space-y-6">
-            
-            <!-- Dashboard Quick Statistics Row -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Circular Attendance Widget -->
-                <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm md:col-span-2 flex flex-col md:flex-row items-center gap-6">
-                    <div class="shrink-0">
-                        <div class="relative w-28 h-28 flex items-center justify-center">
-                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                                <circle class="text-gray-100 dark:text-gray-800" stroke-width="8" stroke="currentColor" fill="transparent" r="38" cx="50" cy="50"/>
-                                <circle id="attendance_circle" class="text-themeBlue transition-all duration-500" stroke-width="8" stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round" stroke="currentColor" fill="transparent" r="38" cx="50" cy="50"/>
-                            </svg>
-                            <div class="absolute text-center">
-                                <span class="text-xl font-black text-gray-900 dark:text-white" id="attendance_percentage_val">100%</span>
-                                <span class="block text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Rate</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex-1 w-full">
-                        <h4 class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-widest border-b border-gray-100 dark:border-white/[0.05] pb-2 mb-3">Attendance Stats</h4>
-                        <div class="grid grid-cols-3 gap-4 text-center md:text-left">
-                            <div>
-                                <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Present</span>
-                                <span class="text-base font-black text-themeGreen" id="attendance_present_days">0</span>
-                            </div>
-                            <div>
-                                <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Absent</span>
-                                <span class="text-base font-black text-red-500" id="attendance_absent_days">0</span>
-                            </div>
-                            <div>
-                                <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Late</span>
-                                <span class="text-base font-black text-amber-500" id="attendance_late_days">0</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    </div>
 
-                <!-- Academic Evaluation / Progress Summary -->
-                <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm flex flex-col justify-between">
-                    <div>
-                        <h4 class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-widest border-b border-gray-100 dark:border-white/[0.05] pb-2 mb-3">Academic Index</h4>
-                        <div class="flex items-baseline gap-2">
-                            <span class="text-3xl font-black text-themeGreen" id="gpa_aggregate">0.00</span>
-                            <span class="text-[10px] font-black text-gray-450 uppercase tracking-wider">Average GPA</span>
-                        </div>
+    <!-- ================= FULL-WIDTH DATA TABLES & ANALYTICS (AGENTS.md Rule 9) ================= -->
+    <div class="space-y-6">
+
+        <!-- 1. Fees & Invoices History Table (Full Width, Rule 9) -->
+        <div class="w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
+                <h3 class="flex items-center gap-2 text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                    <svg class="w-4 h-4 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-1.958-.59a2.502 2.502 0 010-3.236c1.117-.837 2.8-.837 3.917 0l.44.33M12 3v3m0 12v3" /></svg>
+                    Fees &amp; Invoices History
+                </h3>
+                @if(auth()->check() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+                    <button type="button"
+                            id="btn_generate_admission_invoice"
+                            onclick="window.openGenerateAdmissionInvoiceModal()"
+                            class="hidden h-9 px-4 bg-gradient-to-r from-themeBlue to-themeGreen hover:opacity-95 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all items-center gap-1.5 whitespace-nowrap active:scale-95">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                        <span id="btn_generate_admission_invoice_label">Generate Admission Invoice</span>
+                    </button>
+                @endif
+            </div>
+
+            <div class="px-6 pt-4">
+                <div id="admission_schema_warning_banner" class="hidden mb-3 rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/90 dark:bg-amber-950/30 px-4 py-2.5 text-xs font-bold text-amber-800 dark:text-amber-300"></div>
+
+                <!-- Summary Panel inside Fees Card -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
+                    <div class="p-3.5 bg-sky-50/40 dark:bg-themeBlue/[0.04] border border-themeBlue/15 rounded-2xl flex items-center justify-between">
+                        <span class="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Total Billed</span>
+                        <span class="text-base font-black text-gray-900 dark:text-white font-mono" id="summary_total_billed">৳0.00</span>
                     </div>
-                    <div class="mt-4">
-                        <div class="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
-                            <div class="bg-gradient-to-r from-themeBlue to-themeGreen h-full rounded-full transition-all duration-500" id="gpa_bar" style="width: 0%"></div>
-                        </div>
-                        <div class="flex justify-between items-center mt-2">
-                            <span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest" id="evaluation_label">Needs Review</span>
-                            <span class="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider font-mono">Max: 5.0</span>
-                        </div>
+                    <div class="p-3.5 bg-emerald-50/40 dark:bg-themeGreen/[0.04] border border-themeGreen/15 rounded-2xl flex items-center justify-between">
+                        <span class="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Total Paid</span>
+                        <span class="text-base font-black text-themeGreen dark:text-emerald-400 font-mono" id="summary_total_paid">৳0.00</span>
+                    </div>
+                    <div class="p-3.5 bg-rose-50/40 dark:bg-rose-500/[0.04] border border-rose-500/15 rounded-2xl flex items-center justify-between">
+                        <span class="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Total Due</span>
+                        <span class="text-base font-black text-rose-600 dark:text-rose-400 font-mono" id="summary_total_due">৳0.00</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Exam Marks & Results History Table -->
-            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300">
-                <h3 class="flex items-center gap-2 text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-2">
-                    <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    Exam Marks & Results History
-                </h3>
-                
-                <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-                    <table class="w-full text-left border-collapse table">
+            <div class="px-6 pb-4 pt-1">
+                <div class="table-container bg-transparent !border-none !shadow-none !rounded-none !mt-2 !mb-0 overflow-x-auto">
+                    <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-3 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
                         <thead>
                             <tr class="!bg-transparent">
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Exam</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Subject</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center">Marks</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center">Grade</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center">GPA</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="results_table_body">
-                            <!-- Pulsing Loading Row Skeletons -->
-                            <tr class="animate-pulse">
-                                <td class="!py-3.5 !px-3"><div class="h-4 w-28 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
-                                <td class="!py-3.5 !px-3"><div class="h-4 w-20 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
-                                <td class="!py-3.5 !px-3 text-center"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
-                                <td class="!py-3.5 !px-3 text-center"><div class="h-4 w-8 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
-                                <td class="!py-3.5 !px-3 text-center"><div class="h-4 w-8 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
-                                <td class="!py-3.5 !px-3 text-center"><div class="h-4 w-14 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>            <!-- Fees & Invoices History Table -->
-            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300">
-                <h3 class="flex items-center gap-2 text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-2">
-                    <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-1.958-.59a2.502 2.502 0 010-3.236c1.117-.837 2.8-.837 3.917 0l.44.33M12 3v3m0 12v3" /></svg>
-                    Fees & Invoices History
-                </h3>
-
-                <!-- Summary Panel inside Fees Card -->
-                <div class="grid grid-cols-3 gap-4 mb-4 mt-2">
-                    <div class="p-3 bg-blue-50/15 dark:bg-themeBlue/[0.03] border border-themeBlue/10 rounded-2xl text-center">
-                        <span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-0.5">Total Billed</span>
-                        <span class="text-sm font-black text-gray-900 dark:text-white font-mono" id="summary_total_billed">৳0.00</span>
-                    </div>
-                    <div class="p-3 bg-green-50/15 dark:bg-themeGreen/[0.03] border border-themeGreen/10 rounded-2xl text-center">
-                        <span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-0.5">Total Paid</span>
-                        <span class="text-sm font-black text-themeGreen font-mono" id="summary_total_paid">৳0.00</span>
-                    </div>
-                    <div class="p-3 bg-red-50/15 dark:bg-red-500/[0.03] border border-red-500/10 rounded-2xl text-center">
-                        <span class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-0.5">Total Due</span>
-                        <span class="text-sm font-black text-red-500 font-mono" id="summary_total_due">৳0.00</span>
-                    </div>
-                </div>
-                
-                <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-                    <table class="w-full text-left border-collapse table">
-                        <thead>
-                            <tr class="!bg-transparent">
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Invoice No</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Fee Type / Month</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Net Amt</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Paid</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Due</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Status</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Action</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] whitespace-nowrap">Invoice No</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] whitespace-nowrap">Fee Type / Month</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right whitespace-nowrap">Net Amt</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right whitespace-nowrap">Paid</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right whitespace-nowrap">Due</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center whitespace-nowrap">Status</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right whitespace-nowrap">Action</th>
                             </tr>
                         </thead>
                         <tbody id="fees_table_body">
-                            <!-- Pulsing Loading Row Skeletons -->
+                            <!-- Pulsing Loading Row Skeletons (Rule 9) -->
                             <tr class="animate-pulse">
-                                <td class="!py-3.5 !px-3"><div class="h-4 w-20 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
-                                <td class="!py-3.5 !px-3"><div class="h-4 w-28 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
-                                <td class="!py-3.5 !px-3 text-right"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
-                                <td class="!py-3.5 !px-3 text-right"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
-                                <td class="!py-3.5 !px-3 text-right"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
-                                <td class="!py-3.5 !px-3 text-center"><div class="h-4 w-14 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
-                                <td class="!py-3.5 !px-3 text-center"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
+                                <td class="py-0 px-0"><div class="h-4 w-28 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
+                                <td class="py-0 px-0"><div class="h-4 w-40 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
+                                <td class="py-0 px-0 text-right"><div class="h-4 w-16 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
+                                <td class="py-0 px-0 text-right"><div class="h-4 w-16 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
+                                <td class="py-0 px-0 text-right"><div class="h-4 w-16 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
+                                <td class="py-0 px-0 text-center"><div class="h-4 w-16 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
+                                <td class="py-0 px-0 text-right"><div class="h-4 w-20 bg-gray-200 dark:bg-gray-700/60 rounded-md ml-auto"></div></td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Pagination Controls -->
-                <div id="fees_pagination_container" class="flex flex-col sm:flex-row items-center justify-between mt-4 gap-3 px-1 no-print hidden">
-                    <span class="text-xs font-semibold text-gray-555 dark:text-gray-400" id="fees_pagination_info">Showing 1 to 10 of 12 entries</span>
-                    <div class="flex gap-2">
-                        <button type="button" id="fees_prev_btn" class="px-3.5 py-1.5 bg-gray-55/70 dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] hover:bg-gray-100 dark:hover:bg-themeDark/45 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
-                        <button type="button" id="fees_next_btn" class="px-3.5 py-1.5 bg-gray-55/70 dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] hover:bg-gray-100 dark:hover:bg-themeDark/45 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
-                    </div>
-                </div>
             </div>
 
-            <!-- Student Customized Fees Card -->
-            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300">
-                <div class="flex justify-between items-center border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-2">
-                    <h3 class="flex items-center gap-2 text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider">
-                        <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122A3 3 0 0010.5 21.75h2.9m3.07-5.628a3 3 0 01-1.07 5.628H12.5m2.77-10.874A3 3 0 0012 3m0 0a3 3 0 00-3.27 2.25M12 3v18.75m0-18.75a3 3 0 005.27 2.25M12 21.75a3 3 0 01-3.07-5.628M12 21.75a3 3 0 00-2.9-5.628" /></svg>
-                        Customized Fees Configuration
-                    </h3>
-                    <button type="button" onclick="openCustomFeeModal()" class="h-8 px-3 bg-themeBlue hover:bg-themeBlue/90 text-white text-[10px] font-black rounded-xl uppercase tracking-widest transition-all shadow-sm flex items-center justify-center gap-1 active:scale-95">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                        Set Custom Fee
+            <!-- Pagination Controls -->
+            <div id="fees_pagination_container" class="px-6 py-3.5 border-t border-gray-100 dark:border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-3 no-print hidden">
+                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400" id="fees_pagination_info">Showing 1 to 10 of 12 entries</span>
+                <div class="inline-flex items-center gap-1.5">
+                    <button type="button" id="fees_prev_btn" class="h-9 px-3.5 bg-white dark:bg-themeDark/60 border border-gray-200 dark:border-white/[0.08] hover:border-themeBlue hover:text-themeBlue text-gray-600 dark:text-gray-300 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                        Prev
+                    </button>
+                    <div id="fees_page_numbers" class="inline-flex items-center gap-1"></div>
+                    <button type="button" id="fees_next_btn" class="h-9 px-3.5 bg-white dark:bg-themeDark/60 border border-gray-200 dark:border-white/[0.08] hover:border-themeBlue hover:text-themeBlue text-gray-600 dark:text-gray-300 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1">
+                        Next
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                     </button>
                 </div>
+            </div>
+        </div>
 
-                <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-                    <table class="w-full text-left border-collapse table">
+        <!-- 2. Customized Fees Configuration Table (Full Width, Rule 9) -->
+        <div class="w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex flex-wrap justify-between items-center gap-3">
+                <h3 class="flex items-center gap-2 text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                    <svg class="w-4 h-4 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122A3 3 0 0010.5 21.75h2.9m3.07-5.628a3 3 0 01-1.07 5.628H12.5m2.77-10.874A3 3 0 0012 3m0 0a3 3 0 00-3.27 2.25M12 3v18.75m0-18.75a3 3 0 005.27 2.25M12 21.75a3 3 0 01-3.07-5.628M12 21.75a3 3 0 00-2.9-5.628" /></svg>
+                    Customized Fees Configuration
+                </h3>
+                <button type="button" onclick="openCustomFeeModal()" class="h-9 px-4 bg-gradient-to-r from-themeBlue to-themeGreen hover:opacity-95 text-white text-[10px] font-black rounded-xl uppercase tracking-widest transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                    Set Custom Fee
+                </button>
+            </div>
+
+            <div class="px-6 pb-4 pt-1">
+                <div class="table-container bg-transparent !border-none !shadow-none !rounded-none !mt-2 !mb-0 overflow-x-auto">
+                    <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-3 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
                         <thead>
                             <tr class="!bg-transparent">
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Fee Category</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right">Custom Amount</th>
-                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-2.5 !px-3 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center" style="width: 80px;">Action</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] whitespace-nowrap">Fee Category</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right whitespace-nowrap">Custom Amount</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-right whitespace-nowrap w-24">Action</th>
                             </tr>
                         </thead>
                         <tbody id="custom_fees_table_body">
                             <tr>
-                                <td colspan="3" class="text-center py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">No customized fees configured</td>
+                                <td colspan="3">
+                                    <div class="py-6 text-center text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">No customized fees configured</div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
+        </div>
 
-            <!-- Subject-Wise Evaluation Stats -->
-            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300">
-                <h3 class="flex items-center gap-2 text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-4">
-                    <svg class="w-4 h-4 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z" /></svg>
-                    Subject Performance Distribution
+        <!-- 3. Exam Marks & Results History Table (Full Width, Rule 9) -->
+        <div class="w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex items-center justify-between gap-2">
+                <h3 class="flex items-center gap-2 text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                    <svg class="w-4 h-4 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    Exam Marks &amp; Results History
                 </h3>
-                
-                <div class="space-y-4" id="subjects_distribution_container">
-                    <div class="animate-pulse space-y-3">
-                        <div class="h-4 w-full bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
-                        <div class="h-4 w-4/5 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
-                    </div>
-                </div>
             </div>
 
+            <div class="px-6 pb-4 pt-1">
+                <div class="table-container bg-transparent !border-none !shadow-none !rounded-none !mt-2 !mb-0 overflow-x-auto">
+                    <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-3 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
+                        <thead>
+                            <tr class="!bg-transparent">
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] whitespace-nowrap">Exam</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] whitespace-nowrap">Subject</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center whitespace-nowrap">Marks</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center whitespace-nowrap">Grade</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center whitespace-nowrap">GPA</th>
+                                <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-center whitespace-nowrap">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results_table_body">
+                            <!-- Pulsing Loading Row Skeletons (Rule 9) -->
+                            <tr class="animate-pulse">
+                                <td class="py-0 px-0"><div class="h-4 w-32 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
+                                <td class="py-0 px-0"><div class="h-4 w-28 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
+                                <td class="py-0 px-0 text-center"><div class="h-4 w-12 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
+                                <td class="py-0 px-0 text-center"><div class="h-4 w-8 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
+                                <td class="py-0 px-0 text-center"><div class="h-4 w-10 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
+                                <td class="py-0 px-0 text-center"><div class="h-4 w-16 bg-gray-200 dark:bg-gray-700/60 rounded-md mx-auto"></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Subject-Wise Evaluation Stats (Full Width 2-Column Grid) -->
+        <div class="w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+            <h3 class="flex items-center gap-2 text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-white/[0.06] pb-3 mb-5">
+                <svg class="w-4 h-4 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z" /></svg>
+                Subject Performance Distribution
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4" id="subjects_distribution_container">
+                <div class="animate-pulse space-y-3">
+                    <div class="h-4 w-full bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
+                    <div class="h-4 w-4/5 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
+                </div>
+                <div class="animate-pulse space-y-3">
+                    <div class="h-4 w-full bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
+                    <div class="h-4 w-3/4 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -583,6 +592,106 @@
             </div>
         </div>
     </div>
+
+    <!-- Generate / Regenerate Admission Invoice Modal (Admin / Super Admin Only) -->
+    @if(auth()->check() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+    <div id="generateAdmissionInvoiceModal"
+         x-data="generateAdmissionInvoiceModalComponent()"
+         x-show="isOpen"
+         x-cloak
+         @open-generate-admission-invoice-modal.window="open($event.detail)"
+         class="fixed inset-0 z-[9999] flex items-center justify-center bg-themeDark/60 backdrop-blur-md p-4">
+        <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl relative" @click.away="!isSubmitting && close()">
+            <button type="button" @click="!isSubmitting && close()" class="absolute top-5 right-5 text-gray-400 hover:text-red-500 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <div class="mb-5">
+                <h3 class="text-base font-black text-gray-900 dark:text-white" x-text="modalTitle">Generate Admission Invoice</h3>
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5" x-text="studentSummary"></p>
+            </div>
+
+            <form @submit.prevent="submit()" class="space-y-4">
+                <!-- Discount Type Dropdown (Rule 7) -->
+                <div>
+                    <label class="block text-[10px] font-black uppercase tracking-widest text-gray-555 dark:text-gray-400 mb-1.5">Admission Discount Type</label>
+                    <div class="relative w-full" @click.away="discOpen = false">
+                        <button type="button" @click="discOpen = !discOpen" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                            <span class="truncate" x-text="discountLabel"></span>
+                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="discOpen" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                            <template x-for="opt in discountOptions" :key="opt.value">
+                                <button type="button" @click="discountType = opt.value; discountLabel = opt.label; if(opt.value === 'none') discountValue = '0.00'; discOpen = false" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="discountType === opt.value ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                    <span x-text="opt.label"></span>
+                                    <svg x-show="discountType === opt.value" class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discount Value -->
+                <div x-show="discountType !== 'none'">
+                    <label class="block text-[10px] font-black uppercase tracking-widest text-gray-555 dark:text-gray-400 mb-1.5">
+                        <span x-text="discountType === 'percentage' ? 'Discount Percentage (%)' : 'Fixed Discount Amount (৳)'"></span>
+                    </label>
+                    <input type="number" step="0.01" min="0" x-model="discountValue"
+                           class="w-full h-11 px-3.5 text-sm font-mono font-bold rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-themeNavy focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 text-gray-900 dark:text-gray-100 transition-all">
+                </div>
+
+                <!-- Due Date (Rule 10 Custom Date Picker) -->
+                <div>
+                    <label class="block text-[10px] font-black uppercase tracking-widest text-gray-555 dark:text-gray-400 mb-1.5">Invoice Due Date (Optional)</label>
+                    <div class="relative" x-data="datePicker(dueDate)" @click.away="show = false" @date-selected="if($event.detail) dueDate = $event.detail">
+                        <button type="button" @click="show = !show" class="w-full h-11 px-3.5 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all">
+                            <span x-text="dueDate || 'Default (Today)'" class="truncate"></span>
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </button>
+                        <div x-show="show" x-cloak class="absolute z-50 left-0 mt-1.5 w-72 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-2xl p-4">
+                            <div class="flex items-center justify-between gap-2 mb-3">
+                                <div class="relative" @click.away="mOpen = false">
+                                    <button type="button" @click="mOpen = !mOpen" class="px-2.5 py-1.5 rounded-lg bg-gray-50 dark:bg-themeDark border border-gray-150 dark:border-white/[0.08] text-xs font-black text-gray-800 dark:text-gray-200 flex items-center gap-1">
+                                        <span x-text="months[month]"></span>
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <div x-show="mOpen" x-cloak class="absolute z-50 left-0 mt-1 w-36 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-xl shadow-xl py-1 max-h-48 overflow-y-auto">
+                                        <template x-for="(mName, mIdx) in months" :key="mIdx">
+                                            <button type="button" @click="month = mIdx; mOpen = false; calculateDays()" class="w-full flex items-center justify-between px-3 py-1.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45" :class="month === mIdx ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                                <span x-text="mName"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                                <input type="number" x-model.number="year" @input="calculateDays()" class="w-20 h-8 px-2 text-center text-xs font-black rounded-lg border border-gray-150 dark:border-white/[0.08] bg-gray-50 dark:bg-themeDark text-gray-800 dark:text-gray-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                            </div>
+                            <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-black text-gray-400 uppercase mb-1">
+                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+                            <div class="grid grid-cols-7 gap-1 text-center text-xs">
+                                <template x-for="(blank, bi) in blankDays" :key="'vb'+bi">
+                                    <div></div>
+                                </template>
+                                <template x-for="day in daysInMonth" :key="day">
+                                    <button type="button" @click="selectDay(day); $dispatch('date-selected', formatted)" class="h-8 w-8 rounded-lg font-bold transition-colors flex items-center justify-center" :class="isSelected(day) ? 'bg-themeBlue text-white font-black' : 'hover:bg-gray-100 dark:hover:bg-themeDark/50 text-gray-700 dark:text-gray-200'" x-text="day"></button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button" @click="!isSubmitting && close()" class="h-10 px-5 text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-400 bg-gray-100 hover:bg-gray-200 dark:bg-themeDark/60 dark:hover:bg-themeDark rounded-xl transition-all">Cancel</button>
+                    <button type="submit" :disabled="isSubmitting" class="h-10 px-6 text-xs font-black uppercase tracking-widest text-white bg-gradient-to-r from-themeBlue to-themeGreen rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-60">
+                        <span x-text="isSubmitting ? 'Generating...' : 'Confirm & Generate'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
 </div>
 @endsection
 
@@ -732,8 +841,38 @@
             // ==========================================
             // DYNAMIC FEES & INVOICES PROCESSING
             // ==========================================
+            window.studentProfileData = s;
             window.studentInvoices = res.data.invoices || [];
             let invoices = window.studentInvoices;
+
+            const admWarnEl = document.getElementById('admission_schema_warning_banner');
+            if (admWarnEl) {
+                if (res.data.admission_schema_ready === false && res.data.admission_schema_warning) {
+                    admWarnEl.innerText = res.data.admission_schema_warning;
+                    admWarnEl.classList.remove('hidden');
+                } else {
+                    admWarnEl.classList.add('hidden');
+                }
+            }
+
+            const genAdmBtn = document.getElementById('btn_generate_admission_invoice');
+            const genAdmLabel = document.getElementById('btn_generate_admission_invoice_label');
+            const hasPreviousCancelledAdmission = invoices.some((inv) => inv.is_admission_invoice && inv.status === 'Cancelled');
+            window.hasCancelledAdmissionInvoice = hasPreviousCancelledAdmission;
+            if (genAdmBtn) {
+                if (res.data.admission_schema_ready && res.data.can_manage_admission_invoices && !res.data.has_active_admission_invoice) {
+                    if (genAdmLabel) {
+                        genAdmLabel.innerText = hasPreviousCancelledAdmission
+                            ? 'Regenerate Admission Invoice'
+                            : 'Generate Admission Invoice';
+                    }
+                    genAdmBtn.classList.remove('hidden');
+                    genAdmBtn.classList.add('inline-flex');
+                } else {
+                    genAdmBtn.classList.add('hidden');
+                    genAdmBtn.classList.remove('inline-flex');
+                }
+            }
             let feesBody = document.getElementById('fees_table_body');
             
             let totalBilled = 0;
@@ -768,87 +907,199 @@
                     let pageItems = invoices.slice(start, end);
 
                     pageItems.forEach(inv => {
+                        const esc = (str) => String(str ?? '')
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;');
+
                         let invoiceNo = inv.invoice_no || 'N/A';
-                        let categoryName = inv.fee_setup && inv.fee_setup.category ? inv.fee_setup.category.name : 'Fee Payment';
-                        let feeMonth = '';
-                        if (inv.due_date) {
-                            try {
-                                const parts = inv.due_date.split('-');
-                                if (parts.length === 3) {
-                                    const monthIndex = parseInt(parts[1], 10) - 1;
-                                    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                                    if (monthIndex >= 0 && monthIndex < 12) {
-                                        feeMonth = ` (${monthNames[monthIndex]})`;
-                                    }
-                                }
-                            } catch (e) {
-                                console.error(e);
+                        let isAdmInv = Boolean(inv.is_admission_invoice);
+                        let preparedHeads = Array.isArray(inv.prepared_heads) ? inv.prepared_heads : [];
+                        let feeDetails = '';
+                        let headsBreakdownRow = '';
+
+                        if (isAdmInv) {
+                            const admTitle = esc(inv.display_title || ('Admission Fee Package — ' + (inv.structure_name || 'Admission Fee')));
+                            const toggleBtn = preparedHeads.length > 0
+                                ? `<button type="button" onclick="window.toggleAdmissionHeadsRow(${inv.id})" class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md bg-themeBlue/10 text-themeBlue hover:bg-themeBlue hover:text-white transition-colors">Head Breakdown (${preparedHeads.length})</button>`
+                                : '';
+                            feeDetails = `
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <span>${admTitle}</span>
+                                    <span class="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-indigo-50 dark:bg-themeBlue/20 text-themeBlue">Admission</span>
+                                </div>
+                                ${toggleBtn}
+                            `;
+
+                            if (preparedHeads.length > 0) {
+                                const headRowsHtml = preparedHeads.map((h) => `
+                                    <tr class="border-b border-gray-100 dark:border-white/[0.04] last:border-b-0">
+                                        <td class="py-1.5 pr-3 text-xs font-bold text-gray-800 dark:text-gray-200">${esc(h.head_name)}${h.is_tuition_head ? ' <span class="ml-1 px-1.5 py-0.5 text-[9px] font-black uppercase rounded bg-themeBlue/10 text-themeBlue">Tuition</span>' : ''}</td>
+                                        <td class="py-1.5 px-2 text-xs font-mono text-right text-gray-600 dark:text-gray-400">৳${esc(h.amount)}</td>
+                                        <td class="py-1.5 px-2 text-xs font-mono text-right text-amber-600 dark:text-amber-400">৳${esc(h.discount)}</td>
+                                        <td class="py-1.5 px-2 text-xs font-mono font-bold text-right text-gray-900 dark:text-gray-100">৳${esc(h.net_amount)}</td>
+                                        <td class="py-1.5 px-2 text-xs font-mono font-bold text-right text-themeGreen">৳${esc(h.allocated_paid_amount)}</td>
+                                        <td class="py-1.5 pl-2 text-xs font-mono font-black text-right text-red-500">৳${esc(h.due_amount)}</td>
+                                    </tr>
+                                `).join('');
+
+                                headsBreakdownRow = `
+                                    <tr id="adm-heads-row-${inv.id}" class="hidden bg-gray-50/70 dark:bg-themeDark/30">
+                                        <td colspan="7" class="!py-3 !px-2">
+                                            <div class="rounded-2xl border border-gray-200/70 dark:border-white/[0.08] bg-white dark:bg-themeNavy/70 p-3.5 overflow-x-auto">
+                                                <table class="w-full text-left border-collapse tabular-nums">
+                                                    <thead>
+                                                        <tr class="border-b border-gray-200 dark:border-white/[0.08]">
+                                                            <th class="pb-2 pr-3 text-[10px] font-black uppercase tracking-wider text-gray-400 whitespace-nowrap">Fee Head</th>
+                                                            <th class="pb-2 px-2 text-[10px] font-black uppercase tracking-wider text-gray-400 text-right whitespace-nowrap">Gross</th>
+                                                            <th class="pb-2 px-2 text-[10px] font-black uppercase tracking-wider text-gray-400 text-right whitespace-nowrap">Discount</th>
+                                                            <th class="pb-2 px-2 text-[10px] font-black uppercase tracking-wider text-gray-400 text-right whitespace-nowrap">Net</th>
+                                                            <th class="pb-2 px-2 text-[10px] font-black uppercase tracking-wider text-gray-400 text-right whitespace-nowrap">Paid</th>
+                                                            <th class="pb-2 pl-2 text-[10px] font-black uppercase tracking-wider text-gray-400 text-right whitespace-nowrap">Due</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>${headRowsHtml}</tbody>
+                                                </table>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
                             }
+                        } else {
+                            let categoryName = inv.fee_setup && inv.fee_setup.category ? inv.fee_setup.category.name : 'Fee Payment';
+                            let feeMonthLabel = '';
+                            if (inv.due_date) {
+                                try {
+                                    const parts = inv.due_date.split('-');
+                                    if (parts.length === 3) {
+                                        const monthIndex = parseInt(parts[1], 10) - 1;
+                                        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                                        if (monthIndex >= 0 && monthIndex < 12) {
+                                            feeMonthLabel = monthNames[monthIndex];
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.error(e);
+                                }
+                            }
+                            if (!feeMonthLabel && inv.fee_setup && inv.fee_setup.fee_month) {
+                                feeMonthLabel = inv.fee_setup.fee_month;
+                            }
+                            const monthPill = feeMonthLabel
+                                ? `<span class="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-50 dark:bg-themeBlue/15 border border-sky-200/60 dark:border-themeBlue/30 text-[10px] font-black uppercase tracking-wider text-themeBlue dark:text-blue-300 whitespace-nowrap">${esc(feeMonthLabel)}</span>`
+                                : '';
+                            feeDetails = `
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-sm font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">${esc(categoryName)}</span>
+                                    ${monthPill}
+                                </div>
+                            `;
                         }
-                        if (!feeMonth && inv.fee_setup && inv.fee_setup.fee_month) {
-                            feeMonth = ` (${inv.fee_setup.fee_month})`;
-                        }
-                        let feeDetails = categoryName + feeMonth;
 
                         let netAmt = inv.net_amount !== null ? parseFloat(inv.net_amount) : 0;
                         let paidAmt = inv.paid_amount !== null ? parseFloat(inv.paid_amount) : 0;
                         let dueAmt = inv.due_amount !== null ? parseFloat(inv.due_amount) : 0;
                         
                         let status = inv.status || 'Unpaid';
-                        let statusClass = 'bg-red-100 text-red-600 dark:bg-red-950/30 dark:text-red-500';
-                        if (status === 'Paid') {
-                            statusClass = 'bg-green-100 text-themeGreen dark:bg-green-950/30 dark:text-green-500';
-                        } else if (status === 'Partially Paid' || status === 'Partial') {
-                            statusClass = 'bg-amber-100 text-amber-600 dark:bg-amber-950/30 dark:text-amber-500';
-                        } else if (status === 'Cancelled') {
-                            statusClass = 'bg-gray-150 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+                        let displayStatus = inv.display_status || (dueAmt === 0 && paidAmt === 0 && status !== 'Cancelled' ? 'Waived' : status);
+                        let statusClass = 'bg-rose-50 text-rose-600 border border-rose-200/70 dark:bg-rose-950/35 dark:border-rose-500/25 dark:text-rose-400';
+                        if (displayStatus === 'Paid') {
+                            statusClass = 'bg-emerald-50 text-themeGreen border border-emerald-200/70 dark:bg-themeGreen/15 dark:border-themeGreen/30 dark:text-emerald-400';
+                        } else if (displayStatus === 'Waived') {
+                            statusClass = 'bg-sky-50 text-themeBlue border border-sky-200/70 dark:bg-themeBlue/15 dark:border-themeBlue/30 dark:text-blue-300';
+                        } else if (displayStatus === 'Partially Paid' || displayStatus === 'Partial') {
+                            statusClass = 'bg-amber-50 text-amber-600 border border-amber-200/70 dark:bg-amber-950/35 dark:border-amber-500/25 dark:text-amber-400';
+                        } else if (displayStatus === 'Cancelled') {
+                            statusClass = 'bg-gray-100 text-gray-600 border border-gray-200/80 dark:bg-gray-800/80 dark:border-white/[0.08] dark:text-gray-400';
                         }
 
-                        let actionHtml = `<span class="text-xs text-gray-300 dark:text-gray-600 font-mono">—</span>`;
+                        let actionButtons = [];
+                        if (inv.pos_print_url && status !== 'Cancelled') {
+                            actionButtons.push(`
+                                <a href="${esc(inv.pos_print_url)}" target="_blank"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-gray-50 hover:bg-themeBlue hover:text-white dark:bg-themeDark/70 dark:hover:bg-themeBlue text-gray-700 dark:text-gray-200 transition-all border border-gray-200 dark:border-white/[0.08] whitespace-nowrap"
+                                    title="Open POS Receipt">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                                    POS Print
+                                </a>
+                            `);
+                        }
                         if (status === 'Cancelled' && window.canRestoreInvoices) {
-                            actionHtml = `
+                            actionButtons.push(`
                                 <button type="button"
                                     onclick="openRestoreInvoiceModal(${inv.id})"
-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-themeBlue/10 text-themeBlue hover:bg-themeBlue hover:text-white dark:bg-themeBlue/20 dark:hover:bg-themeBlue dark:text-themeBlue dark:hover:text-white transition-all border border-themeBlue/25 hover:shadow-sm"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-sky-50 text-themeBlue hover:bg-themeBlue hover:text-white dark:bg-themeBlue/20 dark:hover:bg-themeBlue dark:text-blue-300 dark:hover:text-white transition-all border border-themeBlue/30 hover:shadow-sm whitespace-nowrap"
                                     title="Restore Cancelled Invoice">
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                                     </svg>
                                     Restore
                                 </button>
-                            `;
+                            `);
                         }
+                        let actionHtml = actionButtons.length > 0
+                            ? `<div class="inline-flex items-center justify-end gap-1.5 flex-nowrap">${actionButtons.join('')}</div>`
+                            : `<span class="text-xs text-gray-300 dark:text-gray-600 font-mono">—</span>`;
 
                         feesBody.innerHTML += `
-                            <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
-                                <td class="py-2.5 px-3 text-sm font-mono font-black text-gray-900 dark:text-gray-100">${invoiceNo}</td>
-                                <td class="py-2.5 px-3 text-sm font-bold text-gray-600 dark:text-gray-400">${feeDetails}</td>
-                                <td class="py-2.5 px-3 text-sm font-bold text-gray-900 dark:text-gray-100 text-right font-mono">৳${netAmt.toFixed(2)}</td>
-                                <td class="py-2.5 px-3 text-sm font-bold text-themeGreen text-right font-mono">৳${paidAmt.toFixed(2)}</td>
-                                <td class="py-2.5 px-3 text-sm font-bold text-red-500 text-right font-mono">৳${dueAmt.toFixed(2)}</td>
-                                <td class="py-2.5 px-3 text-center">
-                                    <span class="inline-block px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg ${statusClass}">${status}</span>
+                            <tr class="transition-colors">
+                                <td class="py-0 px-0 whitespace-nowrap">
+                                    <span class="font-mono font-black text-xs text-themeBlue dark:text-blue-400 whitespace-nowrap">${esc(invoiceNo)}</span>
                                 </td>
-                                <td class="py-2.5 px-3 text-center">
+                                <td class="py-0 px-0">${feeDetails}</td>
+                                <td class="py-0 px-0 text-right whitespace-nowrap">
+                                    <span class="text-sm font-bold text-gray-900 dark:text-gray-100 font-mono">৳${netAmt.toFixed(2)}</span>
+                                </td>
+                                <td class="py-0 px-0 text-right whitespace-nowrap">
+                                    <span class="text-sm font-bold ${paidAmt > 0 ? 'text-themeGreen dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'} font-mono">৳${paidAmt.toFixed(2)}</span>
+                                </td>
+                                <td class="py-0 px-0 text-right whitespace-nowrap">
+                                    <span class="text-sm font-black ${dueAmt > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400 dark:text-gray-500'} font-mono">৳${dueAmt.toFixed(2)}</span>
+                                </td>
+                                <td class="py-0 px-0 text-center whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap ${statusClass}">${esc(displayStatus)}</span>
+                                </td>
+                                <td class="py-0 px-0 text-right whitespace-nowrap">
                                     ${actionHtml}
                                 </td>
                             </tr>
+                            ${headsBreakdownRow}
                         `;
                     });
 
-                    // Update controls
+                    // Update controls with MACS numbered pagination pills
+                    const totalPages = Math.ceil(invoices.length / feesItemsPerPage);
                     if (invoices.length > feesItemsPerPage) {
                         document.getElementById('fees_pagination_container').classList.remove('hidden');
                         document.getElementById('fees_pagination_info').innerText = `Showing ${start + 1} to ${end} of ${invoices.length} entries`;
                         document.getElementById('fees_prev_btn').disabled = (page === 1);
                         document.getElementById('fees_next_btn').disabled = (end >= invoices.length);
+
+                        const pageNumbersEl = document.getElementById('fees_page_numbers');
+                        if (pageNumbersEl) {
+                            let numsHtml = '';
+                            for (let p = 1; p <= totalPages; p++) {
+                                const isCurrent = p === page;
+                                numsHtml += `
+                                    <button type="button" data-fees-page="${p}" class="h-9 min-w-[2.25rem] px-2.5 rounded-xl text-xs font-mono font-black transition-all ${isCurrent ? 'bg-gradient-to-r from-themeBlue to-themeGreen text-white shadow-sm' : 'bg-white dark:bg-themeDark/60 border border-gray-200 dark:border-white/[0.08] text-gray-600 dark:text-gray-300 hover:border-themeBlue hover:text-themeBlue'}">${p}</button>
+                                `;
+                            }
+                            pageNumbersEl.innerHTML = numsHtml;
+                            pageNumbersEl.querySelectorAll('[data-fees-page]').forEach(btn => {
+                                btn.onclick = () => {
+                                    feesCurrentPage = parseInt(btn.getAttribute('data-fees-page'), 10);
+                                    renderFeesPage(feesCurrentPage);
+                                };
+                            });
+                        }
                     } else {
                         document.getElementById('fees_pagination_container').classList.add('hidden');
                     }
                 } else {
                     feesBody.innerHTML = `
                         <tr>
-                            <td colspan="7" class="py-8 text-center text-xs font-semibold text-gray-400 dark:text-gray-555">No Fee Invoices Found.</td>
+                            <td colspan="7"><div class="py-8 text-center text-xs font-semibold text-gray-400 dark:text-gray-500">No Fee Invoices Found.</div></td>
                         </tr>
                     `;
                     document.getElementById('fees_pagination_container').classList.add('hidden');
@@ -902,19 +1153,31 @@
                         validGpaCount++;
                     }
 
-                    let statusClass = status === 'Passed' 
-                        ? 'bg-green-100 text-themeGreen dark:bg-green-950/30 dark:text-green-500' 
-                        : (status === 'Absent' ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/30 dark:text-amber-500' : 'bg-red-100 text-red-600 dark:bg-red-950/30 dark:text-red-500');
+                    let statusClass = status === 'Passed'
+                        ? 'bg-emerald-50 text-themeGreen border border-emerald-200/70 dark:bg-themeGreen/15 dark:border-themeGreen/30 dark:text-emerald-400'
+                        : (status === 'Absent'
+                            ? 'bg-amber-50 text-amber-600 border border-amber-200/70 dark:bg-amber-950/35 dark:border-amber-500/25 dark:text-amber-400'
+                            : 'bg-rose-50 text-rose-600 border border-rose-200/70 dark:bg-rose-950/35 dark:border-rose-500/25 dark:text-rose-400');
 
                     resultsBody.innerHTML += `
-                        <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
-                            <td class="py-2.5 px-3 text-sm font-bold text-gray-900 dark:text-gray-100">${examName}</td>
-                            <td class="py-2.5 px-3 text-sm font-bold text-gray-600 dark:text-gray-400">${subjectName}</td>
-                            <td class="py-2.5 px-3 text-sm font-bold text-gray-900 dark:text-gray-100 text-center font-mono">${totalVal.toFixed(1)}</td>
-                            <td class="py-2.5 px-3 text-sm font-black text-gray-800 dark:text-gray-200 text-center font-mono">${letterGrade}</td>
-                            <td class="py-2.5 px-3 text-sm font-black text-themeBlue text-center font-mono">${gradePoint.toFixed(2)}</td>
-                            <td class="py-2.5 px-3 text-center">
-                                <span class="inline-block px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg ${statusClass}">${status}</span>
+                        <tr class="transition-colors">
+                            <td class="py-0 px-0 whitespace-nowrap">
+                                <span class="text-sm font-bold text-gray-900 dark:text-gray-100">${examName}</span>
+                            </td>
+                            <td class="py-0 px-0 whitespace-nowrap">
+                                <span class="text-sm font-bold text-gray-600 dark:text-gray-300">${subjectName}</span>
+                            </td>
+                            <td class="py-0 px-0 text-center whitespace-nowrap">
+                                <span class="text-sm font-bold text-gray-900 dark:text-white font-mono">${totalVal.toFixed(1)}</span>
+                            </td>
+                            <td class="py-0 px-0 text-center whitespace-nowrap">
+                                <span class="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-lg bg-gray-100/80 dark:bg-themeDark/60 text-xs font-black font-mono text-gray-800 dark:text-gray-200">${letterGrade}</span>
+                            </td>
+                            <td class="py-0 px-0 text-center whitespace-nowrap">
+                                <span class="text-sm font-black text-themeBlue dark:text-blue-400 font-mono">${gradePoint.toFixed(2)}</span>
+                            </td>
+                            <td class="py-0 px-0 text-center whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-lg ${statusClass}">${status}</span>
                             </td>
                         </tr>
                     `;
@@ -922,7 +1185,7 @@
             } else {
                 resultsBody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="py-8 text-center text-xs font-semibold text-gray-400 dark:text-gray-500">No Exam Marks Recorded Yet.</td>
+                        <td colspan="6"><div class="py-8 text-center text-xs font-semibold text-gray-400 dark:text-gray-500">No Exam Marks Recorded Yet.</div></td>
                     </tr>
                 `;
             }
@@ -1154,11 +1417,15 @@
                 let catName = f.category ? f.category.name : 'Unknown';
                 let amount = parseFloat(f.amount);
                 customFeesBody.innerHTML += `
-                    <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
-                        <td class="py-2.5 px-3 text-sm font-bold text-gray-700 dark:text-gray-300">${catName}</td>
-                        <td class="py-2.5 px-3 text-sm font-bold text-gray-900 dark:text-gray-100 text-right font-mono">৳${amount.toFixed(2)}</td>
-                        <td class="py-2.5 px-3 text-center">
-                            <div class="flex items-center justify-center gap-2">
+                    <tr class="transition-colors">
+                        <td class="py-0 px-0 whitespace-nowrap">
+                            <span class="text-sm font-bold text-gray-900 dark:text-gray-100">${catName}</span>
+                        </td>
+                        <td class="py-0 px-0 text-right whitespace-nowrap">
+                            <span class="text-sm font-black text-themeGreen dark:text-emerald-400 font-mono">৳${amount.toFixed(2)}</span>
+                        </td>
+                        <td class="py-0 px-0 text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-2">
                                 <button type="button" onclick="deleteCustomFee(${f.id})" class="action-btn text-red-600 hover:text-red-800 hover:border-red-600" title="Delete">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -1172,7 +1439,7 @@
         } else {
             customFeesBody.innerHTML = `
                 <tr>
-                    <td colspan="3" class="text-center py-4 text-xs font-bold text-gray-400 dark:text-gray-555 uppercase tracking-widest">No customized fees configured</td>
+                    <td colspan="3"><div class="py-6 text-center text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">No customized fees configured</div></td>
                 </tr>
             `;
         }
@@ -1262,5 +1529,135 @@
             setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 300);
         }
     }
+
+    window.toggleAdmissionHeadsRow = function(invoiceId) {
+        const row = document.getElementById('adm-heads-row-' + invoiceId);
+        if (row) {
+            row.classList.toggle('hidden');
+        }
+    };
+
+    if (typeof window.datePicker !== 'function') {
+        window.datePicker = function(initialValue = '') {
+            const today = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const parsed = (initialValue && /^\d{4}-\d{2}-\d{2}$/.test(initialValue))
+                ? new Date(initialValue + 'T00:00:00')
+                : today;
+            return {
+                show: false,
+                mOpen: false,
+                formatted: initialValue || '',
+                year: parsed.getFullYear(),
+                month: parsed.getMonth(),
+                months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                blankDays: [],
+                daysInMonth: [],
+                init() {
+                    this.calculateDays();
+                },
+                calculateDays() {
+                    const y = parseInt(this.year, 10) || today.getFullYear();
+                    const firstDay = new Date(y, this.month, 1).getDay();
+                    const totalDays = new Date(y, this.month + 1, 0).getDate();
+                    this.blankDays = Array.from({ length: firstDay }, (_, i) => i + 1);
+                    this.daysInMonth = Array.from({ length: totalDays }, (_, i) => i + 1);
+                },
+                selectDay(day) {
+                    const y = parseInt(this.year, 10) || today.getFullYear();
+                    this.formatted = `${y}-${pad(this.month + 1)}-${pad(day)}`;
+                    this.show = false;
+                },
+                isSelected(day) {
+                    const y = parseInt(this.year, 10) || today.getFullYear();
+                    return this.formatted === `${y}-${pad(this.month + 1)}-${pad(day)}`;
+                }
+            };
+        };
+    }
+
+    @if(auth()->check() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+    window.openGenerateAdmissionInvoiceModal = function() {
+        const s = window.studentProfileData || {};
+        const studentName = s.student_name || 'Student';
+        const classLabel = s.school_class?.class_name || s.schoolClass?.class_name || '';
+        const branchLabel = s.branch?.branch_name || '';
+        const sessionLabel = s.session_year?.session_name || s.sessionYear?.session_name || '';
+        const meta = [branchLabel, classLabel, sessionLabel].filter(Boolean).join(' • ');
+        window.dispatchEvent(new CustomEvent('open-generate-admission-invoice-modal', {
+            detail: {
+                is_regeneration: Boolean(window.hasCancelledAdmissionInvoice),
+                student_summary: meta ? `${studentName} (${meta})` : studentName,
+            }
+        }));
+    };
+
+    window.generateAdmissionInvoiceModalComponent = function() {
+        return {
+            isOpen: false,
+            isSubmitting: false,
+            modalTitle: 'Generate Admission Invoice',
+            studentSummary: '',
+            discountType: 'none',
+            discountLabel: 'No Discount',
+            discountValue: '0.00',
+            dueDate: '',
+            discOpen: false,
+            discountOptions: [
+                { value: 'none', label: 'No Discount' },
+                { value: 'fixed', label: 'Fixed Amount (৳)' },
+                { value: 'percentage', label: 'Percentage (%)' },
+            ],
+
+            open(detail) {
+                this.modalTitle = detail?.is_regeneration ? 'Regenerate Admission Invoice' : 'Generate Admission Invoice';
+                this.studentSummary = detail?.student_summary || '';
+                this.discountType = 'none';
+                this.discountLabel = 'No Discount';
+                this.discountValue = '0.00';
+                this.dueDate = '';
+                this.discOpen = false;
+                this.isOpen = true;
+            },
+
+            close() {
+                this.isOpen = false;
+                this.discOpen = false;
+            },
+
+            async submit() {
+                if (this.isSubmitting) return;
+
+                const confirmed = await showConfirm(
+                    this.modalTitle,
+                    'Generate an active Admission Fee invoice from the active package for this student\'s branch, class, and session?'
+                );
+                if (!confirmed) return;
+
+                this.isSubmitting = true;
+                try {
+                    const res = await axios.post(`/fees/invoice/admission/${studentId}`, {
+                        discount_type: this.discountType,
+                        discount_value: this.discountType === 'none' ? '0.00' : (this.discountValue || '0.00'),
+                        due_date: this.dueDate || null,
+                    }, getAuthHeaders());
+
+                    if (res.data?.success) {
+                        this.close();
+                        await showSuccess(res.data.message || 'Admission invoice generated successfully.');
+                        await loadStudentData();
+                    } else {
+                        await showAlert(res.data?.message || 'Unable to generate admission invoice.', 'Generation Failed');
+                    }
+                } catch (err) {
+                    const errMsg = err.response?.data?.message || 'Unable to generate admission invoice.';
+                    await showAlert(errMsg, 'Generation Error');
+                } finally {
+                    this.isSubmitting = false;
+                }
+            }
+        };
+    };
+    @endif
 </script>
 @endpush

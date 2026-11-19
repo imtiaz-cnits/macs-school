@@ -29,7 +29,7 @@
         @endhasanyrole
 
         <!-- Main Content -->
-        <div class="main-content">
+        <div class="main-content min-w-0">
             <!-- Top Bar -->
             @include('tyro-dashboard::partials.topbar')
 
@@ -37,7 +37,7 @@
             @include('tyro-dashboard::partials.impersonation-banner')
 
             <!-- Page Content -->
-            <main class="page-content">
+            <main class="page-content min-w-0">
                 <!-- Flash Messages -->
                 @include('tyro-dashboard::partials.flash-messages')
 

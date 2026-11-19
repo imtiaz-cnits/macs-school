@@ -3,17 +3,32 @@
 namespace App\Http\Controllers;
 
 use App\Models\Student;
+use App\Services\AdmissionInvoiceService;
+use App\Services\FeeGenerationService;
+use App\Services\FinancialTransactionRunner;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Models\StudentAcademicHistory;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Exception;
+use Throwable;
 
 class StudentController extends Controller
 {
+    public const IDENTITY_LOCK_NAME = 'macs_school_student_identity_lock';
+    public const IDENTITY_LOCK_TIMEOUT = 15;
+
+    /**
+     * Allows SQLite integration tests to exercise the exact MySQL GET_LOCK/RELEASE_LOCK flow.
+     */
+    public static bool $enableTestAdvisoryIdentityLock = false;
     /**
      * Strict server-side allowlist for configurable student export columns.
      */
@@ -356,147 +371,183 @@ class StudentController extends Controller
             'father_name_bn'        => 'nullable|string|max:255',
             'mother_name_bn'        => 'nullable|string|max:255',
             'student_identity'      => 'nullable|string|max:255|unique:students,student_identity',
+            'admission_discount_type'  => 'nullable|string|in:none,fixed,percentage',
+            'admission_discount_value' => 'nullable|string|max:20',
         ]);
 
-        \Illuminate\Support\Facades\DB::beginTransaction();
+        // Pre-transaction & pre-upload Policy 1 check: Editor cannot supply Admission Discounts (403 / 422).
+        try {
+            AdmissionInvoiceService::assertDiscountPermission(
+                $request->user() ?? Auth::user(),
+                $request->input('admission_discount_type'),
+                $request->input('admission_discount_value')
+            );
+        } catch (AuthorizationException $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 403);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+                'errors'  => $e->errors(),
+            ], 422);
+        }
+
+        // Handle media uploads outside the deadlock retry loop so retries stay pure & idempotent.
+        $uploadedFilesToCleanup = [];
+        $photoPath = null;
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('student_photos', 'public');
+            $uploadedFilesToCleanup[] = $photoPath;
+        } else {
+            if ($request->gender === 'Male') {
+                $photoPath = 'img/boy.png';
+            } elseif ($request->gender === 'Female') {
+                $photoPath = 'img/girl.png';
+            } else {
+                $photoPath = 'img/default-student.png';
+            }
+        }
+
+        $documentPath = null;
+        if ($request->hasFile('document_file')) {
+            $documentPath = $request->file('document_file')->store('student_documents', 'public');
+            $uploadedFilesToCleanup[] = $documentPath;
+        }
+
+        $isManualIdentity = $this->hasExplicitManualIdentity($request);
+        $hasIdentityLock = false;
+        $shouldUseIdentityLock = !$isManualIdentity && $this->shouldAcquireIdentityAdvisoryLock();
 
         try {
-            if ($request->filled('student_identity') && 
-                !str_contains($request->student_identity, 'YYYY') && 
-                !str_contains($request->student_identity, 'MM') && 
-                !str_contains($request->student_identity, 'CLASS') && 
-                !str_contains($request->student_identity, 'XXXX')) {
-                $studentIdentity = $request->student_identity;
-            } else {
-                $year = date('y');
-                $month = date('m');
-                
-                $class = \App\Models\Classes::find($request->class_id);
-                $className = $class ? $class->class_name : 'Class';
-                $classShort = 'XX';
-                $nameLower = strtolower($className);
-                if (str_contains($nameLower, 'one') || str_contains($nameLower, '1')) $classShort = '01';
-                elseif (str_contains($nameLower, 'two') || str_contains($nameLower, '2')) $classShort = '02';
-                elseif (str_contains($nameLower, 'three') || str_contains($nameLower, '3')) $classShort = '03';
-                elseif (str_contains($nameLower, 'four') || str_contains($nameLower, '4')) $classShort = '04';
-                elseif (str_contains($nameLower, 'five') || str_contains($nameLower, '5')) $classShort = '05';
-                elseif (str_contains($nameLower, 'six') || str_contains($nameLower, '6')) $classShort = '06';
-                elseif (str_contains($nameLower, 'seven') || str_contains($nameLower, '7')) $classShort = '07';
-                elseif (str_contains($nameLower, 'eight') || str_contains($nameLower, '8')) $classShort = '08';
-                elseif (str_contains($nameLower, 'nine') || str_contains($nameLower, '9')) $classShort = '09';
-                elseif (str_contains($nameLower, 'ten') || str_contains($nameLower, '10')) $classShort = '10';
-                elseif (str_contains($nameLower, 'nursery')) $classShort = '0N';
-                elseif (str_contains($nameLower, 'play')) $classShort = '0P';
-                elseif (str_contains($nameLower, 'baby')) $classShort = '0B';
-                else {
-                    $words = explode(' ', preg_replace('/[^a-zA-Z0-9\s]/', '', $className));
-                    if (count($words) === 1) {
-                        $classShort = strtoupper(substr($words[0], 0, 2));
-                    } else {
-                        $classShort = '';
-                        foreach ($words as $w) {
-                            if (!empty($w)) $classShort .= $w[0];
-                        }
-                        $classShort = strtoupper(substr($classShort, 0, 2));
+            try {
+                if ($shouldUseIdentityLock) {
+                    $hasIdentityLock = $this->acquireStudentIdentityLock();
+                    if (!$hasIdentityLock) {
+                        $this->cleanupUploadedFiles($uploadedFilesToCleanup);
+                        return response()->json([
+                            'status'  => 'error',
+                            'message' => 'Could not acquire student identity allocation lock. Please try again.',
+                        ], 503);
                     }
                 }
-                
-                $nextSerial = max(539, Student::count() + 1);
-                do {
-                    $paddedSerial = str_pad($nextSerial, 5, '0', STR_PAD_LEFT);
-                    $studentIdentity = "{$year}{$month}{$classShort}{$paddedSerial}";
-                    $nextSerial++;
-                } while (Student::where('student_identity', $studentIdentity)->exists());
-            }
 
-            $photoPath = null;
-            if ($request->hasFile('photo')) {
-                $photoPath = $request->file('photo')->store('student_photos', 'public');
-            } else {
-                if ($request->gender === 'Male') {
-                    $photoPath = 'img/boy.png';
-                } elseif ($request->gender === 'Female') {
-                    $photoPath = 'img/girl.png';
-                } else {
-                    $photoPath = 'img/default-student.png';
+                $maxIdentityAttempts = $isManualIdentity ? 1 : 5;
+                $collisionOffset = 0;
+                $txResult = null;
+
+                for ($identityAttempt = 1; $identityAttempt <= $maxIdentityAttempts; $identityAttempt++) {
+                    try {
+                        /** @var array{0: string, 1: array<string, mixed>} $txResult */
+                        $txResult = app(FinancialTransactionRunner::class)->runWithDeadlockRetry(
+                            function () use ($request, $photoPath, $documentPath, $isManualIdentity, $collisionOffset): array {
+                                $studentIdentity = $this->resolveStudentIdentityForStore(
+                                    $request,
+                                    $isManualIdentity,
+                                    $collisionOffset
+                                );
+
+                                $student = Student::create([
+                                    'student_identity'      => $studentIdentity,
+                                    'card_number'           => $request->card_number,
+                                    'roll_number'           => $request->roll_number,
+                                    'student_name'          => $request->student_name,
+                                    'name_in_bangla'        => $request->name_in_bangla,
+                                    'birth_certificate'     => $request->birth_certificate,
+                                    'blood_group'           => $request->blood_group,
+                                    'religion'              => $request->religion,
+                                    'dob'                   => $request->dob,
+                                    'gender'                => $request->gender,
+                                    'email'                 => $request->email,
+
+                                    'father_name'           => $request->father_name,
+                                    'father_name_bn'        => $request->father_name_bn,
+                                    'father_nid'            => $request->father_nid,
+                                    'father_mobile'         => $request->father_mobile,
+                                    'father_occupation'     => $request->father_occupation,
+
+                                    'mother_name'           => $request->mother_name,
+                                    'mother_name_bn'        => $request->mother_name_bn,
+                                    'mother_nid'            => $request->mother_nid,
+                                    'mother_mobile'         => $request->mother_mobile,
+                                    'mother_occupation'     => $request->mother_occupation,
+
+                                    'guardian_name'         => $request->guardian_name,
+                                    'guardian_mobile'       => $request->guardian_mobile,
+                                    'guardian_occupation'   => $request->guardian_occupation,
+
+                                    'present_village'       => $request->present_village,
+                                    'present_post_office'   => $request->present_post_office,
+                                    'present_district'      => $request->present_district,
+                                    'present_division'      => $request->present_division,
+                                    'present_post_code'     => $request->present_post_code,
+
+                                    'permanent_village'     => $request->permanent_village,
+                                    'permanent_post_office' => $request->permanent_post_office,
+                                    'permanent_district'    => $request->permanent_district,
+                                    'permanent_division'    => $request->permanent_division,
+                                    'permanent_post_code'   => $request->permanent_post_code,
+
+                                    'status'                => $request->status ?? 'Active',
+                                    'sms_status'            => $request->sms_status ?? 'Active',
+                                    'photo'                 => $photoPath,
+                                    'document_file'         => $documentPath,
+                                    'branch_id'             => $request->branch_id,
+                                    'class_id'              => $request->class_id,
+                                    'section_id'            => $request->section_id,
+                                    'shift_id'              => $request->shift_id,
+                                    'session_year_id'       => $request->session_year_id,
+                                    'user_id'               => Auth::id() ?? 1,
+                                ]);
+
+                                // Atomically create multi-head Admission Invoice (or legacy FeeSetup fallback) inside the same outer transaction.
+                                $admFeeResult = app(AdmissionInvoiceService::class)->generateForStudentWithinTransaction(
+                                    $student,
+                                    [
+                                        'discount_type' => $request->input('admission_discount_type', 'none'),
+                                        'discount_value' => $request->input('admission_discount_value', '0.00'),
+                                        'fallback_to_legacy' => true,
+                                    ],
+                                    Auth::id() ?? 1
+                                );
+
+                                if (!$admFeeResult['success']) {
+                                    throw new Exception("Student admission fee invoice generation failed: " . ($admFeeResult['message'] ?? 'Unknown error'));
+                                }
+
+                                return [$studentIdentity, $admFeeResult];
+                            }
+                        );
+
+                        break;
+                    } catch (QueryException $qe) {
+                        if ($this->isStudentIdentityUniqueConstraintViolation($qe)) {
+                            if ($isManualIdentity) {
+                                throw ValidationException::withMessages([
+                                    'student_identity' => ['The student identity has already been taken.'],
+                                ]);
+                            }
+
+                            if ($identityAttempt < $maxIdentityAttempts) {
+                                $collisionOffset++;
+                                continue;
+                            }
+                        }
+
+                        throw $qe;
+                    }
+                }
+            } finally {
+                if ($hasIdentityLock) {
+                    $this->releaseStudentIdentityLock();
                 }
             }
 
-            $documentPath = null;
-            if ($request->hasFile('document_file')) {
-                $documentPath = $request->file('document_file')->store('student_documents', 'public');
-            }
+            [$studentIdentity, $admFeeResult] = $txResult;
 
-            $student = Student::create([
-                'student_identity'      => $studentIdentity,
-                'card_number'           => $request->card_number,
-                'roll_number'           => $request->roll_number,
-                'student_name'          => $request->student_name,
-                'name_in_bangla'        => $request->name_in_bangla,
-                'birth_certificate'     => $request->birth_certificate,
-                'blood_group'           => $request->blood_group,
-                'religion'              => $request->religion,
-                'dob'                   => $request->dob,
-                'gender'                => $request->gender,
-                'email'                 => $request->email,
-                
-                'father_name'           => $request->father_name,
-                'father_name_bn'        => $request->father_name_bn,
-                'father_nid'            => $request->father_nid,
-                'father_mobile'         => $request->father_mobile,
-                'father_occupation'     => $request->father_occupation,
-                
-                'mother_name'           => $request->mother_name,
-                'mother_name_bn'        => $request->mother_name_bn,
-                'mother_nid'            => $request->mother_nid,
-                'mother_mobile'         => $request->mother_mobile,
-                'mother_occupation'     => $request->mother_occupation,
-                
-                'guardian_name'         => $request->guardian_name,
-                'guardian_mobile'       => $request->guardian_mobile,
-                'guardian_occupation'   => $request->guardian_occupation,
-                
-                // ঠিকানা সমূহ (আপনার টেবিল অনুযায়ী)
-                'present_village'       => $request->present_village,
-                'present_post_office'   => $request->present_post_office,
-                'present_district'      => $request->present_district,
-                'present_division'      => $request->present_division,
-                'present_post_code'     => $request->present_post_code,
-                
-                'permanent_village'     => $request->permanent_village,
-                'permanent_post_office' => $request->permanent_post_office,
-                'permanent_district'    => $request->permanent_district,
-                'permanent_division'    => $request->permanent_division,
-                'permanent_post_code'   => $request->permanent_post_code,
-                
-                'status'                => $request->status ?? 'Active',
-                'sms_status'            => $request->sms_status ?? 'Active',
-                'photo'                 => $photoPath,
-                'document_file'         => $documentPath,
-                'branch_id'             => $request->branch_id,
-                'class_id'              => $request->class_id,
-                'section_id'            => $request->section_id,
-                'shift_id'              => $request->shift_id,
-                'session_year_id'       => $request->session_year_id,
-                'user_id'               => Auth::id() ?? 1,
-            ]);
-
-            // Point-of-Admission: Generate Admission Fee invoice within the safe transaction
-            $admFeeResult = app(\App\Services\FeeGenerationService::class)->generateAdmissionFeeForNewStudent(
-                $student,
-                Auth::id() ?? 1
-            );
-
-            if (!$admFeeResult['success']) {
-                throw new Exception("Student admission fee invoice generation failed: " . ($admFeeResult['message'] ?? 'Unknown error'));
-            }
-
-            \Illuminate\Support\Facades\DB::commit();
-
-            // After transaction commit: evaluate scheduled annual/monthly fees for target session
+            // Strictly post-commit: evaluate scheduled annual/monthly fees for target session.
             try {
-                app(\App\Services\FeeGenerationService::class)->evaluateAndGenerateForSession((int)$request->session_year_id, Auth::id());
-            } catch (\Throwable $e) {
+                app(FeeGenerationService::class)->evaluateAndGenerateForSession((int) $request->session_year_id, Auth::id());
+            } catch (Throwable $e) {
                 Log::warning("Fee generation evaluation after student admission failed: " . $e->getMessage());
             }
 
@@ -505,11 +556,179 @@ class StudentController extends Controller
                 'identity'          => $studentIdentity,
                 'admission_invoice' => $admFeeResult['invoice']?->invoice_no ?? null,
             ], 201);
-            
-        } catch (Exception $e) {
-            \Illuminate\Support\Facades\DB::rollBack();
+        } catch (AuthorizationException $e) {
+            $this->cleanupUploadedFiles($uploadedFilesToCleanup);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 403);
+        } catch (ValidationException $e) {
+            $this->cleanupUploadedFiles($uploadedFilesToCleanup);
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+                'errors'  => $e->errors(),
+            ], 422);
+        } catch (Throwable $e) {
+            $this->cleanupUploadedFiles($uploadedFilesToCleanup);
             Log::error("Admission Error: " . $e->getMessage());
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Determine whether the request provides an explicit non-placeholder student_identity.
+     */
+    private function hasExplicitManualIdentity(Request $request): bool
+    {
+        if (!$request->filled('student_identity')) {
+            return false;
+        }
+
+        $val = trim((string) $request->input('student_identity'));
+
+        return $val !== ''
+            && !str_contains($val, 'YYYY')
+            && !str_contains($val, 'MM')
+            && !str_contains($val, 'CLASS')
+            && !str_contains($val, 'XXXX');
+    }
+
+    /**
+     * Acquire advisory identity serialization in MySQL (or when explicitly enabled for SQLite UDF tests).
+     */
+    private function shouldAcquireIdentityAdvisoryLock(): bool
+    {
+        return DB::getDriverName() === 'mysql' || self::$enableTestAdvisoryIdentityLock;
+    }
+
+    private function acquireStudentIdentityLock(): bool
+    {
+        $pdo = DB::connection()->getPdo();
+        $stmt = $pdo->prepare('SELECT GET_LOCK(?, ?)');
+        $stmt->execute([self::IDENTITY_LOCK_NAME, self::IDENTITY_LOCK_TIMEOUT]);
+
+        return (int) $stmt->fetchColumn() === 1;
+    }
+
+    private function releaseStudentIdentityLock(): void
+    {
+        try {
+            $pdo = DB::connection()->getPdo();
+            $stmt = $pdo->prepare('SELECT RELEASE_LOCK(?)');
+            $stmt->execute([self::IDENTITY_LOCK_NAME]);
+        } catch (Throwable $e) {
+            Log::warning('Failed to release student identity advisory lock: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Match strictly ONLY a unique constraint failure on `students.student_identity`
+     * (never NOT NULL, FK, or other columns such as `card_number`).
+     */
+    private function isStudentIdentityUniqueConstraintViolation(QueryException $e): bool
+    {
+        $sqlState = (string) ($e->errorInfo[0] ?? $e->getCode());
+        if (!in_array($sqlState, ['23000', '23505'], true)) {
+            return false;
+        }
+
+        $driverCode = (int) ($e->errorInfo[1] ?? 0);
+        $message = strtolower($e->getMessage());
+
+        // MySQL ER_DUP_ENTRY (1062) on students_student_identity_unique
+        if ($driverCode === 1062) {
+            return str_contains($message, 'student_identity');
+        }
+
+        // SQLite SQLITE_CONSTRAINT (19) specifically on UNIQUE students.student_identity
+        return str_contains($message, 'unique constraint failed')
+            && str_contains($message, 'students.student_identity');
+    }
+
+    /**
+     * Resolve deterministic student_identity inside the transaction retry loop.
+     */
+    private function resolveStudentIdentityForStore(
+        Request $request,
+        bool $isManualIdentity = false,
+        int $collisionOffset = 0
+    ): string {
+        if ($isManualIdentity) {
+            return trim((string) $request->input('student_identity'));
+        }
+
+        $year = date('y');
+        $month = date('m');
+
+        $class = \App\Models\Classes::find($request->class_id);
+        $className = $class ? $class->class_name : 'Class';
+        $classShort = 'XX';
+        $nameLower = strtolower($className);
+        if (str_contains($nameLower, 'one') || str_contains($nameLower, '1')) $classShort = '01';
+        elseif (str_contains($nameLower, 'two') || str_contains($nameLower, '2')) $classShort = '02';
+        elseif (str_contains($nameLower, 'three') || str_contains($nameLower, '3')) $classShort = '03';
+        elseif (str_contains($nameLower, 'four') || str_contains($nameLower, '4')) $classShort = '04';
+        elseif (str_contains($nameLower, 'five') || str_contains($nameLower, '5')) $classShort = '05';
+        elseif (str_contains($nameLower, 'six') || str_contains($nameLower, '6')) $classShort = '06';
+        elseif (str_contains($nameLower, 'seven') || str_contains($nameLower, '7')) $classShort = '07';
+        elseif (str_contains($nameLower, 'eight') || str_contains($nameLower, '8')) $classShort = '08';
+        elseif (str_contains($nameLower, 'nine') || str_contains($nameLower, '9')) $classShort = '09';
+        elseif (str_contains($nameLower, 'ten') || str_contains($nameLower, '10')) $classShort = '10';
+        elseif (str_contains($nameLower, 'nursery')) $classShort = '0N';
+        elseif (str_contains($nameLower, 'play')) $classShort = '0P';
+        elseif (str_contains($nameLower, 'baby')) $classShort = '0B';
+        else {
+            $words = explode(' ', preg_replace('/[^a-zA-Z0-9\s]/', '', $className));
+            if (count($words) === 1) {
+                $classShort = strtoupper(substr($words[0], 0, 2));
+            } else {
+                $classShort = '';
+                foreach ($words as $w) {
+                    if (!empty($w)) $classShort .= $w[0];
+                }
+                $classShort = strtoupper(substr($classShort, 0, 2));
+            }
+        }
+
+        $prefix = "{$year}{$month}{$classShort}";
+
+        // Lock existing prefix rows deterministically in ID ASC order and derive highest trailing serial
+        // so identity generation never collides or regresses after historical deletions.
+        $existingPrefixIds = Student::where('student_identity', 'like', $prefix . '%')
+            ->orderBy('id', 'asc')
+            ->lockForUpdate()
+            ->pluck('student_identity');
+
+        $maxPrefixSerial = 0;
+        $escapedPrefix = preg_quote($prefix, '/');
+        foreach ($existingPrefixIds as $existingId) {
+            if (preg_match('/^' . $escapedPrefix . '(\d+)$/', (string) $existingId, $matches)) {
+                $serialVal = (int) $matches[1];
+                if ($serialVal > $maxPrefixSerial) {
+                    $maxPrefixSerial = $serialVal;
+                }
+            }
+        }
+
+        $nextSerial = max(539, Student::count() + 1, $maxPrefixSerial + 1) + max(0, $collisionOffset);
+        do {
+            $paddedSerial = str_pad((string) $nextSerial, 5, '0', STR_PAD_LEFT);
+            $studentIdentity = "{$prefix}{$paddedSerial}";
+            $nextSerial++;
+        } while (Student::where('student_identity', $studentIdentity)->lockForUpdate()->exists());
+
+        return $studentIdentity;
+    }
+
+    /**
+     * Delete uploaded files from public storage cleanly when transaction fails permanently.
+     *
+     * @param  array<int, string>  $paths
+     */
+    private function cleanupUploadedFiles(array $paths): void
+    {
+        foreach ($paths as $path) {
+            if (!empty($path)) {
+                Storage::disk('public')->delete($path);
+            }
         }
     }
 
@@ -534,11 +753,66 @@ class StudentController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            // Fee Invoices History
-            $invoices = \App\Models\FeeInvoice::with(['feeSetup.category'])
+            // Fee Invoices History (guarded cleanly for both pre-migration and post-migration schemas)
+            $hasAdmissionSchema = Schema::hasTable('admission_fee_structures')
+                && Schema::hasTable('admission_fee_structure_items')
+                && Schema::hasTable('admission_invoice_head_allocations')
+                && Schema::hasTable('admission_payment_head_allocations')
+                && Schema::hasColumn('fee_invoices', 'admission_fee_structure_id')
+                && Schema::hasColumn('fee_payments', 'status');
+            $hasActivePaymentStatus = Schema::hasColumn('fee_payments', 'status');
+
+            $invoiceRelations = ['feeSetup.category'];
+            if ($hasAdmissionSchema) {
+                $invoiceRelations[] = 'admissionFeeStructure';
+                $invoiceRelations[] = 'admissionHeadAllocations';
+            }
+            $invoiceRelations[] = $hasActivePaymentStatus ? 'activePayments' : 'payments';
+
+            $invoices = \App\Models\FeeInvoice::with($invoiceRelations)
                 ->where('student_id', $id)
                 ->orderBy('created_at', 'desc')
                 ->get();
+
+            $hasActiveAdmissionInvoice = false;
+            $invoices->each(function ($inv) use ($hasAdmissionSchema, &$hasActiveAdmissionInvoice): void {
+                $isAdm = $hasAdmissionSchema && method_exists($inv, 'isAdmissionInvoice') && $inv->isAdmissionInvoice();
+                if ($isAdm && $inv->status !== 'Cancelled') {
+                    $hasActiveAdmissionInvoice = true;
+                }
+                $inv->setAttribute('is_admission_invoice', $isAdm);
+                $inv->setAttribute('pos_print_url', route('fees.invoice.pos_print', $inv->id));
+                if ($isAdm) {
+                    $structureName = (string) ($inv->admissionFeeStructure->structure_name ?? 'Admission Fee');
+                    $inv->setAttribute('structure_name', $structureName);
+                    $inv->setAttribute('display_title', 'Admission Fee Package — ' . $structureName);
+                    $preparedHeads = $inv->admissionHeadAllocations
+                        ->sort(fn ($a, $b): int => [$a->sort_order, $a->id] <=> [$b->sort_order, $b->id])
+                        ->map(static fn ($h): array => [
+                            'id' => (int) $h->id,
+                            'head_name' => (string) $h->head_name_snapshot,
+                            'category_name' => (string) $h->fee_category_name_snapshot,
+                            'amount' => bcadd((string) $h->amount, '0.00', 2),
+                            'discount' => bcadd((string) $h->discount, '0.00', 2),
+                            'net_amount' => bcadd((string) $h->net_amount, '0.00', 2),
+                            'allocated_paid_amount' => bcadd((string) $h->allocated_paid_amount, '0.00', 2),
+                            'due_amount' => bcadd((string) $h->due_amount, '0.00', 2),
+                            'is_tuition_head' => (bool) $h->is_tuition_head,
+                        ])
+                        ->values()
+                        ->all();
+                    $inv->setAttribute('prepared_heads', $preparedHeads);
+                } else {
+                    $inv->setAttribute('structure_name', null);
+                    $inv->setAttribute('display_title', (string) ($inv->feeSetup?->category?->name ?? 'Fee Payment'));
+                    $inv->setAttribute('prepared_heads', []);
+                }
+            });
+
+            $actor = Auth::user();
+            $canManageAdmissionInvoices = $actor
+                && method_exists($actor, 'hasRole')
+                && ($actor->hasRole('admin') || $actor->hasRole('super-admin'));
 
             // Custom Fees History
             $customFees = \App\Models\StudentCustomFee::with('category')
@@ -562,7 +836,11 @@ class StudentController extends Controller
                 'marks' => $marks,
                 'invoices' => $invoices,
                 'customFees' => $customFees,
-                'feeCategories' => $feeCategories
+                'feeCategories' => $feeCategories,
+                'admission_schema_ready' => $hasAdmissionSchema,
+                'admission_schema_warning' => $hasAdmissionSchema ? null : 'Admission schema migrations are pending. Please contact the system administrator.',
+                'can_manage_admission_invoices' => $canManageAdmissionInvoices,
+                'has_active_admission_invoice' => $hasActiveAdmissionInvoice,
             ], 200);
         } catch (Exception $e) {
             Log::error("Profile View Error: " . $e->getMessage());
@@ -980,107 +1258,128 @@ class StudentController extends Controller
         $effectiveDate = \Carbon\Carbon::parse($lastActiveMonth . '-01')->addMonth()->toDateString(); // e.g. '2026-04-01'
         $reason = $request->filled('reason') ? trim($request->reason) : null;
 
-        DB::beginTransaction();
+        $hasAdmissionSchema = Schema::hasTable('admission_fee_structures')
+            && Schema::hasTable('admission_invoice_head_allocations')
+            && Schema::hasColumn('fee_invoices', 'admission_fee_structure_id');
+        $hasActivePaymentStatus = Schema::hasColumn('fee_payments', 'status');
+
         try {
-            $student = Student::lockForUpdate()->findOrFail($id);
-            $previousStatus = $student->status;
+            $summary = app(FinancialTransactionRunner::class)->runWithDeadlockRetry(
+                function () use ($id, $operatorId, $lastActiveMonth, $effectiveDate, $reason, $hasAdmissionSchema, $hasActivePaymentStatus): array {
+                    // Tier 1: Lock Student row FIRST
+                    $student = Student::where('id', $id)->lockForUpdate()->firstOrFail();
+                    $previousStatus = $student->status;
 
-            // 1. Update Student record
-            $student->status = 'Inactive';
-            $student->discontinued_month = $lastActiveMonth;
-            $student->inactive_at = now();
-            $student->inactive_reason = $reason;
-            $student->save();
+                    $student->status = 'Inactive';
+                    $student->discontinued_month = $lastActiveMonth;
+                    $student->inactive_at = now();
+                    $student->inactive_reason = $reason;
+                    $student->save();
 
-            // 2. Query and lock all post-discontinuation invoices for this student
-            $invoices = \App\Models\FeeInvoice::with(['payments', 'feeSetup.category'])
-                ->where('student_id', $student->id)
-                ->lockForUpdate()
-                ->get();
-
-            $cancelledInvoiceIds = [];
-            $cancelledTotalDue = 0.00;
-            $skippedPaidInvoices = [];
-
-            foreach ($invoices as $inv) {
-                $billingPeriod = $inv->billing_period;
-
-                // Only consider invoices strictly after the last active month
-                if ($billingPeriod > $lastActiveMonth) {
-                    // Skip if already cancelled
-                    if ($inv->status === 'Cancelled') {
-                        continue;
+                    // Tier 2: Lock Student invoices in deterministic ID ASC order
+                    $invoiceRelations = ['feeSetup.category', $hasActivePaymentStatus ? 'activePayments' : 'payments'];
+                    if ($hasAdmissionSchema) {
+                        $invoiceRelations[] = 'admissionFeeStructure';
+                        $invoiceRelations[] = 'admissionHeadAllocations';
                     }
 
-                    $hasPayments = $inv->payments->isNotEmpty() || ((float)$inv->paid_amount > 0);
+                    $invoices = \App\Models\FeeInvoice::with($invoiceRelations)
+                        ->where('student_id', $student->id)
+                        ->orderBy('id', 'asc')
+                        ->lockForUpdate()
+                        ->get();
 
-                    if ($inv->status === 'Unpaid' && !$hasPayments) {
-                        // Safe to cancel: preserve original amount, discount, net_amount; set due_amount to 0
-                        $prevDue = (float) $inv->due_amount;
+                    $cancelledInvoiceIds = [];
+                    $cancelledTotalDue = '0.00';
+                    $skippedPaidInvoices = [];
 
-                        $inv->status = 'Cancelled';
-                        $inv->due_amount = 0.00;
-                        $inv->save();
+                    foreach ($invoices as $inv) {
+                        $billingPeriod = $inv->billing_period;
 
-                        // Create FeeAdjustmentLog audit record
-                        \App\Models\FeeAdjustmentLog::create([
-                            'fee_invoice_id' => $inv->id,
-                            'student_id' => $student->id,
-                            'user_id' => $operatorId,
-                            'invoice_no' => $inv->invoice_no,
-                            'student_identity' => $student->student_identity,
-                            'mode' => 'set_amount',
-                            'scope' => 'single',
-                            'adjustment_amount' => $prevDue,
-                            'previous_amount' => $inv->amount,
-                            'previous_discount' => $inv->discount,
-                            'previous_net_amount' => $inv->net_amount,
-                            'previous_due_amount' => $prevDue,
-                            'new_amount' => $inv->amount,
-                            'new_discount' => $inv->discount,
-                            'new_net_amount' => $inv->net_amount,
-                            'new_due_amount' => 0.00,
-                            'paid_amount' => 0.00,
-                            'reason' => 'Discontinued effective ' . $effectiveDate . ($reason ? ' - ' . $reason : ''),
-                        ]);
+                        if ($billingPeriod > $lastActiveMonth) {
+                            if ($inv->status === 'Cancelled') {
+                                continue;
+                            }
 
-                        $cancelledInvoiceIds[] = $inv->id;
-                        $cancelledTotalDue += $prevDue;
-                    } else {
-                        // Has payments or partial/paid status: MUST NOT be automatically altered
-                        $skippedPaidInvoices[] = [
-                            'id' => $inv->id,
-                            'invoice_no' => $inv->invoice_no,
-                            'month_name' => $inv->month_name,
-                            'category_name' => $inv->feeSetup->category->name ?? 'Fee',
-                            'net_amount' => (float) $inv->net_amount,
-                            'paid_amount' => (float) $inv->paid_amount,
-                            'due_amount' => (float) $inv->due_amount,
-                            'status' => $inv->status,
-                            'receipts' => $inv->payments->pluck('receipt_no')->all(),
-                        ];
+                            $activePayments = $hasActivePaymentStatus ? $inv->activePayments : $inv->payments;
+                            $hasPayments = $activePayments->isNotEmpty()
+                                || bccomp(bcadd((string) ($inv->paid_amount ?? '0'), '0.00', 2), '0.00', 2) > 0;
+
+                            if ($inv->status === 'Unpaid' && !$hasPayments) {
+                                $prevDue = bcadd((string) ($inv->due_amount ?? '0'), '0.00', 2);
+
+                                // Note: for Admission Invoices, preserving `admission_invoice_head_allocations` untouched
+                                // keeps `chk_aiha_math` intact while `status = 'Cancelled'` zeroes active due & frees `admission_active_scope`.
+                                $inv->status = 'Cancelled';
+                                $inv->due_amount = 0.00;
+                                $inv->save();
+
+                                \App\Models\FeeAdjustmentLog::create([
+                                    'fee_invoice_id' => $inv->id,
+                                    'student_id' => $student->id,
+                                    'user_id' => $operatorId,
+                                    'invoice_no' => $inv->invoice_no,
+                                    'student_identity' => $student->student_identity,
+                                    'mode' => 'set_amount',
+                                    'scope' => 'single',
+                                    'adjustment_amount' => $prevDue,
+                                    'previous_amount' => $inv->amount,
+                                    'previous_discount' => $inv->discount,
+                                    'previous_net_amount' => $inv->net_amount,
+                                    'previous_due_amount' => $prevDue,
+                                    'new_amount' => $inv->amount,
+                                    'new_discount' => $inv->discount,
+                                    'new_net_amount' => $inv->net_amount,
+                                    'new_due_amount' => 0.00,
+                                    'paid_amount' => 0.00,
+                                    'reason' => 'Discontinued effective ' . $effectiveDate . ($reason ? ' - ' . $reason : ''),
+                                ]);
+
+                                $cancelledInvoiceIds[] = $inv->id;
+                                $cancelledTotalDue = bcadd($cancelledTotalDue, $prevDue, 2);
+                            } else {
+                                $isAdm = method_exists($inv, 'isAdmissionInvoice') && $inv->isAdmissionInvoice();
+                                $categoryLabel = $isAdm
+                                    ? ('Admission Fee Package' . ($inv->admissionFeeStructure?->structure_name ? ' (' . $inv->admissionFeeStructure->structure_name . ')' : ''))
+                                    : ($inv->feeSetup->category->name ?? 'Fee');
+
+                                $skippedPaidInvoices[] = [
+                                    'id' => $inv->id,
+                                    'invoice_no' => $inv->invoice_no,
+                                    'month_name' => $inv->month_name,
+                                    'category_name' => $categoryLabel,
+                                    'net_amount' => (float) $inv->net_amount,
+                                    'paid_amount' => (float) $inv->paid_amount,
+                                    'due_amount' => (float) $inv->due_amount,
+                                    'status' => $inv->status,
+                                    'receipts' => $activePayments->pluck('receipt_no')->all(),
+                                ];
+                            }
+                        }
                     }
+
+                    \App\Models\StudentStatusLog::create([
+                        'student_id' => $student->id,
+                        'user_id' => $operatorId,
+                        'previous_status' => $previousStatus,
+                        'new_status' => 'Inactive',
+                        'action_type' => 'discontinuation',
+                        'last_active_month' => $lastActiveMonth,
+                        'effective_date' => $effectiveDate,
+                        'reason' => $reason,
+                        'reconciled_invoice_ids' => $cancelledInvoiceIds,
+                        'reconciled_amount' => $cancelledTotalDue,
+                        'skipped_invoice_ids' => collect($skippedPaidInvoices)->pluck('id')->all(),
+                    ]);
+
+                    return [$student->id, $cancelledInvoiceIds, $cancelledTotalDue, $skippedPaidInvoices];
                 }
-            }
+            );
 
-            // 3. Create comprehensive StudentStatusLog audit entry
-            \App\Models\StudentStatusLog::create([
-                'student_id' => $student->id,
-                'user_id' => $operatorId,
-                'previous_status' => $previousStatus,
-                'new_status' => 'Inactive',
-                'action_type' => 'discontinuation',
-                'last_active_month' => $lastActiveMonth,
-                'effective_date' => $effectiveDate,
-                'reason' => $reason,
-                'reconciled_invoice_ids' => $cancelledInvoiceIds,
-                'reconciled_amount' => $cancelledTotalDue,
-                'skipped_invoice_ids' => collect($skippedPaidInvoices)->pluck('id')->all(),
-            ]);
+            [$studentId, $cancelledInvoiceIds, $cancelledTotalDue, $skippedPaidInvoices] = $summary;
+            $cancelledAmountFloat = (float) $cancelledTotalDue;
 
-            DB::commit();
-
-            $msg = "Student successfully discontinued effective from {$lastActiveMonth}. " . count($cancelledInvoiceIds) . " post-discontinuation invoice(s) were cancelled (৳" . number_format($cancelledTotalDue, 2) . " dues cleared).";
+            $msg = "Student successfully discontinued effective from {$lastActiveMonth}. " . count($cancelledInvoiceIds) . " post-discontinuation invoice(s) were cancelled (৳" . number_format($cancelledAmountFloat, 2) . " dues cleared).";
             if (!empty($skippedPaidInvoices)) {
                 $msg .= " Notice: " . count($skippedPaidInvoices) . " invoice(s) have recorded payments and were preserved for manual review.";
             }
@@ -1088,15 +1387,13 @@ class StudentController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => $msg,
-                'student_id' => $student->id,
+                'student_id' => $studentId,
                 'new_status' => 'Inactive',
                 'cancelled_count' => count($cancelledInvoiceIds),
-                'cancelled_amount' => round($cancelledTotalDue, 2),
+                'cancelled_amount' => round($cancelledAmountFloat, 2),
                 'skipped_paid_invoices' => $skippedPaidInvoices,
             ], 200);
-
-        } catch (Exception $e) {
-            DB::rollBack();
+        } catch (Throwable $e) {
             Log::error("Discontinuation Error: " . $e->getMessage());
             return response()->json(['status' => 'error', 'message' => 'Discontinuation failed: ' . $e->getMessage()], 500);
         }

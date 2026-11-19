@@ -4,16 +4,10 @@
 
 @push('styles')
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-<style>
-    /* Custom styles override for borderless tighter table rows */
-    .table th, .table td { 
-        padding: 0.625rem 1rem !important; 
-    }
-</style>
 @endpush
 
 @section('content')
-<div id="paymentsIndexRoot" class="w-full min-h-screen" x-data="{ loading: false }" @trigger-loader.window="loading = true">
+<div id="paymentsIndexRoot" class="w-full min-w-0 min-h-screen" x-data="{ loading: false }" @trigger-loader.window="loading = true">
     
     <!-- Page Header -->
     <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 no-print">
@@ -57,7 +51,19 @@
             'ROCKET' => 'Rocket'
         ];
         $selectedMethodName = isset($methods[request('payment_method')]) ? $methods[request('payment_method')] : 'All Methods';
+        $statuses = [
+            'Active' => 'Active',
+            'Reversed' => 'Reversed',
+        ];
+        $selectedStatusName = isset($statuses[$statusFilter ?? request('status')]) ? $statuses[$statusFilter ?? request('status')] : 'All Statuses';
     @endphp
+
+    @if(!empty($schemaWarning))
+        <div class="mb-6 rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/90 dark:bg-amber-950/30 px-4 py-3 text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-3 no-print">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+            <span>{{ $schemaWarning }}</span>
+        </div>
+    @endif
 
     <!-- Filters Card (Using Custom Alpine Dropdowns & DatePickers) -->
     <div class="mb-6 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm no-print" x-data="paymentReceiptsFilter()">
@@ -66,8 +72,9 @@
             <input type="hidden" name="branch_id" :value="form.branch_id">
             <input type="hidden" name="class_id" :value="form.class_id">
             <input type="hidden" name="payment_method" :value="form.payment_method">
+            <input type="hidden" name="status" :value="form.status">
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                 
                 <!-- Branch Dropdown (Rule 7) -->
                 <div class="relative" @click.away="if(activeDropdown === 'branch') activeDropdown = null">
@@ -278,6 +285,25 @@
                     </div>
                 </div>
 
+                <!-- Status Dropdown (Rule 7) -->
+                <div class="relative" @click.away="if(activeDropdown === 'status') activeDropdown = null">
+                    <label class="block text-[10px] font-black tracking-widest text-gray-455 dark:text-gray-400 uppercase mb-1.5 ml-1">Status</label>
+                    <button type="button" @click="activeDropdown = activeDropdown === 'status' ? null : 'status'" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                        <span class="truncate" x-text="statusText"></span>
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="activeDropdown === 'status'" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                        @foreach($statuses as $statusCode => $statusLabel)
+                            <button type="button" @click="selectStatus('{{ $statusCode }}', '{{ $statusLabel }}')" class="w-full flex items-center justify-between px-4 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="form.status == '{{ $statusCode }}' ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                <span>{{ $statusLabel }}</span>
+                                <template x-if="form.status == '{{ $statusCode }}'">
+                                    <svg class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
             </div>
 
             <!-- Search Query & Actions -->
@@ -309,89 +335,159 @@
         <form action="{{ route('fees.payments.print_selected') }}" method="POST" target="_blank" class="w-full">
             @csrf
             
-            <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-5 shadow-sm overflow-hidden mb-6">
+            <div class="w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
+                    <h3 class="text-sm font-black uppercase tracking-wider text-gray-800 dark:text-white flex items-center gap-2">
+                        <svg class="w-4 h-4 text-themeBlue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Payment Receipts Directory
+                    </h3>
+                    <span class="text-xs font-mono font-bold text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        {{ number_format($payments->total()) }} receipt(s)
+                    </span>
+                </div>
+
                 @if($payments->isEmpty())
-                    <div class="py-12 text-center text-gray-400 dark:text-gray-500 font-bold">
+                    <div class="py-12 px-6 text-center text-gray-400 dark:text-gray-500 font-bold text-sm">
                         No receipts found matching the filter options.
                     </div>
                 @else
-                    <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 overflow-x-auto">
-                        <table class="w-full text-left border-collapse table">
-                            <thead>
-                                <tr class="!bg-transparent">
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 w-12 text-center">
-                                        <input type="checkbox" @change="toggleAll($el.checked)" class="rounded border-gray-300 text-themeBlue focus:ring-themeBlue/20 h-4 w-4">
-                                    </th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Receipt No</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Student</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Class & Roll</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Description</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Month</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-right">Paid</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Date</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em]">Method</th>
-                                    <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.2em] text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06]">
-                                @foreach($payments as $pay)
-                                    <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
-                                        <td class="py-0 px-0 text-center">
-                                            <input type="checkbox" name="payment_ids[]" value="{{ $pay->id }}" x-model="selectedReceipts" class="receipt-checkbox rounded border-gray-300 text-themeBlue focus:ring-themeBlue/20 h-4 w-4">
-                                        </td>
-                                        <td class="py-0 px-0 font-mono font-black text-gray-700 dark:text-gray-300 text-xs">{{ $pay->receipt_no }}</td>
-                                        <td class="py-0 px-0">
-                                            <div class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ $pay->student->student_name ?? 'N/A' }}</div>
-                                            <div class="text-[10px] font-semibold text-gray-450 mt-0.5">{{ $pay->student->student_identity ?? 'N/A' }}</div>
-                                        </td>
-                                        <td class="py-0 px-0 text-sm font-bold text-gray-600 dark:text-gray-400">
-                                            {{ $pay->student->schoolClass->class_name ?? 'N/A' }}
-                                            <div class="text-[10px] font-semibold text-gray-450 mt-0.5">Roll: {{ $pay->student->roll_number ?? 'N/A' }}</div>
-                                        </td>
-                                        <td class="py-0 px-0 text-sm font-bold text-gray-600 dark:text-gray-400">
-                                            {{ $pay->invoice->feeSetup->category->name ?? 'Fee Payment' }}
-                                        </td>
-                                        @php
-                                            $monthName = 'One Time';
-                                            if ($pay->invoice && $pay->invoice->feeSetup) {
-                                                if ($pay->invoice->feeSetup->fee_month && strtolower($pay->invoice->feeSetup->fee_month) !== 'monthly') {
-                                                    $monthName = $pay->invoice->feeSetup->fee_month;
-                                                } elseif ($pay->invoice->due_date) {
-                                                    $monthName = date('F', strtotime($pay->invoice->due_date));
-                                                } else {
-                                                    $monthName = date('F', strtotime($pay->invoice->created_at));
-                                                }
-                                            }
-                                        @endphp
-                                        <td class="py-0 px-0 text-sm font-semibold text-gray-600 dark:text-gray-400">
-                                            {{ $monthName }}
-                                        </td>
-                                        <td class="py-0 px-0 text-sm font-mono font-black text-right text-green-700 dark:text-themeGreen">৳{{ number_format($pay->paid_amount, 2) }}</td>
-                                        <td class="py-0 px-0 text-xs font-semibold text-gray-500 dark:text-gray-400">{{ date('d-M-Y', strtotime($pay->payment_date)) }}</td>
-                                        <td class="py-0 px-0">
-                                            <span class="px-2 py-0.5 text-[10px] font-black rounded-md border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-themeDark/45">{{ $pay->payment_method }}</span>
-                                        </td>
-                                        <td class="py-0 px-0">
-                                            <div class="flex items-center justify-end gap-2">
-                                                <a href="{{ route('fees.invoice.pos_print', $pay->fee_invoice_id) }}" target="_blank" class="action-btn text-themeBlue hover:text-themeBlue hover:border-themeBlue flex items-center justify-center h-8 w-8 border border-gray-150 dark:border-white/[0.08] rounded-lg transition-all" title="Print Receipt">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                                                </a>
-                                            </div>
-                                        </td>
+                    <div class="px-6 pb-3 pt-1">
+                        <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 !rounded-none overflow-x-auto">
+                            <table class="w-full text-left border-collapse table [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-2.5 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-2.5 [&>tbody>tr>td]:!px-2.5 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
+                                <thead>
+                                    <tr class="!bg-transparent">
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 w-9 text-center">
+                                            <input type="checkbox" @change="toggleAll($el.checked)" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 accent-themeBlue focus:ring-themeBlue cursor-pointer">
+                                        </th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.16em] whitespace-nowrap">Receipt No</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.16em] whitespace-nowrap">Student</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.16em] whitespace-nowrap">Class &amp; Roll</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.16em] whitespace-nowrap">Description</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.16em] whitespace-nowrap">Month</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.16em] text-right whitespace-nowrap">Paid</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.16em] whitespace-nowrap">Date</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.16em] whitespace-nowrap">Method</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.16em] whitespace-nowrap">Status</th>
+                                        <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.16em] text-right whitespace-nowrap">Action</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @foreach($payments as $pay)
+                                        @php
+                                            $headChips = ($pay->prepared_is_admission && !empty($pay->prepared_head_chips)) ? $pay->prepared_head_chips : [];
+                                            $headChipCount = count($headChips);
+                                        @endphp
+                                        <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
+                                            <td class="py-0 px-0 text-center">
+                                                <input type="checkbox" name="payment_ids[]" value="{{ $pay->id }}" x-model="selectedReceipts" class="receipt-checkbox w-4 h-4 rounded border-gray-300 dark:border-gray-600 accent-themeBlue focus:ring-themeBlue cursor-pointer">
+                                            </td>
+                                            <td class="py-0 px-0 font-mono font-black text-themeBlue text-xs whitespace-nowrap">{{ $pay->receipt_no }}</td>
+                                            <td class="py-0 px-0 whitespace-nowrap">
+                                                <div class="text-sm font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ $pay->student->student_name ?? 'N/A' }}</div>
+                                                <div class="text-[10px] font-mono font-semibold text-gray-400 dark:text-gray-500 mt-0.5 whitespace-nowrap">{{ $pay->student->student_identity ?? 'N/A' }}</div>
+                                            </td>
+                                            <td class="py-0 px-0 whitespace-nowrap">
+                                                <div class="text-xs font-bold text-gray-700 dark:text-gray-300 whitespace-nowrap">{{ $pay->student->schoolClass->class_name ?? 'N/A' }}</div>
+                                                <div class="text-[10px] font-mono font-semibold text-gray-400 dark:text-gray-500 mt-0.5 whitespace-nowrap">Roll: {{ $pay->student->roll_number ?? 'N/A' }}</div>
+                                            </td>
+                                            <td class="py-0 px-0 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300" @if($headChipCount > 3) x-data="{ showHeads: false }" @endif>
+                                                <div class="flex flex-wrap items-center gap-1.5">
+                                                    <span class="whitespace-nowrap">{{ $pay->prepared_description }}</span>
+                                                    @if($headChipCount > 3)
+                                                        <button type="button"
+                                                                @click="showHeads = !showHeads"
+                                                                class="px-2 py-0.5 rounded-md bg-sky-50 dark:bg-themeBlue/15 text-themeBlue border border-sky-200/70 dark:border-themeBlue/30 text-[10px] font-black uppercase tracking-wider hover:bg-themeBlue hover:text-white transition-all whitespace-nowrap">
+                                                            <span x-text="showHeads ? 'Hide {{ $headChipCount }} heads' : '{{ $headChipCount }} heads'"></span>
+                                                        </button>
+                                                    @endif
+                                                </div>
+                                                @if($headChipCount > 0 && $headChipCount <= 3)
+                                                    <div class="mt-1 flex flex-wrap gap-1">
+                                                        @foreach($headChips as $chip)
+                                                            <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-md bg-gray-50 dark:bg-themeDark/50 border border-gray-150 dark:border-white/[0.08] text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                                                                {{ $chip['head_name'] }}: ৳{{ $chip['amount_formatted'] }}
+                                                            </span>
+                                                        @endforeach
+                                                    </div>
+                                                @elseif($headChipCount > 3)
+                                                    <div x-show="showHeads" x-cloak class="mt-1.5 flex flex-wrap gap-1 max-w-md">
+                                                        @foreach($headChips as $chip)
+                                                            <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-md bg-gray-50 dark:bg-themeDark/50 border border-gray-150 dark:border-white/[0.08] text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                                                                {{ $chip['head_name'] }}: ৳{{ $chip['amount_formatted'] }}
+                                                            </span>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                                @if($pay->prepared_has_alloc_mismatch)
+                                                    <div class="mt-1 text-[10px] font-bold text-amber-600 dark:text-amber-400">Reversal audit copy displayed</div>
+                                                @endif
+                                            </td>
+                                            <td class="py-0 px-0 whitespace-nowrap">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-sky-50/70 dark:bg-themeDark border border-sky-100 dark:border-white/[0.06] text-themeBlue text-[10px] font-black uppercase tracking-wider whitespace-nowrap">{{ $pay->prepared_month }}</span>
+                                            </td>
+                                            <td class="py-0 px-0 text-sm font-mono font-black text-right whitespace-nowrap {{ $pay->prepared_is_reversed ? 'text-gray-400 line-through' : 'text-themeGreen' }}">৳{{ number_format($pay->paid_amount, 2) }}</td>
+                                            <td class="py-0 px-0 text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ date('d-M-Y', strtotime($pay->payment_date)) }}</td>
+                                            <td class="py-0 px-0 whitespace-nowrap">
+                                                <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-lg border border-gray-200 dark:border-white/[0.08] text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-themeDark/45 whitespace-nowrap">{{ $pay->payment_method }}</span>
+                                            </td>
+                                            <td class="py-0 px-0 whitespace-nowrap">
+                                                @if($pay->prepared_is_reversed)
+                                                    <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200/70 dark:border-rose-500/30 whitespace-nowrap">
+                                                        Reversed
+                                                    </span>
+                                                    @if($pay->prepared_reversal_ref)
+                                                        <div class="text-[10px] font-mono font-bold text-gray-500 dark:text-gray-400 mt-0.5 whitespace-nowrap">{{ $pay->prepared_reversal_ref }}</div>
+                                                    @endif
+                                                    @if($pay->prepared_reversal_reason)
+                                                        <div class="text-[10px] font-medium text-gray-400 mt-0.5 truncate max-w-[140px]" title="{{ $pay->prepared_reversal_reason }}">{{ $pay->prepared_reversal_reason }}</div>
+                                                    @endif
+                                                @else
+                                                    <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-emerald-50 dark:bg-themeGreen/15 text-themeGreen border border-themeGreen/25 whitespace-nowrap">
+                                                        Active
+                                                    </span>
+                                                @endif
+                                            </td>
+                                            <td class="py-0 px-0 whitespace-nowrap">
+                                                <div class="flex items-center justify-end gap-1.5 whitespace-nowrap">
+                                                    <a href="{{ !empty($pay->prepared_is_reversed) ? route('fees.receipt.pos_print', $pay->receipt_no) : route('fees.invoice.pos_print', $pay->fee_invoice_id) }}" target="_blank" class="action-btn text-themeBlue hover:text-themeBlue hover:border-themeBlue flex items-center justify-center h-8 w-8 border border-gray-200 dark:border-white/[0.08] rounded-lg transition-all" title="{{ !empty($pay->prepared_is_reversed) ? 'Print Void Receipt' : 'Print Receipt' }}">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                                    </a>
+                                                    @if(!empty($canReversePayments) && !$pay->prepared_is_reversed)
+                                                        <button type="button"
+                                                                data-payment-reversal="{{ json_encode([
+                                                                    'payment_id' => $pay->id,
+                                                                    'receipt_no' => $pay->receipt_no,
+                                                                    'student_name' => $pay->student->student_name ?? 'N/A',
+                                                                    'description' => $pay->prepared_description,
+                                                                    'paid_amount' => number_format((float) $pay->paid_amount, 2, '.', ''),
+                                                                    'payment_method' => $pay->payment_method,
+                                                                    'reverse_url' => route('fees.payments.reverse', $pay->id),
+                                                                ]) }}"
+                                                                onclick="window.openReverseModalFromButton(this)"
+                                                                class="action-btn text-red-600 hover:text-red-800 hover:border-red-600 flex items-center justify-center h-8 w-8 border border-gray-200 dark:border-white/[0.08] rounded-lg transition-all"
+                                                                title="Reverse Payment">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"></path></svg>
+                                                        </button>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+
+                    <!-- MACS School Styled Pagination Footer -->
+                    @if($payments->hasPages())
+                        <div class="px-6 py-4 border-t border-gray-100 dark:border-white/[0.06] bg-gray-50/40 dark:bg-themeDark/25 no-print">
+                            {{ $payments->onEachSide(1)->links('partials.pagination') }}
+                        </div>
+                    @endif
                 @endif
             </div>
-
-            <!-- Custom pagination formatting -->
-            @if($payments->isNotEmpty())
-                <div class="mt-4 no-print flex justify-center">
-                    {{ $payments->links('pagination::tailwind') }}
-                </div>
-            @endif
 
             <!-- Floating Checkout / Batch Action Bar -->
             <div x-show="selectedReceipts.length > 0"
@@ -443,6 +539,67 @@
         </div>
     </div>
 
+    <!-- Reverse Payment Modal (Admin / Super Admin Only) -->
+    @if(!empty($canReversePayments))
+    <div id="reversePaymentModal"
+         x-data="reversePaymentModalComponent()"
+         x-show="isOpen"
+         x-cloak
+         @open-reverse-payment-modal.window="open($event.detail)"
+         class="fixed inset-0 z-[9999] flex items-center justify-center bg-themeDark/50 backdrop-blur-md p-4">
+        <div class="bg-white dark:bg-themeNavy w-full max-w-md rounded-3xl shadow-2xl border border-gray-100 dark:border-white/[0.08] overflow-hidden" @click.away="!isSubmitting && close()">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Reverse Payment Receipt</h3>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">Full reversal audit entry</p>
+                </div>
+                <button type="button" @click="!isSubmitting && close()" class="text-gray-400 hover:text-red-500 transition-colors p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form @submit.prevent="submit()" class="p-6 space-y-4 text-gray-900 dark:text-white">
+                <div class="bg-gray-50/70 dark:bg-themeDark/40 border border-gray-150 dark:border-white/[0.06] rounded-2xl p-4 space-y-2 text-xs">
+                    <div class="flex justify-between">
+                        <span class="font-semibold text-gray-500 dark:text-gray-400">Receipt No:</span>
+                        <span class="font-mono font-black text-gray-900 dark:text-white" x-text="receiptNo"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-semibold text-gray-500 dark:text-gray-400">Student:</span>
+                        <span class="font-bold text-gray-800 dark:text-gray-200" x-text="studentName"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-semibold text-gray-500 dark:text-gray-400">Fee Item:</span>
+                        <span class="font-bold text-gray-800 dark:text-gray-200 truncate max-w-[200px]" x-text="description"></span>
+                    </div>
+                    <div class="flex justify-between pt-1 border-t border-gray-150 dark:border-white/[0.06]">
+                        <span class="font-semibold text-gray-500 dark:text-gray-400">Full Reversal Amount:</span>
+                        <span class="font-mono font-black text-red-600 dark:text-red-400" x-text="'৳ ' + paidAmount"></span>
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/30 px-3.5 py-2.5 text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+                    Reversals always restore the full receipt amount back onto pending invoice due balance and mark the receipt as Reversed in the audit ledger.
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-1.5">
+                        Reversal Reason <span class="text-red-500">*</span>
+                    </label>
+                    <textarea x-model="reason" rows="3" maxlength="255" placeholder="e.g. Wrong receipt amount entered or duplicate transaction"
+                              class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-themeDark focus:border-themeBlue focus:ring-4 focus:ring-themeBlue/10 text-gray-900 dark:text-gray-100 transition-all"></textarea>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" @click="!isSubmitting && close()" class="flex-1 h-11 px-5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-655 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all">Cancel</button>
+                    <button type="submit" :disabled="isSubmitting" class="flex-1 h-11 px-5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-xs uppercase tracking-widest flex items-center justify-center active:scale-95 disabled:opacity-60">
+                        <span x-text="isSubmitting ? 'Reversing...' : 'Reverse Payment'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
 </div>
 @endsection
 
@@ -455,11 +612,13 @@
             branchText: '{{ $selectedBranchName }}',
             classText: '{{ $selectedClassName }}',
             methodText: '{{ $selectedMethodName }}',
+            statusText: '{{ $selectedStatusName }}',
             
             form: {
                 branch_id: '{{ request('branch_id') }}',
                 class_id: '{{ request('class_id') }}',
-                payment_method: '{{ request('payment_method') }}'
+                payment_method: '{{ request('payment_method') }}',
+                status: '{{ $statusFilter ?? request('status') }}'
             },
             
             selectBranch(id, name) {
@@ -476,9 +635,109 @@
                 this.form.payment_method = code;
                 this.methodText = name;
                 this.activeDropdown = null;
+            },
+            selectStatus(code, name) {
+                this.form.status = code;
+                this.statusText = name;
+                this.activeDropdown = null;
             }
         };
     }
+
+    window.openReverseModalFromButton = function(buttonEl) {
+        try {
+            const raw = buttonEl.getAttribute('data-payment-reversal') || '{}';
+            const detail = JSON.parse(raw);
+            window.dispatchEvent(new CustomEvent('open-reverse-payment-modal', { detail }));
+        } catch (err) {
+            console.error(err);
+            showAlert('Unable to load payment reversal details.', 'Modal Error');
+        }
+    };
+
+    window.reversePaymentModalComponent = function() {
+        const generateIdempotencyKey = () => {
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                return window.crypto.randomUUID();
+            }
+            return 'rev-pay-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+        };
+
+        return {
+            isOpen: false,
+            isSubmitting: false,
+            paymentId: null,
+            receiptNo: '',
+            studentName: '',
+            description: '',
+            paidAmount: '0.00',
+            reverseUrl: '',
+            reason: '',
+            idempotencyKey: '',
+
+            open(detail) {
+                this.paymentId = detail.payment_id || null;
+                this.receiptNo = detail.receipt_no || '';
+                this.studentName = detail.student_name || '';
+                this.description = detail.description || '';
+                this.paidAmount = detail.paid_amount || '0.00';
+                this.reverseUrl = detail.reverse_url || '';
+                this.reason = '';
+                this.idempotencyKey = generateIdempotencyKey();
+                this.isOpen = true;
+            },
+
+            close() {
+                this.isOpen = false;
+            },
+
+            async submit() {
+                if (this.isSubmitting || !this.reverseUrl) return;
+                const trimmedReason = (this.reason || '').trim();
+                if (trimmedReason.length < 3) {
+                    await showAlert('Please enter a clear reversal reason (at least 3 characters).', 'Validation Error');
+                    return;
+                }
+
+                const confirmed = await showDanger(
+                    'Confirm Payment Reversal',
+                    `Reverse full payment of ৳${this.paidAmount} for receipt ${this.receiptNo}?`
+                );
+                if (!confirmed) return;
+
+                this.isSubmitting = true;
+                try {
+                    const response = await fetch(this.reverseUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            reason: trimmedReason,
+                            idempotency_key: this.idempotencyKey,
+                        }),
+                    });
+
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        this.close();
+                        await showSuccess(data.message || 'Payment reversed successfully.');
+                        window.dispatchEvent(new CustomEvent('trigger-loader'));
+                        window.location.reload();
+                    } else {
+                        await showAlert(data.message || 'Unable to reverse payment.', 'Reversal Error');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    await showAlert('Network or server error while reversing payment.', 'Reversal Error');
+                } finally {
+                    this.isSubmitting = false;
+                }
+            },
+        };
+    };
 
     // Custom Date Picker component data definition (Rule 10)
     function datePicker(initialValue = '') {

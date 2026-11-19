@@ -2,16 +2,8 @@
 
 @section('title', 'Class-wise Financial Report')
 
-@push('styles')
-<style>
-    .table th, .table td {
-        padding: 0.625rem 0.85rem !important;
-    }
-</style>
-@endpush
-
 @section('content')
-<div class="w-full min-h-screen" x-data="{
+<div class="w-full min-w-0 min-h-screen" x-data="{
     periodType: '{{ $period_type }}',
     selectedMonth: '{{ $month ?: date('F') }}',
     selectedYear: '{{ $year ?: date('Y') }}'
@@ -30,7 +22,7 @@
                 Class-wise Financial Report
             </h1>
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">
-                Financial summary of monthly fees, other fees and miscellaneous charges by class.
+                Financial summary of monthly fees, exam fees and other fees by class.
             </p>
         </div>
 
@@ -329,174 +321,176 @@
         </form>
     </div>
 
-    <!-- Active Filter Scope Bar -->
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 px-2 text-xs font-semibold text-gray-500 dark:text-gray-400 no-print">
-        <div class="flex items-center gap-2">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 dark:bg-themeBlue/10 text-themeBlue font-bold">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                Session: {{ $session_name }}
-            </span>
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 dark:bg-themeGreen/10 text-themeGreen font-bold">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                Period: {{ $period_label }}
-            </span>
+    <!-- Main Report Table Card: Compact 13 Columns (AGENTS.md Rule 9, Zero Desktop Scrollbar) -->
+    <div class="w-full min-w-0 bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.08] rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+        <!-- Integrated Scope & Metadata Header Bar -->
+        <div class="px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06] flex flex-wrap items-center justify-between gap-2.5 no-print">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-50 dark:bg-themeBlue/15 border border-sky-100 dark:border-themeBlue/25 text-themeBlue text-xs font-black">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                    Session: {{ $session_name }}
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-themeGreen/15 border border-emerald-100 dark:border-themeGreen/25 text-themeGreen text-xs font-black">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Period: {{ $period_label }}
+                </span>
+            </div>
+            <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                Generated: {{ $generated_at }}
+            </div>
         </div>
-        <div class="text-[11px] text-gray-400">
-            Generated: {{ $generated_at }}
-        </div>
-    </div>
 
-    <!-- Main Report Table: Exact 13 Columns Structure (Section 2) -->
-    <div class="bg-white dark:bg-themeNavy border border-gray-100 dark:border-white/[0.06] rounded-3xl p-6 shadow-sm overflow-hidden">
-        <div class="table-container bg-transparent !border-none !shadow-none !mt-0 !mb-0 overflow-x-auto">
-            <table class="w-full text-left border-collapse table">
-                <thead>
-                    <!-- Header Row 1: High Level Financial Groups -->
-                    <tr class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08]">
-                        <th rowspan="2" class="!bg-transparent border-r border-gray-100 dark:border-white/[0.06] text-left text-[11px] font-black text-gray-700 dark:text-gray-200 uppercase tracking-widest min-w-[120px]">
-                            Class
-                        </th>
-                        <th colspan="4" class="!bg-transparent text-center border-r border-gray-100 dark:border-white/[0.06] text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] bg-blue-50/20 dark:bg-blue-950/10 py-2">
-                            Due
-                        </th>
-                        <th colspan="4" class="!bg-transparent text-center border-r border-gray-100 dark:border-white/[0.06] text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em] bg-emerald-50/20 dark:bg-emerald-950/10 py-2">
-                            Collected
-                        </th>
-                        <th colspan="4" class="!bg-transparent text-center text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-[0.2em] bg-rose-50/20 dark:bg-rose-950/10 py-2">
-                            Outstanding
-                        </th>
-                    </tr>
+        <div class="px-4 pb-3 pt-1">
+            <div class="table-container bg-transparent !border-none !shadow-none !mt-1 !mb-0 !rounded-none overflow-x-auto">
+                <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2 [&>thead>tr>th]:!px-1.5 [&>thead>tr>th:first-child]:!pl-1 [&>thead>tr>th:last-child]:!pr-1 [&>thead>tr>th]:!leading-tight [&>thead>tr>th.grp-due]:!text-themeBlue [&>thead>tr>th.grp-coll]:!text-themeGreen [&>thead>tr>th.grp-out]:!text-rose-500 [&>thead>tr>th.sub-h]:!text-[9px] [&>thead>tr>th.sub-h]:!tracking-[0.04em] [&>thead>tr>th.sub-h]:!text-gray-400 dark:[&>thead>tr>th.sub-h]:!text-gray-500 [&>thead>tr>th.sub-due]:!text-themeBlue [&>thead>tr>th.sub-coll]:!text-themeGreen [&>thead>tr>th.sub-out]:!text-rose-500 [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-2 [&>tbody>tr>td]:!px-1.5 [&>tbody>tr>td:first-child]:!pl-1 [&>tbody>tr>td:last-child]:!pr-1 [&>tbody>tr>td]:!text-[11.5px] [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/70 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35 [&>tbody>tr>td.cell-zero]:!text-gray-300 dark:[&>tbody>tr>td.cell-zero]:!text-gray-600 [&>tbody>tr>td.cell-due]:!text-themeBlue [&>tbody>tr>td.cell-due]:!bg-sky-50/35 dark:[&>tbody>tr>td.cell-due]:!bg-themeBlue/10 [&>tbody>tr>td.cell-coll]:!text-themeGreen [&>tbody>tr>td.cell-coll]:!bg-emerald-50/35 dark:[&>tbody>tr>td.cell-coll]:!bg-themeGreen/10 [&>tbody>tr>td.cell-out]:!text-rose-600 dark:[&>tbody>tr>td.cell-out]:!text-rose-400 [&>tbody>tr>td.cell-out]:!bg-rose-50/35 dark:[&>tbody>tr>td.cell-out]:!bg-rose-950/20 [&>tfoot>tr>td]:!py-2.5 [&>tfoot>tr>td]:!px-1.5 [&>tfoot>tr>td:first-child]:!pl-1 [&>tfoot>tr>td:last-child]:!pr-1 [&>tfoot>tr>td]:!text-[11.5px] [&>tfoot>tr>td]:!bg-gray-50/80 dark:[&>tfoot>tr>td]:!bg-themeDark/70 [&>tfoot>tr>td]:!border-t-2 [&>tfoot>tr>td]:!border-b-0 [&>tfoot>tr>td]:!border-gray-200 dark:[&>tfoot>tr>td]:!border-white/[0.12] [&>tfoot>tr>td.cell-due]:!text-themeBlue [&>tfoot>tr>td.cell-due]:!bg-sky-50/70 dark:[&>tfoot>tr>td.cell-due]:!bg-themeBlue/15 [&>tfoot>tr>td.cell-coll]:!text-themeGreen [&>tfoot>tr>td.cell-coll]:!bg-emerald-50/70 dark:[&>tfoot>tr>td.cell-coll]:!bg-themeGreen/15 [&>tfoot>tr>td.cell-out]:!text-rose-600 dark:[&>tfoot>tr>td.cell-out]:!text-rose-400 [&>tfoot>tr>td.cell-out]:!bg-rose-50/70 dark:[&>tfoot>tr>td.cell-out]:!bg-rose-950/30">
+                    <thead>
+                        <!-- Header Row 1: High Level Financial Groups -->
+                        <tr class="!bg-transparent">
+                            <th rowspan="2" class="!bg-transparent border-b border-r border-gray-200 dark:border-white/[0.08] text-left !text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase !tracking-[0.14em] whitespace-nowrap">
+                                Class
+                            </th>
+                            <th colspan="4" class="grp-due !bg-transparent text-center border-b border-r border-gray-200 dark:border-white/[0.08] !text-[10px] font-black uppercase !tracking-[0.16em]">
+                                Due
+                            </th>
+                            <th colspan="4" class="grp-coll !bg-transparent text-center border-b border-r border-gray-200 dark:border-white/[0.08] !text-[10px] font-black uppercase !tracking-[0.16em]">
+                                Collected
+                            </th>
+                            <th colspan="4" class="grp-out !bg-transparent text-center border-b border-gray-200 dark:border-white/[0.08] !text-[10px] font-black uppercase !tracking-[0.16em]">
+                                Outstanding
+                            </th>
+                        </tr>
 
-                    <!-- Header Row 2: Four Sub-columns per Group -->
-                    <tr class="!bg-transparent border-b-2 border-gray-200 dark:border-white/[0.12] text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                        <!-- Under Due -->
-                        <th class="text-right whitespace-nowrap">Monthly Fee</th>
-                        <th class="text-right whitespace-nowrap">Other Fees</th>
-                        <th class="text-right whitespace-nowrap">Other</th>
-                        <th class="text-right whitespace-nowrap border-r border-gray-100 dark:border-white/[0.06] text-blue-700 dark:text-blue-300">Total</th>
+                        <!-- Header Row 2: Four Sub-columns per Group -->
+                        <tr class="!bg-transparent">
+                            <!-- Under Due -->
+                            <th class="sub-h !bg-transparent border-b border-gray-200 dark:border-white/[0.08] text-right whitespace-nowrap">Monthly Fee</th>
+                            <th class="sub-h !bg-transparent border-b border-gray-200 dark:border-white/[0.08] text-right whitespace-nowrap">Exam Fees</th>
+                            <th class="sub-h !bg-transparent border-b border-gray-200 dark:border-white/[0.08] text-right whitespace-nowrap">Other Fees</th>
+                            <th class="sub-h sub-due !bg-transparent border-b border-r border-gray-200 dark:border-white/[0.08] text-right whitespace-nowrap">Total</th>
 
-                        <!-- Under Collected -->
-                        <th class="text-right whitespace-nowrap">Monthly Fee</th>
-                        <th class="text-right whitespace-nowrap">Other Fees</th>
-                        <th class="text-right whitespace-nowrap">Other</th>
-                        <th class="text-right whitespace-nowrap border-r border-gray-100 dark:border-white/[0.06] text-emerald-700 dark:text-emerald-300">Total</th>
+                            <!-- Under Collected -->
+                            <th class="sub-h !bg-transparent border-b border-gray-200 dark:border-white/[0.08] text-right whitespace-nowrap">Monthly Fee</th>
+                            <th class="sub-h !bg-transparent border-b border-gray-200 dark:border-white/[0.08] text-right whitespace-nowrap">Exam Fees</th>
+                            <th class="sub-h !bg-transparent border-b border-gray-200 dark:border-white/[0.08] text-right whitespace-nowrap">Other Fees</th>
+                            <th class="sub-h sub-coll !bg-transparent border-b border-r border-gray-200 dark:border-white/[0.08] text-right whitespace-nowrap">Total</th>
 
-                        <!-- Under Outstanding -->
-                        <th class="text-right whitespace-nowrap">Monthly Fee</th>
-                        <th class="text-right whitespace-nowrap">Other Fees</th>
-                        <th class="text-right whitespace-nowrap">Other</th>
-                        <th class="text-right whitespace-nowrap text-rose-700 dark:text-rose-300">Total</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-white/[0.04]">
-                    @forelse($rows as $r)
-                    <tr class="hover:bg-gray-50/70 dark:hover:bg-themeDark/30 transition-colors">
-                        <!-- Class Name in Academic Order (Rule 9) -->
-                        <td class="font-bold text-gray-900 dark:text-gray-100 border-r border-gray-100 dark:border-white/[0.06] whitespace-nowrap text-xs">
-                            {{ $r['class_name'] }}
-                        </td>
+                            <!-- Under Outstanding -->
+                            <th class="sub-h !bg-transparent border-b border-gray-200 dark:border-white/[0.08] text-right whitespace-nowrap">Monthly Fee</th>
+                            <th class="sub-h !bg-transparent border-b border-gray-200 dark:border-white/[0.08] text-right whitespace-nowrap">Exam Fees</th>
+                            <th class="sub-h !bg-transparent border-b border-gray-200 dark:border-white/[0.08] text-right whitespace-nowrap">Other Fees</th>
+                            <th class="sub-h sub-out !bg-transparent border-b border-gray-200 dark:border-white/[0.08] text-right whitespace-nowrap">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($rows as $r)
+                        <tr class="transition-colors">
+                            <!-- Class Name in Academic Order -->
+                            <td class="font-bold text-gray-900 dark:text-gray-100 border-r border-gray-100 dark:border-white/[0.06] whitespace-nowrap">
+                                {{ $r['class_name'] }}
+                            </td>
 
-                        <!-- Due Sub-columns -->
-                        <td class="text-right font-mono font-semibold text-xs text-gray-700 dark:text-gray-300">
-                            {{ number_format($r['due']['monthly_fee'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-semibold text-xs text-gray-700 dark:text-gray-300">
-                            {{ number_format($r['due']['other_fees'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-semibold text-xs text-gray-500 dark:text-gray-400">
-                            {{ number_format($r['due']['other'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-bold text-xs text-blue-700 dark:text-blue-300 bg-blue-50/30 dark:bg-blue-950/20 border-r border-gray-100 dark:border-white/[0.06]">
-                            {{ number_format($r['due']['total'], 2) }}
-                        </td>
+                            <!-- Due Sub-columns -->
+                            <td class="text-right font-mono font-semibold whitespace-nowrap {{ (float) $r['due']['monthly_fee'] == 0 ? 'cell-zero' : 'text-gray-700 dark:text-gray-300' }}">
+                                {{ number_format($r['due']['monthly_fee'], 2) }}
+                            </td>
+                            <td class="text-right font-mono font-semibold whitespace-nowrap {{ (float) $r['due']['exam_fees'] == 0 ? 'cell-zero' : 'text-gray-700 dark:text-gray-300' }}">
+                                {{ number_format($r['due']['exam_fees'], 2) }}
+                            </td>
+                            <td class="text-right font-mono font-semibold whitespace-nowrap {{ (float) $r['due']['other_fees'] == 0 ? 'cell-zero' : 'text-gray-600 dark:text-gray-400' }}">
+                                {{ number_format($r['due']['other_fees'], 2) }}
+                            </td>
+                            <td class="cell-due text-right font-mono font-black border-r border-gray-100 dark:border-white/[0.06] whitespace-nowrap">
+                                {{ number_format($r['due']['total'], 2) }}
+                            </td>
 
-                        <!-- Collected Sub-columns -->
-                        <td class="text-right font-mono font-semibold text-xs text-gray-700 dark:text-gray-300">
-                            {{ number_format($r['collected']['monthly_fee'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-semibold text-xs text-gray-700 dark:text-gray-300">
-                            {{ number_format($r['collected']['other_fees'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-semibold text-xs text-gray-500 dark:text-gray-400">
-                            {{ number_format($r['collected']['other'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-bold text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50/30 dark:bg-emerald-950/20 border-r border-gray-100 dark:border-white/[0.06]">
-                            {{ number_format($r['collected']['total'], 2) }}
-                        </td>
+                            <!-- Collected Sub-columns -->
+                            <td class="text-right font-mono font-semibold whitespace-nowrap {{ (float) $r['collected']['monthly_fee'] == 0 ? 'cell-zero' : 'text-gray-700 dark:text-gray-300' }}">
+                                {{ number_format($r['collected']['monthly_fee'], 2) }}
+                            </td>
+                            <td class="text-right font-mono font-semibold whitespace-nowrap {{ (float) $r['collected']['exam_fees'] == 0 ? 'cell-zero' : 'text-gray-700 dark:text-gray-300' }}">
+                                {{ number_format($r['collected']['exam_fees'], 2) }}
+                            </td>
+                            <td class="text-right font-mono font-semibold whitespace-nowrap {{ (float) $r['collected']['other_fees'] == 0 ? 'cell-zero' : 'text-gray-600 dark:text-gray-400' }}">
+                                {{ number_format($r['collected']['other_fees'], 2) }}
+                            </td>
+                            <td class="cell-coll text-right font-mono font-black border-r border-gray-100 dark:border-white/[0.06] whitespace-nowrap">
+                                {{ number_format($r['collected']['total'], 2) }}
+                            </td>
 
-                        <!-- Outstanding Sub-columns -->
-                        <td class="text-right font-mono font-semibold text-xs text-gray-700 dark:text-gray-300">
-                            {{ number_format($r['outstanding']['monthly_fee'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-semibold text-xs text-gray-700 dark:text-gray-300">
-                            {{ number_format($r['outstanding']['other_fees'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-semibold text-xs text-gray-500 dark:text-gray-400">
-                            {{ number_format($r['outstanding']['other'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-bold text-xs text-rose-700 dark:text-rose-300 bg-rose-50/30 dark:bg-rose-950/20">
-                            {{ number_format($r['outstanding']['total'], 2) }}
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="13" class="text-center py-8 text-gray-400 text-xs font-semibold">
-                            No class-wise financial records found for the selected filters.
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-                <tfoot>
-                    <!-- Grand Total Row: Bold & Authoritative -->
-                    <tr class="border-t-2 border-gray-300 dark:border-white/[0.15] bg-gray-50/80 dark:bg-themeDark/60 font-black text-xs">
-                        <td class="font-black text-gray-900 dark:text-white uppercase tracking-wider border-r border-gray-200 dark:border-white/[0.08] text-xs">
-                            Grand Total
-                        </td>
+                            <!-- Outstanding Sub-columns -->
+                            <td class="text-right font-mono font-semibold whitespace-nowrap {{ (float) $r['outstanding']['monthly_fee'] == 0 ? 'cell-zero' : 'text-gray-700 dark:text-gray-300' }}">
+                                {{ number_format($r['outstanding']['monthly_fee'], 2) }}
+                            </td>
+                            <td class="text-right font-mono font-semibold whitespace-nowrap {{ (float) $r['outstanding']['exam_fees'] == 0 ? 'cell-zero' : 'text-gray-700 dark:text-gray-300' }}">
+                                {{ number_format($r['outstanding']['exam_fees'], 2) }}
+                            </td>
+                            <td class="text-right font-mono font-semibold whitespace-nowrap {{ (float) $r['outstanding']['other_fees'] == 0 ? 'cell-zero' : 'text-gray-600 dark:text-gray-400' }}">
+                                {{ number_format($r['outstanding']['other_fees'], 2) }}
+                            </td>
+                            <td class="cell-out text-right font-mono font-black whitespace-nowrap">
+                                {{ number_format($r['outstanding']['total'], 2) }}
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="13" class="text-center py-8 text-gray-400 text-xs font-semibold">
+                                No class-wise financial records found for the selected filters.
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                    <tfoot>
+                        <!-- Grand Total Row: Bold & Authoritative -->
+                        <tr>
+                            <td class="font-black text-gray-900 dark:text-white uppercase tracking-wider border-r border-gray-200 dark:border-white/[0.08] whitespace-nowrap">
+                                Grand Total
+                            </td>
 
-                        <!-- Grand Total Due -->
-                        <td class="text-right font-mono font-black text-gray-900 dark:text-white">
-                            {{ number_format($grand_total['due']['monthly_fee'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-black text-gray-900 dark:text-white">
-                            {{ number_format($grand_total['due']['other_fees'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-black text-gray-600 dark:text-gray-400">
-                            {{ number_format($grand_total['due']['other'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-black text-blue-700 dark:text-blue-300 bg-blue-100/40 dark:bg-blue-900/40 border-r border-gray-200 dark:border-white/[0.08]">
-                            {{ number_format($grand_total['due']['total'], 2) }}
-                        </td>
+                            <!-- Grand Total Due -->
+                            <td class="text-right font-mono font-black text-gray-900 dark:text-white whitespace-nowrap">
+                                {{ number_format($grand_total['due']['monthly_fee'], 2) }}
+                            </td>
+                            <td class="text-right font-mono font-black text-gray-900 dark:text-white whitespace-nowrap">
+                                {{ number_format($grand_total['due']['exam_fees'], 2) }}
+                            </td>
+                            <td class="text-right font-mono font-black text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                {{ number_format($grand_total['due']['other_fees'], 2) }}
+                            </td>
+                            <td class="cell-due text-right font-mono font-black border-r border-gray-200 dark:border-white/[0.08] whitespace-nowrap">
+                                {{ number_format($grand_total['due']['total'], 2) }}
+                            </td>
 
-                        <!-- Grand Total Collected -->
-                        <td class="text-right font-mono font-black text-gray-900 dark:text-white">
-                            {{ number_format($grand_total['collected']['monthly_fee'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-black text-gray-900 dark:text-white">
-                            {{ number_format($grand_total['collected']['other_fees'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-black text-gray-600 dark:text-gray-400">
-                            {{ number_format($grand_total['collected']['other'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100/40 dark:bg-emerald-900/40 border-r border-gray-200 dark:border-white/[0.08]">
-                            {{ number_format($grand_total['collected']['total'], 2) }}
-                        </td>
+                            <!-- Grand Total Collected -->
+                            <td class="text-right font-mono font-black text-gray-900 dark:text-white whitespace-nowrap">
+                                {{ number_format($grand_total['collected']['monthly_fee'], 2) }}
+                            </td>
+                            <td class="text-right font-mono font-black text-gray-900 dark:text-white whitespace-nowrap">
+                                {{ number_format($grand_total['collected']['exam_fees'], 2) }}
+                            </td>
+                            <td class="text-right font-mono font-black text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                {{ number_format($grand_total['collected']['other_fees'], 2) }}
+                            </td>
+                            <td class="cell-coll text-right font-mono font-black border-r border-gray-200 dark:border-white/[0.08] whitespace-nowrap">
+                                {{ number_format($grand_total['collected']['total'], 2) }}
+                            </td>
 
-                        <!-- Grand Total Outstanding -->
-                        <td class="text-right font-mono font-black text-gray-900 dark:text-white">
-                            {{ number_format($grand_total['outstanding']['monthly_fee'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-black text-gray-900 dark:text-white">
-                            {{ number_format($grand_total['outstanding']['other_fees'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-black text-gray-600 dark:text-gray-400">
-                            {{ number_format($grand_total['outstanding']['other'], 2) }}
-                        </td>
-                        <td class="text-right font-mono font-black text-rose-700 dark:text-rose-300 bg-rose-100/40 dark:bg-rose-900/40">
-                            {{ number_format($grand_total['outstanding']['total'], 2) }}
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
+                            <!-- Grand Total Outstanding -->
+                            <td class="text-right font-mono font-black text-gray-900 dark:text-white whitespace-nowrap">
+                                {{ number_format($grand_total['outstanding']['monthly_fee'], 2) }}
+                            </td>
+                            <td class="text-right font-mono font-black text-gray-900 dark:text-white whitespace-nowrap">
+                                {{ number_format($grand_total['outstanding']['exam_fees'], 2) }}
+                            </td>
+                            <td class="text-right font-mono font-black text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                {{ number_format($grand_total['outstanding']['other_fees'], 2) }}
+                            </td>
+                            <td class="cell-out text-right font-mono font-black whitespace-nowrap">
+                                {{ number_format($grand_total['outstanding']['total'], 2) }}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
         </div>
     </div>
 

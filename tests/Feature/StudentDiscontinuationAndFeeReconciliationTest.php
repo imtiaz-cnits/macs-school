@@ -18,10 +18,21 @@ use App\Models\FeeAdjustmentLog;
 use App\Models\StudentStatusLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use PDOException;
 
 class StudentDiscontinuationAndFeeReconciliationTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * Scoped SQLite GET_LOCK toggle so tests exercise FeeGenerationService::generate()
+     * on the SQLite in-memory database without modifying production code.
+     */
+    public static bool $allowSqliteAdvisoryLock = false;
+
+    /** @var array<int, bool> */
+    private static array $registeredPdoIds = [];
 
     protected User $adminUser;
     protected Student $student;
@@ -35,6 +46,8 @@ class StudentDiscontinuationAndFeeReconciliationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->enableScopedSqliteLock();
 
         $this->adminUser = User::firstOrCreate(
             ['email' => 'admin_discontinue@macsschool.com'],
@@ -268,10 +281,11 @@ class StudentDiscontinuationAndFeeReconciliationTest extends TestCase
         ]);
 
         // Run auto generator for April 2026
-        Artisan::call('fees:auto-generate', [
+        $exitCode = Artisan::call('fees:auto-generate', [
             '--month' => 'April',
             '--year' => '2026',
         ]);
+        $this->assertSame(0, $exitCode, 'fees:auto-generate must exit 0 so lock or service failures cannot pass silently.');
 
         // Invoices for April must NOT be generated for this student
         $aprilInvoice = FeeInvoice::where('student_id', $this->student->id)
@@ -291,10 +305,11 @@ class StudentDiscontinuationAndFeeReconciliationTest extends TestCase
         ]);
 
         // Backfill missing invoices for February 2026
-        Artisan::call('fees:auto-generate', [
+        $exitCode = Artisan::call('fees:auto-generate', [
             '--month' => 'February',
             '--year' => '2026',
         ]);
+        $this->assertSame(0, $exitCode, 'fees:auto-generate must exit 0 for historical February backfill.');
 
         // Invoice for February must be generated because the student was enrolled in February
         $febInvoice = FeeInvoice::where('student_id', $this->student->id)
@@ -317,9 +332,17 @@ class StudentDiscontinuationAndFeeReconciliationTest extends TestCase
             'branch_id' => $this->branch->id,
             'session_year_id' => $this->session->id,
             'class_id' => $this->class->id,
+            'fee_category_id' => $this->tuitionCategory->id,
             'fee_month' => 'April',
             'due_date' => '2026-04-10',
         ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasNoErrors();
+        $this->assertFalse(
+            str_contains((string) session('error', ''), 'Generation Error:'),
+            'Manual generation must not fail on lock or service errors: ' . (string) session('error', '')
+        );
 
         $aprilInvoice = FeeInvoice::where('student_id', $this->student->id)
             ->where('invoice_no', 'like', 'INV-202604-%')
@@ -1301,6 +1324,42 @@ class StudentDiscontinuationAndFeeReconciliationTest extends TestCase
         $this->assertEquals(1200.00, (float) $statusLog->reconciled_amount);
         $this->assertContains($cancelledInv->id, $statusLog->reconciled_invoice_ids);
         $this->assertStringContainsString('Audited reinstatement', $statusLog->reason);
+    }
+
+    protected function tearDown(): void
+    {
+        self::$allowSqliteAdvisoryLock = false;
+        parent::tearDown();
+    }
+
+    private function enableScopedSqliteLock(): void
+    {
+        self::$allowSqliteAdvisoryLock = true;
+
+        if (DB::getDriverName() !== 'sqlite') {
+            return;
+        }
+
+        $pdo = DB::connection()->getPdo();
+        $pdoObjId = spl_object_id($pdo);
+
+        if (!isset(self::$registeredPdoIds[$pdoObjId]) && method_exists($pdo, 'sqliteCreateFunction')) {
+            $pdo->sqliteCreateFunction('GET_LOCK', static function (?string $name, ?int $timeout): int {
+                if (!StudentDiscontinuationAndFeeReconciliationTest::$allowSqliteAdvisoryLock) {
+                    throw new PDOException('SQLSTATE[HY000]: General error: 1 no such function: GET_LOCK');
+                }
+                return 1;
+            }, 2);
+
+            $pdo->sqliteCreateFunction('RELEASE_LOCK', static function (?string $name): int {
+                if (!StudentDiscontinuationAndFeeReconciliationTest::$allowSqliteAdvisoryLock) {
+                    throw new PDOException('SQLSTATE[HY000]: General error: 1 no such function: RELEASE_LOCK');
+                }
+                return 1;
+            }, 1);
+
+            self::$registeredPdoIds[$pdoObjId] = true;
+        }
     }
 }
 
