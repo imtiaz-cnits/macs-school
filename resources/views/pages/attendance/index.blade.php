@@ -9,12 +9,6 @@
 @push('styles')
 <!-- Load Alpine.js to fix dropdown component issues -->
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-<style>
-    /* Table padding override to align with MACS Design guidelines */
-    .table th, .table td {
-        padding: 0.875rem 1rem !important;
-    }
-</style>
 @endpush
 
 @section('content')
@@ -142,7 +136,7 @@
 
 
             <!-- Custom Date Picker Component -->
-            <div class="relative" x-data="datePicker(form.attendance_date)" @date-selected.window="if($event.detail) form.attendance_date = $event.detail" @click.away="show = false">
+            <div class="relative" x-data="datePicker(form.attendance_date)" @date-selected.window="if($event.detail) handleDateSelected($event.detail)" @click.away="show = false">
                 <label class="block text-[10px] font-black text-gray-555 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Attendance Date</label>
                 <button type="button" @click="show = !show" class="w-full h-10 px-3 bg-gray-55/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                     <span class="truncate" x-text="formatDisplay(value)"></span>
@@ -239,43 +233,142 @@
         </div>
     </div>
 
-    <!-- Student List Table Panel -->
-    <div x-show="fetched && students.length > 0" x-cloak class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] shadow-sm overflow-hidden" x-transition>
-        <div class="table-container bg-transparent !border-none !shadow-none !mt-0 !mb-0">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse table">
+    <!-- Standard RFID / Fingerprint Attendance Time-Table (Initial View before Filtering) -->
+    <div x-show="!hasFiltered" x-cloak class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] shadow-sm overflow-hidden" x-transition>
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-themeBlue/10 text-themeBlue flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-sm font-black text-gray-900 dark:text-white tracking-tight">Standard RFID &amp; Fingerprint Attendance Time-Table</h2>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Standard punch windows for Students (RFID) and Staff (Fingerprint / RFID). Use any filter above to load attendance records.</p>
+                </div>
+            </div>
+            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-themeBlue/10 text-themeBlue border border-themeBlue/20 self-start sm:self-auto whitespace-nowrap"
+                  x-text="shifts.length + ' Standard Shifts'"></span>
+        </div>
+
+        <div class="px-6 pb-4 pt-1">
+            <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 !rounded-none overflow-x-auto">
+                <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-3 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
                     <thead>
                         <tr class="!bg-transparent">
-                            <th class="w-24 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Roll No</th>
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Student Name</th>
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em]">Class & Section</th>
-                            <th class="w-48 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Swipe Time / Details</th>
-                            <th class="w-48 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-555 uppercase tracking-[0.2em] text-center">Attendance Status</th>
+                            <th class="w-16 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">SL</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Shift Name</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Group &amp; Method</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">On-Time In (Present)</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">Late Window</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">Absent From</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">Check-Out Time</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-150 dark:divide-white/[0.06] font-medium">
+                    <tbody class="font-medium">
+                        <template x-if="!shiftsLoaded">
+                            <tr class="animate-pulse">
+                                <td class="py-0 px-0"><div class="h-4 w-6 mx-auto bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
+                                <td class="py-0 px-0"><div class="h-4 w-32 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
+                                <td class="py-0 px-0"><div class="h-5 w-36 bg-gray-200 dark:bg-gray-700/60 rounded-full"></div></td>
+                                <td class="py-0 px-0"><div class="h-5 w-32 mx-auto bg-gray-200 dark:bg-gray-700/60 rounded-full"></div></td>
+                                <td class="py-0 px-0"><div class="h-5 w-32 mx-auto bg-gray-200 dark:bg-gray-700/60 rounded-full"></div></td>
+                                <td class="py-0 px-0"><div class="h-5 w-24 mx-auto bg-gray-200 dark:bg-gray-700/60 rounded-full"></div></td>
+                                <td class="py-0 px-0"><div class="h-5 w-20 mx-auto bg-gray-200 dark:bg-gray-700/60 rounded-full"></div></td>
+                            </tr>
+                        </template>
+                        <template x-for="(shift, idx) in shifts" :key="shift.id">
+                            <tr class="transition-colors">
+                                <td class="py-0 px-0 text-center">
+                                    <span class="font-mono font-black text-gray-555 dark:text-gray-400 text-sm" x-text="idx + 1"></span>
+                                </td>
+                                <td class="py-0 px-0">
+                                    <span class="text-sm font-bold text-gray-900 dark:text-gray-100" x-text="shift.name || shift.shift_name"></span>
+                                </td>
+                                <td class="py-0 px-0 whitespace-nowrap">
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-block"
+                                          :class="shift.type === 'staff' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20' : 'bg-themeBlue/10 text-themeBlue border border-themeBlue/20'"
+                                          x-text="shift.type === 'staff' ? 'Staff • Fingerprint / RFID' : 'Student • RFID Card'">
+                                    </span>
+                                </td>
+                                <td class="py-0 px-0 text-center whitespace-nowrap">
+                                    <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-green-500/10 text-themeGreen border border-themeGreen/20 inline-block"
+                                          x-text="formatShiftTime(shift.in_time_start) + ' – ' + formatShiftTime(shift.in_time_end)">
+                                    </span>
+                                </td>
+                                <td class="py-0 px-0 text-center whitespace-nowrap">
+                                    <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-block"
+                                          x-text="formatLateWindow(shift)">
+                                    </span>
+                                </td>
+                                <td class="py-0 px-0 text-center whitespace-nowrap">
+                                    <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 inline-block"
+                                          x-text="shift.absent_time ? (formatShiftTime(shift.absent_time) + ' onwards') : '—'">
+                                    </span>
+                                </td>
+                                <td class="py-0 px-0 text-center whitespace-nowrap">
+                                    <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-themeBlue/10 text-themeBlue border border-themeBlue/20 inline-block"
+                                          x-text="formatShiftTime(shift.out_time)">
+                                    </span>
+                                </td>
+                            </tr>
+                        </template>
+                        <template x-if="shiftsLoaded && shifts.length === 0">
+                            <tr>
+                                <td colspan="7" class="py-12 text-center">
+                                    <span class="text-xs font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-550">No standard attendance schedule configured</span>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student List Table Panel -->
+    <div x-show="hasFiltered && fetched && students.length > 0" x-cloak class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] shadow-sm overflow-hidden" x-transition>
+        <div class="px-6 pb-4 pt-2">
+            <div class="table-container bg-transparent !border-none !shadow-none !mt-2 !mb-0 !rounded-none overflow-x-auto">
+                <table class="w-full text-left border-collapse table tabular-nums [&>thead>tr]:!bg-transparent [&>thead>tr>th]:!bg-transparent [&>thead>tr>th]:!py-2.5 [&>thead>tr>th]:!px-3 [&>thead>tr>th:first-child]:!pl-0.5 [&>thead>tr>th:last-child]:!pr-0.5 [&>thead>tr>th]:!border-b [&>thead>tr>th]:!border-gray-200 dark:[&>thead>tr>th]:!border-white/[0.08] [&>tbody>tr]:!bg-transparent [&>tbody>tr>td]:!py-3 [&>tbody>tr>td]:!px-3 [&>tbody>tr>td:first-child]:!pl-0.5 [&>tbody>tr>td:last-child]:!pr-0.5 [&>tbody>tr>td]:!border-b [&>tbody>tr>td]:!border-gray-100 dark:[&>tbody>tr>td]:!border-white/[0.06] [&>tbody>tr:last-child>td]:!border-b-0 [&>tbody>tr:hover>td]:!bg-gray-50/60 dark:[&>tbody>tr:hover>td]:!bg-themeDark/35">
+                    <thead>
+                        <tr class="!bg-transparent">
+                            <th class="w-24 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">Roll No</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Student Name</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Class &amp; Section</th>
+                            <th class="w-48 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">Swipe Time / Details</th>
+                            <th class="w-48 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">Attendance Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="font-medium">
                         <template x-for="(s, index) in students" :key="s.id">
-                            <tr class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
-                                <td class="py-0 px-0 text-center font-mono font-black text-themeGreen dark:text-green-500 text-lg" x-text="s.roll_number"></td>
-                                <td class="py-0 px-0 text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-tight" x-text="s.student_name"></td>
-                                <td class="py-0 px-0 text-sm font-semibold text-gray-600 dark:text-gray-400" x-text="s.class_section_name"></td>
-                                <td class="py-0 px-0 text-center text-xs font-mono text-gray-555 dark:text-gray-400">
-                                    <div class="flex flex-col items-center justify-center py-1.5">
+                            <tr class="transition-colors">
+                                <td class="py-0 px-0 text-center">
+                                    <span class="font-mono font-black text-gray-555 dark:text-gray-400 text-sm" x-text="s.roll_number"></span>
+                                </td>
+                                <td class="py-0 px-0">
+                                    <span class="text-sm font-bold text-gray-900 dark:text-gray-100" x-text="s.student_name"></span>
+                                </td>
+                                <td class="py-0 px-0">
+                                    <span class="text-sm font-bold text-gray-600 dark:text-gray-400" x-text="s.class_section_name"></span>
+                                </td>
+                                <td class="py-0 px-0 text-center">
+                                    <div class="flex flex-col items-center justify-center">
                                         <template x-if="formatStudentSwipeTime(s.remarks)">
                                             <div>
                                                 <template x-if="!formatStudentSwipeTime(s.remarks).out">
-                                                    <span class="text-gray-800 dark:text-gray-200" x-text="formatStudentSwipeTime(s.remarks).in"></span>
+                                                    <span class="text-xs font-mono font-bold text-gray-800 dark:text-gray-200" x-text="formatStudentSwipeTime(s.remarks).in"></span>
                                                 </template>
                                                 <template x-if="formatStudentSwipeTime(s.remarks).out">
                                                     <div class="flex flex-col items-center gap-0.5 leading-tight">
-                                                        <span class="text-themeGreen dark:text-green-400 font-extrabold text-[10px]" x-text="'IN: ' + formatStudentSwipeTime(s.remarks).in"></span>
-                                                        <span class="text-themeBlue dark:text-blue-400 font-extrabold text-[10px]" x-text="'OUT: ' + formatStudentSwipeTime(s.remarks).out"></span>
+                                                        <span class="text-themeGreen dark:text-green-400 font-mono font-extrabold text-[10px]" x-text="'IN: ' + formatStudentSwipeTime(s.remarks).in"></span>
+                                                        <span class="text-themeBlue dark:text-blue-400 font-mono font-extrabold text-[10px]" x-text="'OUT: ' + formatStudentSwipeTime(s.remarks).out"></span>
                                                     </div>
                                                 </template>
                                             </div>
                                         </template>
                                         <template x-if="!formatStudentSwipeTime(s.remarks)">
-                                            <span class="text-gray-400 dark:text-gray-600">-</span>
+                                            <span class="text-xs font-mono text-gray-400 dark:text-gray-600">-</span>
                                         </template>
                                     </div>
                                 </td>
@@ -298,7 +391,7 @@
     </div>
 
     <!-- Skeleton Pulse Loader during load state -->
-    <div x-show="loading && !fetched" x-cloak class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] p-6 shadow-sm">
+    <div x-show="hasFiltered && loading && !fetched" x-cloak class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] p-6 shadow-sm">
         <div class="space-y-4 animate-pulse">
             <div class="h-6 bg-gray-200 dark:bg-gray-700/60 rounded-md w-1/4"></div>
             <div class="space-y-3">
@@ -315,7 +408,7 @@
     </div>
 
     <!-- No Data Placeholder -->
-    <div x-show="fetched && students.length === 0" x-cloak class="py-20 text-center bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] shadow-sm">
+    <div x-show="hasFiltered && fetched && students.length === 0" x-cloak class="py-20 text-center bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] shadow-sm">
         <p class="text-gray-400 dark:text-gray-550 font-black uppercase tracking-[0.2em] text-xs">No students found matching your criteria</p>
     </div>
 
@@ -440,6 +533,10 @@
 
             // Students attendance lists
             students: [],
+            shifts: [],
+            shiftsLoaded: false,
+            hasFiltered: false,
+            isResettingFilters: false,
             
             // Paginator object
             paginator: {
@@ -468,17 +565,29 @@
                 window.attendancePageInstance = this;
                 this.loading = true;
                 try {
-                    const [branches, sessions, classes, sections] = await Promise.all([
+                    const [branches, sessions, classes, sections, shiftsRes] = await Promise.all([
                         axios.get('/ajax/branches', getAuthHeaders()),
                         axios.get('/ajax/sessions', getAuthHeaders()),
                         axios.get('/ajax/classes', getAuthHeaders()),
-                        axios.get('/ajax/sections', getAuthHeaders())
+                        axios.get('/ajax/sections', getAuthHeaders()),
+                        axios.get('/ajax/shifts', getAuthHeaders())
                     ]);
 
                     this.branches = branches.data.branchData || [];
                     this.sessions = sessions.data.sessionData || [];
                     this.classes = classes.data.classData || [];
                     this.sections = sections.data.sectionData || [];
+
+                    const rawShifts = shiftsRes.data.shiftData || [];
+                    this.shifts = rawShifts
+                        .filter(s => s.in_time_start || s.in_time_end || s.out_time)
+                        .sort((a, b) => {
+                            const typeOrder = (t) => (t === 'student' ? 0 : (t === 'staff' ? 1 : 2));
+                            const diff = typeOrder(a.type) - typeOrder(b.type);
+                            if (diff !== 0) return diff;
+                            return (a.in_time_start || '').localeCompare(b.in_time_start || '');
+                        });
+                    this.shiftsLoaded = true;
 
                     // Setup defaults if list items are single or populated
                     if (this.sessions.length > 0) {
@@ -489,14 +598,16 @@
 
                     // Watch date changes to auto-filter
                     this.$watch('form.attendance_date', () => {
+                        if (this.isResettingFilters) return;
+                        this.hasFiltered = true;
                         this.fetchStudents(1);
                     });
 
                     // Fetch device status
                     await this.fetchDeviceStatus();
 
-                    // Trigger initial auto load
-                    await this.fetchStudents(1);
+                    // Load initial overview stats silently while keeping Standard Time-Table visible
+                    await this.fetchStudents(1, true);
 
                     // Poll the current page list silently every 4 seconds to make the UI update in real-time
                     setInterval(async () => {
@@ -532,8 +643,45 @@
             debouncedFetch() {
                 clearTimeout(this.typingTimer);
                 this.typingTimer = setTimeout(() => {
+                    this.hasFiltered = true;
                     this.fetchStudents(1);
                 }, 400);
+            },
+
+            handleDateSelected(dateVal) {
+                const changed = this.form.attendance_date !== dateVal;
+                this.form.attendance_date = dateVal;
+                this.hasFiltered = true;
+                if (!changed) {
+                    this.fetchStudents(1);
+                }
+            },
+
+            formatShiftTime(timeStr) {
+                if (!timeStr) return '—';
+                const parts = String(timeStr).split(':');
+                if (parts.length < 2) return timeStr;
+                let hr = parseInt(parts[0], 10);
+                const min = parts[1].padStart(2, '0');
+                const ampm = hr >= 12 ? 'PM' : 'AM';
+                hr = hr % 12;
+                hr = hr ? hr : 12;
+                return `${hr}:${min} ${ampm}`;
+            },
+
+            formatLateWindow(shift) {
+                if (!shift || !shift.late_time_end) return '—';
+                if (shift.in_time_end && shift.late_time_end > shift.in_time_end) {
+                    const parts = String(shift.in_time_end).split(':');
+                    if (parts.length >= 2) {
+                        let totalMins = (parseInt(parts[0], 10) * 60) + parseInt(parts[1], 10) + 1;
+                        totalMins = totalMins % (24 * 60);
+                        const h = String(Math.floor(totalMins / 60)).padStart(2, '0');
+                        const m = String(totalMins % 60).padStart(2, '0');
+                        return `${this.formatShiftTime(`${h}:${m}:00`)} – ${this.formatShiftTime(shift.late_time_end)}`;
+                    }
+                }
+                return `Up to ${this.formatShiftTime(shift.late_time_end)}`;
             },
 
             formatStudentSwipeTime(remarks) {
@@ -588,6 +736,7 @@
                 }
                 
                 this.activeDropdown = null;
+                this.hasFiltered = true;
                 this.fetchStudents(1);
             },
 
@@ -651,6 +800,7 @@
                     }, getAuthHeaders());
 
                     await showAlert(res.data.message, "Sync Success");
+                    this.hasFiltered = true;
                     await this.fetchStudents(1);
                     
                 } catch (err) {
@@ -662,6 +812,8 @@
             },
 
             clearFilters() {
+                this.isResettingFilters = true;
+                this.hasFiltered = false;
                 this.form.branch_id = '';
                 this.form.class_id = '';
                 this.form.section_id = '';
@@ -677,8 +829,12 @@
                     this.form.session_year_id = firstSession.id;
                     this.sessionText = firstSession.session_name;
                 }
-                
-                this.fetchStudents(1);
+
+                this.$nextTick(() => {
+                    this.isResettingFilters = false;
+                });
+
+                this.fetchStudents(1, true);
             },
 
             renderPagination() {
