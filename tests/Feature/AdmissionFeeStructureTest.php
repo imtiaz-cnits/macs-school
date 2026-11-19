@@ -671,6 +671,116 @@ class AdmissionFeeStructureTest extends TestCase
         $this->assertFalse($allTimeListed->contains('id', $override2027->id));
     }
 
+    public function test_jalalpur_admission_fee_structure_seeder_populates_all_12_classes_accurately_and_is_strictly_idempotent(): void
+    {
+        $jalalpur = Branch::create(['branch_name' => 'Jalalpur Branch', 'user_id' => $this->admin->id]);
+
+        $expectedClasses = [
+            'Play'    => ['tuition' => '570.00',  'heads' => 14, 'has_adm' => true,  'total' => '3950.00'],
+            'Nursery' => ['tuition' => '570.00',  'heads' => 14, 'has_adm' => true,  'total' => '3950.00'],
+            'One'     => ['tuition' => '620.00',  'heads' => 14, 'has_adm' => true,  'total' => '4000.00'],
+            'Two'     => ['tuition' => '620.00',  'heads' => 14, 'has_adm' => true,  'total' => '4000.00'],
+            'Three'   => ['tuition' => '620.00',  'heads' => 14, 'has_adm' => true,  'total' => '4000.00'],
+            'Four'    => ['tuition' => '670.00',  'heads' => 14, 'has_adm' => true,  'total' => '4050.00'],
+            'Five'    => ['tuition' => '720.00',  'heads' => 14, 'has_adm' => true,  'total' => '4100.00'],
+            'Six'     => ['tuition' => '770.00',  'heads' => 14, 'has_adm' => true,  'total' => '4150.00'],
+            'Seven'   => ['tuition' => '770.00',  'heads' => 14, 'has_adm' => true,  'total' => '4150.00'],
+            'Eight'   => ['tuition' => '820.00',  'heads' => 14, 'has_adm' => true,  'total' => '4200.00'],
+            'Nine'    => ['tuition' => '1020.00', 'heads' => 14, 'has_adm' => true,  'total' => '4400.00'],
+            'Ten'     => ['tuition' => '1020.00', 'heads' => 13, 'has_adm' => false, 'total' => '3400.00'],
+        ];
+
+        $classModels = [
+            'One' => $this->classOne,
+            'Two' => $this->classTwo,
+        ];
+        foreach (array_keys($expectedClasses) as $className) {
+            if (!isset($classModels[$className])) {
+                $classModels[$className] = Classes::create(['class_name' => $className, 'user_id' => $this->admin->id]);
+            }
+        }
+
+        // First run: seeds all 12 All-Time structures and auto-creates missing 'Others' category
+        $this->seed(\Database\Seeders\JalalpurAdmissionFeeStructureSeeder::class);
+
+        $this->assertSame(1, FeeCategory::where('name', 'Others')->count());
+        $this->assertSame(1, FeeCategory::where('name', 'Monthly Fee')->count());
+        $this->assertSame(1, FeeCategory::where('name', 'Session Fee')->count());
+        $this->assertSame(1, FeeCategory::where('name', 'Admission Fee')->count());
+
+        $seededStructures = AdmissionFeeStructure::with('items')
+            ->where('branch_id', $jalalpur->id)
+            ->whereNull('session_year_id')
+            ->get()
+            ->keyBy('class_id');
+
+        $this->assertCount(12, $seededStructures);
+        $this->assertSame(167, AdmissionFeeStructureItem::whereIn('admission_fee_structure_id', $seededStructures->pluck('id'))->count());
+
+        foreach ($expectedClasses as $className => $spec) {
+            $structure = $seededStructures->get($classModels[$className]->id);
+            $this->assertNotNull($structure, "Missing seeded structure for Class {$className}");
+            $this->assertSame('Active', $structure->status);
+            $this->assertSame(1, (int) $structure->version);
+            $this->assertNull($structure->session_year_id);
+            $this->assertTrue((bool) $structure->includes_monthly_tuition);
+            $this->assertSame(1, (int) $structure->tuition_month_number);
+            $this->assertSame(0, bccomp($spec['total'], (string) $structure->total_amount, 2), "Total mismatch for Class {$className}");
+            $this->assertCount($spec['heads'], $structure->items, "Head count mismatch for Class {$className}");
+
+            $tuitionItem = $structure->items->firstWhere('is_tuition_head', true);
+            $this->assertNotNull($tuitionItem, "Missing tuition head for Class {$className}");
+            $this->assertSame('Monthly Tuition Fee (January)', $tuitionItem->head_name);
+            $this->assertSame(0, bccomp($spec['tuition'], (string) $tuitionItem->amount, 2));
+            $this->assertFalse((bool) $tuitionItem->is_discountable);
+
+            $admissionItem = $structure->items->firstWhere('head_name', 'Admission Fee');
+            if ($spec['has_adm']) {
+                $this->assertNotNull($admissionItem, "Missing Admission Fee head for Class {$className}");
+                $this->assertSame(0, bccomp('1000.00', (string) $admissionItem->amount, 2));
+                $this->assertTrue((bool) $admissionItem->is_discountable);
+            } else {
+                $this->assertNull($admissionItem, "Class {$className} must not contain Admission Fee head");
+            }
+        }
+
+        // Simulate a live admin updating Class Play to v2 with a custom rate
+        $playV1 = $seededStructures->get($classModels['Play']->id);
+        $playV2 = $this->service->updateStructureWithVersioning($playV1->id, [
+            'branch_id' => $jalalpur->id,
+            'class_id' => $classModels['Play']->id,
+            'session_year_id' => null,
+            'structure_name' => 'Class Play Custom Live V2',
+            'status' => 'Active',
+            'replace_active' => true,
+            'includes_monthly_tuition' => true,
+            'tuition_month_number' => 1,
+            'items' => [
+                ['fee_category_id' => $this->monthlyCat->id, 'head_name' => 'Monthly Tuition Fee (January)', 'amount' => '600.00', 'is_discountable' => false, 'is_tuition_head' => true, 'sort_order' => 10],
+                ['fee_category_id' => $this->admissionCat->id, 'head_name' => 'Admission Fee', 'amount' => '1500.00', 'is_discountable' => true, 'is_tuition_head' => false, 'sort_order' => 20],
+            ],
+        ], $this->admin->id);
+
+        // Second run: must be strictly idempotent and leave all 12 classes (including custom Play v2) completely untouched
+        $this->seed(\Database\Seeders\JalalpurAdmissionFeeStructureSeeder::class);
+
+        $activeAfterSecondRun = AdmissionFeeStructure::where('branch_id', $jalalpur->id)
+            ->whereNull('session_year_id')
+            ->where('status', 'Active')
+            ->get();
+        $this->assertCount(12, $activeAfterSecondRun);
+
+        $totalRowsAfterSecondRun = AdmissionFeeStructure::where('branch_id', $jalalpur->id)
+            ->whereNull('session_year_id')
+            ->count();
+        $this->assertSame(13, $totalRowsAfterSecondRun);
+
+        $playV2Fresh = $playV2->fresh();
+        $this->assertSame('Active', $playV2Fresh->status);
+        $this->assertSame('Class Play Custom Live V2', $playV2Fresh->structure_name);
+        $this->assertSame(0, bccomp('2100.00', (string) $playV2Fresh->total_amount, 2));
+    }
+
     private function createStudent(string $identity, array $overrides = []): Student
     {
         return Student::create(array_merge([
