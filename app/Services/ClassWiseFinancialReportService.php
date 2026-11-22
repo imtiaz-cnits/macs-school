@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Classes;
 use App\Models\FeeCategory;
 use App\Models\FeeInvoice;
+use App\Models\FeePayment;
 use App\Models\SessionYear;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -108,11 +109,16 @@ class ClassWiseFinancialReportService
         } elseif ($periodType === 'custom' && !empty($filters['start_date']) && !empty($filters['end_date'])) {
             $startDate = $filters['start_date'];
             $endDate = $filters['end_date'];
+            if ($startDate > $endDate) {
+                [$startDate, $endDate] = [$endDate, $startDate];
+            }
             $periodLabel = date('d M Y', strtotime($startDate)) . ' to ' . date('d M Y', strtotime($endDate));
         } else {
             $periodType = 'all';
             $periodLabel = "Full Session ({$sessionName})";
         }
+
+        $isCustomRange = ($periodType === 'custom' && $startDate && $endDate);
 
         // 3. Build Query for Legacy Fee Invoices (Strictly Excluding Cancelled Invoices & Admission Invoices)
         $query = DB::table('fee_invoices')
@@ -135,7 +141,11 @@ class ClassWiseFinancialReportService
                       ->orWhereBetween('fee_invoices.due_date', [$startDate, $endDate]);
                 });
             } else {
-                $query->whereBetween('fee_invoices.due_date', [$startDate, $endDate]);
+                // Custom Date Range (Model 1): Period Billed includes invoices due OR created within the selected range
+                $query->where(function ($q) use ($startDate, $endDate): void {
+                    $q->whereBetween('fee_invoices.due_date', [$startDate, $endDate])
+                      ->orWhereRaw('DATE(fee_invoices.created_at) BETWEEN ? AND ?', [$startDate, $endDate]);
+                });
             }
         }
 
@@ -170,7 +180,7 @@ class ClassWiseFinancialReportService
                 $rows[$clsId],
                 $bucket,
                 $this->receiptService->toDecimal($r->due),
-                $this->receiptService->toDecimal($r->collected),
+                $isCustomRange ? '0.00' : $this->receiptService->toDecimal($r->collected),
                 $this->receiptService->toDecimal($r->outstanding)
             );
         }
@@ -200,7 +210,11 @@ class ClassWiseFinancialReportService
                           ->orWhereRaw('COALESCE(fee_invoices.due_date, DATE(fee_invoices.created_at)) BETWEEN ? AND ?', [$startDate, $endDate]);
                     });
                 } else {
-                    $admQuery->whereRaw('COALESCE(fee_invoices.due_date, DATE(fee_invoices.created_at)) BETWEEN ? AND ?', [$startDate, $endDate]);
+                    // Custom Date Range (Model 1): Period Billed includes admission invoices due OR created within range
+                    $admQuery->where(function ($q) use ($startDate, $endDate): void {
+                        $q->whereBetween('fee_invoices.due_date', [$startDate, $endDate])
+                          ->orWhereRaw('DATE(fee_invoices.created_at) BETWEEN ? AND ?', [$startDate, $endDate]);
+                    });
                 }
             }
 
@@ -226,9 +240,108 @@ class ClassWiseFinancialReportService
                         $rows[$structureClassId],
                         $bucket,
                         $headRow['net'],
-                        $headRow['collected'],
+                        $isCustomRange ? '0.00' : $headRow['collected'],
                         $headRow['due']
                     );
+                }
+            }
+        }
+
+        // 5c. Custom Date Range (Model 1): Independent Period Cash Collected strictly by Active FeePayment.payment_date
+        if ($isCustomRange) {
+            $admissionTablesAvailable = $this->receiptService->admissionTablesAvailable();
+
+            $legacyPayQuery = DB::table('fee_payments')
+                ->join('fee_invoices', 'fee_payments.fee_invoice_id', '=', 'fee_invoices.id')
+                ->join('students', 'fee_invoices.student_id', '=', 'students.id')
+                ->join('classes', 'students.class_id', '=', 'classes.id')
+                ->join('fee_setups', 'fee_invoices.fee_setup_id', '=', 'fee_setups.id')
+                ->join('fee_categories', 'fee_setups.fee_category_id', '=', 'fee_categories.id')
+                ->whereNull('fee_invoices.admission_fee_structure_id')
+                ->where('fee_invoices.status', '!=', 'Cancelled')
+                ->whereBetween('fee_payments.payment_date', [$startDate, $endDate]);
+
+            if ($admissionTablesAvailable) {
+                $legacyPayQuery->where('fee_payments.status', 'Active');
+            }
+
+            if ($sessionId) {
+                $legacyPayQuery->where('fee_setups.session_year_id', $sessionId);
+            }
+
+            $legacyCollectedRows = $legacyPayQuery->select(
+                'classes.id as class_id',
+                'classes.class_name',
+                'fee_categories.name as cat_name',
+                DB::raw('SUM(fee_payments.paid_amount) as collected')
+            )
+            ->groupBy('classes.id', 'classes.class_name', 'fee_categories.name')
+            ->get();
+
+            foreach ($legacyCollectedRows as $r) {
+                $clsId = (int) $r->class_id;
+                if (!isset($rows[$clsId])) {
+                    $rows[$clsId] = $this->makeEmptyClassRow($clsId, (string) $r->class_name);
+                }
+
+                $bucket = $this->classifyCategory($r->cat_name);
+                $this->accumulateBucketAmounts(
+                    $rows[$clsId],
+                    $bucket,
+                    '0.00',
+                    $this->receiptService->toDecimal($r->collected),
+                    '0.00'
+                );
+            }
+
+            if ($admissionTablesAvailable) {
+                $admPayQuery = FeePayment::query()
+                    ->with([
+                        'invoice.admissionFeeStructure.schoolClass',
+                        'invoice.admissionHeadAllocations.category',
+                        'admissionHeadAllocations',
+                    ])
+                    ->where('fee_payments.status', 'Active')
+                    ->whereBetween('fee_payments.payment_date', [$startDate, $endDate])
+                    ->whereHas('invoice', function ($iq) use ($sessionId): void {
+                        $iq->whereNotNull('fee_invoices.admission_fee_structure_id')
+                           ->where('fee_invoices.status', '!=', 'Cancelled');
+
+                        if ($sessionId) {
+                            $iq->where('fee_invoices.session_year_id', $sessionId);
+                        }
+                    });
+
+                foreach ($admPayQuery->get() as $admPayment) {
+                    if ($admPayment->status !== 'Active') {
+                        continue;
+                    }
+
+                    $admInvoice = $admPayment->invoice;
+                    $structureClassId = (int) ($admInvoice?->admissionFeeStructure?->class_id ?? 0);
+                    if ($structureClassId <= 0) {
+                        continue;
+                    }
+
+                    if (!isset($rows[$structureClassId])) {
+                        $clsName = (string) ($admInvoice->admissionFeeStructure?->schoolClass?->class_name ?? 'N/A');
+                        $rows[$structureClassId] = $this->makeEmptyClassRow($structureClassId, $clsName);
+                    }
+
+                    $catInfo = $this->admissionReportService->aggregateActivePaymentCategoryAmounts($admPayment);
+                    foreach ($catInfo['head_details'] as $headDetail) {
+                        $bucket = $headDetail['is_tuition_head']
+                            ? self::BUCKET_MONTHLY_FEE
+                            : $this->classifyCategory($headDetail['category_name']);
+
+                        $this->accumulateBucketAmounts(
+                            $rows[$structureClassId],
+                            $bucket,
+                            '0.00',
+                            $headDetail['amount'],
+                            '0.00'
+                        );
+                    }
                 }
             }
         }

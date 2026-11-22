@@ -471,7 +471,178 @@ class ClassWiseFinancialReportTest extends TestCase
 
         $oneRow = collect($customReport['rows'])->firstWhere('class_id', $this->clsOne->id);
         $this->assertEquals(800.0, $oneRow['due']['monthly_fee']);
+        $this->assertEquals(800.0, $oneRow['collected']['monthly_fee']);
         $this->assertEquals(800.0, $customReport['total_due']);
+        $this->assertEquals(800.0, $customReport['total_collected']);
+    }
+
+    /**
+     * Test 9b: Model 1 Custom Date Range independently aggregates Active payment_date cash collections
+     * and period-billed invoices (due_date OR created_at in range), including Admission head splits.
+     */
+    public function test_custom_date_range_model_1_independent_payment_date_and_billed_period(): void
+    {
+        // 1. Legacy Monthly Fee invoice due on 2026-11-10 (created 2026-11-01, outside 14..19 Nov),
+        //    but paid on 2026-11-18 (INSIDE 14..19 Nov).
+        $invPaidInRange = $this->createInvoice(
+            $this->stuPlay,
+            $this->catMonthlyFee,
+            $this->session2026,
+            700.0,
+            0.0,
+            'Paid',
+            '2026-11-10',
+            'INV-202611-7001'
+        );
+        \Illuminate\Support\Facades\DB::table('fee_invoices')
+            ->where('id', $invPaidInRange->id)
+            ->update([
+                'paid_amount' => '700.00',
+                'due_amount'  => '0.00',
+                'created_at'  => '2026-11-01 09:00:00',
+            ]);
+        FeePayment::create([
+            'fee_invoice_id' => $invPaidInRange->id,
+            'student_id'     => $this->stuPlay->id,
+            'branch_id'      => $this->branch->id,
+            'paid_amount'    => '700.00',
+            'payment_date'   => '2026-11-18',
+            'payment_method' => 'Cash',
+            'status'         => 'Active',
+            'receipt_no'     => 'REC-M1-ACT-1',
+            'collected_by'   => $this->adminUser->id,
+        ]);
+
+        // Reversed payment on 2026-11-16 MUST be excluded from Collected (reversal columns are guarded from mass-assignment)
+        $revPayment = FeePayment::create([
+            'fee_invoice_id' => $invPaidInRange->id,
+            'student_id'     => $this->stuPlay->id,
+            'branch_id'      => $this->branch->id,
+            'paid_amount'    => '300.00',
+            'payment_date'   => '2026-11-16',
+            'payment_method' => 'Cash',
+            'receipt_no'     => 'REC-M1-REV-1',
+            'collected_by'   => $this->adminUser->id,
+        ]);
+        $revPayment->status = 'Reversed';
+        $revPayment->reversed_amount = '300.00';
+        $revPayment->reversed_at = '2026-11-16 12:00:00';
+        $revPayment->reversed_by = $this->adminUser->id;
+        $revPayment->reversal_reason = 'Test Reversal';
+        $revPayment->reversal_reference = 'REV-M1-001';
+        $revPayment->save();
+
+        // 2. Legacy Exam Fee invoice due on 2026-11-10, created on 2026-11-17 (INSIDE 14..19 Nov), unpaid.
+        $invCreatedInRange = $this->createInvoice(
+            $this->stuOne,
+            $this->catExamFee,
+            $this->session2026,
+            400.0,
+            0.0,
+            'Unpaid',
+            '2026-11-10',
+            'INV-202611-7002'
+        );
+        \Illuminate\Support\Facades\DB::table('fee_invoices')
+            ->where('id', $invCreatedInRange->id)
+            ->update(['created_at' => '2026-11-17 11:00:00']);
+
+        // 3. Payment made OUTSIDE range (2026-11-05) on a 2026-11-10 invoice must NOT appear in 14..19 Nov
+        $invOutside = $this->createInvoice(
+            $this->stuTen,
+            $this->catMonthlyFee,
+            $this->session2026,
+            900.0,
+            900.0,
+            'Paid',
+            '2026-11-10',
+            'INV-202611-7003'
+        );
+        \Illuminate\Support\Facades\DB::table('fee_invoices')
+            ->where('id', $invOutside->id)
+            ->update(['created_at' => '2026-11-01 09:00:00']);
+        FeePayment::where('fee_invoice_id', $invOutside->id)->update(['payment_date' => '2026-11-05']);
+
+        // 4. Admission Invoice (Play, due_date 2026-11-10, created 2026-11-01) with Active payment on 2026-11-15
+        $structureService = app(\App\Services\AdmissionFeeStructureService::class);
+        $invoiceService = app(\App\Services\AdmissionInvoiceService::class);
+        $collectionService = app(\App\Services\AdmissionCollectionService::class);
+
+        $structure = $structureService->createStructure([
+            'branch_id'                => $this->branch->id,
+            'class_id'                 => $this->clsPlay->id,
+            'session_year_id'          => $this->session2026->id,
+            'structure_name'           => 'Play Admission Fee',
+            'status'                   => 'Active',
+            'includes_monthly_tuition' => true,
+            'tuition_month_number'     => 1,
+            'items'                    => [
+                ['fee_category_id' => $this->catMonthlyFee->id, 'head_name' => 'January Tuition', 'amount' => '500.00', 'is_discountable' => false, 'is_tuition_head' => true, 'sort_order' => 10],
+                ['fee_category_id' => $this->catAdmissionFee->id, 'head_name' => 'Admission Fee', 'amount' => '1000.00', 'is_discountable' => true, 'is_tuition_head' => false, 'sort_order' => 20],
+            ],
+        ], $this->adminUser->id);
+
+        $admInv = $invoiceService->generateForStudent($this->stuPlay, ['due_date' => '2026-11-10'], $this->adminUser->id)['invoice'];
+        \Illuminate\Support\Facades\DB::table('fee_invoices')
+            ->where('id', $admInv->id)
+            ->update(['created_at' => '2026-11-01 10:00:00']);
+
+        $admHeads = $admInv->admissionHeadAllocations()->orderBy('sort_order')->get();
+        $collectionService->collectSinglePayment($admInv->id, [
+            'pay_amount'       => '900.00',
+            'payment_method'   => 'Cash',
+            'payment_date'     => '2026-11-15',
+            'head_allocations' => [
+                $admHeads[0]->id => '300.00', // Monthly Fee (tuition head)
+                $admHeads[1]->id => '600.00', // Other Fees (admission head)
+            ],
+        ], $this->adminUser->id);
+
+        $service = new ClassWiseFinancialReportService();
+        $report = $service->generateReport([
+            'session_year_id' => $this->session2026->id,
+            'period_type'     => 'custom',
+            'start_date'      => '2026-11-14',
+            'end_date'        => '2026-11-19',
+        ]);
+
+        $byClass = collect($report['rows'])->keyBy('class_id');
+
+        // Play: 0 billed in 14..19 Nov, Collected = 700 (legacy monthly) + 300 (adm tuition) = 1000 monthly, 600 other_fees
+        $playRow = $byClass[$this->clsPlay->id];
+        $this->assertEquals('0.00', $playRow['due']['total']);
+        $this->assertEquals('0.00', $playRow['outstanding']['total']);
+        $this->assertEquals('1000.00', $playRow['collected']['monthly_fee']);
+        $this->assertEquals('0.00', $playRow['collected']['exam_fees']);
+        $this->assertEquals('600.00', $playRow['collected']['other_fees']);
+        $this->assertEquals('1600.00', $playRow['collected']['total']);
+
+        // One: 400 exam fee created on 2026-11-17 (Due = 400, Outstanding = 400, Collected = 0)
+        $oneRow = $byClass[$this->clsOne->id];
+        $this->assertEquals('400.00', $oneRow['due']['exam_fees']);
+        $this->assertEquals('400.00', $oneRow['outstanding']['exam_fees']);
+        $this->assertEquals('0.00', $oneRow['collected']['total']);
+
+        // Ten: completely outside 14..19 Nov
+        $tenRow = $byClass[$this->clsTen->id];
+        $this->assertEquals('0.00', $tenRow['due']['total']);
+        $this->assertEquals('0.00', $tenRow['collected']['total']);
+        $this->assertEquals('0.00', $tenRow['outstanding']['total']);
+
+        // Grand Totals
+        $this->assertEquals('400.00', $report['total_due']);
+        $this->assertEquals('1600.00', $report['total_collected']);
+        $this->assertEquals('400.00', $report['total_outstanding']);
+
+        // Inverted custom dates normalize cleanly to identical totals
+        $inverted = $service->generateReport([
+            'session_year_id' => $this->session2026->id,
+            'period_type'     => 'custom',
+            'start_date'      => '2026-11-19',
+            'end_date'        => '2026-11-14',
+        ]);
+        $this->assertEquals('1600.00', $inverted['total_collected']);
+        $this->assertEquals('400.00', $inverted['total_due']);
     }
 
     /**
