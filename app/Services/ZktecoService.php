@@ -419,4 +419,115 @@ class ZktecoService
             throw new \Exception("Biometric sync failed: " . $e->getMessage());
         }
     }
+
+    /**
+     * Strictly read-only diagnostic check for ZKTeco device reachability and clock alignment.
+     * NEVER calls setTime(), clearAttendance(), setUser(), or any mutating device command.
+     *
+     * @return array{
+     *     reachable: bool,
+     *     mode: string,
+     *     ip: ?string,
+     *     port: ?int,
+     *     device_time: ?string,
+     *     server_time: string,
+     *     drift_seconds: ?int,
+     *     clock_supported: bool,
+     *     error: ?string
+     * }
+     */
+    public function getDeviceClockInfo(): array
+    {
+        $serverCarbon = Carbon::now('Asia/Dhaka');
+        $base = [
+            'reachable'       => false,
+            'mode'            => (string) $this->mode,
+            'ip'              => $this->ip !== null ? (string) $this->ip : null,
+            'port'            => $this->port !== null ? (int) $this->port : null,
+            'device_time'     => null,
+            'server_time'     => $serverCarbon->format('Y-m-d H:i:s'),
+            'drift_seconds'   => null,
+            'clock_supported' => false,
+            'error'           => null,
+        ];
+
+        if ($this->mode === 'simulation') {
+            if (app()->isProduction()) {
+                return array_merge($base, [
+                    'error' => 'Simulation mode is strictly blocked in production.',
+                ]);
+            }
+
+            return array_merge($base, [
+                'reachable'       => true,
+                'device_time'     => $serverCarbon->format('Y-m-d H:i:s'),
+                'drift_seconds'   => 0,
+                'clock_supported' => true,
+            ]);
+        }
+
+        $zk = null;
+        $connected = false;
+
+        try {
+            $zk = app()->bound(\Jmrashed\Zkteco\Lib\ZKTeco::class)
+                ? app(\Jmrashed\Zkteco\Lib\ZKTeco::class)
+                : new \Jmrashed\Zkteco\Lib\ZKTeco($this->ip, $this->port);
+
+            if (!$zk->connect()) {
+                return array_merge($base, [
+                    'error' => "Unable to establish connection with ZKTeco device at {$this->ip}:{$this->port}.",
+                ]);
+            }
+
+            $connected = true;
+            $clockSupported = method_exists($zk, 'getTime');
+            $rawDeviceTime = $clockSupported ? $zk->getTime() : false;
+            $serverCarbon = Carbon::now('Asia/Dhaka');
+
+            if (!$clockSupported) {
+                return array_merge($base, [
+                    'reachable'       => true,
+                    'server_time'     => $serverCarbon->format('Y-m-d H:i:s'),
+                    'clock_supported' => false,
+                    'error'           => 'ZKTeco SDK does not expose read-only getTime().',
+                ]);
+            }
+
+            if (!is_string($rawDeviceTime) || trim($rawDeviceTime) === '') {
+                return array_merge($base, [
+                    'reachable'       => true,
+                    'server_time'     => $serverCarbon->format('Y-m-d H:i:s'),
+                    'clock_supported' => true,
+                    'error'           => 'Device connected, but getTime() returned an empty or invalid response.',
+                ]);
+            }
+
+            $deviceCarbon = Carbon::parse(trim($rawDeviceTime), 'Asia/Dhaka');
+            $driftSeconds = (int) abs($deviceCarbon->diffInSeconds($serverCarbon, false));
+
+            return array_merge($base, [
+                'reachable'       => true,
+                'device_time'     => $deviceCarbon->format('Y-m-d H:i:s'),
+                'server_time'     => $serverCarbon->format('Y-m-d H:i:s'),
+                'drift_seconds'   => $driftSeconds,
+                'clock_supported' => true,
+            ]);
+        } catch (\Throwable $e) {
+            return array_merge($base, [
+                'reachable'       => $connected,
+                'server_time'     => Carbon::now('Asia/Dhaka')->format('Y-m-d H:i:s'),
+                'clock_supported' => $zk !== null && method_exists($zk, 'getTime'),
+                'error'           => $e->getMessage(),
+            ]);
+        } finally {
+            if ($connected && $zk !== null && method_exists($zk, 'disconnect')) {
+                try {
+                    $zk->disconnect();
+                } catch (\Throwable) {
+                    // Ignore disconnect cleanup error in read-only diagnostic check
+                }
+            }
+        }
+    }
 }
