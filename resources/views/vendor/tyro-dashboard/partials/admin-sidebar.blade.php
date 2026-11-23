@@ -81,6 +81,9 @@
                         <span>Attendance Report</span>
                     </a>
                     @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+                    <a href="{{ route('attendance.schedules.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold {{ request()->routeIs('attendance.schedules.*') ? 'text-themeBlue bg-indigo-50/70 dark:bg-themeBlue/10' : 'text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45' }} transition-colors !no-underline">
+                        <span>Attendance Schedules</span>
+                    </a>
                     <a href="{{ route('id-cards.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:text-themeBlue dark:hover:text-themeBlue hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors !no-underline">
                         <span>ID Card Generation</span>
                     </a>
@@ -420,6 +423,10 @@
                 <span class="sidebar-text">Attendance Report</span>
             </a>
             @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+            <a href="{{ route('attendance.schedules.index') }}" class="sidebar-link {{ request()->routeIs('attendance.schedules.*') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M12 14v3l2 1"/></svg>
+                <span class="sidebar-text">Attendance Schedules</span>
+            </a>
             <a href="{{ route('id-cards.index') }}" class="sidebar-link {{ request()->routeIs('id-cards.index') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 16h8"/></svg>
                 <span class="sidebar-text">ID Card Generation</span>

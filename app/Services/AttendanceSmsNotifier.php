@@ -2,32 +2,47 @@
 
 namespace App\Services;
 
-use App\Models\Student;
 use App\Models\Attendance;
 use App\Models\Shift;
+use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class AttendanceSmsNotifier
 {
     protected SmsService $smsService;
+    protected StudentAttendanceScheduleResolver $scheduleResolver;
+    protected StudentPunchEvaluator $punchEvaluator;
 
-    public function __construct(SmsService $smsService)
-    {
+    public function __construct(
+        SmsService $smsService,
+        ?StudentAttendanceScheduleResolver $scheduleResolver = null,
+        ?StudentPunchEvaluator $punchEvaluator = null
+    ) {
         $this->smsService = $smsService;
+        $this->scheduleResolver = $scheduleResolver ?? app(StudentAttendanceScheduleResolver::class);
+        $this->punchEvaluator = $punchEvaluator ?? app(StudentPunchEvaluator::class);
     }
 
     /**
-     * Notify guardian of student attendance punch
+     * Notify guardian of student attendance punch.
      *
-     * @param Student $student
-     * @param Attendance $attendance Persisted Attendance record
-     * @param array $times Sorted raw times array for the day e.g. ['08:33:11', '11:44:25']
-     * @param string $source Must be 'k60_live' to allow sending
-     * @return array Results summary ['check_in' => bool, 'check_out' => bool]
+     * @param  Student  $student
+     * @param  Attendance  $attendance  Persisted Attendance record
+     * @param  array<int, string>  $times  Raw punch times array for the day e.g. ['08:33:11', '11:44:25']
+     * @param  string  $source  Must be 'k60_live' to allow sending
+     * @param  ?ResolvedStudentSchedule  $resolvedSchedule  Optional pre-resolved schedule to avoid redundant lookup
+     * @param  ?StudentPunchEvaluation  $evaluation  Optional pre-computed punch evaluation
+     * @return array{check_in: bool, check_out: bool}
      */
-    public function notifyPunch(Student $student, Attendance $attendance, array $times, string $source = 'k60_live'): array
-    {
+    public function notifyPunch(
+        Student $student,
+        Attendance $attendance,
+        array $times,
+        string $source = 'k60_live',
+        ?ResolvedStudentSchedule $resolvedSchedule = null,
+        ?StudentPunchEvaluation $evaluation = null
+    ): array {
         // 1. Strict real device source check
         if ($source !== 'k60_live') {
             Log::info("AttendanceSmsNotifier: skipped, source is not 'k60_live' (received '{$source}').");
@@ -40,28 +55,47 @@ class AttendanceSmsNotifier
             return ['check_in' => false, 'check_out' => false];
         }
 
-        // 2. Student eligibility
-        if ($student->status !== 'Active' || $student->sms_status !== 'Active' || empty($student->guardian_mobile)) {
+        // 2. Student eligibility & Attendance status guard (never send arrival/departure SMS for Absent records)
+        if (
+            $student->status !== 'Active'
+            || $student->sms_status !== 'Active'
+            || empty($student->guardian_mobile)
+            || !in_array($attendance->status, ['Present', 'Late'], true)
+        ) {
             return ['check_in' => false, 'check_out' => false];
-        }
-
-        // 3. Shift resolution
-        $shift = $student->shift;
-        if (!$shift) {
-            $shift = Shift::where('type', 'student')->first();
         }
 
         $date = $attendance->attendance_date;
         $attendanceDateFormatted = Carbon::parse($date, 'Asia/Dhaka')->format('d-M-Y');
 
+        // 3. Unified Schedule Resolution & Punch Evaluation
+        $schedule = $resolvedSchedule ?? $this->scheduleResolver->resolveForStudentOnDate($student, $date);
+        $punchEval = $evaluation;
+
+        if ($punchEval === null && $schedule !== null && !empty($times)) {
+            $punchEval = $this->punchEvaluator->evaluate($times, $schedule, $date);
+        }
+
+        $checkInTime = null;
+        $checkOutTime = null;
+
+        if ($punchEval !== null) {
+            if (!$punchEval->hasValidPunch || !in_array($punchEval->status, ['Present', 'Late'], true)) {
+                return ['check_in' => false, 'check_out' => false];
+            }
+            $checkInTime = $punchEval->checkIn;
+            $checkOutTime = $punchEval->checkOut;
+        } elseif (!empty($times)) {
+            sort($times);
+            $checkInTime = $times[0];
+            $checkOutTime = $this->classifyCheckOutTime($times, $student->shift, null, $date);
+        }
+
         $results = ['check_in' => false, 'check_out' => false];
 
         // 4. Process Check-In
-        if (!empty($times)) {
-            sort($times);
-            $checkInTime = $times[0];
+        if ($checkInTime !== null) {
             $eventKeyIn = "att:check_in:{$student->id}:{$date}";
-
             $timeFormatted = Carbon::parse($checkInTime, 'Asia/Dhaka')->format('h:i A');
             $statusLabel = $attendance->status === 'Late' ? ' (Late)' : '';
             $msg = "Dear Guardian, your child {$student->student_name} has entered the school at {$timeFormatted} on {$attendanceDateFormatted}{$statusLabel}. - MACS School";
@@ -75,9 +109,8 @@ class AttendanceSmsNotifier
             );
         }
 
-        // 5. Process Check-Out (Shift-Aware & Double-Tap Protected)
-        $checkOutTime = $this->classifyCheckOutTime($times, $shift);
-        if ($checkOutTime) {
+        // 5. Process Check-Out (Schedule-Aware, Debounce & Check-Out Window Protected)
+        if ($checkOutTime !== null) {
             $eventKeyOut = "att:check_out:{$student->id}:{$date}";
             $outTimeFormatted = Carbon::parse($checkOutTime, 'Asia/Dhaka')->format('h:i A');
             $outMsg = "Dear Guardian, your child {$student->student_name} has left the school at {$outTimeFormatted} on {$attendanceDateFormatted}. - MACS School";
@@ -95,17 +128,31 @@ class AttendanceSmsNotifier
     }
 
     /**
-     * Defensible Check-Out Classification Rule:
-     * - Requires at least 2 punches.
-     * - The latest punch must be at least 30 minutes after the earliest punch (double-tap cooldown).
-     * - If shift defines late_time_end, the punch must occur after late_time_end (cannot check out while entry is still open).
+     * Unified Check-Out Classification Rule:
+     * - When `$resolvedSchedule` is provided, delegates directly to `StudentPunchEvaluator`
+     *   (enforcing `debounce_minutes`, `check_out_from`, and `min_checkout_gap_minutes`).
+     * - Backward-compatible legacy signature when called directly with `?Shift $shift` only:
+     *   requires >= 2 punches, >= 30 minutes interval, and punch strictly after `$shift->late_time_end`.
+     *
+     * @param  array<int, string>  $times
      */
-    public function classifyCheckOutTime(array $times, ?Shift $shift = null): ?string
-    {
+    public function classifyCheckOutTime(
+        array $times,
+        ?Shift $shift = null,
+        ?ResolvedStudentSchedule $resolvedSchedule = null,
+        Carbon|string|null $date = null
+    ): ?string {
         if (count($times) < 2) {
             return null;
         }
 
+        if ($resolvedSchedule !== null) {
+            $evalDate = $date ?? Carbon::today('Asia/Dhaka')->toDateString();
+
+            return $this->punchEvaluator->evaluate($times, $resolvedSchedule, $evalDate)->checkOut;
+        }
+
+        // Backward-compatible direct Shift-only fallback
         sort($times);
         $firstPunch = $times[0];
         $latestPunch = end($times);
@@ -113,12 +160,10 @@ class AttendanceSmsNotifier
         $firstCarbon = Carbon::parse($firstPunch, 'Asia/Dhaka');
         $latestCarbon = Carbon::parse($latestPunch, 'Asia/Dhaka');
 
-        // 1. Double-tap / minimum interval check: at least 30 minutes
         if ($firstCarbon->diffInMinutes($latestCarbon) < 30) {
             return null;
         }
 
-        // 2. Shift late_time_end check: cannot leave during the morning arrival window
         if ($shift && !empty($shift->late_time_end)) {
             $latestTimeStr = $latestCarbon->format('H:i:s');
             if ($latestTimeStr <= $shift->late_time_end) {

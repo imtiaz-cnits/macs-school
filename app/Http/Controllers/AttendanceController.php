@@ -113,7 +113,7 @@ class AttendanceController extends Controller
         ]);
 
         try {
-            $date = $request->attendance_date;
+            $date = Carbon::parse($request->attendance_date, 'Asia/Dhaka')->toDateString();
             $classId = $request->class_id;
             $sectionId = $request->section_id;
             $branchId = $request->branch_id;
@@ -121,17 +121,18 @@ class AttendanceController extends Controller
             $teacherId = $request->teacher_id;
             $creatorId = Auth::id() ?? 1;
 
-            // 1. Get raw logs grouped by card number
+            // 1. Get raw logs grouped by device key (read-only)
             $zkService = app(\App\Services\ZktecoService::class);
+            $processor = app(\App\Services\StudentBiometricAttendanceProcessor::class);
             $cardSwipes = $zkService->getRawLogsByCard($date);
 
-            // 2. Fetch all active students in this class/section
-            $studentQuery = Student::where('status', 'Active');
+            // 2. Fetch all active students matching filters
+            $studentQuery = Student::with(['schoolClass', 'shift'])->where('status', 'Active');
             if ($classId) $studentQuery->where('class_id', $classId);
             if ($sectionId) $studentQuery->where('section_id', $sectionId);
             if ($branchId) $studentQuery->where('branch_id', $branchId);
             if ($sessionYearId) $studentQuery->where('session_year_id', $sessionYearId);
-            
+
             $students = $studentQuery->get();
 
             if ($students->isEmpty()) {
@@ -148,86 +149,55 @@ class AttendanceController extends Controller
             $persistedPunches = [];
 
             foreach ($students as $student) {
-                $status = 'Absent';
-                $remarks = 'Absent (Biometric Check)';
-                
-                $times = null;
-                // 1. Registry-resolved student ID key (covers verified student PIN & Card punches)
-                if (isset($cardSwipes["student:{$student->id}"])) {
-                    $times = $cardSwipes["student:{$student->id}"];
-                }
-                // 2. Registry-resolved card key
-                elseif (!empty($student->card_number) && isset($cardSwipes["card:{$student->card_number}"])) {
-                    $times = $cardSwipes["card:{$student->card_number}"];
-                }
-                // 3. Raw card key (backward compatibility with legacy and simulation)
-                elseif (!empty($student->card_number) && isset($cardSwipes[$student->card_number])) {
-                    $times = $cardSwipes[$student->card_number];
-                }
-                // 4. Raw ID key (fallback for non-reserved student IDs)
-                elseif ((int)$student->id !== 569 && isset($cardSwipes["id:{$student->id}"])) {
-                    $times = $cardSwipes["id:{$student->id}"];
-                }
+                $times = $processor->resolveTimesForStudent($student, $cardSwipes);
 
-                if ($times) {
-                    sort($times);
-                    $checkIn = $times[0];
-                    $checkOut = count($times) > 1 ? end($times) : null;
-                    
-                    $attendanceService = app(\App\Services\AttendanceService::class);
-                    $shift = $student->shift;
-                    if (!$shift) {
-                        $shift = \App\Models\Shift::where('type', 'student')->first();
-                    }
-
-                    $status = 'Present';
-                    if ($shift) {
-                        $punchCarbon = Carbon::parse($date . ' ' . $checkIn, 'Asia/Dhaka');
-                        $status = $attendanceService->calculateStatus($punchCarbon, $shift);
-                    }
-                    
-                    if ($checkOut) {
-                        $remarks = "Card Swiped (In: {$checkIn}, Out: {$checkOut})";
-                    } else {
-                        $remarks = "Card Swiped (In: {$checkIn})";
-                    }
-                    $syncedCount++;
-                } else {
-                    $absentStudentIds[] = $student->id;
-                }
-
-                $persisted = Attendance::updateOrCreate(
-                    [
-                        'student_id'      => $student->id,
-                        'attendance_date' => $date,
-                    ],
-                    [
-                        'branch_id'       => $student->branch_id,
-                        'session_year_id' => $student->session_year_id,
-                        'class_id'        => $student->class_id,
-                        'section_id'      => $student->section_id,
+                if (!empty($times)) {
+                    $result = $processor->processStudentPunches($student, $times, $date, [
                         'teacher_id'      => $teacherId,
                         'user_id'         => $creatorId,
-                        'status'          => $status,
-                        'remarks'         => $remarks,
-                    ]
-                );
+                        'only_if_changed' => false,
+                    ]);
 
-                if ($times && in_array($status, ['Present', 'Late'])) {
-                    $persistedPunches[] = [
-                        'student'    => $student,
-                        'attendance' => $persisted,
-                        'times'      => $times,
-                    ];
+                    if ($result['skipped_noise']) {
+                        $processor->markStudentAbsent($student, $date, [
+                            'teacher_id' => $teacherId,
+                            'user_id'    => $creatorId,
+                        ]);
+                        $absentStudentIds[] = $student->id;
+                    } elseif ($result['sms_eligible'] && $result['attendance'] !== null) {
+                        $syncedCount++;
+                        $persistedPunches[] = [
+                            'student'    => $student,
+                            'attendance' => $result['attendance'],
+                            'times'      => $times,
+                            'schedule'   => $result['schedule'],
+                            'evaluation' => $result['evaluation'],
+                        ];
+                    } else {
+                        // Persisted as Absent (e.g., Late-Absent punch >= absent_from) — never triggers SMS
+                        $absentStudentIds[] = $student->id;
+                    }
+                } else {
+                    $processor->markStudentAbsent($student, $date, [
+                        'teacher_id' => $teacherId,
+                        'user_id'    => $creatorId,
+                    ]);
+                    $absentStudentIds[] = $student->id;
                 }
             }
 
             DB::commit();
 
-            // Trigger guardian notification only after successful DB persistence for real device punches
-            $notifier = app(\App\Services\AttendanceSmsNotifier::class);
+            // Trigger guardian notification only after successful DB persistence for Present/Late punches
             foreach ($persistedPunches as $punchItem) {
-                $notifier->notifyPunch($punchItem['student'], $punchItem['attendance'], $punchItem['times'], 'k60_live');
+                $processor->dispatchGuardianSms(
+                    $punchItem['student'],
+                    $punchItem['attendance'],
+                    $punchItem['times'],
+                    $punchItem['schedule'],
+                    $punchItem['evaluation'],
+                    'k60_live'
+                );
             }
 
             return response()->json([

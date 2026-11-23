@@ -11,6 +11,7 @@ use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\StudentAttendanceScheduleController;
 use App\Http\Controllers\IdCardController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\GradeController;
@@ -272,6 +273,16 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
     Route::get('/ajax/attendance/recent', [\App\Http\Controllers\AttendanceController::class, 'getRecentLogs']);
     Route::get('/ajax/attendance/device-status', [\App\Http\Controllers\AttendanceController::class, 'getDeviceStatus']);
     Route::post('/ajax/attendance/sync-biometric', [\App\Http\Controllers\AttendanceController::class, 'syncBiometric']);
+    Route::get('/ajax/attendance/effective-schedule', [StudentAttendanceScheduleController::class, 'effectiveSchedule'])->name('attendance.effective-schedule');
+
+    // Dynamic Student Attendance Schedules (Normal School Time & Exam Time Campaigns)
+    Route::prefix('attendance/schedules')->name('attendance.schedules.')->group(function () {
+        Route::get('/', [StudentAttendanceScheduleController::class, 'index'])->name('index');
+        Route::post('/', [StudentAttendanceScheduleController::class, 'store'])->name('store');
+        Route::put('/{schedule}', [StudentAttendanceScheduleController::class, 'update'])->name('update');
+        Route::post('/{schedule}/toggle', [StudentAttendanceScheduleController::class, 'toggleStatus'])->name('toggle');
+        Route::delete('/{schedule}', [StudentAttendanceScheduleController::class, 'destroy'])->name('destroy');
+    });
 
     // হাজিরা রিপোর্ট দেখার পেজ
     Route::get('/attendance/report', [AttendanceController::class, 'reportIndex'])->name('attendance.report');

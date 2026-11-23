@@ -38,7 +38,7 @@
              </div>
 
              <div class="bg-themeGreen/10 px-5 py-2 rounded-xl border border-themeGreen/20 backdrop-blur-sm">
-                 <span class="text-xs font-black text-themeGreen uppercase tracking-widest">Date: {{ date('d M, Y') }}</span>
+                 <span class="text-xs font-black text-themeGreen uppercase tracking-widest">Date: {{ \Carbon\Carbon::now('Asia/Dhaka')->format('d M, Y') }}</span>
              </div>
         </div>
     </div>
@@ -235,7 +235,7 @@
 
     <!-- Standard RFID / Fingerprint Attendance Time-Table (Initial View before Filtering) -->
     <div x-show="!hasFiltered" x-cloak class="bg-white dark:bg-themeNavy rounded-3xl border border-gray-100 dark:border-white/[0.06] shadow-sm overflow-hidden" x-transition>
-        <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl bg-themeBlue/10 text-themeBlue flex items-center justify-center shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
@@ -244,11 +244,32 @@
                 </div>
                 <div>
                     <h2 class="text-sm font-black text-gray-900 dark:text-white tracking-tight">Standard RFID &amp; Fingerprint Attendance Time-Table</h2>
-                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Standard punch windows for Students (RFID) and Staff (Fingerprint / RFID). Use any filter above to load attendance records.</p>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Effective punch windows for Students (RFID) and Staff (Fingerprint / RFID) on <span class="font-bold text-gray-700 dark:text-gray-200" x-text="form.attendance_date"></span>. Use any filter above to load attendance records.
+                    </p>
                 </div>
             </div>
-            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-themeBlue/10 text-themeBlue border border-themeBlue/20 self-start sm:self-auto whitespace-nowrap"
-                  x-text="shifts.length + ' Standard Shifts'"></span>
+            <div class="flex flex-wrap items-center gap-2 self-start lg:self-auto">
+                <!-- Dynamic Active Schedule Mode Badge -->
+                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border whitespace-nowrap"
+                      :class="effectiveMode === 'exam'
+                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
+                          : (effectiveMode === 'mixed'
+                              ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/25'
+                              : 'bg-themeGreen/10 text-themeGreen border-themeGreen/25')"
+                      x-text="effectiveModeBadgeText"></span>
+
+                @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super-admin')))
+                <a href="{{ route('attendance.schedules.index') }}"
+                   class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-themeBlue/10 hover:bg-themeBlue/20 text-themeBlue border border-themeBlue/20 transition-colors whitespace-nowrap !no-underline">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span>Manage Schedules</span>
+                </a>
+                @endif
+            </div>
         </div>
 
         <div class="px-6 pb-4 pt-1">
@@ -257,8 +278,8 @@
                     <thead>
                         <tr class="!bg-transparent">
                             <th class="w-16 !bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">SL</th>
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Shift Name</th>
-                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Group &amp; Method</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Schedule / Shift Name</th>
+                            <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] whitespace-nowrap">Group &amp; Classes</th>
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">On-Time In (Present)</th>
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">Late Window</th>
                             <th class="!bg-transparent border-b border-gray-200 dark:border-white/[0.08] !py-0 !px-0 text-[10px] font-black text-gray-400 dark:text-gray-550 uppercase tracking-[0.18em] text-center whitespace-nowrap">Absent From</th>
@@ -266,29 +287,78 @@
                         </tr>
                     </thead>
                     <tbody class="font-medium">
-                        <template x-if="!shiftsLoaded">
+                        <template x-if="!scheduleLoaded">
                             <tr class="animate-pulse">
                                 <td class="py-0 px-0"><div class="h-4 w-6 mx-auto bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
-                                <td class="py-0 px-0"><div class="h-4 w-32 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
-                                <td class="py-0 px-0"><div class="h-5 w-36 bg-gray-200 dark:bg-gray-700/60 rounded-full"></div></td>
+                                <td class="py-0 px-0"><div class="h-4 w-36 bg-gray-200 dark:bg-gray-700/60 rounded-md"></div></td>
+                                <td class="py-0 px-0"><div class="h-5 w-44 bg-gray-200 dark:bg-gray-700/60 rounded-full"></div></td>
                                 <td class="py-0 px-0"><div class="h-5 w-32 mx-auto bg-gray-200 dark:bg-gray-700/60 rounded-full"></div></td>
                                 <td class="py-0 px-0"><div class="h-5 w-32 mx-auto bg-gray-200 dark:bg-gray-700/60 rounded-full"></div></td>
+                                <td class="py-0 px-0"><div class="h-5 w-28 mx-auto bg-gray-200 dark:bg-gray-700/60 rounded-full"></div></td>
                                 <td class="py-0 px-0"><div class="h-5 w-24 mx-auto bg-gray-200 dark:bg-gray-700/60 rounded-full"></div></td>
-                                <td class="py-0 px-0"><div class="h-5 w-20 mx-auto bg-gray-200 dark:bg-gray-700/60 rounded-full"></div></td>
                             </tr>
                         </template>
-                        <template x-for="(shift, idx) in shifts" :key="shift.id">
+
+                        <!-- Dynamic Student Schedule Rows -->
+                        <template x-for="(slot, idx) in studentSlots" :key="'stu_' + (slot.slot_id || idx)">
                             <tr class="transition-colors">
                                 <td class="py-0 px-0 text-center">
                                     <span class="font-mono font-black text-gray-555 dark:text-gray-400 text-sm" x-text="idx + 1"></span>
                                 </td>
                                 <td class="py-0 px-0">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-bold text-gray-900 dark:text-gray-100" x-text="slot.slot_name"></span>
+                                        <template x-if="slot.mode === 'exam'">
+                                            <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                                Exam
+                                            </span>
+                                        </template>
+                                    </div>
+                                </td>
+                                <td class="py-0 px-0 whitespace-nowrap">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-themeBlue/10 text-themeBlue border border-themeBlue/20 inline-block">
+                                            Student • RFID
+                                        </span>
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-indigo-50 dark:bg-white/[0.06] text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-white/[0.08] inline-block"
+                                              x-text="slot.class_summary"></span>
+                                    </div>
+                                </td>
+                                <td class="py-0 px-0 text-center whitespace-nowrap">
+                                    <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-green-500/10 text-themeGreen border border-themeGreen/20 inline-block"
+                                          x-text="formatShiftTime(slot.on_time_start) + ' – ' + formatShiftTime(slot.on_time_end)">
+                                    </span>
+                                </td>
+                                <td class="py-0 px-0 text-center whitespace-nowrap">
+                                    <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-block"
+                                          x-text="formatShiftTime(slot.late_start) + ' – ' + formatShiftTime(slot.late_end)">
+                                    </span>
+                                </td>
+                                <td class="py-0 px-0 text-center whitespace-nowrap">
+                                    <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 inline-block"
+                                          x-text="slot.absent_from ? (formatShiftTime(slot.absent_from) + ' onwards') : '—'">
+                                    </span>
+                                </td>
+                                <td class="py-0 px-0 text-center whitespace-nowrap">
+                                    <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-themeBlue/10 text-themeBlue border border-themeBlue/20 inline-block"
+                                          x-text="slot.check_out_from ? (formatShiftTime(slot.check_out_from) + ' onwards') : '—'">
+                                    </span>
+                                </td>
+                            </tr>
+                        </template>
+
+                        <!-- Existing Staff Shift Rows (Preserved Intact) -->
+                        <template x-for="(shift, sIdx) in staffShifts" :key="'staff_' + shift.id">
+                            <tr class="transition-colors">
+                                <td class="py-0 px-0 text-center">
+                                    <span class="font-mono font-black text-gray-555 dark:text-gray-400 text-sm" x-text="studentSlots.length + sIdx + 1"></span>
+                                </td>
+                                <td class="py-0 px-0">
                                     <span class="text-sm font-bold text-gray-900 dark:text-gray-100" x-text="shift.name || shift.shift_name"></span>
                                 </td>
                                 <td class="py-0 px-0 whitespace-nowrap">
-                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-block"
-                                          :class="shift.type === 'staff' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20' : 'bg-themeBlue/10 text-themeBlue border border-themeBlue/20'"
-                                          x-text="shift.type === 'staff' ? 'Staff • Fingerprint / RFID' : 'Student • RFID Card'">
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 inline-block">
+                                        Staff • Fingerprint / RFID
                                     </span>
                                 </td>
                                 <td class="py-0 px-0 text-center whitespace-nowrap">
@@ -313,7 +383,8 @@
                                 </td>
                             </tr>
                         </template>
-                        <template x-if="shiftsLoaded && shifts.length === 0">
+
+                        <template x-if="scheduleLoaded && studentSlots.length === 0 && staffShifts.length === 0">
                             <tr>
                                 <td colspan="7" class="py-12 text-center">
                                     <span class="text-xs font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-550">No standard attendance schedule configured</span>
@@ -518,7 +589,7 @@
                 session_year_id: '',
                 class_id: '',
                 section_id: '',
-                attendance_date: '{{ date("Y-m-d") }}',
+                attendance_date: '{{ \Carbon\Carbon::today("Asia/Dhaka")->toDateString() }}',
                 search: ''
             },
 
@@ -531,10 +602,13 @@
             classText: 'Select Class',
             sectionText: 'Select Section',
 
-            // Students attendance lists
+            // Students attendance lists & dynamic effective schedule state
             students: [],
-            shifts: [],
-            shiftsLoaded: false,
+            studentSlots: [],
+            staffShifts: [],
+            effectiveMode: 'normal',
+            activeCampaigns: [],
+            scheduleLoaded: false,
             hasFiltered: false,
             isResettingFilters: false,
             
@@ -565,12 +639,11 @@
                 window.attendancePageInstance = this;
                 this.loading = true;
                 try {
-                    const [branches, sessions, classes, sections, shiftsRes] = await Promise.all([
+                    const [branches, sessions, classes, sections] = await Promise.all([
                         axios.get('/ajax/branches', getAuthHeaders()),
                         axios.get('/ajax/sessions', getAuthHeaders()),
                         axios.get('/ajax/classes', getAuthHeaders()),
-                        axios.get('/ajax/sections', getAuthHeaders()),
-                        axios.get('/ajax/shifts', getAuthHeaders())
+                        axios.get('/ajax/sections', getAuthHeaders())
                     ]);
 
                     this.branches = branches.data.branchData || [];
@@ -578,16 +651,7 @@
                     this.classes = classes.data.classData || [];
                     this.sections = sections.data.sectionData || [];
 
-                    const rawShifts = shiftsRes.data.shiftData || [];
-                    this.shifts = rawShifts
-                        .filter(s => s.in_time_start || s.in_time_end || s.out_time)
-                        .sort((a, b) => {
-                            const typeOrder = (t) => (t === 'student' ? 0 : (t === 'staff' ? 1 : 2));
-                            const diff = typeOrder(a.type) - typeOrder(b.type);
-                            if (diff !== 0) return diff;
-                            return (a.in_time_start || '').localeCompare(b.in_time_start || '');
-                        });
-                    this.shiftsLoaded = true;
+                    await this.fetchEffectiveSchedule();
 
                     // Setup defaults if list items are single or populated
                     if (this.sessions.length > 0) {
@@ -596,9 +660,10 @@
                         this.sessionText = firstSession.session_name;
                     }
 
-                    // Watch date changes to auto-filter
+                    // Watch date changes to auto-filter & refresh effective schedule
                     this.$watch('form.attendance_date', () => {
                         if (this.isResettingFilters) return;
+                        this.fetchEffectiveSchedule();
                         this.hasFiltered = true;
                         this.fetchStudents(1);
                     });
@@ -623,6 +688,38 @@
                 } finally {
                     this.loading = false;
                 }
+            },
+
+            async fetchEffectiveSchedule() {
+                try {
+                    const params = new URLSearchParams({
+                        date: this.form.attendance_date || '{{ \Carbon\Carbon::today("Asia/Dhaka")->toDateString() }}'
+                    });
+                    if (this.form.branch_id) {
+                        params.append('branch_id', this.form.branch_id);
+                    }
+                    const res = await axios.get(`/ajax/attendance/effective-schedule?${params.toString()}`, getAuthHeaders());
+                    this.effectiveMode = res.data.mode || 'normal';
+                    this.activeCampaigns = res.data.active_campaigns || [];
+                    this.studentSlots = res.data.student_slots || [];
+                    this.staffShifts = res.data.staff_shifts || [];
+                } catch (e) {
+                    console.error("Effective Schedule Load Error:", e);
+                } finally {
+                    this.scheduleLoaded = true;
+                }
+            },
+
+            get effectiveModeBadgeText() {
+                if (this.effectiveMode === 'exam') {
+                    const names = this.activeCampaigns.map(c => c.name).filter(Boolean).join(', ');
+                    return names ? `Exam Time: ${names}` : 'Exam Time';
+                }
+                if (this.effectiveMode === 'mixed') {
+                    const names = this.activeCampaigns.map(c => c.name).filter(Boolean).join(', ');
+                    return names ? `Mixed Schedule (${names})` : 'Mixed Schedule (Exam + Normal)';
+                }
+                return 'Normal School Time';
             },
 
             async fetchDeviceStatus() {
@@ -737,6 +834,9 @@
                 
                 this.activeDropdown = null;
                 this.hasFiltered = true;
+                if (field === 'branch_id') {
+                    this.fetchEffectiveSchedule();
+                }
                 this.fetchStudents(1);
             },
 
@@ -818,7 +918,7 @@
                 this.form.class_id = '';
                 this.form.section_id = '';
                 this.form.search = '';
-                this.form.attendance_date = '{{ date("Y-m-d") }}';
+                this.form.attendance_date = '{{ \Carbon\Carbon::today("Asia/Dhaka")->toDateString() }}';
                 
                 this.branchText = 'Select Branch';
                 this.classText = 'Select Class';
@@ -834,6 +934,7 @@
                     this.isResettingFilters = false;
                 });
 
+                this.fetchEffectiveSchedule();
                 this.fetchStudents(1, true);
             },
 

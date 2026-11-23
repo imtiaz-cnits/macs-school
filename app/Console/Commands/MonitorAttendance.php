@@ -2,12 +2,11 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Student;
-use App\Models\Attendance;
+use App\Services\StudentBiometricAttendanceProcessor;
 use App\Services\ZktecoService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Console\Command;
 
 class MonitorAttendance extends Command
 {
@@ -33,7 +32,7 @@ class MonitorAttendance extends Command
         $this->info("==================================================");
         $this->info("   MACS SCHOOL - REALTIME BIOMETRIC ATTENDANCE    ");
         $this->info("==================================================");
-        
+
         $zkService = app(ZktecoService::class);
 
         if ($zkService->getMode() === 'simulation' && app()->isProduction()) {
@@ -48,114 +47,103 @@ class MonitorAttendance extends Command
         $this->info("Monitoring Mode: " . $zkService->getMode());
         $this->info("Press Ctrl+C to stop monitoring.");
         $this->info("--------------------------------------------------");
-        
-        // Define default settings in case student fields are missing
-        $branchId = 1;
-        $sessionYearId = 1;
-        $classId = 1;
-        $sectionId = 1;
-        $teacherId = null;
-        $creatorId = 1;
-        
+
         // Loop persistently
         while (true) {
             $today = Carbon::today('Asia/Dhaka')->format('Y-m-d');
-            
+
             try {
-                // Get raw card swipes for today from the device
-                $cardSwipes = $zkService->getRawLogsByCard($today);
-                
-                $this->info("[" . date('H:i:s') . "] Checked device: found " . count($cardSwipes) . " active user logs for today (" . $today . ").");
-                if (count($cardSwipes) > 0) {
-                    $this->info("  --> Raw keys detected: " . implode(', ', array_keys($cardSwipes)));
-                }
-                
-                foreach ($cardSwipes as $key => $times) {
-                    if (empty($key)) continue;
-                    
-                    $student = null;
-                    if (str_starts_with($key, 'id:')) {
-                        $studentId = substr($key, 3);
-                        $student = Student::find($studentId);
-                    } else {
-                        $student = Student::where('card_number', $key)->first();
-                    }
-                    
-                    if (!$student) {
-                        continue;
-                    }
-                    
-                    // Check if they already have attendance recorded for today
-                    $attRecord = Attendance::where('student_id', $student->id)
-                        ->where('attendance_date', $today)
-                        ->first();
-                        
-                    sort($times);
-                    $checkInTime = $times[0];
-                    $checkOutTime = count($times) > 1 ? end($times) : null;
-                    
-                    $attendanceService = app(\App\Services\AttendanceService::class);
-                    $shift = $student->shift;
-                    if (!$shift) {
-                        $shift = \App\Models\Shift::where('type', 'student')->first();
-                    }
-
-                    $status = 'Present';
-                    if ($shift) {
-                        $punchCarbon = Carbon::parse($today . ' ' . $checkInTime, 'Asia/Dhaka');
-                        $status = $attendanceService->calculateStatus($punchCarbon, $shift);
-                    }
-                    
-                    if ($checkOutTime) {
-                        $remarks = "Card Swiped (In: {$checkInTime}, Out: {$checkOutTime})";
-                    } else {
-                        $remarks = "Card Swiped (In: {$checkInTime})";
-                    }
-                    
-                    // Determine if we need to update/insert the record
-                    $shouldUpdate = false;
-                    if (!$attRecord) {
-                        $shouldUpdate = true;
-                    } else {
-                        if ($attRecord->status === 'Absent' && !str_contains($attRecord->remarks ?? '', "In: {$checkInTime}")) {
-                            $shouldUpdate = true;
-                        } elseif ($checkOutTime && !str_contains($attRecord->remarks ?? '', "Out: {$checkOutTime}")) {
-                            $shouldUpdate = true;
-                        }
-                    }
-                    
-                    if ($shouldUpdate) {
-                        // Insert/Update attendance record
-                        $persistedAttendance = Attendance::updateOrCreate(
-                            [
-                                'student_id'      => $student->id,
-                                'attendance_date' => $today,
-                            ],
-                            [
-                                'branch_id'       => $student->branch_id ?? $branchId,
-                                'session_year_id' => $student->session_year_id ?? $sessionYearId,
-                                'class_id'        => $student->class_id ?? $classId,
-                                'section_id'      => $student->section_id ?? $sectionId,
-                                'teacher_id'      => $teacherId,
-                                'user_id'         => $creatorId,
-                                'status'          => $status,
-                                'remarks'         => $remarks
-                            ]
-                        );
-                        
-                        $this->info("[" . date('H:i:s') . "] PUNCH RECORD UPDATED: Student '{$student->student_name}' (Card: {$key}) remarks set to: {$remarks}.");
-
-                        // Trigger immediate Guardian SMS notification for valid persisted punch
-                        $notifier = app(\App\Services\AttendanceSmsNotifier::class);
-                        $notifier->notifyPunch($student, $persistedAttendance, $times, 'k60_live');
-                    }
-                }
+                $this->processPollingCycle($zkService, $today);
             } catch (\Exception $e) {
-                $this->error("[" . date('H:i:s') . "] Connection/Read Error: " . $e->getMessage());
+                $this->error("[" . Carbon::now('Asia/Dhaka')->format('H:i:s') . "] Connection/Read Error: " . $e->getMessage());
             }
-            
+
             // Sleep for 3 seconds before polling again
             sleep(3);
+        }
+    }
+
+    /**
+     * Execute a single polling cycle against the biometric device for the target date.
+     * Extracted for direct testability and shared single-source-of-truth parity.
+     *
+     * @return int Number of student attendance rows inserted or updated during this cycle.
+     */
+    public function processPollingCycle(ZktecoService $zkService, ?string $date = null): int
+    {
+        $targetDate = $date !== null
+            ? Carbon::parse($date, 'Asia/Dhaka')->toDateString()
+            : Carbon::today('Asia/Dhaka')->toDateString();
+
+        // Get raw device punches for target date (read-only)
+        $cardSwipes = $zkService->getRawLogsByCard($targetDate);
+        $nowTime = Carbon::now('Asia/Dhaka')->format('H:i:s');
+
+        $this->logInfo("[{$nowTime}] Checked device: found " . count($cardSwipes) . " active user logs for today ({$targetDate}).");
+        if (count($cardSwipes) > 0) {
+            $this->logInfo("  --> Raw keys detected: " . implode(', ', array_keys($cardSwipes)));
+        }
+
+        $processor = app(StudentBiometricAttendanceProcessor::class);
+        $punchesByStudent = $processor->extractStudentPunches($cardSwipes);
+
+        if (empty($punchesByStudent)) {
+            return 0;
+        }
+
+        $students = Student::with(['schoolClass', 'shift'])
+            ->whereIn('id', array_keys($punchesByStudent))
+            ->get()
+            ->keyBy('id');
+
+        $updatedCount = 0;
+
+        foreach ($punchesByStudent as $studentId => $times) {
+            /** @var Student|null $student */
+            $student = $students->get($studentId);
+            if (!$student || !$student->isActive()) {
+                continue;
+            }
+
+            $result = $processor->processStudentPunches($student, $times, $targetDate, [
+                'only_if_changed'          => true,
+                'teacher_id'               => null,
+                'user_id'                  => 1,
+                'fallback_branch_id'       => 1,
+                'fallback_session_year_id' => 1,
+                'fallback_class_id'        => 1,
+                'fallback_section_id'      => 1,
+            ]);
+
+            if ($result['persisted'] && $result['attendance'] !== null) {
+                $updatedCount++;
+
+                $this->logInfo(
+                    "[{$nowTime}] PUNCH RECORD UPDATED: Student '{$student->student_name}' (ID: {$student->id}) "
+                    . "status set to {$result['status']}, remarks set to: {$result['remarks']}."
+                );
+
+                // Trigger immediate Guardian SMS notification ONLY for Present/Late persisted punches
+                if ($result['sms_eligible']) {
+                    $processor->dispatchGuardianSms(
+                        $student,
+                        $result['attendance'],
+                        $times,
+                        $result['schedule'],
+                        $result['evaluation'],
+                        'k60_live'
+                    );
+                }
+            }
+        }
+
+        return $updatedCount;
+    }
+
+    private function logInfo(string $message): void
+    {
+        if ($this->output !== null) {
+            $this->info($message);
         }
     }
 }

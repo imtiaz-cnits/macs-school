@@ -12,7 +12,8 @@ class Attendance extends Model
     protected $fillable = [
         'student_id', 'branch_id', 'session_year_id', 'class_id', 
         'section_id', 'teacher_id', 'user_id', 'attendance_date', 
-        'status', 'remarks'
+        'status', 'schedule_mode', 'schedule_slot_id', 'schedule_slot_name',
+        'remarks'
     ];
 
     // ১. স্টুডেন্টের সাথে রিলেশন
@@ -43,6 +44,11 @@ class Attendance extends Model
     // ৬. সেশনের সাথে রিলেশন
     public function sessionYear() {
         return $this->belongsTo(SessionYear::class, 'session_year_id');
+    }
+
+    public function scheduleSlot()
+    {
+        return $this->belongsTo(StudentAttendanceScheduleSlot::class, 'schedule_slot_id');
     }
 
     /**
