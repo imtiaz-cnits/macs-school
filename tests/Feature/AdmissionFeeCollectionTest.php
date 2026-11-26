@@ -545,6 +545,7 @@ class AdmissionFeeCollectionTest extends TestCase
             'mode' => 'decrease',
             'amount' => 200,
             'scope' => 'single',
+            'reason' => 'Attempt adjust admission invoice',
         ])->assertStatus(422);
 
         $this->postJson(route('fees.custom_fee.update_inline'), [

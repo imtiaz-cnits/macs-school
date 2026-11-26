@@ -193,7 +193,7 @@
                         </thead>
                         <tbody class="text-[10px]">
                             @foreach($mr['active_items'] as $item)
-                                <tr class="border-b {{ ($item['is_admission'] && !empty($item['head_lines'])) ? 'border-gray-300' : 'border-gray-200' }}">
+                                <tr class="border-b {{ (($item['is_admission'] && !empty($item['head_lines'])) || (!$item['is_admission'] && !empty($item['has_fine']))) ? 'border-gray-300' : 'border-gray-200' }}">
                                     @if(isset($isMultipleStudents) && $isMultipleStudents)
                                         <td class="py-1 font-bold">{{ $item['student']->student_name ?? 'N/A' }} ({{ $item['student']->student_identity ?? 'N/A' }})</td>
                                     @endif
@@ -211,8 +211,25 @@
                                     <td class="py-1 font-semibold text-gray-700">
                                         {{ $item['month_label'] }}
                                     </td>
-                                    <td class="py-1 text-right font-bold font-mono text-green-700">৳{{ $item['paid_amount_formatted'] }}</td>
+                                    <td class="py-1 text-right font-bold font-mono text-green-700">
+                                        ৳{{ (!$item['is_admission'] && !empty($item['has_fine'])) ? $item['tuition_paid_formatted'] : $item['paid_amount_formatted'] }}
+                                    </td>
                                 </tr>
+                                @if(!$item['is_admission'] && !empty($item['has_fine']))
+                                    <tr class="border-b border-gray-200 bg-gray-50/60 text-[9.5px] text-gray-800">
+                                        @if(isset($isMultipleStudents) && $isMultipleStudents)
+                                            <td></td>
+                                        @endif
+                                        <td class="py-0.5 pl-3 font-semibold">
+                                            &bull; Late Fine
+                                            @if(!empty($item['fine_source']))
+                                                <span class="ml-1 text-[8px] font-bold uppercase text-gray-600">({{ ucfirst($item['fine_source']) }})</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-0.5 text-gray-700">{{ $item['month_label'] }}</td>
+                                        <td class="py-0.5 text-right font-mono font-bold text-green-700">৳{{ $item['fine_paid_formatted'] }}</td>
+                                    </tr>
+                                @endif
                                 @if($item['is_admission'] && !empty($item['head_lines']))
                                     @foreach($item['head_lines'] as $head)
                                         <tr class="border-b border-gray-100 bg-gray-50/60 text-[9px] text-gray-700">

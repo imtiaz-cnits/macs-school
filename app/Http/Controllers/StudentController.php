@@ -897,10 +897,11 @@ class StudentController extends Controller
             foreach ($unpaidInvoices as $invoice) {
                 $feeSetupAmount = floatval($invoice->feeSetup->amount);
                 $customAmount = floatval($request->amount);
+                $fineAmt = floatval($invoice->fineAmountDecimal());
 
                 $invoice->discount = max(0, $feeSetupAmount - $customAmount);
                 $invoice->net_amount = $customAmount;
-                $invoice->due_amount = max(0, $customAmount - $invoice->paid_amount);
+                $invoice->due_amount = max(0, ($customAmount + $fineAmt) - $invoice->paid_amount);
                 $invoice->status = $invoice->due_amount <= 0 ? 'Paid' : ($invoice->paid_amount > 0 ? 'Partial' : 'Unpaid');
                 $invoice->save();
             }
@@ -936,10 +937,11 @@ class StudentController extends Controller
 
             foreach ($unpaidInvoices as $invoice) {
                 $feeSetupAmount = floatval($invoice->feeSetup->amount);
+                $fineAmt = floatval($invoice->fineAmountDecimal());
 
                 $invoice->discount = 0;
                 $invoice->net_amount = $feeSetupAmount;
-                $invoice->due_amount = max(0, $feeSetupAmount - $invoice->paid_amount);
+                $invoice->due_amount = max(0, ($feeSetupAmount + $fineAmt) - $invoice->paid_amount);
                 $invoice->status = $invoice->due_amount <= 0 ? 'Paid' : ($invoice->paid_amount > 0 ? 'Partial' : 'Unpaid');
                 $invoice->save();
             }
@@ -1118,6 +1120,7 @@ class StudentController extends Controller
                         'amount' => (float) $inv->amount,
                         'discount' => (float) $inv->discount,
                         'net_amount' => (float) $inv->net_amount,
+                        'fine_amount' => (float) $inv->fineAmountDecimal(),
                         'paid_amount' => (float) $inv->paid_amount,
                         'due_amount' => (float) $inv->due_amount,
                         'status' => $inv->status,
@@ -1145,6 +1148,7 @@ class StudentController extends Controller
                             'amount' => (float) $inv->amount,
                             'discount' => (float) $inv->discount,
                             'net_amount' => (float) $inv->net_amount,
+                            'fine_amount' => (float) $inv->fineAmountDecimal(),
                             'due_amount' => (float) $inv->due_amount,
                             'status' => $inv->status,
                         ];

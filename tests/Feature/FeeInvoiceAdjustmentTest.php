@@ -159,6 +159,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'increase',
             'amount'     => 150.00,
             'scope'      => 'single',
+            'reason'     => 'Extra lab fee charge',
         ]);
 
         $response->assertOk()->assertJson(['success' => true]);
@@ -214,6 +215,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'set_amount',
             'amount'     => 850.00,
             'scope'      => 'single',
+            'reason'     => 'Approved fee adjustment',
         ]);
 
         $response->assertOk()->assertJson(['success' => true]);
@@ -239,6 +241,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'set_amount',
             'amount'     => 1300.00,
             'scope'      => 'single',
+            'reason'     => 'Additional tuition charge',
         ]);
 
         $response->assertOk()->assertJson(['success' => true]);
@@ -268,6 +271,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'decrease',
             'amount'     => 1100.00,
             'scope'      => 'single',
+            'reason'     => 'Attempt excessive reduction',
         ]);
 
         $response->assertStatus(422)
@@ -297,6 +301,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'set_amount',
             'amount'     => 400.00,
             'scope'      => 'single',
+            'reason'     => 'Attempt set below paid',
         ]);
 
         $response->assertStatus(422)
@@ -315,6 +320,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'increase',
             'amount'     => -50.00,
             'scope'      => 'single',
+            'reason'     => 'Invalid negative test',
         ]);
 
         $response->assertStatus(422);
@@ -346,6 +352,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'increase',
             'amount'     => 100.00,
             'scope'      => 'single',
+            'reason'     => 'Additional tutoring charge',
         ]);
 
         $response->assertOk();
@@ -367,6 +374,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'increase',
             'amount'     => 300.00,
             'scope'      => 'single',
+            'reason'     => 'January special charge',
         ]);
 
         $response->assertOk();
@@ -387,6 +395,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'increase',
             'amount'     => 250.00,
             'scope'      => 'single',
+            'reason'     => 'One-time fee adjustment',
         ]);
 
         $response->assertOk();
@@ -449,6 +458,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'set_amount',
             'amount'     => 750.00,
             'scope'      => 'continuous',
+            'reason'     => 'Approved scholarship update',
         ]);
 
         $response->assertOk();
@@ -482,15 +492,16 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'set_amount',
             'amount'     => 800.00,
             'scope'      => 'continuous',
+            'reason'     => 'Attempt continuous on partial invoice',
         ]);
 
         $response->assertStatus(422)
                  ->assertJson(['success' => false]);
     }
 
-    public function test_optional_reason_is_stored_when_supplied_and_works_when_omitted(): void
+    public function test_reason_is_required_and_missing_or_short_reason_returns_422(): void
     {
-        // 1. With reason
+        // 1. Valid reason succeeds and is stored in audit log
         $inv1 = $this->createInvoice();
         $res1 = $this->postJson(route('fees.invoice.adjust'), [
             'invoice_id' => $inv1->id,
@@ -505,7 +516,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'reason'         => 'Special reason test',
         ]);
 
-        // 2. Without reason (omitted)
+        // 2. Omitted reason returns 422 and leaves invoice untouched
         $inv2 = $this->createInvoice();
         $res2 = $this->postJson(route('fees.invoice.adjust'), [
             'invoice_id' => $inv2->id,
@@ -513,11 +524,22 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'amount'     => 50.00,
             'scope'      => 'single',
         ]);
-        $res2->assertOk();
-        $this->assertDatabaseHas('fee_adjustment_logs', [
-            'fee_invoice_id' => $inv2->id,
-            'reason'         => null,
+        $res2->assertStatus(422)->assertJsonValidationErrors(['reason']);
+
+        // 3. Too-short reason (< 3 chars) returns 422 and leaves invoice untouched
+        $res3 = $this->postJson(route('fees.invoice.adjust'), [
+            'invoice_id' => $inv2->id,
+            'mode'       => 'increase',
+            'amount'     => 50.00,
+            'scope'      => 'single',
+            'reason'     => 'ok',
         ]);
+        $res3->assertStatus(422)->assertJsonValidationErrors(['reason']);
+
+        $inv2->refresh();
+        $this->assertEquals(1000.00, (float) $inv2->net_amount);
+        $this->assertEquals(1000.00, (float) $inv2->due_amount);
+        $this->assertDatabaseMissing('fee_adjustment_logs', ['fee_invoice_id' => $inv2->id]);
     }
 
     public function test_unauthenticated_and_unauthorized_users_are_forbidden(): void
@@ -531,6 +553,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'increase',
             'amount'     => 50.00,
             'scope'      => 'single',
+            'reason'     => 'Unauthenticated attempt',
         ]);
         // Expect 401 or redirect to login
         $this->assertTrue(in_array($guestResponse->status(), [401, 302]));
@@ -550,6 +573,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'increase',
             'amount'     => 50.00,
             'scope'      => 'single',
+            'reason'     => 'Unauthorized role attempt',
         ]);
         // Expect 403 or 302 redirect by Tyro role middleware
         $this->assertTrue(in_array($unauthResponse->status(), [403, 302]));
@@ -601,6 +625,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'decrease',
             'amount'     => 200.00,
             'scope'      => 'single',
+            'reason'     => 'Approved summary discount',
         ]);
 
         $response->assertOk()
@@ -688,6 +713,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'set_amount',
             'amount'     => 600.00,
             'scope'      => 'continuous',
+            'reason'     => 'Atomic rollback check',
         ]);
 
         $response->assertStatus(500)
@@ -723,6 +749,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'decrease',
             'amount'     => 549.51,
             'scope'      => 'single',
+            'reason'     => 'Boundary precision over-reduction',
         ]);
         $response1->assertStatus(422)->assertJson(['success' => false]);
 
@@ -736,6 +763,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'set_amount',
             'amount'     => 450.49,
             'scope'      => 'single',
+            'reason'     => 'Boundary precision below paid',
         ]);
         $response2->assertStatus(422)->assertJson(['success' => false]);
 
@@ -749,6 +777,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'decrease',
             'amount'     => 549.50,
             'scope'      => 'single',
+            'reason'     => 'Exact remaining balance waiver',
         ]);
         $response3->assertOk()->assertJson(['success' => true]);
 
@@ -785,6 +814,7 @@ class FeeInvoiceAdjustmentTest extends TestCase
             'mode'       => 'decrease',
             'amount'     => 200.00,
             'scope'      => 'single',
+            'reason'     => 'Regression discount check',
         ]);
 
         $response->assertOk();

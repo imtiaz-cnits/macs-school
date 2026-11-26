@@ -425,7 +425,10 @@ class AdmissionCollectionService
             /** @var Collection<int, FeePayment> $invPayments */
             $invPayments = $lockContext['payments_by_invoice']->get($invId, collect());
             $currentActivePaid = $this->sumActivePayments($invPayments);
-            $currentDue = bcsub($this->toDecimalString($lockedInvoice->net_amount), $currentActivePaid, 2);
+            $invoiceTotalPayable = $lockedInvoice->isAdmissionInvoice()
+                ? $this->toDecimalString($lockedInvoice->net_amount)
+                : $lockedInvoice->totalPayableAmount();
+            $currentDue = bcsub($invoiceTotalPayable, $currentActivePaid, 2);
 
             if (bccomp($currentDue, '0.00', 2) <= 0) {
                 if ($allowSkipUnpayable) {
@@ -473,7 +476,16 @@ class AdmissionCollectionService
                     ]);
                 }
 
-                $payment = FeePayment::create([
+                $invoiceNet = $this->toDecimalString($lockedInvoice->net_amount);
+                $invoiceFine = $lockedInvoice->fineAmountDecimal();
+                $finePaidNow = FeePayment::computeFinePortionForPayment(
+                    $invoiceNet,
+                    $invoiceFine,
+                    $currentActivePaid,
+                    $paidAmount
+                );
+
+                $paymentAttrs = [
                     'receipt_no' => $childReceiptNo,
                     'fee_invoice_id' => $lockedInvoice->id,
                     'student_id' => $lockedStudent->id,
@@ -484,11 +496,15 @@ class AdmissionCollectionService
                     'transaction_id' => isset($meta['transaction_id']) ? trim((string) $meta['transaction_id']) ?: null : null,
                     'note' => isset($meta['note']) ? trim((string) $meta['note']) ?: null : null,
                     'collected_by' => $actor->id,
-                ]);
+                ];
+                if (Schema::hasColumn('fee_payments', 'fine_amount')) {
+                    $paymentAttrs['fine_amount'] = $finePaidNow;
+                }
 
-                $invoiceNet = $this->toDecimalString($lockedInvoice->net_amount);
+                $payment = FeePayment::create($paymentAttrs);
+
                 $newPaid = bcadd($currentActivePaid, $paidAmount, 2);
-                $newDue = bcsub($invoiceNet, $newPaid, 2);
+                $newDue = bcsub($invoiceTotalPayable, $newPaid, 2);
 
                 $lockedInvoice->paid_amount = $newPaid;
                 $lockedInvoice->due_amount = $newDue;

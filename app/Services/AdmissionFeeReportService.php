@@ -246,7 +246,24 @@ class AdmissionFeeReportService
 
         if (!$isAdmission) {
             $amount = $this->toDecimal($payment->paid_amount);
+            $fineAmt = $payment->fineAmountDecimal();
             $catName = (string) ($invoice?->feeSetup?->category?->name ?? 'General Fee');
+
+            if (bccomp($fineAmt, '0.00', 2) > 0) {
+                $baseAmt = $this->clampNonNegative(bcsub($amount, $fineAmt, 2));
+                $byCategory = [];
+                if (bccomp($baseAmt, '0.00', 2) > 0) {
+                    $byCategory[$catName] = $baseAmt;
+                }
+                $byCategory['Fine'] = bcadd($byCategory['Fine'] ?? '0.00', $fineAmt, 2);
+
+                return [
+                    'is_admission' => false,
+                    'effective_total' => $amount,
+                    'by_category' => $byCategory,
+                    'head_details' => [],
+                ];
+            }
 
             return [
                 'is_admission' => false,

@@ -432,6 +432,8 @@ Route::middleware(['auth', 'tyro-dashboard.admin'])->group(function () {
         Route::post('/collection', [FeeCollectionController::class, 'store'])->name('collection.store');
         Route::post('/custom-fee/update-inline', [FeeCollectionController::class, 'updateCustomFeeAjax'])->name('custom_fee.update_inline');
         Route::post('/invoice/adjust', [FeeCollectionController::class, 'adjustInvoiceFee'])->name('invoice.adjust');
+        Route::post('/invoice/{invoice}/late-fine', [FeeCollectionController::class, 'addManualLateFine'])->name('invoice.late_fine');
+        Route::post('/invoice/{invoice}/waive-fine', [FeeCollectionController::class, 'waiveLateFine'])->name('invoice.waive_fine');
 
         // Generate Invoices Routes
         Route::get('/invoice/generate', [FeeInvoiceController::class, 'index'])->name('invoice.generate');

@@ -395,6 +395,11 @@
                                             <td class="py-0 px-0 text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300" @if($headChipCount > 3) x-data="{ showHeads: false }" @endif>
                                                 <div class="flex flex-wrap items-center gap-1.5">
                                                     <span class="whitespace-nowrap">{{ $pay->prepared_description }}</span>
+                                                    @if(!$pay->prepared_is_admission && bccomp((string) ($pay->prepared_fine_amount ?? '0'), '0.00', 2) > 0)
+                                                        <span class="px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 text-[9px] font-black uppercase tracking-wider whitespace-nowrap">
+                                                            + ৳{{ number_format((float) $pay->prepared_fine_amount, 2) }} Fine
+                                                        </span>
+                                                    @endif
                                                     @if($headChipCount > 3)
                                                         <button type="button"
                                                                 @click="showHeads = !showHeads"

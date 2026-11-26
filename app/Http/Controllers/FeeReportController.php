@@ -679,17 +679,41 @@ class FeeReportController extends Controller
             } else {
                 $catName = (string) ($invoice->feeSetup->category->name ?? 'Uncategorized');
                 $invNet = $admissionReportService->toDecimal($invoice->net_amount);
+                $invFine = $invoice->fineAmountDecimal();
                 $invPaid = $admissionReportService->toDecimal($invoice->paid_amount);
                 $invDue = $admissionReportService->clampNonNegative($admissionReportService->toDecimal($invoice->due_amount));
+
+                $finePaid = '0.00';
+                $fineDue = '0.00';
+                if (bccomp($invFine, '0.00', 2) > 0) {
+                    if (bccomp($invPaid, $invNet, 2) > 0) {
+                        $overNet = bcsub($invPaid, $invNet, 2);
+                        $finePaid = bccomp($overNet, $invFine, 2) <= 0 ? $overNet : $invFine;
+                    }
+                    $fineDueRaw = $admissionReportService->clampNonNegative(bcsub($invFine, $finePaid, 2));
+                    $fineDue = bccomp($fineDueRaw, $invDue, 2) <= 0 ? $fineDueRaw : $invDue;
+                }
+
+                $basePaid = $admissionReportService->clampNonNegative(bcsub($invPaid, $finePaid, 2));
+                $baseDue = $admissionReportService->clampNonNegative(bcsub($invDue, $fineDue, 2));
 
                 if (!isset($bucketTotals[$catName])) {
                     $bucketTotals[$catName] = ['net' => '0.00', 'paid' => '0.00', 'due' => '0.00'];
                 }
                 $bucketTotals[$catName]['net'] = bcadd($bucketTotals[$catName]['net'], $invNet, 2);
-                $bucketTotals[$catName]['paid'] = bcadd($bucketTotals[$catName]['paid'], $invPaid, 2);
-                $bucketTotals[$catName]['due'] = bcadd($bucketTotals[$catName]['due'], $invDue, 2);
+                $bucketTotals[$catName]['paid'] = bcadd($bucketTotals[$catName]['paid'], $basePaid, 2);
+                $bucketTotals[$catName]['due'] = bcadd($bucketTotals[$catName]['due'], $baseDue, 2);
 
-                $overallNet = bcadd($overallNet, $invNet, 2);
+                if (bccomp($invFine, '0.00', 2) > 0) {
+                    if (!isset($bucketTotals['Fine'])) {
+                        $bucketTotals['Fine'] = ['net' => '0.00', 'paid' => '0.00', 'due' => '0.00'];
+                    }
+                    $bucketTotals['Fine']['net'] = bcadd($bucketTotals['Fine']['net'], $invFine, 2);
+                    $bucketTotals['Fine']['paid'] = bcadd($bucketTotals['Fine']['paid'], $finePaid, 2);
+                    $bucketTotals['Fine']['due'] = bcadd($bucketTotals['Fine']['due'], $fineDue, 2);
+                }
+
+                $overallNet = bcadd($overallNet, bcadd($invNet, $invFine, 2), 2);
                 $overallPaid = bcadd($overallPaid, $invPaid, 2);
                 $overallDue = bcadd($overallDue, $invDue, 2);
             }

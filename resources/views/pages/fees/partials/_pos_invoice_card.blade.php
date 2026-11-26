@@ -166,11 +166,34 @@
                             @if($scopedReversed)
                                 <span class="line-through text-gray-500">{{ $receiptData['scoped_reversed_total_formatted'] }}</span>
                                 <span class="block text-[9.5px] text-red-700 font-black">0.00</span>
+                            @elseif(!empty($receiptData['has_fine']))
+                                <span class="text-green-700">{{ $receiptData['tuition_paid_total_formatted'] }}</span>
                             @else
                                 <span class="text-green-700">{{ $isScoped ? $receiptData['scoped_paid_total_formatted'] : $receiptData['invoice_paid_total_formatted'] }}</span>
                             @endif
                         </td>
                     </tr>
+                    @if(!empty($receiptData['has_fine']))
+                        <tr class="border-b border-gray-200">
+                            <td class="py-1.5 font-bold {{ $scopedReversed ? 'line-through text-gray-500' : 'text-gray-800' }}">
+                                Late Fine
+                                @if(!empty($receiptData['fine_source']))
+                                    <span class="ml-1 text-[8px] font-bold uppercase text-gray-600">({{ ucfirst($receiptData['fine_source']) }})</span>
+                                @endif
+                            </td>
+                            <td class="py-1.5 font-semibold text-gray-700">
+                                {{ $receiptData['month_label'] }}
+                            </td>
+                            <td class="py-1.5 text-right font-bold font-mono whitespace-nowrap">{{ $receiptData['fine_total_formatted'] }}</td>
+                            <td class="py-1.5 text-right font-bold font-mono whitespace-nowrap">
+                                @if($scopedReversed)
+                                    <span class="text-red-700 font-black">0.00</span>
+                                @else
+                                    <span class="text-green-700">{{ $receiptData['fine_paid_total_formatted'] }}</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @endif
                 </tbody>
             </table>
         @endif
@@ -220,10 +243,25 @@
                         <span class="font-mono">-৳{{ $receiptData['discount_total_formatted'] }}</span>
                     </div>
                 @endif
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Total Payable:</span>
-                    <span class="font-mono">৳{{ $receiptData['net_total_formatted'] }}</span>
-                </div>
+                @if(!$isAdmission && !empty($receiptData['has_fine']))
+                    <div class="flex justify-between text-[9.5px]">
+                        <span class="text-gray-600">Tuition Net:</span>
+                        <span class="font-mono">৳{{ $receiptData['net_total_formatted'] }}</span>
+                    </div>
+                    <div class="flex justify-between text-[9.5px]">
+                        <span class="text-gray-600">Late Fine:</span>
+                        <span class="font-mono">+৳{{ $receiptData['fine_total_formatted'] }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Total Payable:</span>
+                        <span class="font-mono">৳{{ $receiptData['total_payable_formatted'] }}</span>
+                    </div>
+                @else
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Total Payable:</span>
+                        <span class="font-mono">৳{{ $receiptData['net_total_formatted'] }}</span>
+                    </div>
+                @endif
 
                 @if($isScoped && $scopedReversed)
                     <div class="flex justify-between text-gray-500">

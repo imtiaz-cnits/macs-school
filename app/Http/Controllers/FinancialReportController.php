@@ -12,6 +12,7 @@ use App\Services\AdmissionFeeReportService;
 use App\Services\FeeReceiptService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class FinancialReportController extends Controller
 {
@@ -312,15 +313,20 @@ class FinancialReportController extends Controller
             $q->whereBetween('due_date', [$startDate, $endDate])
               ->orWhereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
         });
-        $billedInvoices = $invoicesQuery->get(['id', 'amount', 'discount', 'net_amount', 'due_amount']);
+        $billedCols = ['id', 'amount', 'discount', 'net_amount', 'due_amount'];
+        if (Schema::hasColumn('fee_invoices', 'fine_amount')) {
+            $billedCols[] = 'fine_amount';
+        }
+        $billedInvoices = $invoicesQuery->get($billedCols);
         $totalBilledGross = '0.00';
         $totalBilledDiscount = '0.00';
         $totalBilledNet = '0.00';
         $totalOutstandingDue = '0.00';
         foreach ($billedInvoices as $inv) {
-            $totalBilledGross = bcadd($totalBilledGross, $admissionReportService->toDecimal($inv->amount), 2);
+            $invFine = $inv->fineAmountDecimal();
+            $totalBilledGross = bcadd($totalBilledGross, bcadd($admissionReportService->toDecimal($inv->amount), $invFine, 2), 2);
             $totalBilledDiscount = bcadd($totalBilledDiscount, $admissionReportService->toDecimal($inv->discount), 2);
-            $totalBilledNet = bcadd($totalBilledNet, $admissionReportService->toDecimal($inv->net_amount), 2);
+            $totalBilledNet = bcadd($totalBilledNet, bcadd($admissionReportService->toDecimal($inv->net_amount), $invFine, 2), 2);
             $totalOutstandingDue = bcadd($totalOutstandingDue, $admissionReportService->clampNonNegative($admissionReportService->toDecimal($inv->due_amount)), 2);
         }
 

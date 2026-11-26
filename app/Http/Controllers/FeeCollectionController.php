@@ -20,6 +20,7 @@ use App\Services\AdmissionInvoiceService;
 use App\Services\AdmissionPaymentReversalService;
 use App\Services\FeeReceiptService;
 use App\Services\FinancialTransactionRunner;
+use App\Services\LateFineService;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -136,6 +137,8 @@ class FeeCollectionController extends Controller
                                       ->orderBy('due_date', 'desc')
                                       ->orderBy('id', 'desc')
                                       ->get();
+
+                $this->annotatePendingInvoices($invoices);
 
                 if ($hasAdmissionSchema) {
                     $invoices->each(function (FeeInvoice $inv): void {
@@ -912,6 +915,7 @@ class FeeCollectionController extends Controller
             $pay->setAttribute('prepared_is_admission', $isAdmPayInv);
             $pay->setAttribute('prepared_description', $description);
             $pay->setAttribute('prepared_month', $monthName);
+            $pay->setAttribute('prepared_fine_amount', $pay->fineAmountDecimal());
             $pay->setAttribute('prepared_is_reversed', $isReversed);
             $pay->setAttribute('prepared_status_label', $isReversed ? 'Reversed' : 'Active');
             $pay->setAttribute('prepared_reversal_ref', $hasPaymentStatusColumn ? $pay->reversal_reference : null);
@@ -1040,6 +1044,7 @@ class FeeCollectionController extends Controller
                 : date('Y-m-d');
             $paymentYmd = Carbon::parse($paymentDate)->format('Ymd');
             $hasPaymentBranchCol = Schema::hasColumn('fee_payments', 'branch_id');
+            $hasPaymentFineCol = Schema::hasColumn('fee_payments', 'fine_amount');
 
             $result = $runner->runWithDeadlockRetry(function () use (
                 $sortedPayableIds,
@@ -1049,6 +1054,7 @@ class FeeCollectionController extends Controller
                 $paymentDate,
                 $paymentYmd,
                 $hasPaymentBranchCol,
+                $hasPaymentFineCol,
                 $collectionService
             ): array {
                 $lockContext = $collectionService->acquireGlobalLocksForInvoices($sortedPayableIds);
@@ -1114,46 +1120,25 @@ class FeeCollectionController extends Controller
                         ]);
                     }
 
-                    $invoice->load('feeSetup');
-                    $feeSetup = $invoice->feeSetup;
-                    $feeCategoryId = $feeSetup->fee_category_id;
-                    $originalSetupAmount = $collectionService->toDecimalString($feeSetup->amount);
-
+                    // Legacy Bulk Students Collection: record clean partial/full settlement ONLY.
+                    // MUST NEVER mutate StudentCustomFee or overwrite invoice gross/discount/net_amount.
                     $lockedPayments = $lockContext['payments_by_invoice']->get($invId, collect());
                     $activePaid = $lockedPayments->isNotEmpty()
                         ? $collectionService->sumActivePayments($lockedPayments)
                         : $collectionService->toDecimalString($invoice->paid_amount);
 
-                    if (bccomp($payAmount, $originalSetupAmount, 2) !== 0) {
-                        StudentCustomFee::updateOrCreate(
-                            [
-                                'student_id' => $invoice->student_id,
-                                'fee_category_id' => $feeCategoryId,
-                            ],
-                            [
-                                'amount' => $payAmount,
-                            ]
-                        );
+                    $netDecimal = $collectionService->toDecimalString($invoice->net_amount);
+                    $fineDecimal = $invoice->fineAmountDecimal();
+                    $totalPayable = bcadd($netDecimal, $fineDecimal, 2);
+                    $recalcDue = bcsub($totalPayable, $activePaid, 2);
+                    $dueDecimal = bccomp($recalcDue, '0.00', 2) > 0 ? $recalcDue : '0.00';
 
-                        $invoice->amount = $originalSetupAmount;
-                        $diff = bcsub($originalSetupAmount, $payAmount, 2);
-                        $invoice->discount = bccomp($diff, '0.00', 2) > 0 ? $diff : '0.00';
-                        $invoice->net_amount = $payAmount;
-                        $recalcDue = bcsub($payAmount, $activePaid, 2);
-                        $invoice->due_amount = bccomp($recalcDue, '0.00', 2) > 0 ? $recalcDue : '0.00';
-                    } else {
-                        StudentCustomFee::where('student_id', $invoice->student_id)
-                            ->where('fee_category_id', $feeCategoryId)
-                            ->delete();
-
-                        $invoice->amount = $originalSetupAmount;
-                        $invoice->discount = '0.00';
-                        $invoice->net_amount = $originalSetupAmount;
-                        $recalcDue = bcsub($originalSetupAmount, $activePaid, 2);
-                        $invoice->due_amount = bccomp($recalcDue, '0.00', 2) > 0 ? $recalcDue : '0.00';
+                    if (bccomp($dueDecimal, '0.00', 2) <= 0) {
+                        throw ValidationException::withMessages([
+                            'invoice_ids' => ["Invoice ({$invoice->invoice_no}) has no payable balance due."],
+                        ]);
                     }
 
-                    $dueDecimal = $collectionService->toDecimalString($invoice->due_amount);
                     if (bccomp($payAmount, $dueDecimal, 2) > 0) {
                         throw ValidationException::withMessages([
                             "paying_amounts.{$invId}" => [
@@ -1161,6 +1146,13 @@ class FeeCollectionController extends Controller
                             ],
                         ]);
                     }
+
+                    $finePaidNow = FeePayment::computeFinePortionForPayment(
+                        $netDecimal,
+                        $fineDecimal,
+                        $activePaid,
+                        $payAmount
+                    );
 
                     $paymentData = [
                         'receipt_no' => $receiptNo,
@@ -1176,10 +1168,13 @@ class FeeCollectionController extends Controller
                     if ($hasPaymentBranchCol && !empty($invoice->branch_id)) {
                         $paymentData['branch_id'] = $invoice->branch_id;
                     }
+                    if ($hasPaymentFineCol) {
+                        $paymentData['fine_amount'] = $finePaidNow;
+                    }
                     FeePayment::create($paymentData);
 
                     $newPaid = bcadd($activePaid, $payAmount, 2);
-                    $newDue = bcsub($collectionService->toDecimalString($invoice->net_amount), $newPaid, 2);
+                    $newDue = bcsub($totalPayable, $newPaid, 2);
                     $invoice->paid_amount = $newPaid;
                     $invoice->due_amount = bccomp($newDue, '0.00', 2) > 0 ? $newDue : '0.00';
                     $invoice->status = bccomp($invoice->due_amount, '0.00', 2) <= 0 ? 'Paid' : 'Partial';
@@ -1420,9 +1415,11 @@ class FeeCollectionController extends Controller
                 foreach ($affectedInvoices as $inv) {
                     $setupAmount = bcadd((string) $inv->feeSetup->amount, '0.00', 2);
                     $invPaid = bcadd((string) $inv->paid_amount, '0.00', 2);
+                    $invFine = $inv->fineAmountDecimal();
                     $diffDisc = bcsub($setupAmount, $newAmountStr, 2);
                     $invDiscount = bccomp($diffDisc, '0.00', 2) > 0 ? $diffDisc : '0.00';
-                    $diffDue = bcsub($newAmountStr, $invPaid, 2);
+                    $invTotalPayable = bcadd($newAmountStr, $invFine, 2);
+                    $diffDue = bcsub($invTotalPayable, $invPaid, 2);
                     $invDue = bccomp($diffDue, '0.00', 2) > 0 ? $diffDue : '0.00';
 
                     $inv->amount = $setupAmount;
@@ -1437,6 +1434,7 @@ class FeeCollectionController extends Controller
                     $updatedInvoicesData[] = [
                         'id' => $inv->id,
                         'net_amount' => bcadd((string) $inv->net_amount, '0.00', 2),
+                        'fine_amount' => $invFine,
                         'due_amount' => bcadd((string) $inv->due_amount, '0.00', 2),
                         'discount' => bcadd((string) $inv->discount, '0.00', 2),
                         'paid_amount' => bcadd((string) $inv->paid_amount, '0.00', 2),
@@ -1497,14 +1495,12 @@ class FeeCollectionController extends Controller
             'mode' => 'required|in:increase,decrease,set_amount',
             'amount' => 'required|numeric|min:0',
             'scope' => 'required|in:single,continuous',
-            'reason' => 'nullable|string|max:255',
+            'reason' => 'required|string|min:3|max:255',
             'note' => 'nullable|string|max:255',
         ]);
 
         $operatorId = (int) $actor->id;
-        $reason = $request->filled('reason')
-            ? trim((string) $request->reason)
-            : ($request->filled('note') ? trim((string) $request->note) : null);
+        $reason = trim((string) $request->reason);
 
         /** @var FinancialTransactionRunner $runner */
         $runner = app(FinancialTransactionRunner::class);
@@ -1578,6 +1574,7 @@ class FeeCollectionController extends Controller
                 $currentAmount = bcadd((string) $invoice->amount, '0.00', 2);
                 $currentDiscount = bcadd((string) $invoice->discount, '0.00', 2);
                 $currentNet = bcadd((string) $invoice->net_amount, '0.00', 2);
+                $currentFine = $invoice->fineAmountDecimal();
                 $paidAmount = $lockedPayments->isNotEmpty()
                     ? app(AdmissionCollectionService::class)->sumActivePayments($lockedPayments)
                     : bcadd((string) $invoice->paid_amount, '0.00', 2);
@@ -1587,10 +1584,11 @@ class FeeCollectionController extends Controller
                     $newNet = bcadd($currentNet, $inputAmount, 2);
                     $newDiscount = $currentDiscount;
                     $newAmount = bcadd($newNet, $newDiscount, 2);
-                    $newDue = bcsub($newNet, $paidAmount, 2);
+                    $newDue = bcsub(bcadd($newNet, $currentFine, 2), $paidAmount, 2);
                 } elseif ($mode === 'decrease') {
-                    $diffMax = bcsub($currentNet, $paidAmount, 2);
-                    $maxAllowableReduction = bccomp($diffMax, '0.00', 2) > 0 ? $diffMax : '0.00';
+                    $payableGap = bcsub(bcadd($currentNet, $currentFine, 2), $paidAmount, 2);
+                    $payableGapNonNeg = bccomp($payableGap, '0.00', 2) > 0 ? $payableGap : '0.00';
+                    $maxAllowableReduction = bccomp($currentNet, $payableGapNonNeg, 2) <= 0 ? $currentNet : $payableGapNonNeg;
 
                     if (bccomp($inputAmount, $maxAllowableReduction, 2) > 0) {
                         $hypotheticalNet = bcsub($currentNet, $inputAmount, 2);
@@ -1608,9 +1606,14 @@ class FeeCollectionController extends Controller
                     $newAmount = $currentAmount;
                     $newDiscount = bcadd($currentDiscount, $inputAmount, 2);
                     $newNet = bcsub($newAmount, $newDiscount, 2);
-                    $newDue = bcsub($newNet, $paidAmount, 2);
+                    $newDue = bcsub(bcadd($newNet, $currentFine, 2), $paidAmount, 2);
                 } else {
-                    if (bccomp($inputAmount, $paidAmount, 2) < 0) {
+                    $minRequiredNet = bcsub($paidAmount, $currentFine, 2);
+                    if (bccomp($minRequiredNet, '0.00', 2) < 0) {
+                        $minRequiredNet = '0.00';
+                    }
+
+                    if (bccomp($inputAmount, $minRequiredNet, 2) < 0) {
                         throw ValidationException::withMessages([
                             'amount' => [
                                 'Desired net fee of ৳' . number_format((float) $inputAmount, 2) .
@@ -1631,7 +1634,7 @@ class FeeCollectionController extends Controller
                         $newDiscount = '0.00';
                         $newNet = $inputAmount;
                     }
-                    $newDue = bcsub($newNet, $paidAmount, 2);
+                    $newDue = bcsub(bcadd($newNet, $currentFine, 2), $paidAmount, 2);
                 }
 
                 $newDue = bccomp($newDue, '0.00', 2) > 0 ? $newDue : '0.00';
@@ -1699,8 +1702,9 @@ class FeeCollectionController extends Controller
                             $inv->discount = bccomp($diffDisc, '0.00', 2) > 0 ? $diffDisc : '0.00';
                         }
 
+                        $invFine = $inv->fineAmountDecimal();
                         $inv->net_amount = $newNet;
-                        $inv->due_amount = $newNet;
+                        $inv->due_amount = bcadd($newNet, $invFine, 2);
                         $inv->status = 'Unpaid';
                         $inv->save();
 
@@ -1730,6 +1734,7 @@ class FeeCollectionController extends Controller
                             'amount' => bcadd((string) $inv->amount, '0.00', 2),
                             'discount' => bcadd((string) $inv->discount, '0.00', 2),
                             'net_amount' => bcadd((string) $inv->net_amount, '0.00', 2),
+                            'fine_amount' => $invFine,
                             'due_amount' => bcadd((string) $inv->due_amount, '0.00', 2),
                             'paid_amount' => bcadd((string) $inv->paid_amount, '0.00', 2),
                             'status' => $inv->status,
@@ -1771,6 +1776,7 @@ class FeeCollectionController extends Controller
                         'amount' => bcadd((string) $invoice->amount, '0.00', 2),
                         'discount' => bcadd((string) $invoice->discount, '0.00', 2),
                         'net_amount' => bcadd((string) $invoice->net_amount, '0.00', 2),
+                        'fine_amount' => $currentFine,
                         'due_amount' => bcadd((string) $invoice->due_amount, '0.00', 2),
                         'paid_amount' => bcadd((string) $invoice->paid_amount, '0.00', 2),
                         'status' => $invoice->status,
@@ -1812,6 +1818,150 @@ class FeeCollectionController extends Controller
                 'message' => 'Adjustment failed: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Add or update an embedded manual Late Fine strictly on an eligible unpaid `Monthly Fee` invoice.
+     */
+    public function addManualLateFine(Request $request, FeeInvoice $invoice, LateFineService $lateFineService): JsonResponse
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        try {
+            $actor = $this->authorizeFeeAdmin($request);
+
+            $validated = $request->validate([
+                'amount' => 'required|numeric|min:1|max:10000',
+                'reason' => 'required|string|min:3|max:255',
+            ]);
+
+            $updatedInvoice = $lateFineService->applyManualLateFine(
+                $invoice,
+                $validated['amount'],
+                (string) $validated['reason'],
+                (int) $actor->id
+            );
+
+            $allPendingInvoices = FeeInvoice::where('student_id', (int) $updatedInvoice->student_id)
+                ->whereIn('status', ['Unpaid', 'Partial'])
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Late Fine of ৳" . number_format((float) $updatedInvoice->fineAmountDecimal(), 2) . " applied to {$updatedInvoice->month_name} Monthly Fee.",
+                'invoice' => [
+                    'id'          => (int) $updatedInvoice->id,
+                    'invoice_no'  => (string) $updatedInvoice->invoice_no,
+                    'month_name'  => (string) $updatedInvoice->month_name,
+                    'amount'      => bcadd((string) $updatedInvoice->amount, '0.00', 2),
+                    'discount'    => bcadd((string) $updatedInvoice->discount, '0.00', 2),
+                    'net_amount'  => bcadd((string) $updatedInvoice->net_amount, '0.00', 2),
+                    'fine_amount' => $updatedInvoice->fineAmountDecimal(),
+                    'fine_source' => $updatedInvoice->fine_source,
+                    'fine_reason' => $updatedInvoice->fine_reason,
+                    'due_amount'  => bcadd((string) $updatedInvoice->due_amount, '0.00', 2),
+                    'status'      => (string) $updatedInvoice->status,
+                ],
+                'summary' => $this->buildPendingSummary($allPendingInvoices),
+            ], 200);
+        } catch (AuthorizationException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
+        } catch (ValidationException $e) {
+            $firstMessage = collect($e->errors())->flatten()->first() ?? $e->getMessage();
+            return response()->json([
+                'success' => false,
+                'message' => $firstMessage,
+                'errors'  => $e->errors(),
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to apply late fine: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Waive an embedded Late Fine on an unpaid `Monthly Fee` invoice with a mandatory audit reason.
+     */
+    public function waiveLateFine(Request $request, FeeInvoice $invoice, LateFineService $lateFineService): JsonResponse
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        try {
+            $actor = $this->authorizeFeeAdmin($request);
+
+            $validated = $request->validate([
+                'reason' => 'required|string|min:3|max:255',
+            ]);
+
+            $waivedInvoice = $lateFineService->waiveFine(
+                $invoice,
+                (string) $validated['reason'],
+                (int) $actor->id
+            );
+
+            $allPendingInvoices = FeeInvoice::where('student_id', (int) $waivedInvoice->student_id)
+                ->whereIn('status', ['Unpaid', 'Partial'])
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Late Fine on {$waivedInvoice->month_name} Monthly Fee ({$waivedInvoice->invoice_no}) waived successfully.",
+                'invoice' => [
+                    'id'                  => (int) $waivedInvoice->id,
+                    'invoice_no'          => (string) $waivedInvoice->invoice_no,
+                    'net_amount'          => bcadd((string) $waivedInvoice->net_amount, '0.00', 2),
+                    'fine_amount'         => $waivedInvoice->fineAmountDecimal(),
+                    'fine_source'         => $waivedInvoice->fine_source,
+                    'fine_reason'         => $waivedInvoice->fine_reason,
+                    'auto_fine_waived_at' => $waivedInvoice->auto_fine_waived_at?->toIso8601String(),
+                    'due_amount'          => bcadd((string) $waivedInvoice->due_amount, '0.00', 2),
+                    'status'              => (string) $waivedInvoice->status,
+                ],
+                'summary' => $this->buildPendingSummary($allPendingInvoices),
+            ], 200);
+        } catch (AuthorizationException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
+        } catch (ValidationException $e) {
+            $firstMessage = collect($e->errors())->flatten()->first() ?? $e->getMessage();
+            return response()->json([
+                'success' => false,
+                'message' => $firstMessage,
+                'errors'  => $e->errors(),
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to waive late fine: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Annotate pending invoices with embedded late-fine eligibility flags for Blade rendering.
+     *
+     * @param  \Illuminate\Support\Collection<int, FeeInvoice>  $invoices
+     */
+    private function annotatePendingInvoices($invoices): void
+    {
+        $invoices->each(function (FeeInvoice $inv): void {
+            $isMonthly = $inv->isMonthlyTuitionInvoice();
+            $hasFine = $inv->hasLateFine();
+            $isEligibleUnpaid = $isMonthly
+                && ($inv->status === 'Unpaid')
+                && bccomp((string) ($inv->net_amount ?? '0'), '0.00', 2) > 0
+                && bccomp((string) ($inv->paid_amount ?? '0'), '0.00', 2) === 0;
+
+            $inv->setAttribute('is_monthly_tuition_row', $isMonthly);
+            $inv->setAttribute('has_late_fine_row', $hasFine);
+            $inv->setAttribute('can_manage_late_fine', $isEligibleUnpaid);
+            $inv->setAttribute('can_waive_late_fine', $isEligibleUnpaid && $hasFine);
+        });
     }
 
     /**
@@ -1863,7 +2013,9 @@ class FeeCollectionController extends Controller
             : $collectionService->toDecimalString($lockedInvoice->paid_amount);
 
         $netDecimal = $collectionService->toDecimalString($lockedInvoice->net_amount);
-        $currentDue = bcsub($netDecimal, $activePaid, 2);
+        $fineDecimal = $lockedInvoice->fineAmountDecimal();
+        $totalPayable = bcadd($netDecimal, $fineDecimal, 2);
+        $currentDue = bcsub($totalPayable, $activePaid, 2);
 
         if ($lockedInvoice->isZeroPayableWaived() || bccomp($currentDue, '0.00', 2) <= 0) {
             throw ValidationException::withMessages([
@@ -1887,6 +2039,13 @@ class FeeCollectionController extends Controller
             true
         );
 
+        $finePaidNow = FeePayment::computeFinePortionForPayment(
+            $netDecimal,
+            $fineDecimal,
+            $activePaid,
+            $payAmount
+        );
+
         $paymentData = [
             'receipt_no' => $receiptNo,
             'fee_invoice_id' => $lockedInvoice->id,
@@ -1901,11 +2060,14 @@ class FeeCollectionController extends Controller
         if (Schema::hasColumn('fee_payments', 'branch_id') && !empty($lockedInvoice->branch_id)) {
             $paymentData['branch_id'] = $lockedInvoice->branch_id;
         }
+        if (Schema::hasColumn('fee_payments', 'fine_amount')) {
+            $paymentData['fine_amount'] = $finePaidNow;
+        }
 
         $payment = FeePayment::create($paymentData);
 
         $newPaid = bcadd($activePaid, $payAmount, 2);
-        $newDue = bcsub($netDecimal, $newPaid, 2);
+        $newDue = bcsub($totalPayable, $newPaid, 2);
         $lockedInvoice->paid_amount = $newPaid;
         $lockedInvoice->due_amount = bccomp($newDue, '0.00', 2) > 0 ? $newDue : '0.00';
         $lockedInvoice->status = bccomp($lockedInvoice->due_amount, '0.00', 2) <= 0 ? 'Paid' : 'Partial';
@@ -1976,11 +2138,13 @@ class FeeCollectionController extends Controller
     private function buildPendingSummary($allPendingInvoices): array
     {
         $totalBill = '0.00';
+        $totalFine = '0.00';
         $totalDue = '0.00';
         $totalDiscount = '0.00';
 
         foreach ($allPendingInvoices as $pendingInv) {
-            $totalBill = bcadd($totalBill, bcadd((string) ($pendingInv->net_amount ?? '0'), '0.00', 2), 2);
+            $totalBill = bcadd($totalBill, $pendingInv->totalPayableAmount(), 2);
+            $totalFine = bcadd($totalFine, $pendingInv->fineAmountDecimal(), 2);
             $totalDue = bcadd($totalDue, bcadd((string) ($pendingInv->due_amount ?? '0'), '0.00', 2), 2);
             $totalDiscount = bcadd($totalDiscount, bcadd((string) ($pendingInv->discount ?? '0'), '0.00', 2), 2);
         }
@@ -1988,6 +2152,7 @@ class FeeCollectionController extends Controller
         return [
             'invoices_count' => $allPendingInvoices->count(),
             'total_bill' => number_format((float) $totalBill, 2),
+            'total_fine' => number_format((float) $totalFine, 2),
             'total_due' => number_format((float) $totalDue, 2),
             'total_discount' => number_format((float) $totalDiscount, 2),
         ];

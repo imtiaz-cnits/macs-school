@@ -31,6 +31,11 @@ class FeeInvoice extends Model
         'amount',
         'discount',
         'net_amount',
+        'fine_amount',
+        'fine_source',
+        'fine_reason',
+        'auto_fine_applied_at',
+        'auto_fine_waived_at',
         'paid_amount',
         'due_amount',
         'status',
@@ -44,6 +49,8 @@ class FeeInvoice extends Model
         'session_year_id' => 'integer',
         'fee_setup_id' => 'integer',
         'admission_fee_structure_id' => 'integer',
+        'auto_fine_applied_at' => 'datetime',
+        'auto_fine_waived_at' => 'datetime',
         'user_id' => 'integer',
     ];
 
@@ -179,6 +186,39 @@ class FeeInvoice extends Model
     public function adjustmentLogs(): HasMany
     {
         return $this->hasMany(FeeAdjustmentLog::class);
+    }
+
+    public function fineAmountDecimal(): string
+    {
+        $raw = $this->attributes['fine_amount'] ?? '0';
+        if ($raw === null || $raw === '' || !is_numeric((string) $raw)) {
+            return '0.00';
+        }
+
+        $normalized = bcadd((string) $raw, '0.00', 2);
+
+        return bccomp($normalized, '0.00', 2) > 0 ? $normalized : '0.00';
+    }
+
+    public function hasLateFine(): bool
+    {
+        return bccomp($this->fineAmountDecimal(), '0.00', 2) > 0;
+    }
+
+    public function totalPayableAmount(): string
+    {
+        $net = bcadd((string) ($this->net_amount ?? '0'), '0.00', 2);
+
+        return bcadd($net, $this->fineAmountDecimal(), 2);
+    }
+
+    public function isMonthlyTuitionInvoice(): bool
+    {
+        if ($this->isAdmissionInvoice()) {
+            return false;
+        }
+
+        return \App\Services\FeeGenerationService::isMonthlyTuitionCategoryName($this->feeSetup?->category?->name);
     }
 
     public function isAdmissionInvoice(): bool
@@ -327,10 +367,12 @@ class FeeInvoice extends Model
         }
 
         $net = bcadd((string) ($this->net_amount ?? '0'), '0.00', 2);
+        $fine = $this->fineAmountDecimal();
         $paid = bcadd((string) ($this->paid_amount ?? '0'), '0.00', 2);
         $due = bcadd((string) ($this->due_amount ?? '0'), '0.00', 2);
 
         return bccomp($net, '0.00', 2) === 0
+            && bccomp($fine, '0.00', 2) === 0
             && bccomp($paid, '0.00', 2) === 0
             && bccomp($due, '0.00', 2) === 0;
     }

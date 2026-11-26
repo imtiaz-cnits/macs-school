@@ -330,9 +330,17 @@
                         <div class="flex flex-wrap items-center gap-2">
                             @php
                                 $pendingInvoicesCount = $invoices->count();
-                                $totalNetBill = $invoices->sum('net_amount');
-                                $totalDueAmount = $invoices->sum('due_amount');
-                                $totalDiscount = $invoices->sum('discount');
+                                $totalNetBill = '0.00';
+                                $totalDueAmount = '0.00';
+                                $totalDiscount = '0.00';
+                                foreach ($invoices as $sumInv) {
+                                    $invPayable = method_exists($sumInv, 'totalPayableAmount')
+                                        ? $sumInv->totalPayableAmount()
+                                        : bcadd((string) ($sumInv->net_amount ?? '0'), '0.00', 2);
+                                    $totalNetBill = bcadd($totalNetBill, $invPayable, 2);
+                                    $totalDueAmount = bcadd($totalDueAmount, bcadd((string) ($sumInv->due_amount ?? '0'), '0.00', 2), 2);
+                                    $totalDiscount = bcadd($totalDiscount, bcadd((string) ($sumInv->discount ?? '0'), '0.00', 2), 2);
+                                }
                                 $totalLifetimePaid = '0.00';
                                 foreach ($paymentHistory->flatten()->filter(fn ($pay) => !$pay->isReversed()) as $activePay) {
                                     $totalLifetimePaid = bcadd($totalLifetimePaid, bcadd((string) $activePay->paid_amount, '0.00', 2), 2);
@@ -396,6 +404,18 @@
                                     @forelse($invoices as $inv)
                                     @php
                                         $isAdmInv = method_exists($inv, 'isAdmissionInvoice') && $inv->isAdmissionInvoice();
+                                        $fineAmountStr = method_exists($inv, 'fineAmountDecimal') ? $inv->fineAmountDecimal() : '0.00';
+                                        $hasLateFine = !$isAdmInv && bccomp($fineAmountStr, '0.00', 2) > 0;
+                                        $isMonthlyTuition = (bool) ($inv->is_monthly_tuition_row ?? (method_exists($inv, 'isMonthlyTuitionInvoice') && $inv->isMonthlyTuitionInvoice()));
+                                        $canManageLateFine = (bool) ($inv->can_manage_late_fine ?? (
+                                            $isMonthlyTuition
+                                            && ($inv->status === 'Unpaid')
+                                            && bccomp((string) ($inv->net_amount ?? '0'), '0.00', 2) > 0
+                                            && bccomp((string) ($inv->paid_amount ?? '0'), '0.00', 2) === 0
+                                        ));
+                                        $canWaiveFine = (bool) ($inv->can_waive_late_fine ?? ($canManageLateFine && $hasLateFine));
+                                        $fineSource = $inv->fine_source ?? null;
+                                        $fineReason = $inv->fine_reason ?? null;
                                         $invCategoryId = $inv->feeSetup->fee_category_id ?? '';
                                         $invTitle = $isAdmInv
                                             ? ('Admission Fee Package — ' . ($inv->admissionFeeStructure->structure_name ?? 'Admission Fee'))
@@ -403,21 +423,32 @@
                                     @endphp
                                     <tr id="inv-row-{{ $inv->id }}" data-category-id="{{ $invCategoryId }}" class="hover:bg-gray-50/60 dark:hover:bg-themeNavy/25 transition-colors">
                                         <td class="py-0 px-0 text-center">
-                                            <input type="checkbox" id="checkbox-{{ $inv->id }}" name="invoice_ids[]" value="{{ $inv->id }}" data-amount="{{ $inv->due_amount }}" class="due-checkbox w-4 h-4 rounded border-gray-300 dark:border-gray-600 accent-themeBlue focus:ring-themeBlue cursor-pointer">
+                                            <input type="checkbox" id="checkbox-{{ $inv->id }}" name="invoice_ids[]" value="{{ $inv->id }}" data-invoice-id="{{ $inv->id }}" data-amount="{{ $inv->due_amount }}" class="due-checkbox w-4 h-4 rounded border-gray-300 dark:border-gray-600 accent-themeBlue focus:ring-themeBlue cursor-pointer">
                                         </td>
                                         <td class="py-0 px-0">
-                                            <div class="font-bold text-gray-900 dark:text-gray-100 text-sm flex flex-wrap items-center gap-2">
-                                                <span class="whitespace-nowrap">{{ $invTitle }}</span>
-                                                @if($isAdmInv)
-                                                    <span class="inline-flex items-center px-2 py-0.5 bg-indigo-50 dark:bg-themeBlue/15 border border-indigo-100 dark:border-themeBlue/30 text-themeBlue text-[9px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">Admission</span>
-                                                @endif
+                                            <div>
+                                                <div class="font-bold text-gray-900 dark:text-gray-100 text-sm flex flex-wrap items-center gap-2">
+                                                    <span class="whitespace-nowrap">{{ $invTitle }}</span>
+                                                    @if($isAdmInv)
+                                                        <span class="inline-flex items-center px-2 py-0.5 bg-indigo-50 dark:bg-themeBlue/15 border border-indigo-100 dark:border-themeBlue/30 text-themeBlue text-[9px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">Admission</span>
+                                                    @elseif($hasLateFine)
+                                                        <span title="{{ $fineReason ?: 'Late payment fine' }}" class="inline-flex items-center px-2 py-0.5 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 text-[9px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">
+                                                            + ৳{{ number_format((float) $fineAmountStr, 2) }} Late Fine &bull; {{ $fineSource === 'auto' ? 'Auto' : 'Manual' }}
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                                <div class="text-[11px] text-gray-400 dark:text-gray-500 font-mono mt-0.5 whitespace-nowrap">{{ $inv->invoice_no }}</div>
                                             </div>
-                                            <div class="text-[11px] text-gray-400 dark:text-gray-500 font-mono mt-0.5 whitespace-nowrap">{{ $inv->invoice_no }}</div>
                                         </td>
                                         <td class="py-0 px-0 whitespace-nowrap">
                                             <span class="inline-flex items-center px-2.5 py-1 bg-sky-50/70 dark:bg-themeDark border border-sky-100 dark:border-white/[0.06] text-themeBlue text-[10px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">{{ $inv->month_name }}</span>
                                         </td>
-                                        <td id="net-bill-{{ $inv->id }}" class="py-0 px-0 text-right text-sm font-bold text-gray-600 dark:text-gray-400 font-mono whitespace-nowrap">{{ number_format($inv->net_amount, 2) }}</td>
+                                        <td class="py-0 px-0 text-right font-mono whitespace-nowrap">
+                                            <div id="net-bill-{{ $inv->id }}" class="text-sm font-bold text-gray-600 dark:text-gray-400">{{ number_format($inv->net_amount, 2) }}</div>
+                                            @if($hasLateFine)
+                                                <div class="text-[10px] font-black text-amber-600 dark:text-amber-400 mt-0.5">+ ৳{{ number_format((float) $fineAmountStr, 2) }} Fine</div>
+                                            @endif
+                                        </td>
                                         <td class="py-0 px-0 text-right whitespace-nowrap">
                                             <span class="inline-flex items-center px-3 py-1 rounded-xl bg-emerald-50/70 dark:bg-themeGreen/10 border border-emerald-200/60 dark:border-themeGreen/25 text-sm font-black font-mono text-themeGreen whitespace-nowrap">
                                                 <span class="text-xs mr-1 opacity-75">৳</span>
@@ -435,14 +466,27 @@
                                                         data-gross-amount="{{ $inv->amount }}"
                                                         data-discount-amount="{{ $inv->discount }}"
                                                         data-net-amount="{{ $inv->net_amount }}"
+                                                        data-fine-amount="{{ $fineAmountStr }}"
+                                                        data-fine-reason="{{ $fineReason ?? '' }}"
                                                         data-paid-amount="{{ $inv->paid_amount }}"
                                                         data-due-amount="{{ $inv->due_amount }}"
+                                                        data-can-manage-late-fine="{{ $canManageLateFine ? '1' : '0' }}"
+                                                        data-late-fine-url="{{ route('fees.invoice.late_fine', $inv->id) }}"
                                                         onclick="openAdjustModal({{ $inv->id }})"
-                                                        title="Adjust Fee (+ / -) for {{ $inv->month_name }}"
+                                                        title="{{ $canManageLateFine ? 'Add Late Fine or Adjust Fee' : 'Adjust Fee Amount' }} for {{ $inv->month_name }}"
                                                         class="h-8 w-8 rounded-lg border border-themeBlue/30 hover:border-themeBlue bg-sky-50/70 hover:bg-themeBlue dark:bg-themeBlue/10 dark:hover:bg-themeBlue text-themeBlue hover:text-white flex items-center justify-center transition-all active:scale-95 flex-shrink-0 group">
                                                     <svg class="w-4 h-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                                     </svg>
+                                                </button>
+                                                @endif
+                                                @if($canWaiveFine)
+                                                <button type="button"
+                                                        id="waive-btn-{{ $inv->id }}"
+                                                        onclick="openWaiveFineModal({{ $inv->id }}, {{ \Illuminate\Support\Js::from($inv->invoice_no) }}, {{ \Illuminate\Support\Js::from($inv->month_name) }}, {{ (float) $fineAmountStr }}, {{ \Illuminate\Support\Js::from(route('fees.invoice.waive_fine', $inv->id)) }})"
+                                                        title="Waive unpaid late fine"
+                                                        class="h-8 px-2.5 rounded-lg border border-rose-200 dark:border-rose-500/30 bg-rose-50/70 dark:bg-rose-500/10 hover:bg-rose-600 hover:border-rose-600 text-rose-600 dark:text-rose-400 hover:text-white text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 flex-shrink-0">
+                                                    Waive Fine
                                                 </button>
                                                 @endif
                                                 @if($isAdmInv)
@@ -581,6 +625,11 @@
                                                         @endif
                                                         <span>{{ $itemTitle }}</span>
                                                         <span class="inline-flex items-center px-2 py-0.5 bg-sky-50/70 dark:bg-themeDark border border-sky-100 dark:border-white/[0.06] text-themeBlue text-[9px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">{{ $p->invoice->month_name ?? 'One Time' }}</span>
+                                                        @if(!$isAdmItem && method_exists($p, 'fineAmountDecimal') && bccomp($p->fineAmountDecimal(), '0.00', 2) > 0)
+                                                            <span class="inline-flex items-center px-2 py-0.5 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 text-[9px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">
+                                                                Incl. ৳{{ number_format((float) $p->fineAmountDecimal(), 2) }} Late Fine
+                                                            </span>
+                                                        @endif
                                                         @if($isItemReversed)
                                                             <span class="inline-flex items-center px-2 py-0.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 text-[9px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap">
                                                                 Reversed{{ $p->reversal_reference ? ' · ' . $p->reversal_reference : '' }}
@@ -1157,14 +1206,14 @@
                                     inp.value = val;
                                 }
                             }" class="relative w-full text-gray-900 dark:text-white" @click.away="open = false">
-                                <button type="button" @click="open = !open" class="w-full h-10 px-4 bg-gray-55/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-bold text-gray-700 dark:text-gray-250 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                                <button type="button" @click="open = !open" class="w-full h-10 px-4 bg-gray-50/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-bold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                                     <span class="truncate" x-text="label"></span>
-                                    <svg class="w-4 h-4 text-gray-455 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
                                 <input type="hidden" name="payment_method" x-ref="hiddenInput" value="Cash" required>
-                                <div x-show="open" x-cloak class="absolute bottom-11 z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                                <div x-show="open" x-cloak class="absolute bottom-11 z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-200 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
                                     <template x-for="opt in ['Cash', 'bKash', 'Nagad', 'Bank']" :key="opt">
-                                        <button type="button" @click="select(opt)" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-55 dark:hover:bg-themeDark/45 transition-colors" :class="value == opt ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                                        <button type="button" @click="select(opt)" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="value == opt ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                                             <span x-text="opt"></span>
                                             <svg x-show="value == opt" class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                         </button>
@@ -1234,11 +1283,11 @@
 </div>
 
 <!-- Collect Payment Single Modal -->
-<div id="paymentModal" class="hidden fixed inset-0 z-[9999] items-center justify-center bg-themeDark/40 backdrop-blur-md p-4">
-    <div class="bg-white dark:bg-themeNavy w-full max-w-md rounded-3xl shadow-xl border border-gray-100 dark:border-white/[0.08]">
-        <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.05] flex justify-between items-center">
+<div id="paymentModal" onclick="if (event.target === this) closePayModal()" class="hidden fixed inset-0 z-[9999] items-center justify-center bg-themeDark/40 backdrop-blur-md p-4">
+    <div class="bg-white dark:bg-themeNavy w-full max-w-md rounded-3xl shadow-2xl border border-gray-100 dark:border-white/[0.08]">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex justify-between items-center">
             <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-wider">Collect Payment</h3>
-            <button onclick="closePayModal()" class="text-gray-400 hover:text-red-500 transition-colors">
+            <button type="button" onclick="closePayModal()" class="text-gray-400 hover:text-red-500 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
@@ -1248,24 +1297,24 @@
             <input type="hidden" name="invoice_id" id="modalInvoiceId">
             
             <div class="mb-5">
-                <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-1 block">Fee Description</label>
+                <label class="text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1 block">Fee Description</label>
                 <div id="modalFeeName" class="text-sm font-bold text-gray-900 dark:text-white"></div>
             </div>
 
             <div class="mb-5">
-                <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-1 block">Total Due Amount</label>
+                <label class="text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1 block">Total Due Amount</label>
                 <div class="text-2xl font-black text-red-600 dark:text-red-400 font-mono">৳ <span id="modalDueAmountText">0.00</span></div>
             </div>
 
             <div class="mb-5">
-                <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Paying Amount (৳) <span class="text-red-500 ml-0.5">*</span></label>
-                <input type="number" step="0.01" name="pay_amount" id="modalPayAmount" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-55/50 dark:bg-themeNavy focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-lg font-bold font-mono text-themeGreen dark:text-themeGreen px-3" required>
-                <p class="text-[10px] text-gray-400 dark:text-gray-550 mt-1.5">You can receive partial payment by changing this amount.</p>
+                <label class="text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-2 block">Paying Amount (৳) <span class="text-red-500 ml-0.5">*</span></label>
+                <input type="number" step="0.01" name="pay_amount" id="modalPayAmount" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-lg font-bold font-mono text-themeGreen dark:text-themeGreen px-3" required>
+                <p class="text-[10px] text-gray-400 dark:text-gray-400 mt-1.5">You can receive partial payment by changing this amount.</p>
             </div>
 
             <!-- Custom Alpine Dropdown for Single Payment Method -->
             <div class="mb-5">
-                <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Payment Method <span class="text-red-500">*</span></label>
+                <label class="text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-2 block">Payment Method <span class="text-red-500">*</span></label>
                 <div x-data="{ 
                     open: false, 
                     value: 'Cash', 
@@ -1278,14 +1327,14 @@
                         inp.value = val;
                     }
                 }" class="relative w-full text-gray-900 dark:text-white" @click.away="open = false">
-                    <button type="button" @click="open = !open" class="w-full h-11 px-3 bg-gray-55/50 dark:bg-themeNavy border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
+                    <button type="button" @click="open = !open" class="w-full h-11 px-3 bg-gray-50/50 dark:bg-themeDark border-2 border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-left">
                         <span class="truncate" x-text="label"></span>
-                        <svg class="w-4 h-4 text-gray-455 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <input type="hidden" name="payment_method" x-ref="hiddenInput" value="Cash" required>
-                    <div x-show="open" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-150 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
+                    <div x-show="open" x-cloak class="absolute z-50 w-full mt-1.5 bg-white dark:bg-themeNavy border border-gray-200 dark:border-white/[0.08] rounded-2xl shadow-xl py-1 max-h-60 overflow-y-auto" x-transition>
                         <template x-for="opt in ['Cash', 'bKash', 'Nagad', 'Bank']" :key="opt">
-                            <button type="button" @click="select(opt)" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-55 dark:hover:bg-themeDark/45 transition-colors" :class="value == opt ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
+                            <button type="button" @click="select(opt)" class="w-full flex items-center justify-between px-4 py-2.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-themeDark/45 transition-colors" :class="value == opt ? 'bg-indigo-50 dark:bg-themeBlue/10 text-themeBlue font-black' : 'text-gray-700 dark:text-gray-200'">
                                 <span x-text="opt"></span>
                                 <svg x-show="value == opt" class="w-3.5 h-3.5 text-themeBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                             </button>
@@ -1295,12 +1344,12 @@
             </div>
 
             <div class="mb-5">
-                <label class="text-[10px] font-black tracking-widest text-gray-555 dark:text-gray-400 uppercase mb-2 block">Trx ID / Note (Optional)</label>
-                <input type="text" name="transaction_id" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-semibold text-gray-700 dark:text-gray-250 px-3 placeholder-gray-455" placeholder="e.g. 8N2K9DJ3">
+                <label class="text-[10px] font-black tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-2 block">Trx ID / Note (Optional)</label>
+                <input type="text" name="transaction_id" class="w-full h-11 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-sm font-semibold text-gray-700 dark:text-gray-200 px-3 placeholder-gray-400" placeholder="e.g. 8N2K9DJ3">
             </div>
 
             <div class="mt-8 flex gap-3">
-                <button type="button" onclick="closePayModal()" class="flex-1 h-11 px-6 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-655 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all">Cancel</button>
+                <button type="button" onclick="closePayModal()" class="flex-1 h-11 px-6 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all">Cancel</button>
                 <button type="submit" class="flex-1 h-11 px-6 bg-gradient-to-r from-themeBlue to-themeGreen text-white font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-xs uppercase tracking-widest flex items-center justify-center active:scale-95">Confirm Payment</button>
             </div>
         </form>
@@ -1675,6 +1724,85 @@
                 </div>
             </div>
 
+            <!-- Action Tab Switcher: Shown ONLY for eligible unpaid Monthly Fee invoices -->
+            <div x-show="canManageLateFine" x-cloak class="mb-5">
+                <div class="grid grid-cols-2 gap-2 p-1 bg-gray-100 dark:bg-themeDark rounded-2xl border border-gray-200/60 dark:border-white/[0.04]">
+                    <button type="button"
+                            @click="activeTab = 'late_fine'"
+                            :class="activeTab === 'late_fine' ? 'bg-white dark:bg-themeNavy text-amber-600 dark:text-amber-400 shadow-sm font-black' : 'text-gray-500 dark:text-gray-400 font-semibold hover:text-gray-900'"
+                            class="py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider transition-all"
+                            x-text="currentFine > 0 ? 'Update Late Fine' : 'Add Late Fine'">
+                    </button>
+                    <button type="button"
+                            @click="activeTab = 'adjust_fee'"
+                            :class="activeTab === 'adjust_fee' ? 'bg-white dark:bg-themeNavy text-themeBlue shadow-sm font-black' : 'text-gray-500 dark:text-gray-400 font-semibold hover:text-gray-900'"
+                            class="py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider transition-all">
+                        Adjust Tuition Fee
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 1: ADD / UPDATE LATE FINE (Embedded on Monthly Fee Row — Strictly Monthly Fee Only) -->
+            <div x-show="canManageLateFine && activeTab === 'late_fine'" x-cloak>
+                <div class="mb-4 p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-500/10 border border-amber-200/70 dark:border-amber-500/25 text-xs text-amber-800 dark:text-amber-200 font-medium">
+                    Applies an embedded <span class="font-black">Late Fine</span> directly on <span x-text="monthName" class="font-black"></span>'s Monthly Fee row (reported under Other Fees so Monthly Tuition stays pure).
+                </div>
+
+                <div class="mb-4">
+                    <label class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-2 block">
+                        Late Fine Amount (৳) <span class="text-red-500">*</span>
+                    </label>
+                    <div class="flex items-center gap-2 mb-2.5">
+                        <button type="button" @click="fineAmount = '20'" :class="String(fineAmount) === '20' ? 'bg-themeBlue text-white border-themeBlue' : 'bg-gray-50 dark:bg-themeDark text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-themeBlue'" class="px-3.5 py-1.5 rounded-xl border-2 text-xs font-black font-mono transition-all">+৳20</button>
+                        <button type="button" @click="fineAmount = '40'" :class="String(fineAmount) === '40' ? 'bg-themeBlue text-white border-themeBlue' : 'bg-gray-50 dark:bg-themeDark text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-themeBlue'" class="px-3.5 py-1.5 rounded-xl border-2 text-xs font-black font-mono transition-all">+৳40</button>
+                        <button type="button" @click="fineAmount = '50'" :class="String(fineAmount) === '50' ? 'bg-themeBlue text-white border-themeBlue' : 'bg-gray-50 dark:bg-themeDark text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-themeBlue'" class="px-3.5 py-1.5 rounded-xl border-2 text-xs font-black font-mono transition-all">+৳50</button>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 font-mono font-bold text-sm">৳</span>
+                        <input type="number"
+                               step="0.01"
+                               min="1"
+                               max="10000"
+                               id="lateFineAmountInput"
+                               x-model="fineAmount"
+                               placeholder="20.00"
+                               class="w-full h-11 pl-9 pr-4 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-base font-bold font-mono text-gray-900 dark:text-white shadow-sm">
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <label class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-2 block">
+                        Reason / Remarks <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text"
+                           maxlength="255"
+                           x-model="fineReason"
+                           placeholder="e.g. Late payment fine"
+                           class="w-full h-11 px-4 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-xs font-semibold text-gray-900 dark:text-white shadow-sm">
+                </div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <button type="button"
+                            @click="closeModal()"
+                            :disabled="submitting"
+                            class="flex-1 h-11 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-600 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all">
+                        Cancel
+                    </button>
+                    <button type="button"
+                            @click="submitLateFine()"
+                            :disabled="submitting"
+                            class="flex-1 h-11 px-4 bg-gradient-to-r from-themeBlue to-themeGreen text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50">
+                        <span x-show="!submitting" x-text="currentFine > 0 ? 'Update Late Fine' : 'Add Late Fine'">Add Late Fine</span>
+                        <span x-show="submitting" class="flex items-center gap-2">
+                            <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                            Saving...
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 2: ADJUST TUITION FEE (Existing Single / Continuous Adjustments) -->
+            <div x-show="activeTab === 'adjust_fee'" x-cloak>
             <!-- Mode Selector Tabs -->
             <div class="mb-5">
                 <label class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-2 block">Select Adjustment Mode</label>
@@ -1777,15 +1905,16 @@
                 </div>
             </div>
 
-            <!-- Optional Reason / Remarks Field -->
+            <!-- Required Reason / Remarks Field -->
             <div class="mb-5">
                 <label class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-2 block">
-                    Reason / Remarks <span class="text-gray-400 font-normal lowercase">(optional)</span>
+                    Reason / Remarks <span class="text-red-500">*</span>
                 </label>
                 <input type="text"
                        maxlength="255"
                        x-model="reason"
-                       placeholder="e.g. Principal approved discount, extra coaching charge"
+                       required
+                       placeholder="e.g. Principal approved scholarship discount, extra coaching fee"
                        class="w-full h-11 px-4 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-xs font-semibold text-gray-900 dark:text-white shadow-sm">
             </div>
 
@@ -1808,7 +1937,58 @@
                     </span>
                 </button>
             </div>
+            </div>
 
+        </div>
+    </div>
+</div>
+
+<!-- Waive Unpaid Late Fine Modal -->
+<div id="waiveFineModal"
+     x-data="waiveFineComponent()"
+     x-show="isOpen"
+     x-cloak
+     @open-waive-fine-modal.window="initModal($event.detail)"
+     @keydown.escape.window="closeModal()"
+     class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-md p-4 transition-opacity">
+    <div class="bg-white dark:bg-themeNavy w-full max-w-md rounded-3xl shadow-2xl border border-gray-150 dark:border-white/[0.08] overflow-hidden relative" @click.away="closeModal()">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] flex justify-between items-center bg-gray-50/50 dark:bg-themeDark/40">
+            <div>
+                <h3 class="text-base font-black text-gray-900 dark:text-white tracking-tight">Waive Late Fine</h3>
+                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
+                    <span x-text="invoiceNo" class="font-mono text-themeBlue"></span> &bull; <span x-text="monthName"></span>
+                </p>
+            </div>
+            <button @click="closeModal()" type="button" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-themeDark transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <div class="p-6 text-gray-900 dark:text-white">
+            <div class="mb-4 p-3.5 rounded-2xl bg-rose-50/70 dark:bg-rose-500/10 border border-rose-200/70 dark:border-rose-500/25 flex items-center justify-between">
+                <span class="text-xs font-bold text-rose-700 dark:text-rose-300">Unpaid Fine Amount to Waive</span>
+                <span class="text-base font-black font-mono text-rose-600 dark:text-rose-400">৳ <span x-text="dueAmount.toFixed(2)"></span></span>
+            </div>
+
+            <div class="mb-5">
+                <label class="text-[10px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-2 block">
+                    Waiver Reason <span class="text-red-500">*</span>
+                </label>
+                <input type="text"
+                       id="waiveFineReasonInput"
+                       maxlength="255"
+                       x-model="reason"
+                       placeholder="e.g. Principal approved late fine waiver"
+                       class="w-full h-11 px-4 border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-themeDark focus:outline-none focus:ring-4 focus:ring-themeBlue/10 focus:border-themeBlue transition-all text-xs font-semibold text-gray-900 dark:text-white shadow-sm">
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button type="button" @click="closeModal()" :disabled="submitting" class="flex-1 h-11 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all">Cancel</button>
+                <button type="button" @click="submitWaive()" :disabled="submitting" class="flex-1 h-11 px-4 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl shadow-md hover:-translate-y-0.5 transition-all uppercase tracking-wider disabled:opacity-50">
+                    <span x-show="!submitting">Confirm Waiver</span>
+                    <span x-show="submitting">Processing...</span>
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -1828,23 +2008,113 @@
                 monthName: btn.dataset.monthName,
                 setupAmount: parseFloat(btn.dataset.setupAmount) || 0,
                 netAmount: parseFloat(btn.dataset.netAmount) || 0,
+                fineAmount: parseFloat(btn.dataset.fineAmount) || 0,
+                fineReason: btn.dataset.fineReason || '',
                 paidAmount: parseFloat(btn.dataset.paidAmount) || 0,
-                dueAmount: parseFloat(btn.dataset.dueAmount) || 0
+                dueAmount: parseFloat(btn.dataset.dueAmount) || 0,
+                canManageLateFine: btn.dataset.canManageLateFine === '1',
+                lateFineUrl: btn.dataset.lateFineUrl || ''
             }
         }));
+    }
+
+    function openWaiveFineModal(invoiceId, invoiceNo, monthName, dueAmount, waiveUrl) {
+        window.dispatchEvent(new CustomEvent('open-waive-fine-modal', {
+            detail: {
+                id: invoiceId,
+                invoiceNo: invoiceNo,
+                monthName: monthName,
+                dueAmount: parseFloat(dueAmount) || 0,
+                waiveUrl: waiveUrl
+            }
+        }));
+    }
+
+    function waiveFineComponent() {
+        return {
+            isOpen: false,
+            submitting: false,
+            invoiceId: null,
+            invoiceNo: '',
+            monthName: '',
+            dueAmount: 0,
+            waiveUrl: '',
+            reason: '',
+
+            initModal(data) {
+                this.invoiceId = data.id;
+                this.invoiceNo = data.invoiceNo || '';
+                this.monthName = data.monthName || '';
+                this.dueAmount = parseFloat(data.dueAmount) || 0;
+                this.waiveUrl = data.waiveUrl || '';
+                this.reason = '';
+                this.submitting = false;
+                this.isOpen = true;
+                this.$nextTick(() => {
+                    const inp = document.getElementById('waiveFineReasonInput');
+                    if (inp) inp.focus();
+                });
+            },
+
+            closeModal() {
+                if (this.submitting) return;
+                this.isOpen = false;
+            },
+
+            async submitWaive() {
+                if (!this.invoiceId || !this.waiveUrl) return;
+                const cleanReason = String(this.reason || '').trim();
+                if (cleanReason.length < 3) {
+                    showDanger('Reason Required', 'Please enter a waiver reason (at least 3 characters).');
+                    return;
+                }
+
+                this.submitting = true;
+                try {
+                    const response = await fetch(this.waiveUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ reason: cleanReason })
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        this.isOpen = false;
+                        await showSuccess(data.message || 'Late fine waived successfully.');
+                        window.location.reload();
+                    } else {
+                        showDanger('Waiver Failed', data.message || 'Failed to waive late fine.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showDanger('Error', 'An error occurred while waiving the late fine.');
+                } finally {
+                    this.submitting = false;
+                }
+            }
+        };
     }
 
     function adjustFeeComponent() {
         return {
             isOpen: false,
             submitting: false,
+            canManageLateFine: false,
+            activeTab: 'adjust_fee',
             invoiceId: null,
             feeName: '',
             monthName: '',
             setupAmount: 0,
             netAmount: 0,
+            currentFine: 0,
             paidAmount: 0,
             currentDue: 0,
+            lateFineUrl: '',
+            fineAmount: '20',
+            fineReason: 'Late payment fine',
             mode: 'increase',
             adjustAmount: '',
             scope: 'single',
@@ -1857,8 +2127,14 @@
                 this.monthName = data.monthName;
                 this.setupAmount = parseFloat(data.setupAmount) || 0;
                 this.netAmount = parseFloat(data.netAmount) || 0;
+                this.currentFine = parseFloat(data.fineAmount) || 0;
                 this.paidAmount = parseFloat(data.paidAmount) || 0;
                 this.currentDue = parseFloat(data.dueAmount) || 0;
+                this.canManageLateFine = Boolean(data.canManageLateFine);
+                this.lateFineUrl = data.lateFineUrl || '';
+                this.activeTab = this.canManageLateFine ? 'late_fine' : 'adjust_fee';
+                this.fineAmount = this.currentFine > 0 ? String(this.currentFine) : '20';
+                this.fineReason = data.fineReason || 'Late payment fine';
                 this.mode = 'increase';
                 this.adjustAmount = '';
                 this.scope = 'single';
@@ -1867,7 +2143,8 @@
                 this.submitting = false;
                 this.isOpen = true;
                 this.$nextTick(() => {
-                    const inp = document.getElementById('adjustAmountInput');
+                    const targetId = (this.canManageLateFine && this.activeTab === 'late_fine') ? 'lateFineAmountInput' : 'adjustAmountInput';
+                    const inp = document.getElementById(targetId);
                     if (inp) inp.focus();
                 });
             },
@@ -1877,19 +2154,62 @@
                 this.isOpen = false;
             },
 
+            async submitLateFine() {
+                if (!this.invoiceId || !this.lateFineUrl) return;
+                const val = parseFloat(this.fineAmount);
+                if (isNaN(val) || val < 1 || val > 10000) {
+                    showDanger('Invalid Fine Amount', 'Please enter a valid late fine amount between ৳1.00 and ৳10,000.00.');
+                    return;
+                }
+                const cleanReason = String(this.fineReason || '').trim();
+                if (cleanReason.length < 3) {
+                    showDanger('Reason Required', 'Please provide a reason (at least 3 characters) for this late fine.');
+                    return;
+                }
+
+                this.submitting = true;
+                try {
+                    const response = await fetch(this.lateFineUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            amount: val,
+                            reason: cleanReason
+                        })
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        this.isOpen = false;
+                        await showSuccess(data.message || 'Late fine added successfully.');
+                        window.location.reload();
+                    } else {
+                        showDanger('Failed to Add Late Fine', data.message || 'Could not create late fine invoice.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showDanger('Error', 'An error occurred while adding the late fine.');
+                } finally {
+                    this.submitting = false;
+                }
+            },
+
             get previewNetAmount() {
                 let val = parseFloat(this.adjustAmount) || 0;
                 if (this.mode === 'increase') {
                     return this.netAmount + val;
                 } else if (this.mode === 'decrease') {
-                    return Math.max(this.paidAmount, this.netAmount - val);
+                    return Math.max(0, this.netAmount - val);
                 } else {
                     return val;
                 }
             },
 
             get previewDueAmount() {
-                return Math.max(0, this.previewNetAmount - this.paidAmount);
+                return Math.max(0, (this.previewNetAmount + this.currentFine) - this.paidAmount);
             },
 
             async submitAdjustment() {
@@ -1912,6 +2232,12 @@
 
                 if (this.scope === 'continuous' && !this.continuousConfirmed) {
                     showDanger('Confirmation Required', 'Please confirm continuous adjustment by checking the confirmation box.');
+                    return;
+                }
+
+                const cleanReason = String(this.reason || '').trim();
+                if (cleanReason.length < 3) {
+                    showDanger('Reason Required', 'Please enter a reason (at least 3 characters) before applying a tuition fee adjustment.');
                     return;
                 }
 
@@ -2024,14 +2350,25 @@
 
         const modal = document.getElementById('paymentModal');
         modal.classList.remove('hidden');
-        modal.classList.add('modal-active');
+        modal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
     }
 
     function closePayModal() {
         const modal = document.getElementById('paymentModal');
-        modal.classList.remove('modal-active');
+        modal.classList.remove('flex');
         modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
     }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('paymentModal');
+            if (modal && !modal.classList.contains('hidden')) {
+                closePayModal();
+            }
+        }
+    });
 
     async function updateSingleFeeAmount(input) {
         const invoiceId = input.dataset.invoiceId;

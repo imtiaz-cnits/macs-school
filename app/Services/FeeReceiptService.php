@@ -217,17 +217,24 @@ class FeeReceiptService
         $grossTotal = $this->toDecimal($invoice->amount);
         $discountTotal = $this->toDecimal($invoice->discount);
         $netTotal = $this->toDecimal($invoice->net_amount);
+        $fineTotal = $isAdmission ? '0.00' : $invoice->fineAmountDecimal();
+        $hasFine = bccomp($fineTotal, '0.00', 2) > 0;
+        $totalPayable = bcadd($netTotal, $fineTotal, 2);
 
         // Compute authoritative active paid amount from active ledger rows when available.
         $activeLedgerPaid = '0.00';
+        $activeLedgerFinePaid = '0.00';
         foreach ($activePayments as $ap) {
             $activeLedgerPaid = bcadd($activeLedgerPaid, $this->toDecimal($ap->paid_amount), 2);
+            if (!$isAdmission) {
+                $activeLedgerFinePaid = bcadd($activeLedgerFinePaid, $ap->fineAmountDecimal(), 2);
+            }
         }
         $invoicePaidTotal = $activePayments->isNotEmpty() || $reversedPayments->isNotEmpty()
             ? $activeLedgerPaid
             : $this->toDecimal($invoice->paid_amount);
 
-        $rawInvoiceDue = bcsub($netTotal, $invoicePaidTotal, 2);
+        $rawInvoiceDue = bcsub($totalPayable, $invoicePaidTotal, 2);
         $invoiceDueTotal = bccomp($rawInvoiceDue, '0.00', 2) > 0 ? $rawInvoiceDue : '0.00';
 
         $scopedPaidTotal = $scopedPayment
@@ -237,6 +244,32 @@ class FeeReceiptService
         $scopedReversedTotal = ($scopedPayment && $scopedIsReversed)
             ? $this->toDecimal($scopedPayment->reversed_amount ?: $scopedPayment->paid_amount)
             : '0.00';
+
+        // Compute itemized tuition vs fine paid amounts (pure BCMath)
+        if ($scopedPayment) {
+            if ($scopedIsReversed) {
+                $displayFinePaid = '0.00';
+                $displayTuitionPaid = '0.00';
+            } else {
+                $displayFinePaid = $isAdmission ? '0.00' : $scopedPayment->fineAmountDecimal();
+                $displayTuitionPaid = $isAdmission ? $scopedPaidTotal : $scopedPayment->tuitionAmountDecimal();
+            }
+        } else {
+            if ($hasFine) {
+                if (bccomp($activeLedgerFinePaid, '0.00', 2) > 0) {
+                    $displayFinePaid = bccomp($activeLedgerFinePaid, $fineTotal, 2) <= 0 ? $activeLedgerFinePaid : $fineTotal;
+                } elseif (bccomp($invoicePaidTotal, $netTotal, 2) > 0) {
+                    $overNet = bcsub($invoicePaidTotal, $netTotal, 2);
+                    $displayFinePaid = bccomp($overNet, $fineTotal, 2) <= 0 ? $overNet : $fineTotal;
+                } else {
+                    $displayFinePaid = '0.00';
+                }
+            } else {
+                $displayFinePaid = '0.00';
+            }
+            $tuitionPaidRaw = bcsub($invoicePaidTotal, $displayFinePaid, 2);
+            $displayTuitionPaid = bccomp($tuitionPaidRaw, '0.00', 2) > 0 ? $tuitionPaidRaw : '0.00';
+        }
 
         $structure = $isAdmission ? $invoice->admissionFeeStructure : null;
         $structureName = trim((string) ($structure?->structure_name ?? '')) !== ''
@@ -326,6 +359,17 @@ class FeeReceiptService
             'discount_total_formatted' => $this->formatAmount($discountTotal),
             'net_total' => $netTotal,
             'net_total_formatted' => $this->formatAmount($netTotal),
+            'has_fine' => $hasFine,
+            'fine_total' => $fineTotal,
+            'fine_total_formatted' => $this->formatAmount($fineTotal),
+            'fine_source' => $invoice->fine_source ?? null,
+            'fine_reason' => $invoice->fine_reason ?? null,
+            'total_payable' => $totalPayable,
+            'total_payable_formatted' => $this->formatAmount($totalPayable),
+            'tuition_paid_total' => $displayTuitionPaid,
+            'tuition_paid_total_formatted' => $this->formatAmount($displayTuitionPaid),
+            'fine_paid_total' => $displayFinePaid,
+            'fine_paid_total_formatted' => $this->formatAmount($displayFinePaid),
             'invoice_paid_total' => $invoicePaidTotal,
             'invoice_paid_total_formatted' => $this->formatAmount($invoicePaidTotal),
             'invoice_due_total' => $invoiceDueTotal,
@@ -537,6 +581,9 @@ class FeeReceiptService
         $reversedAmount = $isReversed
             ? $this->toDecimal($payment->reversed_amount ?: $payment->paid_amount)
             : '0.00';
+        $finePaid = !$isAdmission ? $payment->fineAmountDecimal() : '0.00';
+        $hasFine = bccomp($finePaid, '0.00', 2) > 0;
+        $tuitionPaid = $hasFine ? $payment->tuitionAmountDecimal() : $paidAmount;
 
         return [
             'payment' => $payment,
@@ -549,6 +596,12 @@ class FeeReceiptService
             'label' => $label,
             'tuition_month_label' => $tuitionMonthLabel,
             'month_label' => $monthLabel,
+            'has_fine' => $hasFine,
+            'fine_source' => $invoice?->fine_source ?? null,
+            'tuition_paid' => $tuitionPaid,
+            'tuition_paid_formatted' => $this->formatAmount($tuitionPaid),
+            'fine_paid' => $finePaid,
+            'fine_paid_formatted' => $this->formatAmount($finePaid),
             'paid_amount' => $paidAmount,
             'paid_amount_formatted' => $this->formatAmount($paidAmount),
             'reversed_amount' => $reversedAmount,

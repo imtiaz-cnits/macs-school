@@ -235,14 +235,16 @@ class AdmissionPaymentReversalService
             }
         }
 
-        $invoiceNet = $this->collectionService->toDecimalString($lockedInvoice->net_amount);
-        if (bccomp($remainingActivePaid, $invoiceNet, 2) > 0) {
+        $invoiceTotalPayable = $isAdmissionInvoice
+            ? $this->collectionService->toDecimalString($lockedInvoice->net_amount)
+            : $lockedInvoice->totalPayableAmount();
+        if (bccomp($remainingActivePaid, $invoiceTotalPayable, 2) > 0) {
             throw new LogicException(
-                "Ledger Integrity Violation: Remaining active payments ({$remainingActivePaid}) exceed invoice net ({$invoiceNet})."
+                "Ledger Integrity Violation: Remaining active payments ({$remainingActivePaid}) exceed invoice total payable ({$invoiceTotalPayable})."
             );
         }
 
-        $newDue = bcsub($invoiceNet, $remainingActivePaid, 2);
+        $newDue = bcsub($invoiceTotalPayable, $remainingActivePaid, 2);
         $newStatus = bccomp($newDue, '0.00', 2) === 0
             ? 'Paid'
             : (bccomp($remainingActivePaid, '0.00', 2) > 0 ? 'Partial' : 'Unpaid');

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use App\Models\FeeInvoice;
 use App\Models\FeeSetup;
@@ -254,6 +255,17 @@ class FeeGenerationService
 
                 $log('line', "  [FOUND] {$feeSetups->count()} active Fee Setup(s) to process for {$currentMonth}.");
 
+                // Determine Due Date once per billing month (enforcing target-month alignment)
+                $isMultiMonthRun = $isAnnual || $isAllPast;
+                $computedDueDate = $this->resolveDueDateForTargetMonth(
+                    isset($params['due_date']) ? (string) $params['due_date'] : null,
+                    (int) $targetYear,
+                    $paddedMonth,
+                    $currentMonth,
+                    $isMultiMonthRun,
+                    $log
+                );
+
                 foreach ($feeSetups as $feeSetup) {
                     $className = $feeSetup->schoolClass->class_name ?? "Class ID {$feeSetup->class_id}";
                     $catName = $feeSetup->category->name ?? "Category ID {$feeSetup->fee_category_id}";
@@ -282,12 +294,6 @@ class FeeGenerationService
 
                     if ($eligibleStudents->isEmpty()) {
                         continue;
-                    }
-
-                    // Determine Due Date
-                    $computedDueDate = $params['due_date'] ?? null;
-                    if (!$computedDueDate || $isAnnual) {
-                        $computedDueDate = Carbon::parse("10 {$currentMonth} {$targetYear}")->toDateString();
                     }
 
                     $isMonthlyRecurring = strtolower(trim($feeSetup->fee_month ?? '')) === 'monthly';
@@ -1425,6 +1431,52 @@ class FeeGenerationService
         }
 
         return $map;
+    }
+
+    /**
+     * Resolve and guard `due_date` so calendar-month billing cycles (`January`–`December`)
+     * never receive an out-of-month `due_date` (e.g. a March invoice stamped with an August date).
+     *
+     * - Multi-month runs (`all` / `all-past`) or empty input always default to `{$targetYear}-{$paddedMonth}-10`.
+     * - Single-month runs preserve the operator's exact date when it falls within `{$targetYear}-{$paddedMonth}`.
+     * - Single-month runs with an out-of-month date auto-normalize to `{$targetYear}-{$paddedMonth}-10`
+     *   and record a warning log entry.
+     */
+    private function resolveDueDateForTargetMonth(
+        ?string $requestedDueDate,
+        int $targetYear,
+        string $paddedMonth,
+        string $currentMonth,
+        bool $isMultiMonthRun,
+        callable $log
+    ): string {
+        $targetYm = sprintf('%04d-%s', $targetYear, $paddedMonth);
+        $defaultDueDate = sprintf('%04d-%s-10', $targetYear, $paddedMonth);
+        $isCalendarMonth = in_array($currentMonth, self::ALL_MONTHS, true);
+        $trimmedRequested = is_string($requestedDueDate) ? trim($requestedDueDate) : '';
+
+        if ($isMultiMonthRun || $trimmedRequested === '') {
+            return $defaultDueDate;
+        }
+
+        try {
+            $parsed = Carbon::parse($trimmedRequested, 'Asia/Dhaka');
+        } catch (Throwable $e) {
+            $msg = "Invalid due_date '{$trimmedRequested}' for {$currentMonth} {$targetYear}; normalized to '{$defaultDueDate}'.";
+            $log('warn', "  [WARN] {$msg}");
+            Log::warning("FeeGenerationService: {$msg}");
+            return $defaultDueDate;
+        }
+
+        if (!$isCalendarMonth || $parsed->format('Y-m') === $targetYm) {
+            return $parsed->toDateString();
+        }
+
+        $msg = "Normalized out-of-month due_date '{$parsed->toDateString()}' to '{$defaultDueDate}' for billing month {$currentMonth} {$targetYear}.";
+        $log('warn', "  [WARN] {$msg}");
+        Log::warning("FeeGenerationService: {$msg}");
+
+        return $defaultDueDate;
     }
 
     /**

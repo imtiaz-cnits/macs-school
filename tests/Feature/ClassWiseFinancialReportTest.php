@@ -734,4 +734,279 @@ class ClassWiseFinancialReportTest extends TestCase
         // Check for genuine PDF magic bytes (%PDF)
         $this->assertStringStartsWith('%PDF', $response->getContent());
     }
+
+    /**
+     * Test 14 (Bug #1 Regression): Legacy INV-YYYYMM- invoices with drifted due_date in another month
+     * appear ONLY in their invoice_no month and are NEVER double-counted in the due_date month.
+     */
+    public function test_monthly_report_prevents_cross_month_double_counting_when_due_date_drifts(): void
+    {
+        // March 2026 invoices generated late with August 2026 due_dates (Partial + Paid)
+        $this->createInvoice(
+            $this->stuPlay,
+            $this->catMonthlyFee,
+            $this->session2026,
+            1000.0,
+            700.0,
+            'Partial',
+            '2026-08-02',
+            'INV-202603-0001'
+        );
+        $this->createInvoice(
+            $this->stuOne,
+            $this->catMonthlyFee,
+            $this->session2026,
+            650.0,
+            650.0,
+            'Paid',
+            '2026-08-03',
+            'INV-202603-0002'
+        );
+
+        // Genuine August 2026 invoice
+        $this->createInvoice(
+            $this->stuPlay,
+            $this->catMonthlyFee,
+            $this->session2026,
+            1200.0,
+            1200.0,
+            'Paid',
+            '2026-08-10',
+            'INV-202608-0001'
+        );
+
+        $service = new ClassWiseFinancialReportService();
+
+        $march = $service->generateReport([
+            'session_year_id' => $this->session2026->id,
+            'period_type'     => 'monthly',
+            'month'           => 'March',
+            'year'            => 2026,
+        ]);
+        $august = $service->generateReport([
+            'session_year_id' => $this->session2026->id,
+            'period_type'     => 'monthly',
+            'month'           => 'August',
+            'year'            => 2026,
+        ]);
+        $fullSession = $service->generateReport([
+            'session_year_id' => $this->session2026->id,
+            'period_type'     => 'all',
+        ]);
+
+        // March contains both INV-202603-* invoices
+        $this->assertEquals('1650.00', $march['total_due']);
+        $this->assertEquals('1350.00', $march['total_collected']);
+        $this->assertEquals('300.00', $march['total_outstanding']);
+
+        // August contains ONLY INV-202608-0001 (ZERO double-counting from March due_date drift)
+        $this->assertEquals('1200.00', $august['total_due']);
+        $this->assertEquals('1200.00', $august['total_collected']);
+        $this->assertEquals('0.00', $august['total_outstanding']);
+
+        $oneAugust = collect($august['rows'])->firstWhere('class_id', $this->clsOne->id);
+        $this->assertEquals('0.00', $oneAugust['due']['monthly_fee']);
+        $this->assertEquals('0.00', $oneAugust['collected']['monthly_fee']);
+        $this->assertEquals('0.00', $oneAugust['outstanding']['monthly_fee']);
+
+        // Sum of March + August equals Full Session with 0.00 variance across Due, Collected, Outstanding
+        $this->assertEquals($fullSession['total_due'], bcadd($march['total_due'], $august['total_due'], 2));
+        $this->assertEquals($fullSession['total_collected'], bcadd($march['total_collected'], $august['total_collected'], 2));
+        $this->assertEquals($fullSession['total_outstanding'], bcadd($march['total_outstanding'], $august['total_outstanding'], 2));
+    }
+
+    /**
+     * Test 15 (Bug #1 Regression): Non-dated or malformed invoice numbers safely fall back to due_date
+     * in Monthly mode without being misclassified as canonical INV-YYYYMM- invoices.
+     */
+    public function test_monthly_report_falls_back_to_due_date_for_non_dated_invoice_numbers(): void
+    {
+        // All four non-dated formats due in August 2026 MUST appear in August via due_date fallback
+        $this->createInvoice($this->stuPlay, $this->catMonthlyFee, $this->session2026, 300.0, 300.0, 'Paid', '2026-08-10', 'INV-CUSTOM-0001');
+        $this->createInvoice($this->stuPlay, $this->catMonthlyFee, $this->session2026, 400.0, 400.0, 'Paid', '2026-08-10', 'INV-202A08-0001');
+        $this->createInvoice($this->stuOne, $this->catExamFee, $this->session2026, 500.0, 0.0, 'Unpaid', '2026-08-10', 'INV-202613-0001');
+        $this->createInvoice($this->stuTen, $this->catOthers, $this->session2026, 600.0, 600.0, 'Paid', '2026-08-10', 'LEGACY-001');
+
+        // Non-dated invoice due in July 2026 MUST NOT leak into August
+        $this->createInvoice($this->stuTen, $this->catMonthlyFee, $this->session2026, 999.0, 999.0, 'Paid', '2026-07-10', 'LEGACY-JUL-001');
+
+        $service = new ClassWiseFinancialReportService();
+
+        $august = $service->generateReport([
+            'session_year_id' => $this->session2026->id,
+            'period_type'     => 'monthly',
+            'month'           => 'August',
+            'year'            => 2026,
+        ]);
+        $july = $service->generateReport([
+            'session_year_id' => $this->session2026->id,
+            'period_type'     => 'monthly',
+            'month'           => 'July',
+            'year'            => 2026,
+        ]);
+
+        $this->assertEquals('1800.00', $august['total_due']);
+        $this->assertEquals('1300.00', $august['total_collected']);
+        $this->assertEquals('500.00', $august['total_outstanding']);
+        $this->assertEquals('700.00', $august['grand_total']['due']['monthly_fee']);
+        $this->assertEquals('500.00', $august['grand_total']['due']['exam_fees']);
+        $this->assertEquals('600.00', $august['grand_total']['due']['other_fees']);
+
+        $this->assertEquals('999.00', $july['total_due']);
+        $this->assertEquals('999.00', $july['total_collected']);
+        $this->assertEquals('0.00', $july['total_outstanding']);
+    }
+
+    /**
+     * Test 16 (Bug #1 Regression): Canonical Admission invoices (INV-ADM-S{S}-YYYYMM-*) with a drifted
+     * due_date in another month appear ONLY in their invoice_no month and are NOT double-counted.
+     */
+    public function test_monthly_report_prevents_cross_month_double_counting_for_admission_invoices(): void
+    {
+        $structureService = app(\App\Services\AdmissionFeeStructureService::class);
+        $invoiceService = app(\App\Services\AdmissionInvoiceService::class);
+        $collectionService = app(\App\Services\AdmissionCollectionService::class);
+
+        $structureService->createStructure([
+            'branch_id'                => $this->branch->id,
+            'class_id'                 => $this->clsPlay->id,
+            'session_year_id'          => $this->session2026->id,
+            'structure_name'           => 'Play Admission Pack',
+            'status'                   => 'Active',
+            'includes_monthly_tuition' => true,
+            'tuition_month_number'     => 3,
+            'items'                    => [
+                ['fee_category_id' => $this->catMonthlyFee->id, 'head_name' => 'March Tuition', 'amount' => '500.00', 'is_discountable' => false, 'is_tuition_head' => true, 'sort_order' => 10],
+                ['fee_category_id' => $this->catAdmissionFee->id, 'head_name' => 'Admission Fee', 'amount' => '1000.00', 'is_discountable' => true, 'is_tuition_head' => false, 'sort_order' => 20],
+            ],
+        ], $this->adminUser->id);
+
+        $admInv = $invoiceService->generateForStudent($this->stuPlay, ['due_date' => '2026-08-10'], $this->adminUser->id)['invoice'];
+
+        // Pin invoice_no to canonical March 2026 format while keeping due_date & created_at in August 2026
+        \Illuminate\Support\Facades\DB::table('fee_invoices')
+            ->where('id', $admInv->id)
+            ->update([
+                'invoice_no' => sprintf('INV-ADM-S%d-202603-%d', $this->session2026->id, $this->stuPlay->id),
+                'due_date'   => '2026-08-10',
+                'created_at' => '2026-08-10 10:00:00',
+            ]);
+
+        $admHeads = $admInv->admissionHeadAllocations()->orderBy('sort_order')->get();
+        $collectionService->collectSinglePayment($admInv->id, [
+            'pay_amount'       => '900.00',
+            'payment_method'   => 'Cash',
+            'payment_date'     => '2026-08-10',
+            'head_allocations' => [
+                $admHeads[0]->id => '300.00',
+                $admHeads[1]->id => '600.00',
+            ],
+        ], $this->adminUser->id);
+
+        $service = new ClassWiseFinancialReportService();
+
+        $march = $service->generateReport([
+            'session_year_id' => $this->session2026->id,
+            'period_type'     => 'monthly',
+            'month'           => 'March',
+            'year'            => 2026,
+        ]);
+        $august = $service->generateReport([
+            'session_year_id' => $this->session2026->id,
+            'period_type'     => 'monthly',
+            'month'           => 'August',
+            'year'            => 2026,
+        ]);
+        $fullSession = $service->generateReport([
+            'session_year_id' => $this->session2026->id,
+            'period_type'     => 'all',
+        ]);
+
+        // March captures the Admission invoice once
+        $playMarch = collect($march['rows'])->firstWhere('class_id', $this->clsPlay->id);
+        $this->assertEquals('500.00', $playMarch['due']['monthly_fee']);
+        $this->assertEquals('1000.00', $playMarch['due']['other_fees']);
+        $this->assertEquals('1500.00', $march['total_due']);
+        $this->assertEquals('900.00', $march['total_collected']);
+        $this->assertEquals('600.00', $march['total_outstanding']);
+
+        // August must NOT double-count it even though due_date is 2026-08-10
+        $playAugust = collect($august['rows'])->firstWhere('class_id', $this->clsPlay->id);
+        $this->assertEquals('0.00', $playAugust['due']['total']);
+        $this->assertEquals('0.00', $playAugust['collected']['total']);
+        $this->assertEquals('0.00', $playAugust['outstanding']['total']);
+
+        // March + August equals Full Session
+        $this->assertEquals($fullSession['total_due'], bcadd($march['total_due'], $august['total_due'], 2));
+        $this->assertEquals($fullSession['total_collected'], bcadd($march['total_collected'], $august['total_collected'], 2));
+        $this->assertEquals($fullSession['total_outstanding'], bcadd($march['total_outstanding'], $august['total_outstanding'], 2));
+    }
+
+    /**
+     * Test 17 (Bug #2 Regression): Legacy invoices remain attributed to their historical FeeSetup class
+     * after student promotion across Full Session, Monthly, and Custom Date Range (Model 1) modes.
+     */
+    public function test_legacy_report_preserves_historical_invoice_class_after_student_promotion_across_all_modes(): void
+    {
+        // Create a March 2026 Play invoice (Due 1000, Paid 600 on 2026-03-15, Outstanding 400)
+        $invoice = $this->createInvoice(
+            $this->stuPlay,
+            $this->catMonthlyFee,
+            $this->session2026,
+            1000.0,
+            600.0,
+            'Partial',
+            '2026-03-10',
+            'INV-202603-0888'
+        );
+        FeePayment::where('fee_invoice_id', $invoice->id)->update([
+            'payment_date' => '2026-03-15',
+            'status'       => 'Active',
+        ]);
+
+        // Promote student from Play -> Class One
+        $this->stuPlay->update([
+            'class_id'   => $this->clsOne->id,
+            'section_id' => $this->secOne->id,
+        ]);
+
+        $service = new ClassWiseFinancialReportService();
+
+        $modes = [
+            'full_session' => [
+                'session_year_id' => $this->session2026->id,
+                'period_type'     => 'all',
+            ],
+            'monthly' => [
+                'session_year_id' => $this->session2026->id,
+                'period_type'     => 'monthly',
+                'month'           => 'March',
+                'year'            => 2026,
+            ],
+            'custom_model_1' => [
+                'session_year_id' => $this->session2026->id,
+                'period_type'     => 'custom',
+                'start_date'      => '2026-03-01',
+                'end_date'        => '2026-03-31',
+            ],
+        ];
+
+        foreach ($modes as $modeName => $filters) {
+            $report = $service->generateReport($filters);
+            $byClass = collect($report['rows'])->keyBy('class_id');
+
+            $playRow = $byClass[$this->clsPlay->id];
+            $oneRow  = $byClass[$this->clsOne->id];
+
+            // Historical Play invoice MUST stay under Play (DUE, COLLECTED, and OUTSTANDING)
+            $this->assertEquals('1000.00', $playRow['due']['monthly_fee'], "Play DUE mismatch in {$modeName}");
+            $this->assertEquals('600.00', $playRow['collected']['monthly_fee'], "Play COLLECTED mismatch in {$modeName}");
+            $this->assertEquals('400.00', $playRow['outstanding']['monthly_fee'], "Play OUTSTANDING mismatch in {$modeName}");
+
+            // Promoted Class One MUST NOT absorb Play's historical billing or collection
+            $this->assertEquals('0.00', $oneRow['due']['total'], "One DUE leaked in {$modeName}");
+            $this->assertEquals('0.00', $oneRow['collected']['total'], "One COLLECTED leaked in {$modeName}");
+            $this->assertEquals('0.00', $oneRow['outstanding']['total'], "One OUTSTANDING leaked in {$modeName}");
+        }
+    }
 }

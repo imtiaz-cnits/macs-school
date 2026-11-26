@@ -24,6 +24,7 @@ class FeePayment extends Model
         'student_id',
         'branch_id',
         'paid_amount',
+        'fine_amount',
         'payment_date',
         'payment_method',
         'transaction_id',
@@ -103,6 +104,67 @@ class FeePayment extends Model
     public function isReversed(): bool
     {
         return ($this->status ?? 'Active') === 'Reversed';
+    }
+
+    public function fineAmountDecimal(): string
+    {
+        $raw = $this->attributes['fine_amount'] ?? '0';
+        if ($raw === null || $raw === '' || !is_numeric((string) $raw)) {
+            return '0.00';
+        }
+
+        $normalized = bcadd((string) $raw, '0.00', 2);
+
+        return bccomp($normalized, '0.00', 2) > 0 ? $normalized : '0.00';
+    }
+
+    public function tuitionAmountDecimal(): string
+    {
+        $paid = bcadd((string) ($this->paid_amount ?? '0'), '0.00', 2);
+        $fine = $this->fineAmountDecimal();
+        $tuition = bcsub($paid, $fine, 2);
+
+        return bccomp($tuition, '0.00', 2) > 0 ? $tuition : '0.00';
+    }
+
+    /**
+     * Deterministic Tuition-First allocation split for embedded late fines:
+     * tuition (`net_amount`) is settled before embedded `fine_amount`.
+     * For full payments (`pay_amount == due_amount`), tuition and fine settle simultaneously.
+     */
+    public static function computeFinePortionForPayment(
+        string $netAmount,
+        string $fineAmount,
+        string $priorActivePaid,
+        string $payAmount
+    ): string {
+        $net = bcadd($netAmount, '0.00', 2);
+        $fine = bcadd($fineAmount, '0.00', 2);
+        $prior = bcadd($priorActivePaid, '0.00', 2);
+        $pay = bcadd($payAmount, '0.00', 2);
+
+        if (bccomp($fine, '0.00', 2) <= 0 || bccomp($pay, '0.00', 2) <= 0) {
+            return '0.00';
+        }
+
+        $priorTuitionPaid = bccomp($prior, $net, 2) <= 0 ? $prior : $net;
+        $unpaidTuitionRaw = bcsub($net, $priorTuitionPaid, 2);
+        $unpaidTuition = bccomp($unpaidTuitionRaw, '0.00', 2) > 0 ? $unpaidTuitionRaw : '0.00';
+
+        $rawFinePaid = bcsub($pay, $unpaidTuition, 2);
+        if (bccomp($rawFinePaid, '0.00', 2) <= 0) {
+            return '0.00';
+        }
+
+        $priorFinePaid = bccomp($prior, $net, 2) > 0 ? bcsub($prior, $net, 2) : '0.00';
+        $unpaidFineRaw = bcsub($fine, $priorFinePaid, 2);
+        $unpaidFine = bccomp($unpaidFineRaw, '0.00', 2) > 0 ? $unpaidFineRaw : '0.00';
+
+        if (bccomp($unpaidFine, '0.00', 2) <= 0) {
+            return '0.00';
+        }
+
+        return bccomp($rawFinePaid, $unpaidFine, 2) <= 0 ? $rawFinePaid : $unpaidFine;
     }
 
     /**

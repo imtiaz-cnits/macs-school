@@ -9,6 +9,7 @@ use App\Models\FeePayment;
 use App\Models\SessionYear;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ClassWiseFinancialReportService
 {
@@ -121,10 +122,12 @@ class ClassWiseFinancialReportService
         $isCustomRange = ($periodType === 'custom' && $startDate && $endDate);
 
         // 3. Build Query for Legacy Fee Invoices (Strictly Excluding Cancelled Invoices & Admission Invoices)
+        // Historical Class Rule: Group by fee_setups.class_id (with students.class_id fallback) so year-end
+        // student promotion never shifts historical session billing into the promoted class.
         $query = DB::table('fee_invoices')
             ->join('students', 'fee_invoices.student_id', '=', 'students.id')
-            ->join('classes', 'students.class_id', '=', 'classes.id')
             ->join('fee_setups', 'fee_invoices.fee_setup_id', '=', 'fee_setups.id')
+            ->join('classes', DB::raw('COALESCE(fee_setups.class_id, students.class_id)'), '=', 'classes.id')
             ->join('fee_categories', 'fee_setups.fee_category_id', '=', 'fee_categories.id')
             ->whereNull('fee_invoices.admission_fee_structure_id')
             ->where('fee_invoices.status', '!=', 'Cancelled');
@@ -135,11 +138,7 @@ class ClassWiseFinancialReportService
 
         if ($startDate && $endDate) {
             if ($periodType === 'monthly' && isset($year) && isset($monthNum)) {
-                $prefix = sprintf('INV-%04d%02d-', $year, (int) $monthNum);
-                $query->where(function ($q) use ($prefix, $startDate, $endDate) {
-                    $q->where('fee_invoices.invoice_no', 'like', $prefix . '%')
-                      ->orWhereBetween('fee_invoices.due_date', [$startDate, $endDate]);
-                });
+                $this->applyMonthlyLegacyInvoiceFilter($query, $year, $monthNum, $startDate, $endDate);
             } else {
                 // Custom Date Range (Model 1): Period Billed includes invoices due OR created within the selected range
                 $query->where(function ($q) use ($startDate, $endDate): void {
@@ -149,16 +148,42 @@ class ClassWiseFinancialReportService
             }
         }
 
-        $aggregatedRows = $query->select(
+        $hasInvoiceFineCol = Schema::hasColumn('fee_invoices', 'fine_amount');
+
+        $selectColumns = [
             'classes.id as class_id',
             'classes.class_name',
             'fee_categories.name as cat_name',
             DB::raw('SUM(fee_invoices.net_amount) as due'),
             DB::raw('SUM(fee_invoices.paid_amount) as collected'),
-            DB::raw('SUM(fee_invoices.due_amount) as outstanding')
-        )
-        ->groupBy('classes.id', 'classes.class_name', 'fee_categories.name')
-        ->get();
+            DB::raw('SUM(fee_invoices.due_amount) as outstanding'),
+        ];
+
+        if ($hasInvoiceFineCol) {
+            // Pure ANSI CASE WHEN expressions (100% portable across MySQL 8 and SQLite):
+            // fine_collected = clamp(paid_amount - net_amount, 0, fine_amount)
+            // fine_outstanding = min(due_amount, fine_amount - fine_collected)
+            $fineCollectedExpr = "CASE " .
+                "WHEN COALESCE(fee_invoices.fine_amount, 0) > 0 AND fee_invoices.paid_amount > fee_invoices.net_amount THEN " .
+                "CASE WHEN (fee_invoices.paid_amount - fee_invoices.net_amount) <= COALESCE(fee_invoices.fine_amount, 0) " .
+                "THEN (fee_invoices.paid_amount - fee_invoices.net_amount) ELSE COALESCE(fee_invoices.fine_amount, 0) END " .
+                "ELSE 0 END";
+
+            $fineUnpaidExpr = "(COALESCE(fee_invoices.fine_amount, 0) - ({$fineCollectedExpr}))";
+
+            $fineOutstandingExpr = "CASE " .
+                "WHEN COALESCE(fee_invoices.fine_amount, 0) > 0 AND fee_invoices.due_amount > 0 THEN " .
+                "CASE WHEN {$fineUnpaidExpr} <= fee_invoices.due_amount THEN {$fineUnpaidExpr} ELSE fee_invoices.due_amount END " .
+                "ELSE 0 END";
+
+            $selectColumns[] = DB::raw('SUM(COALESCE(fee_invoices.fine_amount, 0)) as fine_due');
+            $selectColumns[] = DB::raw("SUM({$fineCollectedExpr}) as fine_collected");
+            $selectColumns[] = DB::raw("SUM({$fineOutstandingExpr}) as fine_outstanding");
+        }
+
+        $aggregatedRows = $query->select($selectColumns)
+            ->groupBy('classes.id', 'classes.class_name', 'fee_categories.name')
+            ->get();
 
         // 4. Initialize All Classes in Academic Order (Classes global scope: Play..Ten)
         $classes = Classes::all();
@@ -176,13 +201,37 @@ class ClassWiseFinancialReportService
             }
 
             $bucket = $this->classifyCategory($r->cat_name);
+            $baseDue = $this->receiptService->toDecimal($r->due);
+            $totalCollected = $this->receiptService->toDecimal($r->collected);
+            $totalOutstanding = $this->receiptService->toDecimal($r->outstanding);
+
+            $fineDue = $hasInvoiceFineCol ? $this->receiptService->toDecimal($r->fine_due ?? '0.00') : '0.00';
+            $fineCollected = $hasInvoiceFineCol ? $this->receiptService->toDecimal($r->fine_collected ?? '0.00') : '0.00';
+            $fineOutstanding = $hasInvoiceFineCol ? $this->receiptService->toDecimal($r->fine_outstanding ?? '0.00') : '0.00';
+
+            $baseCollected = bcsub($totalCollected, $fineCollected, 2);
+            $baseOutstanding = bcsub($totalOutstanding, $fineOutstanding, 2);
+
             $this->accumulateBucketAmounts(
                 $rows[$clsId],
                 $bucket,
-                $this->receiptService->toDecimal($r->due),
-                $isCustomRange ? '0.00' : $this->receiptService->toDecimal($r->collected),
-                $this->receiptService->toDecimal($r->outstanding)
+                $baseDue,
+                $isCustomRange ? '0.00' : $baseCollected,
+                $baseOutstanding
             );
+
+            if (bccomp($fineDue, '0.00', 2) > 0
+                || bccomp($fineCollected, '0.00', 2) > 0
+                || bccomp($fineOutstanding, '0.00', 2) > 0
+            ) {
+                $this->accumulateBucketAmounts(
+                    $rows[$clsId],
+                    self::BUCKET_OTHER_FEES,
+                    $fineDue,
+                    $isCustomRange ? '0.00' : $fineCollected,
+                    $fineOutstanding
+                );
+            }
         }
 
         // 5b. Include Admission Fee Invoices Using Strict Historical Structure Class & Active Head Allocations
@@ -219,6 +268,12 @@ class ClassWiseFinancialReportService
             }
 
             foreach ($admQuery->get() as $admInvoice) {
+                if ($periodType === 'monthly' && isset($year) && isset($monthNum)) {
+                    if (!$this->matchesMonthlyAdmissionInvoice($admInvoice, $year, $monthNum, $startDate, $endDate)) {
+                        continue;
+                    }
+                }
+
                 // Historical Class Rule: Always use admission_fee_structures.class_id, NEVER promoted students.class_id.
                 $structureClassId = (int) ($admInvoice->admissionFeeStructure?->class_id ?? 0);
                 if ($structureClassId <= 0) {
@@ -254,8 +309,8 @@ class ClassWiseFinancialReportService
             $legacyPayQuery = DB::table('fee_payments')
                 ->join('fee_invoices', 'fee_payments.fee_invoice_id', '=', 'fee_invoices.id')
                 ->join('students', 'fee_invoices.student_id', '=', 'students.id')
-                ->join('classes', 'students.class_id', '=', 'classes.id')
                 ->join('fee_setups', 'fee_invoices.fee_setup_id', '=', 'fee_setups.id')
+                ->join('classes', DB::raw('COALESCE(fee_setups.class_id, students.class_id)'), '=', 'classes.id')
                 ->join('fee_categories', 'fee_setups.fee_category_id', '=', 'fee_categories.id')
                 ->whereNull('fee_invoices.admission_fee_structure_id')
                 ->where('fee_invoices.status', '!=', 'Cancelled')
@@ -269,14 +324,23 @@ class ClassWiseFinancialReportService
                 $legacyPayQuery->where('fee_setups.session_year_id', $sessionId);
             }
 
-            $legacyCollectedRows = $legacyPayQuery->select(
+            $hasPaymentFineCol = Schema::hasColumn('fee_payments', 'fine_amount');
+
+            $legacyPaySelect = [
                 'classes.id as class_id',
                 'classes.class_name',
                 'fee_categories.name as cat_name',
-                DB::raw('SUM(fee_payments.paid_amount) as collected')
-            )
-            ->groupBy('classes.id', 'classes.class_name', 'fee_categories.name')
-            ->get();
+            ];
+            if ($hasPaymentFineCol) {
+                $legacyPaySelect[] = DB::raw('SUM(fee_payments.paid_amount - COALESCE(fee_payments.fine_amount, 0)) as collected');
+                $legacyPaySelect[] = DB::raw('SUM(COALESCE(fee_payments.fine_amount, 0)) as fine_collected');
+            } else {
+                $legacyPaySelect[] = DB::raw('SUM(fee_payments.paid_amount) as collected');
+            }
+
+            $legacyCollectedRows = $legacyPayQuery->select($legacyPaySelect)
+                ->groupBy('classes.id', 'classes.class_name', 'fee_categories.name')
+                ->get();
 
             foreach ($legacyCollectedRows as $r) {
                 $clsId = (int) $r->class_id;
@@ -292,6 +356,19 @@ class ClassWiseFinancialReportService
                     $this->receiptService->toDecimal($r->collected),
                     '0.00'
                 );
+
+                $fineCollected = $hasPaymentFineCol
+                    ? $this->receiptService->toDecimal($r->fine_collected ?? '0.00')
+                    : '0.00';
+                if (bccomp($fineCollected, '0.00', 2) > 0) {
+                    $this->accumulateBucketAmounts(
+                        $rows[$clsId],
+                        self::BUCKET_OTHER_FEES,
+                        '0.00',
+                        $fineCollected,
+                        '0.00'
+                    );
+                }
             }
 
             if ($admissionTablesAvailable) {
@@ -373,6 +450,72 @@ class ClassWiseFinancialReportService
             'total_outstanding' => $grandTotal['outstanding']['total'],
             'generated_at'      => now()->format('d M Y, h:i A'),
         ];
+    }
+
+    /**
+     * Apply mutually exclusive Monthly period filter for legacy fee invoices.
+     *
+     * Invoices with a canonical `INV-YYYYMM-` prefix belong strictly to that calendar month
+     * (preventing cross-month double-counting when `due_date` drifts into another month).
+     * Non-dated or NULL `invoice_no` records fall back cleanly to `due_date`.
+     *
+     * Portable across MySQL 8 and SQLite (uses standard LIKE / SUBSTR / IN predicates only).
+     */
+    private function applyMonthlyLegacyInvoiceFilter(
+        $query,
+        int $year,
+        string $monthNum,
+        string $startDate,
+        string $endDate
+    ): void {
+        $prefix = sprintf('INV-%04d%02d-', $year, (int) $monthNum);
+
+        $query->where(function ($q) use ($prefix, $startDate, $endDate): void {
+            $q->where('fee_invoices.invoice_no', 'like', $prefix . '%')
+              ->orWhere(function ($fallback) use ($startDate, $endDate): void {
+                  $fallback->where(function ($nonDated): void {
+                      $nonDated->whereNull('fee_invoices.invoice_no')
+                          ->orWhereRaw(
+                              "NOT (" .
+                              "fee_invoices.invoice_no LIKE 'INV-______-%' " .
+                              "AND SUBSTR(fee_invoices.invoice_no, 5, 1) IN ('1','2') " .
+                              "AND SUBSTR(fee_invoices.invoice_no, 6, 1) IN ('0','1','2','3','4','5','6','7','8','9') " .
+                              "AND SUBSTR(fee_invoices.invoice_no, 7, 1) IN ('0','1','2','3','4','5','6','7','8','9') " .
+                              "AND SUBSTR(fee_invoices.invoice_no, 8, 1) IN ('0','1','2','3','4','5','6','7','8','9') " .
+                              "AND SUBSTR(fee_invoices.invoice_no, 9, 2) IN ('01','02','03','04','05','06','07','08','09','10','11','12')" .
+                              ")"
+                          );
+                  })
+                  ->whereBetween('fee_invoices.due_date', [$startDate, $endDate]);
+              });
+        });
+    }
+
+    /**
+     * Enforce mutually exclusive Monthly period matching for Admission invoices.
+     *
+     * If `invoice_no` encodes a canonical year-month (`INV-ADM-S{S}-YYYYMM-` or `INV-YYYYMM-`),
+     * that month is authoritative and the invoice is never matched in another month by a drifted `due_date`.
+     * Only non-dated Admission invoices fall back to `COALESCE(due_date, DATE(created_at))`.
+     */
+    private function matchesMonthlyAdmissionInvoice(
+        FeeInvoice $admInvoice,
+        int $year,
+        string $monthNum,
+        string $startDate,
+        string $endDate
+    ): bool {
+        $extracted = FeeInvoice::extractYearMonthFromInvoiceNo($admInvoice->invoice_no);
+        if ($extracted !== null) {
+            return $extracted['year'] === sprintf('%04d', $year)
+                && $extracted['month'] === $monthNum;
+        }
+
+        $effectiveDate = !empty($admInvoice->due_date)
+            ? substr((string) $admInvoice->due_date, 0, 10)
+            : ($admInvoice->created_at ? $admInvoice->created_at->format('Y-m-d') : null);
+
+        return $effectiveDate !== null && $effectiveDate >= $startDate && $effectiveDate <= $endDate;
     }
 
     private function makeZeroMetricsMatrix(): array

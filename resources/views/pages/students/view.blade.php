@@ -883,9 +883,10 @@
             invoices.forEach(inv => {
                 if (inv.status === 'Cancelled') return;
                 let netAmt = inv.net_amount !== null ? parseFloat(inv.net_amount) : 0;
+                let fineAmt = inv.fine_amount !== null && inv.fine_amount !== undefined ? parseFloat(inv.fine_amount) : 0;
                 let paidAmt = inv.paid_amount !== null ? parseFloat(inv.paid_amount) : 0;
                 let dueAmt = inv.due_amount !== null ? parseFloat(inv.due_amount) : 0;
-                totalBilled += netAmt;
+                totalBilled += (netAmt + fineAmt);
                 totalPaid += paidAmt;
                 totalDue += dueAmt;
             });
@@ -986,18 +987,25 @@
                             if (!feeMonthLabel && inv.fee_setup && inv.fee_setup.fee_month) {
                                 feeMonthLabel = inv.fee_setup.fee_month;
                             }
+                            let fineAmtVal = inv.fine_amount !== null && inv.fine_amount !== undefined ? parseFloat(inv.fine_amount) : 0;
                             const monthPill = feeMonthLabel
                                 ? `<span class="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-50 dark:bg-themeBlue/15 border border-sky-200/60 dark:border-themeBlue/30 text-[10px] font-black uppercase tracking-wider text-themeBlue dark:text-blue-300 whitespace-nowrap">${esc(feeMonthLabel)}</span>`
+                                : '';
+                            const finePill = fineAmtVal > 0
+                                ? `<span class="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-[9px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 whitespace-nowrap">+ ৳${fineAmtVal.toFixed(2)} Late Fine</span>`
                                 : '';
                             feeDetails = `
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span class="text-sm font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">${esc(categoryName)}</span>
                                     ${monthPill}
+                                    ${finePill}
                                 </div>
                             `;
                         }
 
                         let netAmt = inv.net_amount !== null ? parseFloat(inv.net_amount) : 0;
+                        let fineAmt = inv.fine_amount !== null && inv.fine_amount !== undefined ? parseFloat(inv.fine_amount) : 0;
+                        let totalBillAmt = netAmt + fineAmt;
                         let paidAmt = inv.paid_amount !== null ? parseFloat(inv.paid_amount) : 0;
                         let dueAmt = inv.due_amount !== null ? parseFloat(inv.due_amount) : 0;
                         
@@ -1049,7 +1057,8 @@
                                 </td>
                                 <td class="py-0 px-0">${feeDetails}</td>
                                 <td class="py-0 px-0 text-right whitespace-nowrap">
-                                    <span class="text-sm font-bold text-gray-900 dark:text-gray-100 font-mono">৳${netAmt.toFixed(2)}</span>
+                                    <div class="text-sm font-bold text-gray-900 dark:text-gray-100 font-mono">৳${totalBillAmt.toFixed(2)}</div>
+                                    ${fineAmt > 0 ? `<div class="text-[10px] font-bold text-amber-600 dark:text-amber-400 font-mono">৳${netAmt.toFixed(2)} + ৳${fineAmt.toFixed(2)} fine</div>` : ''}
                                 </td>
                                 <td class="py-0 px-0 text-right whitespace-nowrap">
                                     <span class="text-sm font-bold ${paidAmt > 0 ? 'text-themeGreen dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'} font-mono">৳${paidAmt.toFixed(2)}</span>

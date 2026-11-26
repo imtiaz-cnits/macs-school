@@ -391,6 +391,7 @@ class FeeInvoiceController extends Controller
 
                 // 4. Inspect linked ACTIVE payments only (exclude Reversed payments!)
                 $netAmount = bcadd((string) ($invoice->net_amount ?? '0'), '0.00', 2);
+                $totalPayable = $isAdmissionInvoice ? $netAmount : $invoice->totalPayableAmount();
                 $verifiedPaymentsSum = '0.00';
                 foreach ($lockedPayments as $p) {
                     if (($p->status ?? 'Active') === 'Active') {
@@ -402,13 +403,13 @@ class FeeInvoiceController extends Controller
                     }
                 }
 
-                if (bccomp($verifiedPaymentsSum, $netAmount, 2) > 0) {
+                if (bccomp($verifiedPaymentsSum, $totalPayable, 2) > 0) {
                     throw ValidationException::withMessages([
                         'invoice_id' => [
                             'Inconsistent payment records detected: verified active payments total (৳' .
                             number_format((float) $verifiedPaymentsSum, 2) .
-                            ') exceeds invoice net amount (৳' .
-                            number_format((float) $netAmount, 2) .
+                            ') exceeds invoice total payable (৳' .
+                            number_format((float) $totalPayable, 2) .
                             '). Restoration rejected for manual accounting review.',
                         ],
                     ]);
@@ -454,10 +455,10 @@ class FeeInvoiceController extends Controller
                 }
 
                 // 5. Calculate restored status & due strictly via BCMath (no fake Paid on 0 payment)
-                $restoredDue = bcsub($netAmount, $verifiedPaymentsSum, 2);
+                $restoredDue = bcsub($totalPayable, $verifiedPaymentsSum, 2);
                 if (bccomp($verifiedPaymentsSum, '0.00', 2) <= 0) {
                     $restoredStatus = 'Unpaid';
-                    $restoredDue = $netAmount;
+                    $restoredDue = $totalPayable;
                 } elseif (bccomp($restoredDue, '0.00', 2) <= 0) {
                     $restoredStatus = 'Paid';
                     $restoredDue = '0.00';
